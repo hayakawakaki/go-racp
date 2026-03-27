@@ -1,12 +1,15 @@
 package main
 
-import "github.com/hayakawakaki/go-racp/app"
+import (
+	"log"
+
+	"github.com/hayakawakaki/go-racp/server"
+)
 
 func main() {
-	cfg := app.Config{
-		Mode: "development",
+	srv, err := server.NewServer()
+	if err != nil {
+		log.Fatal(err)
 	}
-
-	cp := app.NewApp(&cfg)
-	cp.Run()
+	srv.Run()
 }
