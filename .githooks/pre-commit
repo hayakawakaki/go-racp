@@ -1,0 +1,10 @@
+#!/bin/sh
+set -e
+
+echo "Running pre-commit checks..."
+
+# Lint — runs golangci-lint (includes gofmt, govet, and all .golangci.yml linters)
+echo "Running golangci-lint..."
+golangci-lint run
+
+echo "All checks passed."
