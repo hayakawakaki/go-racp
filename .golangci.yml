@@ -90,7 +90,7 @@ linters:
         - rangeValCopy
 
     wrapcheck:
-      ignoreSigs:
+      ignore-sigs:
         - .Errorf(
         - errors.New(
         - errors.Unwrap(
