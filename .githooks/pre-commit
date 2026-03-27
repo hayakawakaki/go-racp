@@ -1,0 +1,9 @@
+#!/bin/sh
+set -e
+
+echo "Running pre-commit checks..."
+
+echo "Running linter..."
+golangci-lint run
+
+echo "All checks passed."

@@ -1,0 +1,125 @@
+#https://golangci-lint.run/docs/linters/
+
+version: "2"
+
+run:
+  timeout: 3m
+
+linters:
+  enable:
+    # Bug detection
+    - govet
+    - gosec
+    - bodyclose
+    - nilerr
+    - sqlclosecheck
+
+    # Style & maintainability
+    - misspell
+    - revive
+    - goconst
+    - dupl
+    - cyclop
+
+    # Performance
+    - prealloc
+    - gocritic
+
+    # Error handling
+    - wrapcheck
+    - errorlint
+
+  settings:
+    errcheck:
+      check-type-assertions: true
+      exclude-functions:
+        - (net/http.ResponseWriter).Write
+        - fmt.Fprintf
+        - fmt.Fprintln
+
+    gosec:
+      excludes:
+        - G104
+        - G404
+
+    govet:
+      enable-all: true
+
+    revive:
+      rules:
+        - name: exported
+          disabled: true
+        - name: package-comments
+          disabled: true
+        - name: unexported-return
+          severity: warning
+        - name: blank-imports
+          severity: warning
+        - name: context-as-argument
+          severity: error
+        - name: context-keys-type
+          severity: error
+        - name: error-return
+          severity: error
+        - name: error-strings
+          severity: warning
+        - name: error-naming
+          severity: warning
+        - name: increment-decrement
+          severity: warning
+        - name: var-naming
+          severity: warning
+
+    cyclop:
+      max-complexity: 10
+
+    dupl:
+      threshold: 120
+
+    goconst:
+      min-len: 3
+      min-occurrences: 3
+
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - performance
+        - style
+      disabled-checks:
+        - hugeParam
+        - rangeValCopy
+
+    wrapcheck:
+      ignore-sigs:
+        - .Errorf(
+        - errors.New(
+        - errors.Unwrap(
+        - errors.Join(
+        - .Wrap(
+        - .Wrapf(
+        - .WithMessage(
+        - .WithMessagef(
+        - .WithStack(
+
+  exclusions:
+    presets:
+      - comments
+    rules:
+      - path: domain/
+        linters:
+          - dupl
+      - path: _test\.go
+        linters:
+          - dupl
+          - gosec
+          - wrapcheck
+          - goconst
+          - cyclop
+          - errcheck
+      - path: _test\.go
+        text: "dot-imports"
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
