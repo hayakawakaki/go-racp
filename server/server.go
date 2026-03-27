@@ -13,7 +13,7 @@ type Server struct {
 func NewServer() (*Server, error) {
 	cfg, err := config.NewConfig()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("server: failed to load config: %w", err)
 	}
 
 	return &Server{

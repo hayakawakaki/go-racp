@@ -33,46 +33,50 @@ func ProcessEnv() (*EnvConfig, error) {
 	}
 
 	env := &EnvConfig{}
-
 	t := reflect.TypeOf(*env)
 	v := reflect.ValueOf(env).Elem()
 
 	for i := 0; i < t.NumField(); i++ {
-		field := t.Field(i)
-		envTag := field.Tag.Get("env")
-		if envTag == "" {
-			// the env name is required even with the default value
-			return nil, fmt.Errorf("env tag not found in field %s", field.Name)
-		}
-
-		value := os.Getenv(envTag)
-		defaultValue := field.Tag.Get("default")
-		isRequired := field.Tag.Get("required") == "true"
-
-		// Set the value to the default when undeclared
-		if value == "" && defaultValue != "" {
-			value = defaultValue
-		}
-
-		// if the field is required and the value is empty
-		if isRequired && value == "" {
-			return nil, fmt.Errorf("the value for the env field %s is required", envTag)
-		}
-		switch field.Type.Kind() {
-		case reflect.String:
-			v.Field(i).SetString(value)
-		case reflect.Int:
-			intValue, err := strconv.Atoi(value)
-			if err != nil {
-				return nil, fmt.Errorf("the value for %s must be a valid integer", envTag)
-			}
-			v.Field(i).SetInt(int64(intValue))
-		default:
-			return nil, fmt.Errorf("unsupported field type %s for %s", field.Type.Kind(), envTag)
+		if err := processField(t.Field(i), v.Field(i)); err != nil {
+			return nil, err
 		}
 	}
 
 	return env, nil
+}
+
+func processField(field reflect.StructField, fieldVal reflect.Value) error {
+	envTag := field.Tag.Get("env")
+	if envTag == "" {
+		return fmt.Errorf("env tag not found in field %s", field.Name)
+	}
+
+	value := os.Getenv(envTag)
+	if value == "" {
+		value = field.Tag.Get("default")
+	}
+
+	if field.Tag.Get("required") == "true" && value == "" {
+		return fmt.Errorf("the value for the env field %s is required", envTag)
+	}
+
+	return setField(fieldVal, field.Type.Kind(), envTag, value)
+}
+
+func setField(fieldVal reflect.Value, kind reflect.Kind, envTag, value string) error {
+	switch kind {
+	case reflect.String:
+		fieldVal.SetString(value)
+	case reflect.Int:
+		intValue, err := strconv.Atoi(value)
+		if err != nil {
+			return fmt.Errorf("the value for %s must be a valid integer", envTag)
+		}
+		fieldVal.SetInt(int64(intValue))
+	default:
+		return fmt.Errorf("unsupported field type %s for %s", kind, envTag)
+	}
+	return nil
 }
 
 func getEnvFilePath() (string, error) {
