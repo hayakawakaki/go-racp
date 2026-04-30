@@ -134,9 +134,9 @@ func TestProcessEnv_Errors(t *testing.T) {
 
 func clearEnvVars(t *testing.T) {
 	t.Helper()
-	rt := reflect.TypeOf(EnvConfig{})
-	for i := range rt.NumField() {
-		if key := rt.Field(i).Tag.Get("env"); key != "" {
+	rt := reflect.TypeFor[EnvConfig]()
+	for field := range rt.Fields() {
+		if key := field.Tag.Get("env"); key != "" {
 			t.Setenv(key, "")
 		}
 	}

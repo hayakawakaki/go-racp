@@ -33,11 +33,10 @@ func ProcessEnv() (*EnvConfig, error) {
 	}
 
 	env := &EnvConfig{}
-	t := reflect.TypeOf(*env)
 	v := reflect.ValueOf(env).Elem()
 
-	for i := 0; i < t.NumField(); i++ {
-		if err := processField(t.Field(i), v.Field(i)); err != nil {
+	for field, fieldVal := range v.Fields() {
+		if err := processField(field, fieldVal); err != nil {
 			return nil, err
 		}
 	}

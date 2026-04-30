@@ -20,6 +20,7 @@ linters:
     - goconst
     - dupl
     - cyclop
+    - modernize
 
     # Performance
     - prealloc
