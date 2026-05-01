@@ -14,8 +14,8 @@ func TestConnect(t *testing.T) {
 
 	main, logs := Connect(env)
 	t.Cleanup(func() {
-		main.Close()
-		logs.Close()
+		_ = main.Close()
+		_ = logs.Close()
 	})
 
 	if err := main.Ping(); err != nil {
