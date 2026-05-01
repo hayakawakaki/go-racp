@@ -14,42 +14,32 @@ func TestProcessEnv(t *testing.T) {
 		{
 			name: "all set",
 			envVars: map[string]string{
-				"MODE":               "production",
-				"DB_HOST":            "10.0.0.1",
-				"DB_PORT":            "3307",
-				"DB_USER":            "testuser",
-				"DB_PASSWORD":        "testpass",
-				"DB_NAME":            "testdb",
-				"DB_MIN_CONNECTIONS": "5",
-				"DB_MAX_CONNECTIONS": "10",
+				"MODE":             "production",
+				"DB_MAIN_URL":      "user:pass@tcp(10.0.0.1:3306)/main",
+				"DB_LOG_URL":       "user:pass@tcp(10.0.0.1:3306)/log",
+				"DB_MAX_OPEN_CONN": "10",
+				"DB_MAX_IDLE_CONN": "5",
 			},
 			expected: EnvConfig{
-				Mode:            "production",
-				DBHost:          "10.0.0.1",
-				DBPort:          "3307",
-				DBUser:          "testuser",
-				DBPassword:      "testpass",
-				DBName:          "testdb",
-				DBMinConnection: 5,
-				DBMaxConnection: 10,
+				Mode:          "production",
+				DBMainURL:     "user:pass@tcp(10.0.0.1:3306)/main",
+				DBLogURL:      "user:pass@tcp(10.0.0.1:3306)/log",
+				DBMaxOpenConn: 10,
+				DBMaxIdleConn: 5,
 			},
 		},
 		{
 			name: "defaults applied",
 			envVars: map[string]string{
-				"DB_USER":     "testuser",
-				"DB_PASSWORD": "testpass",
-				"DB_NAME":     "testdb",
+				"DB_MAIN_URL": "user:pass@tcp(127.0.0.1:3306)/main",
+				"DB_LOG_URL":  "user:pass@tcp(127.0.0.1:3306)/log",
 			},
 			expected: EnvConfig{
-				Mode:            "development",
-				DBHost:          "127.0.0.1",
-				DBPort:          "3306",
-				DBUser:          "testuser",
-				DBPassword:      "testpass",
-				DBName:          "testdb",
-				DBMinConnection: 2,
-				DBMaxConnection: 4,
+				Mode:          "development",
+				DBMainURL:     "user:pass@tcp(127.0.0.1:3306)/main",
+				DBLogURL:      "user:pass@tcp(127.0.0.1:3306)/log",
+				DBMaxOpenConn: 4,
+				DBMaxIdleConn: 4,
 			},
 		},
 	}
@@ -62,10 +52,7 @@ func TestProcessEnv(t *testing.T) {
 				t.Setenv(key, value)
 			}
 
-			got, err := ProcessEnv()
-			if err != nil {
-				t.Fatalf("ProcessEnv() unexpected error: %v", err)
-			}
+			got := ProcessEnv()
 
 			if *got != tt.expected {
 				t.Errorf("ProcessEnv() = %+v, want %+v", *got, tt.expected)
@@ -74,59 +61,69 @@ func TestProcessEnv(t *testing.T) {
 	}
 }
 
-func TestProcessEnv_Errors(t *testing.T) {
+// ProcessEnv calls log.Fatal on failure, which would kill the test process.
+// Exercise the underlying processField directly to cover error paths.
+func TestProcessField_Errors(t *testing.T) {
 	tests := []struct {
 		name        string
-		envVars     map[string]string
+		envName     string
+		envValue    string
 		expectedErr string
 	}{
 		{
-			name:        "missing DB_USER",
-			envVars:     map[string]string{},
-			expectedErr: "the value for the env field DB_USER is required",
+			name:        "missing required DB_MAIN_URL",
+			envName:     "DB_MAIN_URL",
+			envValue:    "",
+			expectedErr: "the value for the env field DB_MAIN_URL is required",
 		},
 		{
-			name: "missing DB_PASSWORD",
-			envVars: map[string]string{
-				"DB_USER": "testuser",
-			},
-			expectedErr: "the value for the env field DB_PASSWORD is required",
+			name:        "missing required DB_LOG_URL",
+			envName:     "DB_LOG_URL",
+			envValue:    "",
+			expectedErr: "the value for the env field DB_LOG_URL is required",
 		},
 		{
-			name: "missing DB_NAME",
-			envVars: map[string]string{
-				"DB_USER":     "testuser",
-				"DB_PASSWORD": "testpass",
-			},
-			expectedErr: "the value for the env field DB_NAME is required",
+			name:        "invalid int DB_MAX_OPEN_CONN",
+			envName:     "DB_MAX_OPEN_CONN",
+			envValue:    "not-a-number",
+			expectedErr: "the value for DB_MAX_OPEN_CONN must be a valid integer",
 		},
 		{
-			name: "invalid int value",
-			envVars: map[string]string{
-				"DB_USER":            "testuser",
-				"DB_PASSWORD":        "testpass",
-				"DB_NAME":            "testdb",
-				"DB_MIN_CONNECTIONS": "one",
-			},
-			expectedErr: "the value for DB_MIN_CONNECTIONS must be a valid integer",
+			name:        "invalid int DB_MAX_IDLE_CONN",
+			envName:     "DB_MAX_IDLE_CONN",
+			envValue:    "one",
+			expectedErr: "the value for DB_MAX_IDLE_CONN must be a valid integer",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			clearEnvVars(t)
+			t.Setenv(tt.envName, tt.envValue)
 
-			for key, value := range tt.envVars {
-				t.Setenv(key, value)
+			cfg := &EnvConfig{}
+			v := reflect.ValueOf(cfg).Elem()
+
+			var gotErr error
+			found := false
+			for field, fieldVal := range v.Fields() {
+				if field.Tag.Get("env") == tt.envName {
+					gotErr = processField(field, fieldVal)
+					found = true
+					break
+				}
 			}
 
-			_, err := ProcessEnv()
-			if err == nil {
-				t.Fatal("ProcessEnv() expected error, got nil")
+			if !found {
+				t.Fatalf("no field with env tag %q on EnvConfig", tt.envName)
 			}
 
-			if err.Error() != tt.expectedErr {
-				t.Errorf("ProcessEnv() error = %q, want %q", err.Error(), tt.expectedErr)
+			if gotErr == nil {
+				t.Fatal("processField() expected error, got nil")
+			}
+
+			if gotErr.Error() != tt.expectedErr {
+				t.Errorf("processField() error = %q, want %q", gotErr.Error(), tt.expectedErr)
 			}
 		})
 	}
