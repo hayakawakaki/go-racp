@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -12,19 +13,16 @@ import (
 )
 
 type EnvConfig struct {
-	Mode string `env:"MODE" default:"development" required:"true"`
+	Mode string `env:"MODE" default:"development"`
 
-	// MySQL or MariaDB
-	DBHost          string `env:"DB_HOST"   default:"127.0.0.1"`
-	DBPort          string `env:"DB_PORT" default:"3306"`
-	DBUser          string `env:"DB_USER" required:"true"`
-	DBPassword      string `env:"DB_PASSWORD" required:"true"`
-	DBName          string `env:"DB_NAME" required:"true"`
-	DBMinConnection int    `env:"DB_MIN_CONNECTIONS" default:"2"`
-	DBMaxConnection int    `env:"DB_MAX_CONNECTIONS" default:"4"`
+	// MySQL or MariaDB. Populated by Docker Compose.
+	DBMainURL     string `env:"DB_MAIN_URL" required:"true"`
+	DBLogURL      string `env:"DB_LOG_URL" required:"true"`
+	DBMaxOpenConn int    `env:"DB_MAX_OPEN_CONN" default:"4"`
+	DBMaxIdleConn int    `env:"DB_MAX_IDLE_CONN" default:"4"`
 }
 
-func ProcessEnv() (*EnvConfig, error) {
+func ProcessEnv() *EnvConfig {
 	// Try to find and load the env file
 	// Don't catch error for docker declared env variables
 	if envPath, err := getEnvFilePath(); err == nil {
@@ -37,11 +35,11 @@ func ProcessEnv() (*EnvConfig, error) {
 
 	for field, fieldVal := range v.Fields() {
 		if err := processField(field, fieldVal); err != nil {
-			return nil, err
+			log.Fatal(err)
 		}
 	}
 
-	return env, nil
+	return env
 }
 
 func processField(field reflect.StructField, fieldVal reflect.Value) error {
