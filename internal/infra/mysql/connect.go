@@ -27,7 +27,7 @@ func Connect(env *config.EnvConfig) (mainDB, logsDB *sql.DB) {
 			return main, logs
 		}
 
-		log.Printf("MySQL connection attempt %d/%d failed: %v", i, connRetryInterval, err)
+		log.Printf("MySQL connection attempt %d/%d failed: %v", i, connMaxRetryAttempt, err)
 
 		if i < connMaxRetryAttempt {
 			time.Sleep(connRetryInterval)
