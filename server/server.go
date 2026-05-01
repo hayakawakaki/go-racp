@@ -2,25 +2,28 @@ package server
 
 import (
 	"fmt"
+	"log"
 
+	"github.com/hayakawakaki/go-racp/internal/infra/mysql"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 
-type Server struct {
-	Cfg *config.Config
-}
+func Start() {
+	// Config Creation
+	cfg := config.NewConfig()
 
-func NewServer() (*Server, error) {
-	cfg, err := config.NewConfig()
-	if err != nil {
-		return nil, fmt.Errorf("server: failed to load config: %w", err)
-	}
+	// MySQL Connection
+	mainDB, logsDB := mysql.Connect(cfg.Env)
+	defer func() {
+		if err := mainDB.Close(); err != nil {
+			log.Printf("close main db: %v", err)
+		}
+	}()
+	defer func() {
+		if err := logsDB.Close(); err != nil {
+			log.Printf("close logs db: %v", err)
+		}
+	}()
 
-	return &Server{
-		Cfg: cfg,
-	}, nil
-}
-
-func (s *Server) Run() {
-	fmt.Println("App is running")
+	fmt.Println("Server is running...")
 }
