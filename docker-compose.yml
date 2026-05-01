@@ -1,0 +1,19 @@
+services:
+  app:
+    build:
+      dockerfile: Dockerfile
+    ports:
+      - "${CP_PORT:-8080}:8080"
+    environment:
+      - MODE=production
+      - DB_MAIN_URL=${DB_USER}:${DB_PASSWORD}@tcp(${DB_HOST}:${DB_PORT:-3306})/${DB_MAIN_NAME}
+      - DB_LOG_URL=${DB_USER}:${DB_PASSWORD}@tcp(${DB_HOST}:${DB_PORT:-3306})/${DB_LOG_NAME}
+      - DB_MIN_CONNECTION=${DB_MIN_CONNECTIONS:-4}
+      - DB_MAX_CONNECTION=${DB_MAX_CONNECTIONS:-8}
+    restart: unless-stopped
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
