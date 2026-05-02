@@ -20,6 +20,9 @@ type EnvConfig struct {
 	DBLogURL      string `env:"DB_LOG_URL" required:"true"`
 	DBMaxOpenConn int    `env:"DB_MAX_OPEN_CONN" default:"4"`
 	DBMaxIdleConn int    `env:"DB_MAX_IDLE_CONN" default:"4"`
+
+	// App Setting
+	AppPort int `env:"APP_PORT" default:"8080"`
 }
 
 func ProcessEnv() *EnvConfig {
