@@ -3,7 +3,14 @@ set -e
 
 echo "Running pre-commit checks..."
 
-echo "Running linter..."
-golangci-lint run
+staged_go_files=$(git diff --cached --name-only --diff-filter=ACMR -- '*.go')
+
+if [ -z "$staged_go_files" ]; then
+    echo "No staged Go files. Skipping linter."
+    exit 0
+fi
+
+echo "Running linter on staged files..."
+echo "$staged_go_files" | tr '\n' '\0' | xargs -0 golangci-lint run
 
 echo "All checks passed."
