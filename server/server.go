@@ -3,8 +3,14 @@ package server
 import (
 	"fmt"
 	"log"
+	"log/slog"
+	"net/http"
+	"os"
+	"time"
 
+	"github.com/hayakawakaki/go-racp/internal/infra"
 	"github.com/hayakawakaki/go-racp/internal/infra/mysql"
+	"github.com/hayakawakaki/go-racp/internal/plugin"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 
@@ -25,5 +31,32 @@ func Start() {
 		}
 	}()
 
-	fmt.Println("Server is running...")
+	// Logger
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+
+	in := &infra.Infra{
+		MainDB: mainDB,
+		LogDB:  logsDB,
+		Logger: logger,
+	}
+
+	// Plugin Mounting
+	mux := http.NewServeMux()
+	plugin.MountAll(mux, in)
+
+	addr := fmt.Sprintf(":%d", cfg.Env.AppPort)
+	srv := &http.Server{
+		Addr:              addr,
+		Handler:           mux,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
+		MaxHeaderBytes:    1 << 16,
+	}
+
+	logger.Info("server starting", "addr", addr)
+	if err := srv.ListenAndServe(); err != nil {
+		log.Printf("http: %v", err)
+	}
 }
