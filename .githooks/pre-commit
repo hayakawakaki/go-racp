@@ -10,7 +10,9 @@ if [ -z "$staged_go_files" ]; then
     exit 0
 fi
 
-echo "Running linter on staged files..."
-echo "$staged_go_files" | tr '\n' '\0' | xargs -0 golangci-lint run
+packages=$(echo "$staged_go_files" | xargs -n1 dirname | sort -u | sed 's|^|./|')
+
+echo "Running linter on staged packages..."
+echo "$packages" | tr '\n' '\0' | xargs -0 golangci-lint run
 
 echo "All checks passed."
