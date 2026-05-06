@@ -1,0 +1,22 @@
+# Git
+.git
+.gitignore
+
+# Docker
+.dockerignore
+Dockerfile
+Dockerfile.*
+docker-compose*.yml
+
+# Env
+.env
+.env.*
+
+# Air
+tmp
+build-errors.log
+
+# Test
+*_test.go
+*.test
+coverage.*

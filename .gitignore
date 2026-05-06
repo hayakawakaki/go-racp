@@ -2,9 +2,14 @@
 .idea/
 .vscode/
 
+# Env
 .env
 .env.*
 !.env.example
 
 # Binary
 *.exe
+
+# Air
+tmp/
+build-errors.log
