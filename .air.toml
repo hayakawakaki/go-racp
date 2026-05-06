@@ -14,6 +14,8 @@ tmp_dir = "tmp"
   stop_on_error = true
   send_interrupt = true
   log = "build-errors.log"
+  poll = true
+  poll_interval = 3000
 
 [log]
   time = true

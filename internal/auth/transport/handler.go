@@ -25,7 +25,9 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 }
 
 func (h *Handler) showRegister(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "not implemented", http.StatusNotImplemented)
+	if err := registerPage(RegisterFormState{}).Render(r.Context(), w); err != nil {
+		h.logger.Error("render register", "err", err)
+	}
 }
 
 func (h *Handler) doRegister(w http.ResponseWriter, r *http.Request) {

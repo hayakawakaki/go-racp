@@ -1,0 +1,60 @@
+package transport
+
+type RegisterFormState struct {
+	Username string
+	Email    string
+	Error    string
+}
+
+templ registerPage(state RegisterFormState) {
+	@base("Register") {
+		<h1>Create account</h1>
+		@registerForm(state)
+	}
+}
+
+templ registerForm(state RegisterFormState) {
+	<form method="post" action="/register" id="register-form">
+		if state.Error != "" {
+			<p class="error">{ state.Error }</p>
+		}
+		<label>
+			Username
+			<input
+				type="text"
+				name="username"
+				value={ state.Username }
+				maxlength="23"
+				required
+				autofocus
+			/>
+		</label>
+		<label>
+			Email
+			<input
+				type="email"
+				name="email"
+				value={ state.Email }
+				maxlength="39"
+				required
+			/>
+		</label>
+		<label>
+			Password
+			<input
+				type="password"
+				name="password"
+				required
+			/>
+		</label>
+		<label>
+			Gender
+			<select name="gender" required>
+				<option value="M">Male</option>
+				<option value="F">Female</option>
+				<option value="S">Server</option>
+			</select>
+		</label>
+		<button type="submit">Register</button>
+	</form>
+}
