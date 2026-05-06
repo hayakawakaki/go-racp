@@ -23,7 +23,6 @@ CREATE TABLE IF NOT EXISTS `login` (
   KEY `name` (`userid`),
   UNIQUE KEY `web_auth_token_key` (`web_auth_token`)
 ) ENGINE=MyISAM AUTO_INCREMENT=2000000; 
-INSERT INTO `login` (`account_id`, `userid`, `user_pass`, `sex`, `email`) VALUES ('1', 's1', 'p1', 'S','athena@athena.com');
 
 CREATE TABLE IF NOT EXISTS `char` (
   `char_id` int(11) unsigned NOT NULL auto_increment,

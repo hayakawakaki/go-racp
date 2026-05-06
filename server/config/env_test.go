@@ -19,6 +19,7 @@ func TestProcessEnv(t *testing.T) {
 				"DB_LOG_URL":       "user:pass@tcp(10.0.0.1:3306)/log",
 				"DB_MAX_OPEN_CONN": "10",
 				"DB_MAX_IDLE_CONN": "5",
+				"APP_PORT":         "9090",
 			},
 			expected: EnvConfig{
 				Mode:          "production",
@@ -26,6 +27,7 @@ func TestProcessEnv(t *testing.T) {
 				DBLogURL:      "user:pass@tcp(10.0.0.1:3306)/log",
 				DBMaxOpenConn: 10,
 				DBMaxIdleConn: 5,
+				AppPort:       9090,
 			},
 		},
 		{
@@ -40,6 +42,7 @@ func TestProcessEnv(t *testing.T) {
 				DBLogURL:      "user:pass@tcp(127.0.0.1:3306)/log",
 				DBMaxOpenConn: 4,
 				DBMaxIdleConn: 4,
+				AppPort:       8080,
 			},
 		},
 	}
