@@ -42,6 +42,7 @@ func Start() {
 
 	// Plugin Mounting
 	mux := http.NewServeMux()
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 	plugin.MountAll(mux, in)
 
 	addr := fmt.Sprintf(":%d", cfg.Env.AppPort)

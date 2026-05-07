@@ -2,6 +2,12 @@ FROM golang:1.26-alpine AS builder
 
 RUN adduser -D -u 10001 app
 
+# Tailwind CSS standalone CLI (musl variant + C++ stdlib for Alpine)
+RUN apk add --no-cache libstdc++ libgcc \
+    && wget -O /usr/local/bin/tailwindcss \
+        https://github.com/tailwindlabs/tailwindcss/releases/download/v4.2.4/tailwindcss-linux-x64-musl \
+    && chmod +x /usr/local/bin/tailwindcss
+
 # Live reloading for Go
 RUN go install github.com/air-verse/air@latest
 

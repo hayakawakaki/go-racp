@@ -3,7 +3,10 @@ testdata_dir = "testdata"
 tmp_dir = "tmp"
 
 [build]
-  pre_cmd = ["go tool templ generate"]
+  pre_cmd = [
+    "go tool templ generate",
+    "tailwindcss -i ./static/css/tailwind.css -o ./static/css/app.css",
+  ]
   cmd = "go build -o ./tmp/racp.exe ./cmd"
   bin = "./tmp/racp.exe"
   include_ext = ["go", "templ"]
