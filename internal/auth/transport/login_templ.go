@@ -13,6 +13,8 @@ type LoginFormState struct {
 	Error    string
 }
 
+// loginPage creates a templ.Component that renders the sign-in page wrapper and the login form,
+// using the provided LoginFormState to prefill the username and to conditionally display an error message.
 func loginPage(state LoginFormState) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
@@ -68,6 +70,9 @@ func loginPage(state LoginFormState) templ.Component {
 	})
 }
 
+// loginForm renders the login form component that posts to /login.
+//
+// The form includes HTMX attributes (hx-post, hx-target, hx-swap), a username and password input, a submit button, and a registration link. If state.Error is non-empty an escaped error message block is rendered; state.Username is escaped into the username input's value.
 func loginForm(state LoginFormState) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context

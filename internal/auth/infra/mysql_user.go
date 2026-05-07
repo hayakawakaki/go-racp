@@ -13,6 +13,8 @@ type Repository struct {
 	Client *sql.DB
 }
 
+// NewRepository creates a Repository configured with the provided *sql.DB client.
+// The returned Repository will use the client for its database operations.
 func NewRepository(client *sql.DB) *Repository {
 	return &Repository{
 		Client: client,

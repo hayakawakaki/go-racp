@@ -12,6 +12,8 @@ type Service struct {
 	Repo domain.Repository
 }
 
+// NewService creates a Service configured with the provided repository.
+// The repository is used by the Service for persistence and authentication operations.
 func NewService(repo domain.Repository) *Service {
 	return &Service{
 		Repo: repo,

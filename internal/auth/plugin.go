@@ -10,10 +10,14 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/plugin"
 )
 
+// init registers the "auth" plugin with the global plugin registry, using mount as its mount function.
 func init() {
 	plugin.Register(plugin.Plugin{Name: "auth", Mount: mount})
 }
 
+// mount wires the auth module into the provided ServeMux using resources from in.
+// It constructs a user repository from in.MainDB, creates the authentication service
+// and HTTP handler (using in.Logger), and registers the handler's routes on mux.
 func mount(mux *http.ServeMux, in *platinfra.Infra) {
 	userRepo := infra.NewRepository(in.MainDB)
 	authSvc := app.NewService(userRepo)

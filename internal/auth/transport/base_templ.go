@@ -8,6 +8,9 @@ package transport
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
+// base creates a templ.Component that renders a complete HTML document using the provided title.
+// The generated component writes the document prologue, escapes and inserts `title` into the <title> tag,
+// includes stylesheet and script references, and renders any child component into the <main> element.
 func base(title string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context

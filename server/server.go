@@ -14,6 +14,9 @@ import (
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 
+// Start initializes configuration, database connections, structured logging, mounts HTTP routes (including static files and plugins), and starts the HTTP server.
+//
+// Start creates the application config, connects to the main and logs MySQL databases (which are closed when the function exits and any close errors are logged), constructs a structured logger and an infra object passed to plugins, registers handlers on an http.ServeMux (including serving "./static" at "/static/"), configures server timeouts and header limits, logs the startup address, and blocks while the server runs; if ListenAndServe returns an error it is logged.
 func Start() {
 	// Config Creation
 	cfg := config.NewConfig()

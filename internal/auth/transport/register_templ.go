@@ -15,6 +15,8 @@ type RegisterFormState struct {
 	Error    string
 }
 
+// registerPage renders the "Register" page layout containing a centered "Create account" heading and the registration form.
+// The returned component injects a container with the registerForm populated from the provided RegisterFormState into the site's base template named "Register".
 func registerPage(state RegisterFormState) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
@@ -70,6 +72,9 @@ func registerPage(state RegisterFormState) templ.Component {
 	})
 }
 
+// registerForm renders the registration HTML form using the provided RegisterFormState.
+// It includes fields for username, email, password, and gender, and configures the form to post to "/register" with HTMX attributes.
+// state.Username and state.Email populate their respective input values; state.Gender selects "M" or "F" when present; state.Error, if non-empty, is rendered as an escaped error message.
 func registerForm(state RegisterFormState) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context

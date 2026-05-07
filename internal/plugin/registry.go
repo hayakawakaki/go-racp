@@ -16,6 +16,11 @@ var (
 	mounted  bool
 )
 
+// Register registers the given Plugin so it will be mounted by MountAll.
+// It validates the plugin and appends it to the internal registry.
+// It panics if Register is called after MountAll, if the plugin Name is empty,
+// if the plugin Mount callback is nil, or if a plugin with the same Name
+// has already been registered.
 func Register(p Plugin) {
 	if mounted {
 		panic("plugin: Register called after MountAll: " + p.Name)
@@ -34,6 +39,10 @@ func Register(p Plugin) {
 	registry = append(registry, p)
 }
 
+// MountAll mounts all registered plugins onto mux using the provided infra.
+// It panics if called more than once. Plugins are invoked in registration order;
+// after each plugin is mounted a "plugin mounted" message with the plugin name
+// is logged via in.Logger.
 func MountAll(mux *http.ServeMux, in *infra.Infra) {
 	if mounted {
 		panic("plugin: MountAll called more than once")

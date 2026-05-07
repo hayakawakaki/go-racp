@@ -20,6 +20,7 @@ type Handler struct {
 	logger *slog.Logger
 }
 
+// NewHandler creates a Handler configured with the given service and logger for handling registration, login, and logout HTTP endpoints.
 func NewHandler(svc *app.Service, logger *slog.Logger) *Handler {
 	return &Handler{svc: svc, logger: logger}
 }
