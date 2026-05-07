@@ -2,6 +2,22 @@ FROM golang:1.26-alpine AS builder
 
 RUN adduser -D -u 10001 app
 
+# Tailwind CSS standalone CLI (musl variant + C++ stdlib for Alpine)
+ARG TW_VERSION=v4.2.4
+RUN apk add --no-cache libstdc++ libgcc \
+    && case "$(uname -m)" in \
+         x86_64)  TW_ARCH="x64-musl"   ;; \
+         aarch64) TW_ARCH="arm64-musl" ;; \
+         *) echo "Unsupported arch: $(uname -m)" && exit 1 ;; \
+       esac \
+    && cd /tmp \
+    && wget -q "https://github.com/tailwindlabs/tailwindcss/releases/download/${TW_VERSION}/tailwindcss-linux-${TW_ARCH}" \
+    && wget -q "https://github.com/tailwindlabs/tailwindcss/releases/download/${TW_VERSION}/sha256sums.txt" \
+    && grep "tailwindcss-linux-${TW_ARCH}\$" sha256sums.txt | sha256sum -c - \
+    && mv "tailwindcss-linux-${TW_ARCH}" /usr/local/bin/tailwindcss \
+    && chmod +x /usr/local/bin/tailwindcss \
+    && rm sha256sums.txt
+
 # Live reloading for Go
 RUN go install github.com/air-verse/air@latest
 

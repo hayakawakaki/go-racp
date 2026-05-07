@@ -13,3 +13,6 @@
 # Air
 tmp/
 build-errors.log
+
+# Generated css by tailwind
+static/css/app.css
