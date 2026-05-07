@@ -7,9 +7,11 @@ templ base(title string) {
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
 			<title>{ title } — go-racp</title>
+			<link rel="stylesheet" href="/static/css/app.css"/>
+			<script src="/static/vendor/htmx-2.0.9.min.js" defer></script>
 		</head>
-		<body>
-			<main>
+		<body class="min-h-screen bg-gray-100 text-gray-900 font-sans antialiased">
+			<main class="min-h-screen flex items-center justify-center p-4">
 				{ children... }
 			</main>
 		</body>
