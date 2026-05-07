@@ -129,3 +129,19 @@ func (s *Service) Delete(ctx context.Context, id int) error {
 	}
 	return nil
 }
+
+func (s *Service) Authenticate(ctx context.Context, cmd LoginCommand) (*GetDTO, error) {
+	user, err := s.Repo.Authenticate(ctx, cmd.Username, cmd.Password)
+	if errors.Is(err, domain.ErrInvalidCredentials) {
+		return nil, domain.ErrInvalidCredentials
+	}
+	if err != nil {
+		return nil, fmt.Errorf("app.Service.Authenticate: %w", err)
+	}
+
+	return &GetDTO{
+		ID:       user.ID,
+		Username: user.Username,
+		Email:    user.Email,
+	}, nil
+}

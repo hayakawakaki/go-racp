@@ -7,9 +7,13 @@ import (
 
 	"github.com/hayakawakaki/go-racp/internal/auth/app"
 	"github.com/hayakawakaki/go-racp/internal/auth/domain"
+	"github.com/hayakawakaki/go-racp/internal/httpx"
 )
 
-const maxRegisterFormBytes = 4 << 10
+const (
+	maxRegisterFormBytes = 4 << 10
+	maxLoginFormBytes    = 2 << 10
+)
 
 type Handler struct {
 	svc    *app.Service
@@ -67,7 +71,7 @@ func (h *Handler) doRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.Header.Get("HX-Request") == "true" {
+	if httpx.IsHTMX(r) {
 		w.Header().Set("HX-Redirect", "/login")
 		w.WriteHeader(http.StatusNoContent)
 		return
@@ -76,7 +80,7 @@ func (h *Handler) doRegister(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) renderRegister(w http.ResponseWriter, r *http.Request, state RegisterFormState) {
-	if r.Header.Get("HX-Request") == "true" {
+	if httpx.IsHTMX(r) {
 		if err := registerForm(state).Render(r.Context(), w); err != nil {
 			h.logger.Error("render register form", "err", err)
 		}
@@ -88,13 +92,61 @@ func (h *Handler) renderRegister(w http.ResponseWriter, r *http.Request, state R
 }
 
 func (h *Handler) showLogin(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "not implemented", http.StatusNotImplemented)
+	if err := loginPage(LoginFormState{}).Render(r.Context(), w); err != nil {
+		h.logger.Error("render login", "err", err)
+	}
 }
 
 func (h *Handler) doLogin(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "not implemented", http.StatusNotImplemented)
+	r.Body = http.MaxBytesReader(w, r.Body, maxLoginFormBytes)
+	if err := r.ParseForm(); err != nil {
+		h.renderLogin(w, r, LoginFormState{Error: "Invalid form data."})
+		return
+	}
+
+	cmd := app.LoginCommand{
+		Username: r.PostFormValue("username"),
+		Password: r.PostFormValue("password"),
+	}
+
+	_, err := h.svc.Authenticate(r.Context(), cmd)
+	if err != nil {
+		state := LoginFormState{Username: cmd.Username}
+		if errors.Is(err, domain.ErrInvalidCredentials) {
+			state.Error = "Invalid username or password."
+		} else {
+			h.logger.Error("login", "err", err)
+			state.Error = "Something went wrong. Please try again."
+		}
+		h.renderLogin(w, r, state)
+		return
+	}
+
+	if httpx.IsHTMX(r) {
+		w.Header().Set("HX-Redirect", "/")
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func (h *Handler) renderLogin(w http.ResponseWriter, r *http.Request, state LoginFormState) {
+	if httpx.IsHTMX(r) {
+		if err := loginForm(state).Render(r.Context(), w); err != nil {
+			h.logger.Error("render login form", "err", err)
+		}
+		return
+	}
+	if err := loginPage(state).Render(r.Context(), w); err != nil {
+		h.logger.Error("render login page", "err", err)
+	}
 }
 
 func (h *Handler) doLogout(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "not implemented", http.StatusNotImplemented)
+	if httpx.IsHTMX(r) {
+		w.Header().Set("HX-Redirect", "/login")
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }

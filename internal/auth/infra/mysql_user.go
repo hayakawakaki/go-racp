@@ -123,6 +123,22 @@ func (r *Repository) Update(ctx context.Context, user *domain.User) (*domain.Use
 	return user, nil
 }
 
+func (r *Repository) Authenticate(ctx context.Context, username, password string) (*domain.User, error) {
+	var u domain.User
+	err := r.Client.QueryRowContext(ctx,
+		"SELECT account_id, userid, email FROM login WHERE userid = ? AND user_pass = ?",
+		username, password,
+	).Scan(&u.ID, &u.Username, &u.Email)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, domain.ErrInvalidCredentials
+	}
+	if err != nil {
+		return nil, fmt.Errorf("infra.Repository.Authenticate: %w", err)
+	}
+	return &u, nil
+}
+
 func (r *Repository) Delete(ctx context.Context, id int) error {
 	res, err := r.Client.ExecContext(ctx,
 		"DELETE FROM login WHERE account_id = ?", id)

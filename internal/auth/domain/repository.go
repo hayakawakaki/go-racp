@@ -10,4 +10,5 @@ type Repository interface {
 	GetByEmail(ctx context.Context, email string) (*User, error)
 	Update(ctx context.Context, user *User) (*User, error)
 	Delete(ctx context.Context, id int) error
+	Authenticate(ctx context.Context, username, password string) (*User, error)
 }

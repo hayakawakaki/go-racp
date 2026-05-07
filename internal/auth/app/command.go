@@ -11,3 +11,8 @@ type UpdateCommand struct {
 	Password string
 	Email    string
 }
+
+type LoginCommand struct {
+	Username string
+	Password string
+}
