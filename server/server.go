@@ -1,3 +1,5 @@
+// Package server wires together the application's infrastructure, plugins, and
+// HTTP server lifecycle.
 package server
 
 import (
@@ -14,6 +16,13 @@ import (
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 
+// Start boots the application. It:
+//  1. Loads configuration via config.NewConfig.
+//  2. Opens the main and logging MySQL connections.
+//  3. Builds a structured slog logger writing to stderr.
+//  4. Calls plugin.MountAll to register all plugin routes onto a new ServeMux.
+//  5. Starts an http.Server with conservative read/write timeouts and blocks
+//     until the server exits, logging any error.
 func Start() {
 	// Config Creation
 	cfg := config.NewConfig()

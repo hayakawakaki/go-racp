@@ -1,7 +1,9 @@
+// Package main registers all plugins with the plugin registry via blank imports.
+// Each imported package's init function calls plugin.Register; server.Start
+// then calls plugin.MountAll to wire every registered plugin into the HTTP mux.
 package main
 
-// blank import will run the init() and register it with the plugin registry.
-// server.Start() later calls plugin.MountAll to wire them into the mux.
 import (
+	// Blank import triggers auth.init(), which registers the "auth" plugin.
 	_ "github.com/hayakawakaki/go-racp/internal/auth"
 )

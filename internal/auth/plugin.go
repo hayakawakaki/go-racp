@@ -1,3 +1,7 @@
+// Package auth is the top-level auth plugin package. Its init function
+// registers the "auth" plugin with the global plugin registry so that
+// server.Start (via plugin.MountAll) can wire the auth routes into the HTTP
+// mux without the server package importing auth directly.
 package auth
 
 import (
@@ -14,6 +18,8 @@ func init() {
 	plugin.Register(plugin.Plugin{Name: "auth", Mount: mount})
 }
 
+// mount wires the auth dependency graph (repository → service → handler) and
+// registers all auth HTTP routes on mux.
 func mount(mux *http.ServeMux, in *platinfra.Infra) {
 	userRepo := infra.NewRepository(in.MainDB)
 	authSvc := app.NewService(userRepo)
