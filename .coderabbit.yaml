@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# https://docs.coderabbit.ai/reference/yaml-template
+
+language: en-US
+early_access: false
+
+reviews:
+  collapse_walkthrough: true
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - master
+
+  path_filters:
+    - "!**/*_templ.go"
+    - "!static/vendor/**"
+    - "!static/css/app.css"
+
+  path_instructions:
+    - path: "**/*.go"
+      instructions: |
+        Review for idiomatic Go (Effective Go, Code Review Comments).
+        Focus areas: error handling and wrapping, context propagation,
+        sentinel errors, concurrency safety, SQL correctness, and resource
+        cleanup (defer Close, request body caps, etc.).
+
+    - path: "**/*.templ"
+      instructions: |
+        Review templ source files for:
+        - Accessibility: `<label>` association, `alt` text on images, semantic
+          headings, sensible `autocomplete` attributes on form fields.
+        - htmx attribute correctness: `hx-target` selectors that exist,
+          `hx-swap` strategies, `HX-Redirect` server cooperation.
+        - Tailwind classes are statically discoverable (no string concatenation
+          in `class={...}`); use `templ.KV` for conditional classes.
+        - State structs preserve user input on validation re-render
+          (avoid losing form values on error).
+
+  pre_merge_checks:
+    docstrings:
+      mode: warning
+      threshold: 30
+
+code_generation:
+  docstrings:
+    language: en-US
+    path_instructions:
+      - path: "**/*.go"
+        instructions: |
+          Document only behavior-bearing exports: services, repositories,
+          their non-trivial methods, sentinel errors, and helpers whose
+          name alone doesn't convey purpose.
+
+          Skip:
+          - Constructors named NewX (the type doc is sufficient).
+          - Trivial getters and DTO/struct field accessors.
+          - Methods whose name fully describes them (GetByID, Delete).
+          - Generated files (handled by path_filters).
+
+          Style:
+          - One short sentence preferred. Two only if needed for sentinel
+            errors, panic conditions, or non-obvious side effects.
+          - Lead with the identifier name (Go convention).
+          - Document WHY, not WHAT, never restate the function body in prose.
+          - Don't reference call sites or surrounding code.
