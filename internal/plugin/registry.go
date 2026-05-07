@@ -35,6 +35,9 @@ func Register(p Plugin) {
 }
 
 func MountAll(mux *http.ServeMux, in *infra.Infra) {
+	if mounted {
+		panic("plugin: MountAll called more than once")
+	}
 	mounted = true
 	for _, p := range registry {
 		p.Mount(mux, in)

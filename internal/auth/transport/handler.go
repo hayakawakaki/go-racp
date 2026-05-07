@@ -33,9 +33,7 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 }
 
 func (h *Handler) showRegister(w http.ResponseWriter, r *http.Request) {
-	if err := registerPage(RegisterFormState{}).Render(r.Context(), w); err != nil {
-		h.logger.Error("render register", "err", err)
-	}
+	httpx.RenderHTML(w, r, h.logger, registerPage(RegisterFormState{}))
 }
 
 func (h *Handler) doRegister(w http.ResponseWriter, r *http.Request) {
@@ -57,6 +55,7 @@ func (h *Handler) doRegister(w http.ResponseWriter, r *http.Request) {
 		state := RegisterFormState{
 			Username: cmd.Username,
 			Email:    cmd.Email,
+			Gender:   cmd.Gender,
 		}
 		switch {
 		case errors.Is(err, domain.ErrUsernameConflict):
@@ -81,20 +80,14 @@ func (h *Handler) doRegister(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) renderRegister(w http.ResponseWriter, r *http.Request, state RegisterFormState) {
 	if httpx.IsHTMX(r) {
-		if err := registerForm(state).Render(r.Context(), w); err != nil {
-			h.logger.Error("render register form", "err", err)
-		}
+		httpx.RenderHTML(w, r, h.logger, registerForm(state))
 		return
 	}
-	if err := registerPage(state).Render(r.Context(), w); err != nil {
-		h.logger.Error("render register page", "err", err)
-	}
+	httpx.RenderHTML(w, r, h.logger, registerPage(state))
 }
 
 func (h *Handler) showLogin(w http.ResponseWriter, r *http.Request) {
-	if err := loginPage(LoginFormState{}).Render(r.Context(), w); err != nil {
-		h.logger.Error("render login", "err", err)
-	}
+	httpx.RenderHTML(w, r, h.logger, loginPage(LoginFormState{}))
 }
 
 func (h *Handler) doLogin(w http.ResponseWriter, r *http.Request) {
@@ -132,14 +125,10 @@ func (h *Handler) doLogin(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) renderLogin(w http.ResponseWriter, r *http.Request, state LoginFormState) {
 	if httpx.IsHTMX(r) {
-		if err := loginForm(state).Render(r.Context(), w); err != nil {
-			h.logger.Error("render login form", "err", err)
-		}
+		httpx.RenderHTML(w, r, h.logger, loginForm(state))
 		return
 	}
-	if err := loginPage(state).Render(r.Context(), w); err != nil {
-		h.logger.Error("render login page", "err", err)
-	}
+	httpx.RenderHTML(w, r, h.logger, loginPage(state))
 }
 
 func (h *Handler) doLogout(w http.ResponseWriter, r *http.Request) {

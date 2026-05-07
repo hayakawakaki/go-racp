@@ -3,6 +3,7 @@ package transport
 type RegisterFormState struct {
 	Username string
 	Email    string
+	Gender   string
 	Error    string
 }
 
@@ -67,8 +68,8 @@ templ registerForm(state RegisterFormState) {
 				required
 				class="block w-full rounded border border-gray-300 px-3 py-2 bg-white text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
 			>
-				<option value="M">Male</option>
-				<option value="F">Female</option>
+				<option value="M" selected?={ state.Gender == "M" }>Male</option>
+				<option value="F" selected?={ state.Gender == "F" }>Female</option>
 			</select>
 		</label>
 		<button
