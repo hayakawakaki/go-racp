@@ -14,6 +14,9 @@ import (
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 
+// Start initializes application runtime (configuration, database connections, and structured logger),
+// mounts static assets and plugins onto an HTTP mux, creates an HTTP server with sensible timeouts and header limits,
+// and begins serving on the configured port. It defers closing the databases and logs any errors encountered during shutdown or from ListenAndServe.
 func Start() {
 	// Config Creation
 	cfg := config.NewConfig()
