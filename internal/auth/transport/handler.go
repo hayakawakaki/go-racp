@@ -14,6 +14,8 @@ import (
 const (
 	maxRegisterFormBytes = 4 << 10
 	maxLoginFormBytes    = 2 << 10
+
+	genericErrorMessage = "Something went wrong. Please try again."
 )
 
 type authService interface {
@@ -78,7 +80,7 @@ func (h *Handler) doRegister(w http.ResponseWriter, r *http.Request) {
 			state.Error = "Email already in use."
 		default:
 			h.logger.Error("register", "err", err)
-			state.Error = "Something went wrong. Please try again."
+			state.Error = genericErrorMessage
 		}
 		h.renderRegister(w, r, state)
 		return
@@ -123,7 +125,7 @@ func (h *Handler) doLogin(w http.ResponseWriter, r *http.Request) {
 			state.Error = "Invalid username or password."
 		} else {
 			h.logger.Error("login", "err", err)
-			state.Error = "Something went wrong. Please try again."
+			state.Error = genericErrorMessage
 		}
 		h.renderLogin(w, r, state)
 		return
@@ -134,7 +136,7 @@ func (h *Handler) doLogin(w http.ResponseWriter, r *http.Request) {
 		h.logger.Error("session create", "err", err)
 		h.renderLogin(w, r, LoginFormState{
 			Username: cmd.Username,
-			Error:    "Something went wrong. Please try again.",
+			Error:    genericErrorMessage,
 		})
 		return
 	}

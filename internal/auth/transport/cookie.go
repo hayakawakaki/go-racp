@@ -8,6 +8,7 @@ import (
 const sessionCookieName = "racp_session"
 
 func setSessionCookie(w http.ResponseWriter, token string, ttl time.Duration, secure bool) {
+	//nolint:gosec // G124: Secure is env-driven (true in production, false in development for HTTP localhost). Wired in plugin.go.
 	http.SetCookie(w, &http.Cookie{
 		Name:     sessionCookieName,
 		Value:    token,
@@ -20,6 +21,7 @@ func setSessionCookie(w http.ResponseWriter, token string, ttl time.Duration, se
 }
 
 func clearSessionCookie(w http.ResponseWriter, secure bool) {
+	//nolint:gosec // G124: Secure is env-driven (true in production, false in development for HTTP localhost). Wired in plugin.go.
 	http.SetCookie(w, &http.Cookie{
 		Name:     sessionCookieName,
 		Value:    "",
