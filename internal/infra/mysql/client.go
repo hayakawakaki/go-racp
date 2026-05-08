@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql" // registers the MySQL driver with database/sql
+	gomysql "github.com/go-sql-driver/mysql"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 
@@ -53,11 +53,25 @@ func attemptConnect(env *config.EnvConfig) (mainDB, logsDB *sql.DB, err error) {
 	return main, logs, nil
 }
 
-func open(url string, maxOpen, maxIdle int) (*sql.DB, error) {
-	db, err := sql.Open("mysql", url)
+func configure(url string) (*gomysql.Config, error) {
+	cfg, err := gomysql.ParseDSN(url)
 	if err != nil {
-		return nil, fmt.Errorf("sql.Open: %w", err)
+		return nil, fmt.Errorf("ParseDSN: %w", err)
 	}
+	cfg.ParseTime = true
+	return cfg, nil
+}
+
+func open(url string, maxOpen, maxIdle int) (*sql.DB, error) {
+	cfg, err := configure(url)
+	if err != nil {
+		return nil, err
+	}
+	connector, err := gomysql.NewConnector(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("NewConnector: %w", err)
+	}
+	db := sql.OpenDB(connector)
 	db.SetMaxOpenConns(maxOpen)
 	db.SetMaxIdleConns(maxIdle)
 	db.SetConnMaxLifetime(connMaxLifetime)

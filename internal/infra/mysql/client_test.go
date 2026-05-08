@@ -1,13 +1,54 @@
-//go:build integration
-
 package mysql
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/hayakawakaki/go-racp/server/config"
 )
+
+func TestConfigure_ForcesParseTime(t *testing.T) {
+	t.Parallel()
+
+	cfg, err := configure("user:pass@tcp(127.0.0.1:3306)/main")
+	if err != nil {
+		t.Fatalf("configure: %v", err)
+	}
+	if !cfg.ParseTime {
+		t.Errorf("ParseTime = false, want true")
+	}
+}
+
+func TestConfigure_PreservesOtherParams(t *testing.T) {
+	t.Parallel()
+
+	cfg, err := configure("user:pass@tcp(127.0.0.1:3306)/main?charset=utf8mb4&loc=Local")
+	if err != nil {
+		t.Fatalf("configure: %v", err)
+	}
+	if !cfg.ParseTime {
+		t.Errorf("ParseTime = false, want true")
+	}
+	got := cfg.FormatDSN()
+	for _, want := range []string{"charset=utf8mb4", "loc=Local"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("missing %q in DSN: %q", want, got)
+		}
+	}
+}
+
+func TestConfigure_MalformedReturnsError(t *testing.T) {
+	t.Parallel()
+
+	_, err := configure("not-a-dsn")
+	if err == nil {
+		t.Fatal("expected error for malformed DSN, got nil")
+	}
+	if !strings.Contains(err.Error(), "ParseDSN") {
+		t.Errorf("error missing ParseDSN prefix: %v", err)
+	}
+}
 
 func TestConnect(t *testing.T) {
 	env := envFromOS(t)
