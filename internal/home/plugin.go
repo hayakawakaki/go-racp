@@ -25,8 +25,8 @@ func mount(mux *http.ServeMux, in *platinfra.Infra) {
 	sessSvc := authapp.NewSessionService(sessRepo)
 
 	secure := in.Config.Env.Mode != "development"
-	authH := authtransport.NewHandler(userSvc, sessSvc, in.Logger, secure)
+	withSession := authtransport.WithSession(sessSvc, in.Logger, secure)
 
 	homeH := transport.NewHandler(userSvc, in.Logger)
-	homeH.RegisterRoutes(mux, authH.WithSession)
+	homeH.RegisterRoutes(mux, withSession)
 }
