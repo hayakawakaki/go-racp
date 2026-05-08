@@ -129,12 +129,15 @@ func TestRepository_Update(t *testing.T) {
 	ctx := context.Background()
 
 	suf := randomizeSuffix(t)
-	u, _ := repo.Create(ctx, &domain.User{
+	u, err := repo.Create(ctx, &domain.User{
 		Username: "racp_test_" + suf,
 		Email:    "old_" + suf + "@x",
 		Password: "old",
 		Gender:   "M",
 	})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
 	cleanupUser(t, repo, u.ID)
 
 	t.Run("happy", func(t *testing.T) {
@@ -169,11 +172,14 @@ func TestRepository_Delete(t *testing.T) {
 	ctx := context.Background()
 
 	suf := randomizeSuffix(t)
-	u, _ := repo.Create(ctx, &domain.User{
+	u, err := repo.Create(ctx, &domain.User{
 		Username: "racp_test_" + suf,
 		Email:    "racp_test_" + suf + "@x",
 		Password: "pw",
 	})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
 
 	if err := repo.Delete(ctx, u.ID); err != nil {
 		t.Fatalf("Delete: %v", err)
