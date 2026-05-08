@@ -3,10 +3,13 @@ package infra
 import (
 	"database/sql"
 	"log/slog"
+
+	"github.com/hayakawakaki/go-racp/server/config"
 )
 
 type Infra struct {
 	MainDB *sql.DB
 	LogDB  *sql.DB
 	Logger *slog.Logger
+	Config *config.Config
 }

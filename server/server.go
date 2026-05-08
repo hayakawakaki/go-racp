@@ -41,6 +41,7 @@ func Start() {
 		MainDB: mainDB,
 		LogDB:  logsDB,
 		Logger: logger,
+		Config: cfg,
 	}
 
 	// Plugin Mounting
