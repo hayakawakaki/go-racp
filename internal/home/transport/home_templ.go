@@ -45,12 +45,12 @@ func homePage(state HomeState) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"w-full max-w-md bg-white rounded-lg shadow-md p-8 text-center space-y-4\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"w-full max-w-md bg-white rounded-lg shadow-md p-8 text-center space-y-6\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if state.Username == "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<p class=\"text-lg text-gray-900\">Welcome, stranger.</p><p class=\"text-sm text-gray-600\">Please sign in to continue.</p><a href=\"/login\" class=\"inline-block w-full rounded bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 transition\">Login</a>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"space-y-1\"><p class=\"text-lg text-gray-900\">Welcome, stranger.</p><p class=\"text-sm text-gray-600\">Please sign in to continue.</p></div><a href=\"/login\" class=\"inline-block rounded bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2.5 transition\">Login</a>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -62,13 +62,13 @@ func homePage(state HomeState) templ.Component {
 				var templ_7745c5c3_Var3 string
 				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(state.Username)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/home/transport/home.templ`, Line: 20, Col: 62}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/home/transport/home.templ`, Line: 22, Col: 62}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, ".</p><form action=\"/logout\" method=\"post\"><button type=\"submit\" class=\"w-full rounded bg-gray-200 hover:bg-gray-300 text-gray-900 font-medium py-2 transition\">Logout</button></form>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, ".</p><form action=\"/logout\" method=\"post\" class=\"flex justify-center\"><button type=\"submit\" class=\"rounded bg-gray-200 hover:bg-gray-300 text-gray-900 font-medium px-6 py-2.5 transition\">Logout</button></form>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
