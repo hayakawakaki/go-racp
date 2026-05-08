@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/hayakawakaki/go-racp/internal/auth/domain"
+	"github.com/hayakawakaki/go-racp/internal/testutil"
 )
 
 func randomizeSuffix(t *testing.T) string {
@@ -27,7 +28,7 @@ func cleanupUser(t *testing.T, repo *Repository, id int) {
 }
 
 func TestRepository_CreateAndGet(t *testing.T) {
-	db := openDB(t)
+	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
 	repo := NewRepository(db)
 	ctx := context.Background()
 
@@ -67,7 +68,7 @@ func TestRepository_CreateAndGet(t *testing.T) {
 }
 
 func TestRepository_GetUnknown(t *testing.T) {
-	db := openDB(t)
+	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
 	repo := NewRepository(db)
 	ctx := context.Background()
 
@@ -81,7 +82,7 @@ func TestRepository_GetUnknown(t *testing.T) {
 }
 
 func TestRepository_Authenticate(t *testing.T) {
-	db := openDB(t)
+	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
 	repo := NewRepository(db)
 	ctx := context.Background()
 
@@ -124,7 +125,7 @@ func TestRepository_Authenticate(t *testing.T) {
 }
 
 func TestRepository_Update(t *testing.T) {
-	db := openDB(t)
+	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
 	repo := NewRepository(db)
 	ctx := context.Background()
 
@@ -167,7 +168,7 @@ func TestRepository_Update(t *testing.T) {
 }
 
 func TestRepository_Delete(t *testing.T) {
-	db := openDB(t)
+	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
 	repo := NewRepository(db)
 	ctx := context.Background()
 
@@ -176,6 +177,7 @@ func TestRepository_Delete(t *testing.T) {
 		Username: "racp_test_" + suf,
 		Email:    "racp_test_" + suf + "@x",
 		Password: "pw",
+		Gender:   "M",
 	})
 	if err != nil {
 		t.Fatalf("Create: %v", err)

@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/hayakawakaki/go-racp/internal/auth/domain"
+	"github.com/hayakawakaki/go-racp/internal/testutil"
 )
 
-// Compile-time interface check.
 var _ domain.SessionRepository = (*SessionRepository)(nil)
 
 func newSession(userID int, base time.Time, suffix byte) *domain.Session {
@@ -27,8 +27,8 @@ func newSession(userID int, base time.Time, suffix byte) *domain.Session {
 }
 
 func TestSessionRepository_CreateAndGet(t *testing.T) {
-	db := openDB(t)
-	truncateSessions(t, db)
+	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
+	testutil.TruncateMariaDB(t, db, "cp_sessions")
 	repo := NewSessionRepository(db)
 	ctx := context.Background()
 
@@ -57,8 +57,8 @@ func TestSessionRepository_CreateAndGet(t *testing.T) {
 }
 
 func TestSessionRepository_GetByTokenHash_NotFound(t *testing.T) {
-	db := openDB(t)
-	truncateSessions(t, db)
+	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
+	testutil.TruncateMariaDB(t, db, "cp_sessions")
 	repo := NewSessionRepository(db)
 
 	_, err := repo.GetByTokenHash(context.Background(), sha256.Sum256([]byte("nope")))
@@ -68,8 +68,8 @@ func TestSessionRepository_GetByTokenHash_NotFound(t *testing.T) {
 }
 
 func TestSessionRepository_Refresh_PreservesUserAndCreated(t *testing.T) {
-	db := openDB(t)
-	truncateSessions(t, db)
+	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
+	testutil.TruncateMariaDB(t, db, "cp_sessions")
 	repo := NewSessionRepository(db)
 	ctx := context.Background()
 
@@ -104,8 +104,8 @@ func TestSessionRepository_Refresh_PreservesUserAndCreated(t *testing.T) {
 }
 
 func TestSessionRepository_Refresh_NotFound(t *testing.T) {
-	db := openDB(t)
-	truncateSessions(t, db)
+	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
+	testutil.TruncateMariaDB(t, db, "cp_sessions")
 	repo := NewSessionRepository(db)
 
 	now := time.Now().UTC().Truncate(time.Second)
@@ -116,8 +116,8 @@ func TestSessionRepository_Refresh_NotFound(t *testing.T) {
 }
 
 func TestSessionRepository_Delete(t *testing.T) {
-	db := openDB(t)
-	truncateSessions(t, db)
+	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
+	testutil.TruncateMariaDB(t, db, "cp_sessions")
 	repo := NewSessionRepository(db)
 	ctx := context.Background()
 
