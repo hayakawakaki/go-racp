@@ -1,5 +1,6 @@
 package config
 
+// Config aggregates the application's environment-driven and YAML-driven settings.
 type Config struct {
 	Env *EnvConfig
 	App *AppConfig

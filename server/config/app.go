@@ -8,10 +8,12 @@ import (
 	"github.com/goccy/go-yaml"
 )
 
+// GeneralConfig holds UI/branding settings shared across every page.
 type GeneralConfig struct {
 	ServerName string `yaml:"ServerName"`
 }
 
+// AppConfig holds operator-tunable application settings loaded from config.yml.
 type AppConfig struct {
 	General    GeneralConfig `yaml:"GeneralConfig"`
 	SessionTTL time.Duration `yaml:"SessionTTL"`
@@ -25,6 +27,7 @@ func appConfigDefaults() *AppConfig {
 	}
 }
 
+// ProcessAppConfig loads config.yml from the project root, applying defaults for missing keys.
 func ProcessAppConfig() *AppConfig {
 	cfgPath, err := GetTargetFilePath("config.yml")
 	if err != nil {
