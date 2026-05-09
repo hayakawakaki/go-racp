@@ -19,6 +19,9 @@ type SessionService struct {
 }
 
 func NewSessionService(repo domain.SessionRepository, ttl time.Duration) *SessionService {
+	if ttl <= 0 {
+		panic("session ttl must be > 0")
+	}
 	return &SessionService{repo: repo, ttl: ttl, now: time.Now}
 }
 

@@ -8,8 +8,16 @@ import (
 )
 
 type AppConfig struct {
-	ServerName string        `yaml:"ServerName" default:"Go Control Panel"`
-	SessionTTL time.Duration `yaml:"SessionTTL" default:"24h"`
+	ServerName string        `yaml:"ServerName"`
+	SessionTTL time.Duration `yaml:"SessionTTL"`
+}
+
+// appConfigDefaults apply default config in case of missing config file
+func appConfigDefaults() *AppConfig {
+	return &AppConfig{
+		ServerName: "Go Control Panel",
+		SessionTTL: 24 * time.Hour,
+	}
 }
 
 func ProcessAppConfig() *AppConfig {
@@ -18,14 +26,18 @@ func ProcessAppConfig() *AppConfig {
 		panic("missing config.yml")
 	}
 
-	cfg := &AppConfig{}
+	cfg := appConfigDefaults()
 	//nolint:gosec // G304: cfgPath comes from GetTargetFilePath which walks the project tree from os.Getwd
 	data, err := os.ReadFile(cfgPath)
 	if err != nil {
 		panic(err)
 	}
-	if err := yaml.Unmarshal(data, cfg); err != nil {
-		panic(err)
+
+	// skip unmarshal on empty input
+	if len(data) > 0 {
+		if err := yaml.Unmarshal(data, cfg); err != nil {
+			panic(err)
+		}
 	}
 
 	return cfg
