@@ -13,6 +13,7 @@ RUN apk --no-cache add ca-certificates \
 WORKDIR /home/app
 
 COPY --from=builder /app/main .
+COPY config.yml ./
 
 USER app
 
