@@ -16,7 +16,7 @@ func init() {
 	plugin.Register(plugin.Plugin{Name: "home", Mount: mount})
 }
 
-// mount the home plugin.
+// mount registers the home HTTP routes on mux using the provided Infra by creating authentication repositories and services, configuring session middleware (secure when Env.Mode != "development"), and attaching the handler.
 func mount(mux *http.ServeMux, in *platinfra.Infra) {
 	userRepo := authinfra.NewRepository(in.MainDB)
 	sessRepo := authinfra.NewSessionRepository(in.MainDB)

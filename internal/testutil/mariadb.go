@@ -12,6 +12,8 @@ import (
 
 var validIdentifier = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
+// OpenMariaDB obtains a MariaDB DSN from envVar, opens and verifies a *sql.DB for use in tests, and registers cleanup to close it.
+// It skips the test if the environment variable is empty, enables time parsing on the connection, and fails the test on configuration or connectivity errors.
 func OpenMariaDB(t *testing.T, envVar string) *sql.DB {
 	t.Helper()
 	dsn := os.Getenv(envVar)
@@ -36,6 +38,8 @@ func OpenMariaDB(t *testing.T, envVar string) *sql.DB {
 	return db
 }
 
+// TruncateMariaDB truncates the named table in the provided MariaDB database for use in tests.
+// It validates the table identifier and fails the test if the name is invalid or if the TRUNCATE statement fails.
 func TruncateMariaDB(t *testing.T, db *sql.DB, table string) {
 	t.Helper()
 	if !validIdentifier.MatchString(table) {

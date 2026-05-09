@@ -80,6 +80,7 @@ func (s *SessionService) Destroy(ctx context.Context, rawToken string) error {
 	return nil
 }
 
+// decodeTokenToHash decodes rawToken using base64.RawURLEncoding, verifies the decoded bytes are exactly 32 bytes, and returns the SHA-256 hash of those bytes and true. If decoding fails or the length is not 32 it returns a zero hash and false.
 func decodeTokenToHash(rawToken string) ([32]byte, bool) {
 	raw, err := base64.RawURLEncoding.DecodeString(rawToken)
 	if err != nil || len(raw) != 32 {
