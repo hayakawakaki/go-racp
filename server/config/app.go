@@ -45,5 +45,9 @@ func ProcessAppConfig() *AppConfig {
 		}
 	}
 
+	if cfg.SessionTTL <= 0 {
+		panic(fmt.Errorf("SessionTTL must be > 0, got %v", cfg.SessionTTL))
+	}
+
 	return cfg
 }
