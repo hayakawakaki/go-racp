@@ -7,7 +7,7 @@ type HomeState struct {
 }
 
 templ homePage(layout httpx.Layout, state HomeState) {
-	@base(layout, "Home") {
+	@httpx.Base(layout, "Home") {
 		<div class="w-full max-w-md bg-white rounded-lg shadow-md p-8 text-center space-y-6">
 			if state.Username == "" {
 				<div class="space-y-1">

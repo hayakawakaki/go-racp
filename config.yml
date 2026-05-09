@@ -1,6 +1,6 @@
 # UI / branding (everything operators rebrand)
 GeneralConfig:
-  ServerName: "Go Control Panel"
+  ServerName: "GoCP"
 
 # Session Related Config
 SessionTTL: "24h"
