@@ -4,10 +4,13 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"regexp"
 	"testing"
 
 	gomysql "github.com/go-sql-driver/mysql"
 )
+
+var validIdentifier = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 func OpenMariaDB(t *testing.T, envVar string) *sql.DB {
 	t.Helper()
@@ -35,7 +38,10 @@ func OpenMariaDB(t *testing.T, envVar string) *sql.DB {
 
 func TruncateMariaDB(t *testing.T, db *sql.DB, table string) {
 	t.Helper()
-	if _, err := db.Exec(fmt.Sprintf("TRUNCATE TABLE %s", table)); err != nil {
+	if !validIdentifier.MatchString(table) {
+		t.Fatalf("invalid table identifier: %q", table)
+	}
+	if _, err := db.Exec(fmt.Sprintf("TRUNCATE TABLE `%s`", table)); err != nil {
 		t.Fatalf("TRUNCATE %s: %v", table, err)
 	}
 }
