@@ -36,7 +36,7 @@ func TestRepository_CreateAndGet(t *testing.T) {
 	u := &domain.User{
 		Username: "racp_test_" + suf,
 		Email:    "racp_test_" + suf + "@example.invalid",
-		Password: "pw",
+		Password: "Test1234!",
 		Gender:   "M",
 	}
 	created, err := repo.Create(ctx, u)
@@ -176,7 +176,7 @@ func TestRepository_Delete(t *testing.T) {
 	u, err := repo.Create(ctx, &domain.User{
 		Username: "racp_test_" + suf,
 		Email:    "racp_test_" + suf + "@x",
-		Password: "pw",
+		Password: "Test1234!",
 		Gender:   "M",
 	})
 	if err != nil {

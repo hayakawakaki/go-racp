@@ -75,15 +75,16 @@ func (h *Handler) showRegister(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) doRegister(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, maxRegisterFormBytes)
 	if err := r.ParseForm(); err != nil {
-		h.renderRegister(w, r, RegisterFormState{Error: "Invalid form data."})
+		h.renderRegister(w, r, RegisterFormState{FormError: "Invalid form data."})
 		return
 	}
 
 	cmd := app.CreateCommand{
-		Username: r.PostFormValue("username"),
-		Email:    r.PostFormValue("email"),
-		Password: r.PostFormValue("password"),
-		Gender:   r.PostFormValue("gender"),
+		Username:        r.PostFormValue("username"),
+		Email:           r.PostFormValue("email"),
+		Password:        r.PostFormValue("password"),
+		PasswordConfirm: r.PostFormValue("password_confirm"),
+		Gender:          r.PostFormValue("gender"),
 	}
 
 	_, err := h.svc.Create(r.Context(), cmd)
@@ -93,14 +94,12 @@ func (h *Handler) doRegister(w http.ResponseWriter, r *http.Request) {
 			Email:    cmd.Email,
 			Gender:   cmd.Gender,
 		}
-		switch {
-		case errors.Is(err, domain.ErrUsernameConflict):
-			state.Error = "Username already taken."
-		case errors.Is(err, domain.ErrEmailConflict):
-			state.Error = "Email already in use."
-		default:
+		var ve *domain.ValidationError
+		if errors.As(err, &ve) {
+			state.Errors = ve.Fields
+		} else {
 			h.logger.Error("register", "err", err)
-			state.Error = genericErrorMessage
+			state.FormError = genericErrorMessage
 		}
 		h.renderRegister(w, r, state)
 		return
