@@ -8,15 +8,19 @@ import (
 	"github.com/goccy/go-yaml"
 )
 
+type GeneralConfig struct {
+	ServerName string `yaml:"ServerName"`
+}
+
 type AppConfig struct {
-	ServerName string        `yaml:"ServerName"`
+	General    GeneralConfig `yaml:"GeneralConfig"`
 	SessionTTL time.Duration `yaml:"SessionTTL"`
 }
 
 // appConfigDefaults apply default config in case of missing config file
 func appConfigDefaults() *AppConfig {
 	return &AppConfig{
-		ServerName: "Go Control Panel",
+		General:    GeneralConfig{ServerName: "Go Control Panel"},
 		SessionTTL: 24 * time.Hour,
 	}
 }

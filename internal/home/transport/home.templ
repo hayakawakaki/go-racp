@@ -1,11 +1,13 @@
 package transport
 
+import "github.com/hayakawakaki/go-racp/internal/httpx"
+
 type HomeState struct {
 	Username string
 }
 
-templ homePage(state HomeState) {
-	@base("Home") {
+templ homePage(layout httpx.Layout, state HomeState) {
+	@base(layout, "Home") {
 		<div class="w-full max-w-md bg-white rounded-lg shadow-md p-8 text-center space-y-6">
 			if state.Username == "" {
 				<div class="space-y-1">
