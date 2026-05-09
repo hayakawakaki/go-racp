@@ -81,7 +81,11 @@ func TestDoRegister_Happy(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 	req := postForm("/register", map[string]string{
-		"username": "testuser", "email": "test@x", "password": "Test1234!", "gender": "F",
+		"username":         "testuser",
+		"email":            "test@x",
+		"password":         "Test1234!",
+		"password_confirm": "Test1234!",
+		"gender":           "F",
 	})
 	h.doRegister(rr, req)
 
@@ -98,7 +102,13 @@ func TestDoRegister_HTMX_Happy(t *testing.T) {
 	h := newTestHandler(&stubAuthService{}, &stubSessionService{})
 
 	rr := httptest.NewRecorder()
-	req := postForm("/register", map[string]string{"username": "testuser", "email": "test@x", "password": "Test1234!"})
+	req := postForm("/register", map[string]string{
+		"username":         "testuser",
+		"email":            "test@x",
+		"password":         "Test1234!",
+		"password_confirm": "Test1234!",
+		"gender":           "F",
+	})
 	req.Header.Set("HX-Request", "true")
 	h.doRegister(rr, req)
 

@@ -242,6 +242,30 @@ func TestService_Create(t *testing.T) {
 		}
 	})
 
+	t.Run("both conflicts aggregate", func(t *testing.T) {
+		t.Parallel()
+		repo := newFakeUserRepo()
+		_, _ = repo.Create(context.Background(), &domain.User{
+			Username: "testuser", Email: "other@example.com",
+		})
+		_, _ = repo.Create(context.Background(), &domain.User{
+			Username: "otheruser", Email: "test@example.com",
+		})
+		svc := NewService(repo)
+
+		_, err := svc.Create(context.Background(), validCmd)
+		var ve *domain.ValidationError
+		if !errors.As(err, &ve) {
+			t.Fatalf("expected ValidationError, got %v", err)
+		}
+		if ve.Fields["username"] == "" {
+			t.Errorf("missing username conflict in %+v", ve.Fields)
+		}
+		if ve.Fields["email"] == "" {
+			t.Errorf("missing email conflict in %+v", ve.Fields)
+		}
+	})
+
 	t.Run("GetByUsername repo error wraps", func(t *testing.T) {
 		t.Parallel()
 		repo := newFakeUserRepo()

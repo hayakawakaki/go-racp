@@ -92,12 +92,14 @@ func applyRegistrationPolicies(cmd CreateCommand, fe domain.FieldErrors) {
 }
 
 func (s *Service) checkRegistrationUniqueness(ctx context.Context, username, email string) error {
+	fe := domain.FieldErrors{}
+
 	existing, err := s.Repo.GetByUsername(ctx, username)
 	if err != nil && !errors.Is(err, domain.ErrUserNotFound) {
 		return fmt.Errorf("app.Service.Create: %w", err)
 	}
 	if existing != nil {
-		return &domain.ValidationError{Fields: domain.FieldErrors{"username": "username already taken"}}
+		fe.Add("username", "username already taken")
 	}
 
 	existing, err = s.Repo.GetByEmail(ctx, email)
@@ -105,7 +107,11 @@ func (s *Service) checkRegistrationUniqueness(ctx context.Context, username, ema
 		return fmt.Errorf("app.Service.Create: %w", err)
 	}
 	if existing != nil {
-		return &domain.ValidationError{Fields: domain.FieldErrors{"email": "email already in use"}}
+		fe.Add("email", "email already in use")
+	}
+
+	if fe.Has() {
+		return &domain.ValidationError{Fields: fe}
 	}
 	return nil
 }
