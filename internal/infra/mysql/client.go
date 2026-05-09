@@ -59,6 +59,7 @@ func configure(url string) (*gomysql.Config, error) {
 		return nil, fmt.Errorf("ParseDSN: %w", err)
 	}
 	cfg.ParseTime = true
+	cfg.ClientFoundRows = true
 	return cfg, nil
 }
 
