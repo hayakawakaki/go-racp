@@ -168,6 +168,9 @@ func TestDoRegister_GenericError(t *testing.T) {
 	})
 	h.doRegister(rr, req)
 
+	if rr.Code != http.StatusOK {
+		t.Errorf("status = %d, want 200", rr.Code)
+	}
 	if !strings.Contains(rr.Body.String(), "Something went wrong") {
 		t.Errorf("body missing generic error: %s", rr.Body.String())
 	}
