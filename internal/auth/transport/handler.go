@@ -5,10 +5,12 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/hayakawakaki/go-racp/internal/auth/app"
 	"github.com/hayakawakaki/go-racp/internal/auth/domain"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
+	"github.com/hayakawakaki/go-racp/server/config"
 )
 
 const (
@@ -27,17 +29,35 @@ type sessionService interface {
 	Create(ctx context.Context, userID int) (string, *domain.Session, error)
 	Validate(ctx context.Context, rawToken string) (*domain.Session, error)
 	Destroy(ctx context.Context, rawToken string) error
+	TTL() time.Duration
+}
+
+type HandlerConfig struct {
+	Logger  *slog.Logger
+	General config.GeneralConfig
+	Secure  bool
 }
 
 type Handler struct {
 	svc     authService
 	sessSvc sessionService
 	logger  *slog.Logger
+	general config.GeneralConfig
 	secure  bool
 }
 
-func NewHandler(svc authService, sessSvc sessionService, logger *slog.Logger, secure bool) *Handler {
-	return &Handler{svc: svc, sessSvc: sessSvc, logger: logger, secure: secure}
+func NewHandler(svc authService, sessSvc sessionService, cfg HandlerConfig) *Handler {
+	return &Handler{
+		svc:     svc,
+		sessSvc: sessSvc,
+		logger:  cfg.Logger,
+		general: cfg.General,
+		secure:  cfg.Secure,
+	}
+}
+
+func (h *Handler) layout() httpx.Layout {
+	return httpx.Layout{GeneralConfig: h.general}
 }
 
 func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
@@ -49,7 +69,7 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 }
 
 func (h *Handler) showRegister(w http.ResponseWriter, r *http.Request) {
-	httpx.RenderHTML(w, r, h.logger, registerPage(RegisterFormState{}))
+	httpx.RenderHTML(w, r, h.logger, registerPage(h.layout(), RegisterFormState{}))
 }
 
 func (h *Handler) doRegister(w http.ResponseWriter, r *http.Request) {
@@ -99,11 +119,11 @@ func (h *Handler) renderRegister(w http.ResponseWriter, r *http.Request, state R
 		httpx.RenderHTML(w, r, h.logger, registerForm(state))
 		return
 	}
-	httpx.RenderHTML(w, r, h.logger, registerPage(state))
+	httpx.RenderHTML(w, r, h.logger, registerPage(h.layout(), state))
 }
 
 func (h *Handler) showLogin(w http.ResponseWriter, r *http.Request) {
-	httpx.RenderHTML(w, r, h.logger, loginPage(LoginFormState{}))
+	httpx.RenderHTML(w, r, h.logger, loginPage(h.layout(), LoginFormState{}))
 }
 
 func (h *Handler) doLogin(w http.ResponseWriter, r *http.Request) {
@@ -140,7 +160,7 @@ func (h *Handler) doLogin(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	setSessionCookie(w, token, app.SessionTTL, h.secure)
+	setSessionCookie(w, token, h.sessSvc.TTL(), h.secure)
 
 	if httpx.IsHTMX(r) {
 		w.Header().Set("HX-Redirect", "/")
@@ -155,7 +175,7 @@ func (h *Handler) renderLogin(w http.ResponseWriter, r *http.Request, state Logi
 		httpx.RenderHTML(w, r, h.logger, loginForm(state))
 		return
 	}
-	httpx.RenderHTML(w, r, h.logger, loginPage(state))
+	httpx.RenderHTML(w, r, h.logger, loginPage(h.layout(), state))
 }
 
 func (h *Handler) doLogout(w http.ResponseWriter, r *http.Request) {

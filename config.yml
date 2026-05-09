@@ -1,0 +1,6 @@
+# UI / branding (everything operators rebrand)
+GeneralConfig:
+  ServerName: "Go Control Panel"
+
+# Session Related Config
+SessionTTL: "24h"

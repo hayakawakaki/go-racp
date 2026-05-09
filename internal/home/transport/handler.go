@@ -8,19 +8,34 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/auth/app"
 	authtransport "github.com/hayakawakaki/go-racp/internal/auth/transport"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
+	"github.com/hayakawakaki/go-racp/server/config"
 )
 
 type userService interface {
 	GetByID(ctx context.Context, id int) (*app.GetDTO, error)
 }
 
+type HandlerConfig struct {
+	Logger  *slog.Logger
+	General config.GeneralConfig
+}
+
 type Handler struct {
 	userSvc userService
 	logger  *slog.Logger
+	general config.GeneralConfig
 }
 
-func NewHandler(userSvc userService, logger *slog.Logger) *Handler {
-	return &Handler{userSvc: userSvc, logger: logger}
+func NewHandler(userSvc userService, cfg HandlerConfig) *Handler {
+	return &Handler{
+		userSvc: userSvc,
+		logger:  cfg.Logger,
+		general: cfg.General,
+	}
+}
+
+func (h *Handler) layout() httpx.Layout {
+	return httpx.Layout{GeneralConfig: h.general}
 }
 
 func (h *Handler) RegisterRoutes(mux *http.ServeMux, wrap func(http.HandlerFunc) http.HandlerFunc) {
@@ -37,5 +52,5 @@ func (h *Handler) show(w http.ResponseWriter, r *http.Request) {
 			state.Username = user.Username
 		}
 	}
-	httpx.RenderHTML(w, r, h.logger, homePage(state))
+	httpx.RenderHTML(w, r, h.logger, homePage(h.layout(), state))
 }

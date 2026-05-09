@@ -12,16 +12,20 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/auth/domain"
 )
 
-const SessionTTL = 24 * time.Hour
-
 type SessionService struct {
 	repo domain.SessionRepository
 	now  func() time.Time
+	ttl  time.Duration
 }
 
-func NewSessionService(repo domain.SessionRepository) *SessionService {
-	return &SessionService{repo: repo, now: time.Now}
+func NewSessionService(repo domain.SessionRepository, ttl time.Duration) *SessionService {
+	if ttl <= 0 {
+		panic("session ttl must be > 0")
+	}
+	return &SessionService{repo: repo, ttl: ttl, now: time.Now}
 }
+
+func (s *SessionService) TTL() time.Duration { return s.ttl }
 
 func (s *SessionService) Create(ctx context.Context, userID int) (string, *domain.Session, error) {
 	var raw [32]byte
@@ -35,7 +39,7 @@ func (s *SessionService) Create(ctx context.Context, userID int) (string, *domai
 		UserID:     userID,
 		CreatedAt:  now,
 		LastSeenAt: now,
-		ExpiresAt:  now.Add(SessionTTL),
+		ExpiresAt:  now.Add(s.ttl),
 	}
 	if err := s.repo.Create(ctx, sess); err != nil {
 		return "", nil, fmt.Errorf("app.SessionService.Create: %w", err)
@@ -60,7 +64,7 @@ func (s *SessionService) Validate(ctx context.Context, rawToken string) (*domain
 		_ = s.repo.Delete(ctx, hash)
 		return nil, domain.ErrSessionExpired
 	}
-	newExp := now.Add(SessionTTL)
+	newExp := now.Add(s.ttl)
 	if err := s.repo.Refresh(ctx, hash, now, newExp); err != nil {
 		return nil, fmt.Errorf("app.SessionService.Validate: %w", err)
 	}

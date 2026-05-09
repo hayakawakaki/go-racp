@@ -80,10 +80,12 @@ func (f *fakeSessionRepo) Delete(_ context.Context, h [32]byte) error {
 	return nil
 }
 
+const testSessionTTL = 24 * time.Hour
+
 func newSvc(t *testing.T, c *testutil.Clock) (*SessionService, *fakeSessionRepo) {
 	t.Helper()
 	repo := newFakeSessionRepo()
-	svc := NewSessionService(repo)
+	svc := NewSessionService(repo, testSessionTTL)
 	svc.now = c.Now
 	return svc, repo
 }
@@ -100,8 +102,8 @@ func TestSessionService_Create_RoundTrip(t *testing.T) {
 	if sess.UserID != 42 {
 		t.Errorf("UserID = %d, want 42", sess.UserID)
 	}
-	if !sess.ExpiresAt.Equal(c.Now().Add(SessionTTL)) {
-		t.Errorf("ExpiresAt = %v, want %v", sess.ExpiresAt, c.Now().Add(SessionTTL))
+	if !sess.ExpiresAt.Equal(c.Now().Add(testSessionTTL)) {
+		t.Errorf("ExpiresAt = %v, want %v", sess.ExpiresAt, c.Now().Add(testSessionTTL))
 	}
 
 	raw, err := base64.RawURLEncoding.DecodeString(token)
@@ -167,7 +169,7 @@ func TestSessionService_Validate_SlidesExpiry(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Validate: %v", err)
 			}
-			wantExp := c.Now().Add(SessionTTL)
+			wantExp := c.Now().Add(testSessionTTL)
 			if !sess.ExpiresAt.Equal(wantExp) {
 				t.Errorf("ExpiresAt = %v, want %v", sess.ExpiresAt, wantExp)
 			}
@@ -187,7 +189,7 @@ func TestSessionService_Validate_Expired(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	c.Advance(SessionTTL + time.Nanosecond)
+	c.Advance(testSessionTTL + time.Nanosecond)
 
 	if _, err := svc.Validate(context.Background(), token); !errors.Is(err, domain.ErrSessionExpired) {
 		t.Errorf("Validate got %v, want ErrSessionExpired", err)
@@ -254,7 +256,7 @@ func TestSessionService_Validate_WrapsRepoError(t *testing.T) {
 	c := testutil.NewClock(time.Now())
 	repo := newFakeSessionRepo()
 	repo.getByTokenHashHook = func([32]byte) (*domain.Session, error) { return nil, errors.New("boom") }
-	svc := NewSessionService(repo)
+	svc := NewSessionService(repo, testSessionTTL)
 	svc.now = c.Now
 
 	token := base64.RawURLEncoding.EncodeToString(make([]byte, 32))

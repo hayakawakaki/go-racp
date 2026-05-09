@@ -22,10 +22,12 @@ func mount(mux *http.ServeMux, in *platinfra.Infra) {
 	sessRepo := infra.NewSessionRepository(in.MainDB)
 
 	authSvc := app.NewService(userRepo)
-	sessSvc := app.NewSessionService(sessRepo)
+	sessSvc := app.NewSessionService(sessRepo, in.Config.App.SessionTTL)
 
-	secure := in.Config.Env.Mode != "development"
-
-	h := transport.NewHandler(authSvc, sessSvc, in.Logger, secure)
+	h := transport.NewHandler(authSvc, sessSvc, transport.HandlerConfig{
+		Logger:  in.Logger,
+		Secure:  in.Config.Env.Mode != "development",
+		General: in.Config.App.General,
+	})
 	h.RegisterRoutes(mux)
 }

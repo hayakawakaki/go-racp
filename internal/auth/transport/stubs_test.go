@@ -2,10 +2,13 @@ package transport
 
 import (
 	"context"
+	"time"
 
 	"github.com/hayakawakaki/go-racp/internal/auth/app"
 	"github.com/hayakawakaki/go-racp/internal/auth/domain"
 )
+
+const stubSessionTTL = 24 * time.Hour
 
 type stubAuthService struct {
 	createFn func(context.Context, app.CreateCommand) (*app.GetDTO, error)
@@ -56,3 +59,5 @@ func (s *stubSessionService) Destroy(ctx context.Context, rawToken string) error
 	}
 	return nil
 }
+
+func (s *stubSessionService) TTL() time.Duration { return stubSessionTTL }

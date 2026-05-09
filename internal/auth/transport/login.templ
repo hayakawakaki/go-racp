@@ -1,12 +1,14 @@
 package transport
 
+import "github.com/hayakawakaki/go-racp/internal/httpx"
+
 type LoginFormState struct {
 	Username string
 	Error    string
 }
 
-templ loginPage(state LoginFormState) {
-	@base("Sign in") {
+templ loginPage(layout httpx.Layout, state LoginFormState) {
+	@base(layout, "Sign in") {
 		<div class="w-full max-w-md bg-white rounded-lg shadow-md p-8">
 			<h1 class="text-2xl font-semibold mb-6 text-center text-gray-900">Sign in</h1>
 			@loginForm(state)

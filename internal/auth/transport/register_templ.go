@@ -8,6 +8,8 @@ package transport
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
+import "github.com/hayakawakaki/go-racp/internal/httpx"
+
 type RegisterFormState struct {
 	Username string
 	Email    string
@@ -15,7 +17,7 @@ type RegisterFormState struct {
 	Error    string
 }
 
-func registerPage(state RegisterFormState) templ.Component {
+func registerPage(layout httpx.Layout, state RegisterFormState) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -62,7 +64,7 @@ func registerPage(state RegisterFormState) templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = base("Register").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = base(layout, "Register").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -103,7 +105,7 @@ func registerForm(state RegisterFormState) templ.Component {
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(state.Error)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/auth/transport/register.templ`, Line: 30, Col: 98}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/auth/transport/register.templ`, Line: 32, Col: 98}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {
@@ -121,7 +123,7 @@ func registerForm(state RegisterFormState) templ.Component {
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(state.Username)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/auth/transport/register.templ`, Line: 37, Col: 26}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/auth/transport/register.templ`, Line: 39, Col: 26}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
@@ -134,7 +136,7 @@ func registerForm(state RegisterFormState) templ.Component {
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(state.Email)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/auth/transport/register.templ`, Line: 49, Col: 23}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/auth/transport/register.templ`, Line: 51, Col: 23}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
