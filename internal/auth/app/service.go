@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/hayakawakaki/go-racp/internal/auth/domain"
 )
 
 type Service struct {
-	Repo domain.Repository
+	Repo     domain.Repository
+	createMu sync.Mutex
 }
 
 func NewService(repo domain.Repository) *Service {
@@ -23,6 +25,9 @@ func (s *Service) Create(ctx context.Context, cmd CreateCommand) (*GetDTO, error
 	if err != nil {
 		return nil, err
 	}
+
+	s.createMu.Lock()
+	defer s.createMu.Unlock()
 
 	err = s.checkRegistrationUniqueness(ctx, cmd.Username, normalizedEmail)
 	if err != nil {

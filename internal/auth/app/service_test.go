@@ -266,6 +266,45 @@ func TestService_Create(t *testing.T) {
 		}
 	})
 
+	t.Run("concurrent Create with same username serializes", func(t *testing.T) {
+		t.Parallel()
+		repo := newFakeUserRepo()
+		svc := NewService(repo)
+
+		const N = 8
+		var wg sync.WaitGroup
+		results := make([]error, N)
+		wg.Add(N)
+		for i := range N {
+			go func(idx int) {
+				defer wg.Done()
+				_, err := svc.Create(context.Background(), validCmd)
+				results[idx] = err
+			}(i)
+		}
+		wg.Wait()
+
+		successes, conflicts := 0, 0
+		for _, err := range results {
+			if err == nil {
+				successes++
+				continue
+			}
+			var ve *domain.ValidationError
+			if errors.As(err, &ve) && ve.Fields["username"] != "" {
+				conflicts++
+				continue
+			}
+			t.Errorf("unexpected error: %v", err)
+		}
+		if successes != 1 {
+			t.Errorf("successes = %d, want 1", successes)
+		}
+		if conflicts != N-1 {
+			t.Errorf("conflicts = %d, want %d", conflicts, N-1)
+		}
+	})
+
 	t.Run("GetByUsername repo error wraps", func(t *testing.T) {
 		t.Parallel()
 		repo := newFakeUserRepo()
