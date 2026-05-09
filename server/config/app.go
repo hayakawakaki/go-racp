@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"time"
 
@@ -23,7 +24,7 @@ func appConfigDefaults() *AppConfig {
 func ProcessAppConfig() *AppConfig {
 	cfgPath, err := GetTargetFilePath("config.yml")
 	if err != nil {
-		panic("missing config.yml")
+		panic(fmt.Errorf("missing config.yml: %w", err))
 	}
 
 	cfg := appConfigDefaults()
