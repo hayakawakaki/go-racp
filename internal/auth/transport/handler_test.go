@@ -184,8 +184,8 @@ func TestDoLogin_Happy_SetsCookie(t *testing.T) {
 	if cookie.SameSite != http.SameSiteLaxMode {
 		t.Errorf("SameSite = %v, want Lax", cookie.SameSite)
 	}
-	if cookie.MaxAge != int(app.SessionTTL.Seconds()) {
-		t.Errorf("MaxAge = %d, want %d", cookie.MaxAge, int(app.SessionTTL.Seconds()))
+	if cookie.MaxAge != int(stubSessionTTL.Seconds()) {
+		t.Errorf("MaxAge = %d, want %d", cookie.MaxAge, int(stubSessionTTL.Seconds()))
 	}
 }
 

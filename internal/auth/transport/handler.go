@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/hayakawakaki/go-racp/internal/auth/app"
 	"github.com/hayakawakaki/go-racp/internal/auth/domain"
@@ -27,6 +28,7 @@ type sessionService interface {
 	Create(ctx context.Context, userID int) (string, *domain.Session, error)
 	Validate(ctx context.Context, rawToken string) (*domain.Session, error)
 	Destroy(ctx context.Context, rawToken string) error
+	TTL() time.Duration
 }
 
 type Handler struct {
@@ -140,7 +142,7 @@ func (h *Handler) doLogin(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	setSessionCookie(w, token, app.SessionTTL, h.secure)
+	setSessionCookie(w, token, h.sessSvc.TTL(), h.secure)
 
 	if httpx.IsHTMX(r) {
 		w.Header().Set("HX-Redirect", "/")

@@ -1,11 +1,9 @@
 package config
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"reflect"
 	"strconv"
 
@@ -28,7 +26,7 @@ type EnvConfig struct {
 func ProcessEnv() *EnvConfig {
 	// Try to find and load the env file
 	// Don't catch error for docker declared env variables
-	if envPath, err := getEnvFilePath(); err == nil {
+	if envPath, err := GetTargetFilePath(".env"); err == nil {
 		fmt.Println("Loading env file from ", envPath)
 		_ = godotenv.Load(envPath)
 	}
@@ -77,30 +75,4 @@ func setField(fieldVal reflect.Value, kind reflect.Kind, envTag, value string) e
 		return fmt.Errorf("unsupported field type %s for %s", kind, envTag)
 	}
 	return nil
-}
-
-func getEnvFilePath() (string, error) {
-	dir, _ := os.Getwd()
-
-	for {
-		// Check for .env in the current directory
-		envPath := filepath.Join(dir, ".env")
-		if info, err := os.Stat(envPath); err == nil && !info.IsDir() {
-			return envPath, nil
-		}
-
-		// Make sure we don't crawl outside the project if used in a mono-repo
-		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
-			break
-		}
-
-		// Move to the parent directory
-		parentDir := filepath.Dir(dir)
-		if parentDir == dir {
-			break
-		}
-		dir = parentDir
-	}
-
-	return "", errors.New(".env file was not found")
 }

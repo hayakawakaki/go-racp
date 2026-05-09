@@ -22,7 +22,7 @@ func mount(mux *http.ServeMux, in *platinfra.Infra) {
 	sessRepo := infra.NewSessionRepository(in.MainDB)
 
 	authSvc := app.NewService(userRepo)
-	sessSvc := app.NewSessionService(sessRepo)
+	sessSvc := app.NewSessionService(sessRepo, in.Config.App.SessionTTL)
 
 	secure := in.Config.Env.Mode != "development"
 
