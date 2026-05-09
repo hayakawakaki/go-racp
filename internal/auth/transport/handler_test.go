@@ -81,7 +81,7 @@ func TestDoRegister_Happy(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 	req := postForm("/register", map[string]string{
-		"username": "alice", "email": "a@x", "password": "pw", "gender": "F",
+		"username": "testuser", "email": "test@x", "password": "Test1234!", "gender": "F",
 	})
 	h.doRegister(rr, req)
 
@@ -98,7 +98,7 @@ func TestDoRegister_HTMX_Happy(t *testing.T) {
 	h := newTestHandler(&stubAuthService{}, &stubSessionService{})
 
 	rr := httptest.NewRecorder()
-	req := postForm("/register", map[string]string{"username": "alice", "email": "a@x", "password": "pw"})
+	req := postForm("/register", map[string]string{"username": "testuser", "email": "test@x", "password": "Test1234!"})
 	req.Header.Set("HX-Request", "true")
 	h.doRegister(rr, req)
 
@@ -110,35 +110,56 @@ func TestDoRegister_HTMX_Happy(t *testing.T) {
 	}
 }
 
-func TestDoRegister_Errors(t *testing.T) {
+func TestDoRegister_FieldValidationErrors(t *testing.T) {
 	t.Parallel()
-
-	cases := []struct {
-		name       string
-		err        error
-		wantInBody string
-	}{
-		{name: "username conflict", err: domain.ErrUsernameConflict, wantInBody: "Username already taken"},
-		{name: "email conflict", err: domain.ErrEmailConflict, wantInBody: "Email already in use"},
-		{name: "generic", err: errors.New("db down"), wantInBody: "Something went wrong"},
+	auth := &stubAuthService{
+		createFn: func(context.Context, app.CreateCommand) (*app.GetDTO, error) {
+			return nil, &domain.ValidationError{Fields: domain.FieldErrors{
+				"username":         "username must be at least 6 characters",
+				"password_confirm": "passwords do not match",
+			}}
+		},
 	}
+	h := newTestHandler(auth, &stubSessionService{})
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			auth := &stubAuthService{
-				createFn: func(context.Context, app.CreateCommand) (*app.GetDTO, error) { return nil, tc.err },
-			}
-			h := newTestHandler(auth, &stubSessionService{})
+	rr := httptest.NewRecorder()
+	req := postForm("/register", map[string]string{
+		"username": "abc", "email": "x@x", "password": "Test1234!", "password_confirm": "Wrong1234!",
+	})
+	h.doRegister(rr, req)
 
-			rr := httptest.NewRecorder()
-			req := postForm("/register", map[string]string{"username": "x", "email": "x@x", "password": "p"})
-			h.doRegister(rr, req)
+	body := rr.Body.String()
+	if !strings.Contains(body, "username must be at least 6 characters") {
+		t.Errorf("body missing username error: %s", body)
+	}
+	if !strings.Contains(body, "passwords do not match") {
+		t.Errorf("body missing password_confirm error: %s", body)
+	}
+	if !strings.Contains(body, `value="abc"`) {
+		t.Errorf("username should repopulate")
+	}
+	if strings.Contains(body, `value="Test1234!"`) {
+		t.Errorf("password should not repopulate")
+	}
+}
 
-			if !strings.Contains(rr.Body.String(), tc.wantInBody) {
-				t.Errorf("body missing %q. got: %s", tc.wantInBody, rr.Body.String())
-			}
-		})
+func TestDoRegister_GenericError(t *testing.T) {
+	t.Parallel()
+	auth := &stubAuthService{
+		createFn: func(context.Context, app.CreateCommand) (*app.GetDTO, error) {
+			return nil, errors.New("db down")
+		},
+	}
+	h := newTestHandler(auth, &stubSessionService{})
+
+	rr := httptest.NewRecorder()
+	req := postForm("/register", map[string]string{
+		"username": "testuser", "email": "test@x", "password": "Test1234!", "password_confirm": "Test1234!",
+	})
+	h.doRegister(rr, req)
+
+	if !strings.Contains(rr.Body.String(), "Something went wrong") {
+		t.Errorf("body missing generic error: %s", rr.Body.String())
 	}
 }
 
@@ -148,7 +169,7 @@ func TestDoLogin_Happy_SetsCookie(t *testing.T) {
 	t.Parallel()
 	auth := &stubAuthService{
 		authNFn: func(context.Context, app.LoginCommand) (*app.GetDTO, error) {
-			return &app.GetDTO{ID: 99, Username: "alice"}, nil
+			return &app.GetDTO{ID: 99, Username: "testuser"}, nil
 		},
 	}
 	sess := &stubSessionService{
@@ -159,7 +180,7 @@ func TestDoLogin_Happy_SetsCookie(t *testing.T) {
 	h := newTestHandler(auth, sess)
 
 	rr := httptest.NewRecorder()
-	req := postForm("/login", map[string]string{"username": "alice", "password": "pw"})
+	req := postForm("/login", map[string]string{"username": "testuser", "password": "Test1234!"})
 	h.doLogin(rr, req)
 
 	if rr.Code != http.StatusSeeOther {

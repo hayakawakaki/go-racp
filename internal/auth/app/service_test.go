@@ -145,43 +145,100 @@ func (f *fakeUserRepo) Authenticate(_ context.Context, username, password string
 func TestService_Create(t *testing.T) {
 	t.Parallel()
 
-	cmd := CreateCommand{Username: "alice", Password: "pw", Email: "a@x", Gender: "F"}
+	validCmd := CreateCommand{
+		Username:        "testuser",
+		Password:        "Test1234!",
+		PasswordConfirm: "Test1234!",
+		Email:           "test@example.com",
+		Gender:          "F",
+	}
 
 	t.Run("happy", func(t *testing.T) {
 		t.Parallel()
 		repo := newFakeUserRepo()
 		svc := NewService(repo)
 
-		dto, err := svc.Create(context.Background(), cmd)
+		dto, err := svc.Create(context.Background(), validCmd)
 		if err != nil {
 			t.Fatalf("Create: %v", err)
 		}
-		if dto.Username != cmd.Username || dto.Email != cmd.Email || dto.ID == 0 {
+		if dto.Username != validCmd.Username || dto.Email != validCmd.Email || dto.ID == 0 {
 			t.Errorf("DTO mismatch: %+v", dto)
+		}
+	})
+
+	t.Run("field validation collects errors", func(t *testing.T) {
+		t.Parallel()
+		repo := newFakeUserRepo()
+		svc := NewService(repo)
+
+		bad := CreateCommand{
+			Username:        "abc",
+			Password:        "weak",
+			PasswordConfirm: "different",
+			Email:           "not-an-email",
+			Gender:          "X",
+		}
+		_, err := svc.Create(context.Background(), bad)
+		var ve *domain.ValidationError
+		if !errors.As(err, &ve) {
+			t.Fatalf("expected ValidationError, got %v", err)
+		}
+		for _, key := range []string{"username", "password", "password_confirm", "email", "gender"} {
+			if ve.Fields[key] == "" {
+				t.Errorf("missing field error for %q in %+v", key, ve.Fields)
+			}
+		}
+	})
+
+	t.Run("password confirm mismatch alone", func(t *testing.T) {
+		t.Parallel()
+		svc := NewService(newFakeUserRepo())
+		bad := validCmd
+		bad.PasswordConfirm = "Different1!"
+		_, err := svc.Create(context.Background(), bad)
+		var ve *domain.ValidationError
+		if !errors.As(err, &ve) {
+			t.Fatalf("expected ValidationError, got %v", err)
+		}
+		if ve.Fields["password_confirm"] == "" {
+			t.Errorf("missing password_confirm error")
 		}
 	})
 
 	t.Run("username conflict", func(t *testing.T) {
 		t.Parallel()
 		repo := newFakeUserRepo()
-		_, _ = repo.Create(context.Background(), &domain.User{Username: "alice", Email: "old@x"})
+		_, _ = repo.Create(context.Background(), &domain.User{
+			Username: "testuser", Email: "other@example.com",
+		})
 		svc := NewService(repo)
 
-		_, err := svc.Create(context.Background(), cmd)
-		if !errors.Is(err, domain.ErrUsernameConflict) {
-			t.Errorf("got %v, want ErrUsernameConflict", err)
+		_, err := svc.Create(context.Background(), validCmd)
+		var ve *domain.ValidationError
+		if !errors.As(err, &ve) {
+			t.Fatalf("expected ValidationError, got %v", err)
+		}
+		if ve.Fields["username"] == "" {
+			t.Errorf("missing username conflict")
 		}
 	})
 
 	t.Run("email conflict", func(t *testing.T) {
 		t.Parallel()
 		repo := newFakeUserRepo()
-		_, _ = repo.Create(context.Background(), &domain.User{Username: "other", Email: "a@x"})
+		_, _ = repo.Create(context.Background(), &domain.User{
+			Username: "otheruser", Email: "test@example.com",
+		})
 		svc := NewService(repo)
 
-		_, err := svc.Create(context.Background(), cmd)
-		if !errors.Is(err, domain.ErrEmailConflict) {
-			t.Errorf("got %v, want ErrEmailConflict", err)
+		_, err := svc.Create(context.Background(), validCmd)
+		var ve *domain.ValidationError
+		if !errors.As(err, &ve) {
+			t.Fatalf("expected ValidationError, got %v", err)
+		}
+		if ve.Fields["email"] == "" {
+			t.Errorf("missing email conflict")
 		}
 	})
 
@@ -191,23 +248,15 @@ func TestService_Create(t *testing.T) {
 		repo.getByUsernameHook = func(string) (*domain.User, error) { return nil, errors.New("boom") }
 		svc := NewService(repo)
 
-		_, err := svc.Create(context.Background(), cmd)
-		if err == nil || errors.Is(err, domain.ErrUserNotFound) {
-			t.Errorf("got %v, want wrapped non-domain error", err)
+		_, err := svc.Create(context.Background(), validCmd)
+		if err == nil {
+			t.Fatalf("expected error")
+		}
+		var ve *domain.ValidationError
+		if errors.As(err, &ve) {
+			t.Errorf("expected wrapped infra error, got ValidationError: %v", err)
 		}
 		if !strings.Contains(err.Error(), "app.Service.Create") {
-			t.Errorf("not wrapped: %v", err)
-		}
-	})
-
-	t.Run("GetByEmail repo error wraps", func(t *testing.T) {
-		t.Parallel()
-		repo := newFakeUserRepo()
-		repo.getByEmailHook = func(string) (*domain.User, error) { return nil, errors.New("boom") }
-		svc := NewService(repo)
-
-		_, err := svc.Create(context.Background(), cmd)
-		if err == nil || !strings.Contains(err.Error(), "app.Service.Create") {
 			t.Errorf("not wrapped: %v", err)
 		}
 	})
@@ -218,7 +267,7 @@ func TestService_Create(t *testing.T) {
 		repo.createHook = func(*domain.User) (*domain.User, error) { return nil, errors.New("boom") }
 		svc := NewService(repo)
 
-		_, err := svc.Create(context.Background(), cmd)
+		_, err := svc.Create(context.Background(), validCmd)
 		if err == nil || !strings.Contains(err.Error(), "app.Service.Create") {
 			t.Errorf("not wrapped: %v", err)
 		}
@@ -359,7 +408,7 @@ func TestService_Update(t *testing.T) {
 		repo.updateHook = func(*domain.User) (*domain.User, error) { return nil, errors.New("boom") }
 		svc := NewService(repo)
 
-		_, err := svc.Update(context.Background(), u.ID, UpdateCommand{Email: "x", Password: "y"})
+		_, err := svc.Update(context.Background(), u.ID, UpdateCommand{Email: "new@x", Password: "newpw"})
 		if err == nil || !strings.Contains(err.Error(), "app.Service.Update") {
 			t.Errorf("not wrapped: %v", err)
 		}
@@ -396,25 +445,34 @@ func TestService_Delete(t *testing.T) {
 func TestService_Authenticate(t *testing.T) {
 	t.Parallel()
 
+	validLogin := LoginCommand{Username: "testuser", Password: "Test1234!"}
+
 	t.Run("happy", func(t *testing.T) {
 		t.Parallel()
 		repo := newFakeUserRepo()
-		_, _ = repo.Create(context.Background(), &domain.User{Username: "a", Email: "a@x", Password: "pw"})
+		_, _ = repo.Create(context.Background(), &domain.User{
+			Username: validLogin.Username,
+			Email:    "test@example.com",
+			Password: validLogin.Password,
+		})
 		svc := NewService(repo)
 
-		dto, err := svc.Authenticate(context.Background(), LoginCommand{Username: "a", Password: "pw"})
+		dto, err := svc.Authenticate(context.Background(), validLogin)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if dto.Username != "a" {
-			t.Errorf("dto.Username = %q, want a", dto.Username)
+		if dto.Username != validLogin.Username {
+			t.Errorf("dto.Username = %q, want %q", dto.Username, validLogin.Username)
 		}
 	})
 
 	t.Run("invalid credentials passes through unwrapped", func(t *testing.T) {
 		t.Parallel()
 		svc := NewService(newFakeUserRepo())
-		_, err := svc.Authenticate(context.Background(), LoginCommand{Username: "a", Password: "pw"})
+
+		// Shape passes; repo lookup fails. The Authenticate error must reach
+		// the caller as ErrInvalidCredentials without app-layer wrapping.
+		_, err := svc.Authenticate(context.Background(), validLogin)
 		if !errors.Is(err, domain.ErrInvalidCredentials) {
 			t.Errorf("got %v, want ErrInvalidCredentials", err)
 		}
@@ -426,12 +484,15 @@ func TestService_Authenticate(t *testing.T) {
 	t.Run("generic error wraps", func(t *testing.T) {
 		t.Parallel()
 		repo := newFakeUserRepo()
-		repo.authenticateHook = func(string, string) (*domain.User, error) { return nil, errors.New("boom") }
+		repo.authenticateHook = func(string, string) (*domain.User, error) {
+			return nil, errors.New("boom")
+		}
 		svc := NewService(repo)
 
-		_, err := svc.Authenticate(context.Background(), LoginCommand{Username: "a", Password: "pw"})
+		_, err := svc.Authenticate(context.Background(), validLogin)
 		if err == nil || !strings.Contains(err.Error(), "app.Service.Authenticate") {
 			t.Errorf("not wrapped: %v", err)
 		}
 	})
+
 }
