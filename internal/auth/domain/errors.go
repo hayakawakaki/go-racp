@@ -7,4 +7,6 @@ var (
 	ErrUsernameConflict   = errors.New("username already taken")
 	ErrEmailConflict      = errors.New("email already in use")
 	ErrInvalidCredentials = errors.New("invalid credentials")
+	ErrSessionNotFound    = errors.New("session not found")
+	ErrSessionExpired     = errors.New("session expired")
 )

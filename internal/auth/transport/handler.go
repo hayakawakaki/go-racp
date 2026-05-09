@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -13,15 +14,30 @@ import (
 const (
 	maxRegisterFormBytes = 4 << 10
 	maxLoginFormBytes    = 2 << 10
+
+	genericErrorMessage = "Something went wrong. Please try again."
 )
 
-type Handler struct {
-	svc    *app.Service
-	logger *slog.Logger
+type authService interface {
+	Create(ctx context.Context, cmd app.CreateCommand) (*app.GetDTO, error)
+	Authenticate(ctx context.Context, cmd app.LoginCommand) (*app.GetDTO, error)
 }
 
-func NewHandler(svc *app.Service, logger *slog.Logger) *Handler {
-	return &Handler{svc: svc, logger: logger}
+type sessionService interface {
+	Create(ctx context.Context, userID int) (string, *domain.Session, error)
+	Validate(ctx context.Context, rawToken string) (*domain.Session, error)
+	Destroy(ctx context.Context, rawToken string) error
+}
+
+type Handler struct {
+	svc     authService
+	sessSvc sessionService
+	logger  *slog.Logger
+	secure  bool
+}
+
+func NewHandler(svc authService, sessSvc sessionService, logger *slog.Logger, secure bool) *Handler {
+	return &Handler{svc: svc, sessSvc: sessSvc, logger: logger, secure: secure}
 }
 
 func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
@@ -64,7 +80,7 @@ func (h *Handler) doRegister(w http.ResponseWriter, r *http.Request) {
 			state.Error = "Email already in use."
 		default:
 			h.logger.Error("register", "err", err)
-			state.Error = "Something went wrong. Please try again."
+			state.Error = genericErrorMessage
 		}
 		h.renderRegister(w, r, state)
 		return
@@ -102,18 +118,29 @@ func (h *Handler) doLogin(w http.ResponseWriter, r *http.Request) {
 		Password: r.PostFormValue("password"),
 	}
 
-	_, err := h.svc.Authenticate(r.Context(), cmd)
+	user, err := h.svc.Authenticate(r.Context(), cmd)
 	if err != nil {
 		state := LoginFormState{Username: cmd.Username}
 		if errors.Is(err, domain.ErrInvalidCredentials) {
 			state.Error = "Invalid username or password."
 		} else {
 			h.logger.Error("login", "err", err)
-			state.Error = "Something went wrong. Please try again."
+			state.Error = genericErrorMessage
 		}
 		h.renderLogin(w, r, state)
 		return
 	}
+
+	token, _, err := h.sessSvc.Create(r.Context(), user.ID)
+	if err != nil {
+		h.logger.Error("session create", "err", err)
+		h.renderLogin(w, r, LoginFormState{
+			Username: cmd.Username,
+			Error:    genericErrorMessage,
+		})
+		return
+	}
+	setSessionCookie(w, token, app.SessionTTL, h.secure)
 
 	if httpx.IsHTMX(r) {
 		w.Header().Set("HX-Redirect", "/")
@@ -132,6 +159,11 @@ func (h *Handler) renderLogin(w http.ResponseWriter, r *http.Request, state Logi
 }
 
 func (h *Handler) doLogout(w http.ResponseWriter, r *http.Request) {
+	if c, err := r.Cookie(sessionCookieName); err == nil {
+		_ = h.sessSvc.Destroy(r.Context(), c.Value)
+	}
+	clearSessionCookie(w, h.secure)
+
 	if httpx.IsHTMX(r) {
 		w.Header().Set("HX-Redirect", "/login")
 		w.WriteHeader(http.StatusNoContent)
