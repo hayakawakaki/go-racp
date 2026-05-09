@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/hayakawakaki/go-racp/internal/health"
 	"github.com/hayakawakaki/go-racp/internal/infra"
 	"github.com/hayakawakaki/go-racp/internal/infra/mysql"
 	"github.com/hayakawakaki/go-racp/internal/plugin"
@@ -49,6 +50,7 @@ func Start() {
 	// Plugin Mounting
 	mux := http.NewServeMux()
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
+	mux.HandleFunc("GET /healthz", health.New(mainDB, logsDB, logger))
 	plugin.MountAll(mux, in)
 
 	addr := fmt.Sprintf(":%d", cfg.Env.AppPort)

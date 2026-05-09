@@ -17,4 +17,7 @@ COPY config.yml ./
 
 USER app
 
+HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget -q --spider "http://localhost:${APP_PORT:-8080}/healthz" || exit 1
+
 CMD ["./main"]
