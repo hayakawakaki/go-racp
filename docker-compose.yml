@@ -10,6 +10,22 @@ services:
       - DB_LOG_URL=${DB_USER}:${DB_PASSWORD}@tcp(${DB_HOST}:${DB_PORT:-3306})/${DB_LOG_NAME}
       - DB_MAX_OPEN_CONN=${DB_MAX_OPEN_CONN:-8}
       - DB_MAX_IDLE_CONN=${DB_MAX_IDLE_CONN:-4}
+      - SMTP_HOST=smtp-relay
+      - SMTP_PORT=587
+    restart: unless-stopped
+    depends_on:
+      - smtp-relay
+    networks:
+      - app-network
+
+  smtp-relay:
+    image: boky/postfix:5.1.0-alpine
+    environment:
+      - HOSTNAME=${MAIL_HOSTNAME}
+      - ALLOWED_SENDER_DOMAINS=${SMTP_ALLOWED_SENDER_DOMAINS}
+      - DKIM_AUTOGENERATE=true
+    volumes:
+      - ./mail/dkim:/etc/opendkim/keys
     restart: unless-stopped
     networks:
       - app-network
