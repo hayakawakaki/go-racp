@@ -10,8 +10,11 @@ import (
 	"github.com/joho/godotenv"
 )
 
+//nolint:govet // field order is intentionally grouped by domain (app, db, mailer) over memory-optimal layout
 type EnvConfig struct {
-	Mode string `env:"MODE" default:"development"`
+	// App Setting
+	Mode    string `env:"MODE" default:"development"`
+	AppPort int    `env:"APP_PORT" default:"8080"`
 
 	// MySQL or MariaDB. Populated by Docker Compose.
 	DBMainURL     string `env:"DB_MAIN_URL" required:"true"`
@@ -19,8 +22,9 @@ type EnvConfig struct {
 	DBMaxOpenConn int    `env:"DB_MAX_OPEN_CONN" default:"4"`
 	DBMaxIdleConn int    `env:"DB_MAX_IDLE_CONN" default:"4"`
 
-	// App Setting
-	AppPort int `env:"APP_PORT" default:"8080"`
+	// Mailer
+	SMTPHost string `env:"SMTP_HOST" required:"true"`
+	SMTPPort int    `env:"SMTP_PORT" default:"587"`
 }
 
 func ProcessEnv() *EnvConfig {

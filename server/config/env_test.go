@@ -20,6 +20,8 @@ func TestProcessEnv(t *testing.T) {
 				"DB_MAX_OPEN_CONN": "10",
 				"DB_MAX_IDLE_CONN": "5",
 				"APP_PORT":         "9090",
+				"SMTP_HOST":        "smtp.example.com",
+				"SMTP_PORT":        "2525",
 			},
 			expected: EnvConfig{
 				Mode:          "production",
@@ -28,6 +30,8 @@ func TestProcessEnv(t *testing.T) {
 				DBMaxOpenConn: 10,
 				DBMaxIdleConn: 5,
 				AppPort:       9090,
+				SMTPHost:      "smtp.example.com",
+				SMTPPort:      2525,
 			},
 		},
 		{
@@ -35,6 +39,7 @@ func TestProcessEnv(t *testing.T) {
 			envVars: map[string]string{
 				"DB_MAIN_URL": "user:pass@tcp(127.0.0.1:3306)/main",
 				"DB_LOG_URL":  "user:pass@tcp(127.0.0.1:3306)/log",
+				"SMTP_HOST":   "mailpit",
 			},
 			expected: EnvConfig{
 				Mode:          "development",
@@ -43,6 +48,8 @@ func TestProcessEnv(t *testing.T) {
 				DBMaxOpenConn: 4,
 				DBMaxIdleConn: 4,
 				AppPort:       8080,
+				SMTPHost:      "mailpit",
+				SMTPPort:      587,
 			},
 		},
 	}
@@ -84,6 +91,12 @@ func TestProcessField_Errors(t *testing.T) {
 			envName:     "DB_LOG_URL",
 			envValue:    "",
 			expectedErr: "the value for the env field DB_LOG_URL is required",
+		},
+		{
+			name:        "missing required SMTP_HOST",
+			envName:     "SMTP_HOST",
+			envValue:    "",
+			expectedErr: "the value for the env field SMTP_HOST is required",
 		},
 		{
 			name:        "invalid int DB_MAX_OPEN_CONN",

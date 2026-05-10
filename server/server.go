@@ -10,19 +10,25 @@ import (
 
 	"github.com/hayakawakaki/go-racp/internal/health"
 	"github.com/hayakawakaki/go-racp/internal/infra"
+	"github.com/hayakawakaki/go-racp/internal/infra/mailer"
 	"github.com/hayakawakaki/go-racp/internal/infra/mysql"
 	"github.com/hayakawakaki/go-racp/internal/plugin"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 
-// Start initializes application runtime (configuration, database connections, and structured logger),
-// mounts static assets and plugins onto an HTTP mux, creates an HTTP server with sensible timeouts and header limits,
-// Start initializes application resources (configuration, databases, logger, and plugin wiring)
-// and runs the HTTP server on the configured port. It ensures database connections are closed
-// on exit and logs any errors encountered during shutdown or from ListenAndServe.
+// Start initializes application runtime (configuration, database connections, and structured logger)
 func Start() {
 	// Config Creation
 	cfg := config.NewConfig()
+
+	// Logger
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+
+	// Mailer (constructed before any defer-cleanup steps so a failure here can log.Fatal cleanly)
+	mailClient, err := mailer.NewClient(cfg.Env.SMTPHost, cfg.Env.SMTPPort)
+	if err != nil {
+		log.Fatalf("init mailer: %v", err)
+	}
 
 	// MySQL Connection
 	mainDB, logsDB := mysql.Connect(cfg.Env)
@@ -36,14 +42,17 @@ func Start() {
 			log.Printf("close logs db: %v", err)
 		}
 	}()
-
-	// Logger
-	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	defer func() {
+		if err := mailClient.Close(); err != nil {
+			log.Printf("close mailer: %v", err)
+		}
+	}()
 
 	in := &infra.Infra{
 		MainDB: mainDB,
 		LogDB:  logsDB,
 		Logger: logger,
+		Mailer: mailClient,
 		Config: cfg,
 	}
 
