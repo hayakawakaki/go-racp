@@ -21,7 +21,7 @@ import (
 )
 
 // Start initializes application runtime (configuration, database connections, and structured logger)
-func Start() {
+func Start() error {
 	// Config Creation
 	cfg := config.NewConfig()
 
@@ -94,8 +94,10 @@ func Start() {
 	select {
 	case <-ctx.Done():
 		logger.Info("shutdown signal received")
+		stop()
 	case err := <-serverErr:
 		logger.Error("server failed", "error", err)
+		return fmt.Errorf("server failed: %w", err)
 	}
 
 	// Stop accepting new requests and let in-flight ones drain (bounded).
@@ -103,6 +105,8 @@ func Start() {
 	defer cancel()
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		logger.Error("graceful shutdown failed", "error", err)
+		return fmt.Errorf("shutdown failed: %w", err)
 	}
 	logger.Info("server stopped")
+	return nil
 }
