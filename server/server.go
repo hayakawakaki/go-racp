@@ -1,11 +1,15 @@
 package server
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"log"
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/hayakawakaki/go-racp/internal/health"
@@ -29,6 +33,10 @@ func Start() {
 	if err != nil {
 		log.Fatalf("init mailer: %v", err)
 	}
+
+	// Signal context - cancelled on SIGINT/SIGTERM
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
 
 	// MySQL Connection
 	mainDB, logsDB := mysql.Connect(cfg.Env)
@@ -73,8 +81,28 @@ func Start() {
 		MaxHeaderBytes:    1 << 16,
 	}
 
-	logger.Info("server starting", "addr", addr)
-	if err := srv.ListenAndServe(); err != nil {
-		log.Printf("http: %v", err)
+	// Run the server in a goroutine
+	serverErr := make(chan error, 1)
+	go func() {
+		logger.Info("server starting", "addr", addr)
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			serverErr <- err
+		}
+	}()
+
+	// Block until either a shutdown signal arrives or the server fails to start.
+	select {
+	case <-ctx.Done():
+		logger.Info("shutdown signal received")
+	case err := <-serverErr:
+		logger.Error("server failed", "error", err)
 	}
+
+	// Stop accepting new requests and let in-flight ones drain (bounded).
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		logger.Error("graceful shutdown failed", "error", err)
+	}
+	logger.Info("server stopped")
 }
