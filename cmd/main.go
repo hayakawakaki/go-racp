@@ -1,9 +1,13 @@
 package main
 
 import (
+	"log"
+
 	"github.com/hayakawakaki/go-racp/server"
 )
 
 func main() {
-	server.Start()
+	if err := server.Start(); err != nil {
+		log.Fatalf("server: %v", err)
+	}
 }
