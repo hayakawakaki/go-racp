@@ -21,8 +21,8 @@ services:
   smtp-relay:
     image: boky/postfix:5.1.0-alpine
     environment:
-      - HOSTNAME=${MAIL_HOSTNAME}
-      - ALLOWED_SENDER_DOMAINS=${SMTP_ALLOWED_SENDER_DOMAINS}
+      - HOSTNAME=${MAIL_HOSTNAME:?MAIL_HOSTNAME is required}
+      - ALLOWED_SENDER_DOMAINS=${SMTP_ALLOWED_SENDER_DOMAINS:?SMTP_ALLOWED_SENDER_DOMAINS is required}
       - DKIM_AUTOGENERATE=true
     volumes:
       - dkim-keys:/etc/opendkim/keys
