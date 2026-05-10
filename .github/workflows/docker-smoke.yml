@@ -55,6 +55,7 @@ jobs:
             -e MODE=production \
             -e DB_MAIN_URL="root:testpassword@tcp(127.0.0.1:3306)/main" \
             -e DB_LOG_URL="root:testpassword@tcp(127.0.0.1:3306)/log" \
+            -e SMTP_HOST=localhost \
             go-racp:pr
 
       - name: Wait for healthy
