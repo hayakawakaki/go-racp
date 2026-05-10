@@ -25,7 +25,7 @@ services:
       - ALLOWED_SENDER_DOMAINS=${SMTP_ALLOWED_SENDER_DOMAINS}
       - DKIM_AUTOGENERATE=true
     volumes:
-      - ./mail/dkim:/etc/opendkim/keys
+      - dkim-keys:/etc/opendkim/keys
     restart: unless-stopped
     networks:
       - app-network
@@ -33,3 +33,6 @@ services:
 networks:
   app-network:
     driver: bridge
+
+volumes:
+  dkim-keys:
