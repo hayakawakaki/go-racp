@@ -18,6 +18,16 @@ type verificationService interface {
 	ResendVerification(ctx context.Context, accountID int) error
 }
 
+const (
+	resendNoticeSent   = "sent"
+	resendNoticeFailed = "failed"
+)
+
+var resendNoticeText = map[string]string{
+	resendNoticeSent:   "Verification email sent. Check your inbox.",
+	resendNoticeFailed: "Couldn't send verification email. Please try again in a moment.",
+}
+
 func (h *Handler) showVerifyAccount(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(sessionCookieName)
 	if err != nil || cookie.Value == "" {
@@ -38,7 +48,11 @@ func (h *Handler) showVerifyAccount(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-	httpx.RenderHTML(w, r, h.logger, verifyAccountPage(h.layout(), VerifyAccountState{Email: user.Email}))
+	state := VerifyAccountState{Email: user.Email}
+	if notice, ok := resendNoticeText[r.URL.Query().Get("notice")]; ok {
+		state.Notice = notice
+	}
+	httpx.RenderHTML(w, r, h.logger, verifyAccountPage(h.layout(), state))
 }
 
 func (h *Handler) doVerify(w http.ResponseWriter, r *http.Request) {
@@ -89,12 +103,16 @@ func (h *Handler) doResendVerification(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
+	notice := resendNoticeSent
 	if err := h.verifySvc.ResendVerification(r.Context(), sess.UserID); err != nil {
 		h.logger.Error("verify resend", "err", err)
+		notice = resendNoticeFailed
 	}
+	target := "/verify-account?notice=" + notice
 	if httpx.IsHTMX(r) {
+		w.Header().Set("HX-Redirect", target)
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
-	http.Redirect(w, r, "/verify-account", http.StatusSeeOther)
+	http.Redirect(w, r, target, http.StatusSeeOther)
 }
