@@ -3,6 +3,21 @@ set -e
 
 echo "Running pre-commit checks..."
 
+staged_go_related=$(git diff --cached --name-only --diff-filter=ACMR -- '*.go' 'go.mod' 'go.sum')
+
+if [ -z "$staged_go_related" ]; then
+    echo "No staged Go files. Skipping checks."
+    exit 0
+fi
+
+echo "Running go mod tidy..."
+go mod tidy
+
+if ! git diff --quiet -- go.mod go.sum; then
+    echo "go mod tidy updated go.mod/go.sum; staging changes."
+    git add go.mod go.sum
+fi
+
 staged_go_files=$(git diff --cached --name-only --diff-filter=ACMR -- '*.go')
 
 if [ -z "$staged_go_files" ]; then
