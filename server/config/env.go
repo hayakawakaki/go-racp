@@ -15,6 +15,7 @@ type EnvConfig struct {
 	// App Setting
 	Mode    string `env:"MODE" default:"development"`
 	AppPort int    `env:"APP_PORT" default:"8080"`
+	AppURL  string `env:"APP_URL" required:"true"`
 
 	// MySQL or MariaDB. Populated by Docker Compose.
 	DBMainURL     string `env:"DB_MAIN_URL" required:"true"`

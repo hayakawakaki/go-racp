@@ -52,6 +52,8 @@ jobs:
           done
       - name: Run integration tests
         env:
+          APP_URL: http://localhost:8080
           DB_MAIN_URL: root:testpassword@tcp(127.0.0.1:3306)/main
           DB_LOG_URL: root:testpassword@tcp(127.0.0.1:3306)/log
+          SMTP_HOST: localhost
         run: go test -tags=integration ./...

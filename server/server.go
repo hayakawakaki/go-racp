@@ -33,6 +33,7 @@ func Start() error {
 	if err != nil {
 		log.Fatalf("init mailer: %v", err)
 	}
+	smtpMailer := mailer.NewSMTPMailer(mailClient, cfg.App.Mailer.FromAddress, logger)
 
 	// Signal context - cancelled on SIGINT/SIGTERM
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -51,7 +52,7 @@ func Start() error {
 		}
 	}()
 	defer func() {
-		if err := mailClient.Close(); err != nil {
+		if err := smtpMailer.Close(); err != nil {
 			log.Printf("close mailer: %v", err)
 		}
 	}()
@@ -60,7 +61,7 @@ func Start() error {
 		MainDB: mainDB,
 		LogDB:  logsDB,
 		Logger: logger,
-		Mailer: mailClient,
+		Mailer: smtpMailer,
 		Config: cfg,
 	}
 
@@ -70,10 +71,15 @@ func Start() error {
 	mux.HandleFunc("GET /healthz", health.New(mainDB, logsDB, logger))
 	plugin.MountAll(mux, in)
 
+	var handler http.Handler = mux
+	for _, p := range plugin.Middlewares() {
+		handler = p.Middleware(in, handler)
+	}
+
 	addr := fmt.Sprintf(":%d", cfg.Env.AppPort)
 	srv := &http.Server{
 		Addr:              addr,
-		Handler:           mux,
+		Handler:           handler,
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       30 * time.Second,
 		WriteTimeout:      30 * time.Second,
@@ -81,10 +87,18 @@ func Start() error {
 		MaxHeaderBytes:    1 << 16,
 	}
 
+	if err := runHTTP(ctx, srv, stop, logger); err != nil {
+		return err
+	}
+	logger.Info("server stopped")
+	return nil
+}
+
+func runHTTP(ctx context.Context, srv *http.Server, stop func(), logger *slog.Logger) error {
 	// Run the server in a goroutine
 	serverErr := make(chan error, 1)
 	go func() {
-		logger.Info("server starting", "addr", addr)
+		logger.Info("server starting", "addr", srv.Addr)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			serverErr <- err
 		}
@@ -107,6 +121,5 @@ func Start() error {
 		logger.Error("graceful shutdown failed", "error", err)
 		return fmt.Errorf("shutdown failed: %w", err)
 	}
-	logger.Info("server stopped")
 	return nil
 }

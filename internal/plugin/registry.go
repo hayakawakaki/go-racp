@@ -7,8 +7,9 @@ import (
 )
 
 type Plugin struct {
-	Mount func(mux *http.ServeMux, in *infra.Infra)
-	Name  string
+	Mount      func(mux *http.ServeMux, in *infra.Infra)
+	Middleware func(in *infra.Infra, h http.Handler) http.Handler
+	Name       string
 }
 
 var (
@@ -25,8 +26,8 @@ func Register(p Plugin) {
 	if p.Name == "" {
 		panic("plugin: Name required")
 	}
-	if p.Mount == nil {
-		panic("plugin: Mount required for " + p.Name)
+	if p.Mount == nil && p.Middleware == nil {
+		panic("plugin: Mount or Middleware required for " + p.Name)
 	}
 	for _, existing := range registry {
 		if existing.Name == p.Name {
@@ -44,7 +45,19 @@ func MountAll(mux *http.ServeMux, in *infra.Infra) {
 	}
 	mounted = true
 	for _, p := range registry {
-		p.Mount(mux, in)
+		if p.Mount != nil {
+			p.Mount(mux, in)
+		}
 		in.Logger.Info("plugin mounted", "name", p.Name)
 	}
+}
+
+func Middlewares() []Plugin {
+	out := make([]Plugin, 0, len(registry))
+	for _, p := range registry {
+		if p.Middleware != nil {
+			out = append(out, p)
+		}
+	}
+	return out
 }

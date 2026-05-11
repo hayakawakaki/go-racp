@@ -52,6 +52,7 @@ jobs:
           docker run -d --name app \
             --network=host \
             -e APP_PORT=8080 \
+            -e APP_URL=http://localhost:8080 \
             -e MODE=production \
             -e DB_MAIN_URL="root:testpassword@tcp(127.0.0.1:3306)/main" \
             -e DB_LOG_URL="root:testpassword@tcp(127.0.0.1:3306)/log" \

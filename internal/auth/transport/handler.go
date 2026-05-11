@@ -33,26 +33,32 @@ type sessionService interface {
 }
 
 type HandlerConfig struct {
-	Logger  *slog.Logger
-	General config.GeneralConfig
-	Secure  bool
+	Logger    *slog.Logger
+	Users     userLookup
+	VerifySvc verificationService
+	General   config.GeneralConfig
+	Secure    bool
 }
 
 type Handler struct {
-	svc     authService
-	sessSvc sessionService
-	logger  *slog.Logger
-	general config.GeneralConfig
-	secure  bool
+	svc       authService
+	sessSvc   sessionService
+	users     userLookup
+	verifySvc verificationService
+	logger    *slog.Logger
+	general   config.GeneralConfig
+	secure    bool
 }
 
 func NewHandler(svc authService, sessSvc sessionService, cfg HandlerConfig) *Handler {
 	return &Handler{
-		svc:     svc,
-		sessSvc: sessSvc,
-		logger:  cfg.Logger,
-		general: cfg.General,
-		secure:  cfg.Secure,
+		svc:       svc,
+		sessSvc:   sessSvc,
+		users:     cfg.Users,
+		verifySvc: cfg.VerifySvc,
+		logger:    cfg.Logger,
+		general:   cfg.General,
+		secure:    cfg.Secure,
 	}
 }
 
@@ -66,6 +72,9 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /login", h.showLogin)
 	mux.HandleFunc("POST /login", h.doLogin)
 	mux.HandleFunc("POST /logout", h.doLogout)
+	mux.HandleFunc("GET /verify-account", h.showVerifyAccount)
+	mux.HandleFunc("GET /verify", h.doVerify)
+	mux.HandleFunc("POST /verify/resend", h.doResendVerification)
 }
 
 func (h *Handler) showRegister(w http.ResponseWriter, r *http.Request) {

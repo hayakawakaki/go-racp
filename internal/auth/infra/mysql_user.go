@@ -21,7 +21,7 @@ func NewRepository(client *sql.DB) *Repository {
 
 func (r *Repository) Create(ctx context.Context, user *domain.User) (*domain.User, error) {
 	res, err := r.Client.ExecContext(ctx,
-		"INSERT INTO login (userid, email, user_pass, sex) VALUES (?, ?, ?, ?)",
+		"INSERT INTO login (userid, email, user_pass, sex, group_id) VALUES (?, ?, ?, ?, 5)",
 		user.Username, user.Email, user.Password, user.Gender)
 	if err != nil {
 		return nil, fmt.Errorf("infra.Repository.Create: %w", err)
@@ -32,13 +32,14 @@ func (r *Repository) Create(ctx context.Context, user *domain.User) (*domain.Use
 		return nil, fmt.Errorf("infra.Repository.Create: %w", err)
 	}
 	user.ID = int(id)
+	user.GroupID = 5
 
 	return user, nil
 }
 
 func (r *Repository) GetAll(ctx context.Context) ([]domain.User, error) {
 	rows, err := r.Client.QueryContext(ctx,
-		"SELECT account_id, userid, email FROM login")
+		"SELECT account_id, userid, email, group_id FROM login")
 	if err != nil {
 		return nil, fmt.Errorf("infra.Repository.GetAll: %w", err)
 	}
@@ -47,7 +48,7 @@ func (r *Repository) GetAll(ctx context.Context) ([]domain.User, error) {
 	var userList []domain.User
 	for rows.Next() {
 		var u domain.User
-		if err := rows.Scan(&u.ID, &u.Username, &u.Email); err != nil {
+		if err := rows.Scan(&u.ID, &u.Username, &u.Email, &u.GroupID); err != nil {
 			return nil, fmt.Errorf("infra.Repository.GetAll: %w", err)
 		}
 		userList = append(userList, u)
@@ -62,8 +63,8 @@ func (r *Repository) GetAll(ctx context.Context) ([]domain.User, error) {
 func (r *Repository) GetByID(ctx context.Context, id int) (*domain.User, error) {
 	var u domain.User
 	err := r.Client.QueryRowContext(ctx,
-		"SELECT account_id, userid, email FROM login WHERE account_id = ?", id,
-	).Scan(&u.ID, &u.Username, &u.Email)
+		"SELECT account_id, userid, email, group_id FROM login WHERE account_id = ?", id,
+	).Scan(&u.ID, &u.Username, &u.Email, &u.GroupID)
 
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, domain.ErrUserNotFound
@@ -77,8 +78,8 @@ func (r *Repository) GetByID(ctx context.Context, id int) (*domain.User, error) 
 func (r *Repository) GetByUsername(ctx context.Context, username string) (*domain.User, error) {
 	var u domain.User
 	err := r.Client.QueryRowContext(ctx,
-		"SELECT account_id, userid, email FROM login WHERE userid = ?", username,
-	).Scan(&u.ID, &u.Username, &u.Email)
+		"SELECT account_id, userid, email, group_id FROM login WHERE userid = ?", username,
+	).Scan(&u.ID, &u.Username, &u.Email, &u.GroupID)
 
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, domain.ErrUserNotFound
@@ -92,8 +93,8 @@ func (r *Repository) GetByUsername(ctx context.Context, username string) (*domai
 func (r *Repository) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
 	var u domain.User
 	err := r.Client.QueryRowContext(ctx,
-		"SELECT account_id, userid, email FROM login WHERE email = ?", email,
-	).Scan(&u.ID, &u.Username, &u.Email)
+		"SELECT account_id, userid, email, group_id FROM login WHERE email = ?", email,
+	).Scan(&u.ID, &u.Username, &u.Email, &u.GroupID)
 
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, domain.ErrUserNotFound
@@ -126,9 +127,9 @@ func (r *Repository) Update(ctx context.Context, user *domain.User) (*domain.Use
 func (r *Repository) Authenticate(ctx context.Context, username, password string) (*domain.User, error) {
 	var u domain.User
 	err := r.Client.QueryRowContext(ctx,
-		"SELECT account_id, userid, email FROM login WHERE userid = ? AND user_pass = ?",
+		"SELECT account_id, userid, email, group_id FROM login WHERE userid = ? AND user_pass = ?",
 		username, password,
-	).Scan(&u.ID, &u.Username, &u.Email)
+	).Scan(&u.ID, &u.Username, &u.Email, &u.GroupID)
 
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, domain.ErrInvalidCredentials
@@ -137,6 +138,24 @@ func (r *Repository) Authenticate(ctx context.Context, username, password string
 		return nil, fmt.Errorf("infra.Repository.Authenticate: %w", err)
 	}
 	return &u, nil
+}
+
+func (r *Repository) MarkVerified(ctx context.Context, accountID int) error {
+	res, err := r.Client.ExecContext(ctx,
+		"UPDATE login SET group_id = 0 WHERE account_id = ? AND group_id = 5",
+		accountID,
+	)
+	if err != nil {
+		return fmt.Errorf("infra.Repository.MarkVerified: %w", err)
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("infra.Repository.MarkVerified: %w", err)
+	}
+	if rows == 0 {
+		return domain.ErrUserNotFound
+	}
+	return nil
 }
 
 func (r *Repository) Delete(ctx context.Context, id int) error {
