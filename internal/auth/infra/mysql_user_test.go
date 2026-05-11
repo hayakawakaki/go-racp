@@ -167,6 +167,96 @@ func TestRepository_Update(t *testing.T) {
 	})
 }
 
+func TestRepository_Create_SetsGroupIDFiveAndPersistsIt(t *testing.T) {
+	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
+	repo := NewRepository(db)
+	ctx := context.Background()
+
+	suf := randomizeSuffix(t)
+	created, err := repo.Create(ctx, &domain.User{
+		Username: "racp_test_" + suf,
+		Email:    "racp_test_" + suf + "@example.invalid",
+		Password: "Test1234!",
+		Gender:   "M",
+	})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	cleanupUser(t, repo, created.ID)
+
+	if created.GroupID != 5 {
+		t.Errorf("returned GroupID = %d, want 5 (unverified)", created.GroupID)
+	}
+
+	got, err := repo.GetByID(ctx, created.ID)
+	if err != nil {
+		t.Fatalf("GetByID: %v", err)
+	}
+	if got.GroupID != 5 {
+		t.Errorf("persisted GroupID = %d, want 5", got.GroupID)
+	}
+}
+
+func TestRepository_MarkVerified(t *testing.T) {
+	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
+	repo := NewRepository(db)
+	ctx := context.Background()
+
+	t.Run("flips group_id from 5 to 0", func(t *testing.T) {
+		suf := randomizeSuffix(t)
+		user, err := repo.Create(ctx, &domain.User{
+			Username: "racp_test_" + suf,
+			Email:    "racp_test_" + suf + "@example.invalid",
+			Password: "Test1234!",
+			Gender:   "M",
+		})
+		if err != nil {
+			t.Fatalf("Create: %v", err)
+		}
+		cleanupUser(t, repo, user.ID)
+
+		if markErr := repo.MarkVerified(ctx, user.ID); markErr != nil {
+			t.Fatalf("MarkVerified: %v", markErr)
+		}
+		got, err := repo.GetByID(ctx, user.ID)
+		if err != nil {
+			t.Fatalf("GetByID: %v", err)
+		}
+		if got.GroupID != 0 {
+			t.Errorf("GroupID after MarkVerified = %d, want 0", got.GroupID)
+		}
+	})
+
+	t.Run("already verified user returns ErrUserNotFound", func(t *testing.T) {
+		suf := randomizeSuffix(t)
+		user, err := repo.Create(ctx, &domain.User{
+			Username: "racp_test_" + suf,
+			Email:    "racp_test_" + suf + "@example.invalid",
+			Password: "Test1234!",
+			Gender:   "M",
+		})
+		if err != nil {
+			t.Fatalf("Create: %v", err)
+		}
+		cleanupUser(t, repo, user.ID)
+
+		if firstErr := repo.MarkVerified(ctx, user.ID); firstErr != nil {
+			t.Fatalf("first MarkVerified: %v", firstErr)
+		}
+		err = repo.MarkVerified(ctx, user.ID)
+		if !errors.Is(err, domain.ErrUserNotFound) {
+			t.Errorf("second MarkVerified on already-verified user: got %v, want ErrUserNotFound", err)
+		}
+	})
+
+	t.Run("unknown account returns ErrUserNotFound", func(t *testing.T) {
+		err := repo.MarkVerified(ctx, -1)
+		if !errors.Is(err, domain.ErrUserNotFound) {
+			t.Errorf("got %v, want ErrUserNotFound", err)
+		}
+	})
+}
+
 func TestRepository_Delete(t *testing.T) {
 	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
 	repo := NewRepository(db)

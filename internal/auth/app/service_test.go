@@ -2,10 +2,15 @@ package app
 
 import (
 	"context"
+	"crypto/sha256"
+	"database/sql"
+	"encoding/base64"
 	"errors"
+	"net/url"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/hayakawakaki/go-racp/internal/auth/domain"
 )
@@ -573,4 +578,677 @@ func TestService_Authenticate(t *testing.T) {
 		}
 	})
 
+}
+
+type fakeTokenRepo struct {
+	byHash               map[[32]byte]*domain.ActionToken
+	insertHook           func(*domain.ActionToken) error
+	getByHashHook        func([32]byte) (*domain.ActionToken, error)
+	deleteUnconsumedHook func(int, domain.Action) error
+	markConsumedHook     func([32]byte, time.Time) error
+	mostRecentHook       func(int, domain.Action) (time.Time, error)
+	insertCalls          []domain.ActionToken
+	deleteCalls          []struct {
+		AccountID int
+		Action    domain.Action
+	}
+	mu sync.Mutex
+}
+
+func newFakeTokenRepo() *fakeTokenRepo {
+	return &fakeTokenRepo{byHash: map[[32]byte]*domain.ActionToken{}}
+}
+
+func (f *fakeTokenRepo) Insert(_ context.Context, token *domain.ActionToken) error {
+	if f.insertHook != nil {
+		return f.insertHook(token)
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	cp := *token
+	f.byHash[token.TokenHash] = &cp
+	f.insertCalls = append(f.insertCalls, cp)
+	return nil
+}
+
+func (f *fakeTokenRepo) GetByHash(_ context.Context, hash [32]byte) (*domain.ActionToken, error) {
+	if f.getByHashHook != nil {
+		return f.getByHashHook(hash)
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	token, ok := f.byHash[hash]
+	if !ok {
+		return nil, domain.ErrTokenInvalid
+	}
+	cp := *token
+	return &cp, nil
+}
+
+func (f *fakeTokenRepo) DeleteUnconsumed(_ context.Context, accountID int, action domain.Action) error {
+	f.mu.Lock()
+	f.deleteCalls = append(f.deleteCalls, struct {
+		AccountID int
+		Action    domain.Action
+	}{accountID, action})
+	f.mu.Unlock()
+	if f.deleteUnconsumedHook != nil {
+		return f.deleteUnconsumedHook(accountID, action)
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	for hash, token := range f.byHash {
+		if token.AccountID == accountID && token.Action == action && !token.ConsumedAt.Valid {
+			delete(f.byHash, hash)
+		}
+	}
+	return nil
+}
+
+func (f *fakeTokenRepo) MarkConsumed(_ context.Context, hash [32]byte, at time.Time) error {
+	if f.markConsumedHook != nil {
+		return f.markConsumedHook(hash, at)
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	token, ok := f.byHash[hash]
+	if !ok {
+		return domain.ErrTokenInvalid
+	}
+	if token.ConsumedAt.Valid {
+		return domain.ErrTokenAlreadyUsed
+	}
+	token.ConsumedAt.Time = at
+	token.ConsumedAt.Valid = true
+	return nil
+}
+
+func (f *fakeTokenRepo) MostRecentIssuedAt(_ context.Context, accountID int, action domain.Action) (time.Time, error) {
+	if f.mostRecentHook != nil {
+		return f.mostRecentHook(accountID, action)
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	var latest time.Time
+	for _, token := range f.byHash {
+		if token.AccountID == accountID && token.Action == action && token.CreatedAt.After(latest) {
+			latest = token.CreatedAt
+		}
+	}
+	return latest, nil
+}
+
+type fakeMailer struct {
+	sent []sentMail
+	mu   sync.Mutex
+}
+
+type sentMail struct {
+	To      string
+	Subject string
+	Body    string
+}
+
+func (m *fakeMailer) SendAsync(to, subject, body string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.sent = append(m.sent, sentMail{To: to, Subject: subject, Body: body})
+}
+
+func (m *fakeMailer) Sent() []sentMail {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	out := make([]sentMail, len(m.sent))
+	copy(out, m.sent)
+	return out
+}
+
+func newVerificationConfig() VerificationConfig {
+	return VerificationConfig{
+		AppURL:         "https://cp.example/",
+		ServerName:     "Test rAthena",
+		TokenTTL:       24 * time.Hour,
+		ResendCooldown: 60 * time.Second,
+	}
+}
+
+func newServiceWithVerification(t *testing.T) (*Service, *fakeUserRepo, *fakeTokenRepo, *fakeMailer) {
+	t.Helper()
+	userRepo := newFakeUserRepo()
+	tokenRepo := newFakeTokenRepo()
+	mailer := &fakeMailer{}
+	svc := NewService(userRepo, WithVerification(tokenRepo, mailer, newVerificationConfig()))
+	return svc, userRepo, tokenRepo, mailer
+}
+
+func extractRawTokenFromBody(t *testing.T, body string) string {
+	t.Helper()
+	_, rest, found := strings.Cut(body, "token=")
+	if !found {
+		t.Fatalf("body missing token= marker: %s", body)
+	}
+	endIdx := strings.IndexAny(rest, "\"' <>&")
+	if endIdx < 0 {
+		t.Fatalf("body has no terminator after token: %s", rest)
+	}
+	raw, err := url.QueryUnescape(rest[:endIdx])
+	if err != nil {
+		t.Fatalf("url.QueryUnescape: %v", err)
+	}
+	return raw
+}
+
+func TestWithVerification_PanicsOnNonPositiveTTL(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name string
+		ttl  time.Duration
+	}{
+		{name: "zero", ttl: 0},
+		{name: "negative", ttl: -time.Second},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			defer func() {
+				if r := recover(); r == nil {
+					t.Fatalf("expected panic for TokenTTL=%v", tt.ttl)
+				}
+			}()
+			WithVerification(newFakeTokenRepo(), &fakeMailer{}, VerificationConfig{
+				AppURL:     "https://cp.example",
+				ServerName: "X",
+				TokenTTL:   tt.ttl,
+			})
+		})
+	}
+}
+
+func TestWithVerification_DefaultsResendCooldown(t *testing.T) {
+	t.Parallel()
+	cfg := VerificationConfig{
+		AppURL:     "https://cp.example",
+		ServerName: "X",
+		TokenTTL:   time.Hour,
+	}
+	svc := NewService(newFakeUserRepo(), WithVerification(newFakeTokenRepo(), &fakeMailer{}, cfg))
+	if svc.cfg.ResendCooldown != 60*time.Second {
+		t.Errorf("ResendCooldown = %v, want 60s default", svc.cfg.ResendCooldown)
+	}
+}
+
+func TestWithVerification_PreservesExplicitResendCooldown(t *testing.T) {
+	t.Parallel()
+	cfg := VerificationConfig{
+		AppURL:         "https://cp.example",
+		ServerName:     "X",
+		TokenTTL:       time.Hour,
+		ResendCooldown: 5 * time.Minute,
+	}
+	svc := NewService(newFakeUserRepo(), WithVerification(newFakeTokenRepo(), &fakeMailer{}, cfg))
+	if svc.cfg.ResendCooldown != 5*time.Minute {
+		t.Errorf("ResendCooldown = %v, want 5m (preserved)", svc.cfg.ResendCooldown)
+	}
+}
+
+func TestService_Create_WithoutVerificationDeps_NoTokenIssued(t *testing.T) {
+	t.Parallel()
+	svc := NewService(newFakeUserRepo())
+
+	dto, err := svc.Create(context.Background(), CreateCommand{
+		Username:        "testuser",
+		Password:        "Test1234!",
+		PasswordConfirm: "Test1234!",
+		Email:           "test@example.com",
+		Gender:          "F",
+	})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	if dto.ID == 0 {
+		t.Errorf("expected ID assigned")
+	}
+}
+
+func TestService_Create_WithVerificationDeps_IssuesToken(t *testing.T) {
+	t.Parallel()
+	svc, _, tokenRepo, mailer := newServiceWithVerification(t)
+
+	dto, err := svc.Create(context.Background(), CreateCommand{
+		Username:        "testuser",
+		Password:        "Test1234!",
+		PasswordConfirm: "Test1234!",
+		Email:           "test@example.com",
+		Gender:          "F",
+	})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	if len(tokenRepo.insertCalls) != 1 {
+		t.Errorf("token Insert calls = %d, want 1", len(tokenRepo.insertCalls))
+	}
+	if tokenRepo.insertCalls[0].AccountID != dto.ID {
+		t.Errorf("token AccountID = %d, want %d", tokenRepo.insertCalls[0].AccountID, dto.ID)
+	}
+	if tokenRepo.insertCalls[0].Action != domain.ActionEmailVerification {
+		t.Errorf("token Action = %v, want EmailVerification", tokenRepo.insertCalls[0].Action)
+	}
+	sent := mailer.Sent()
+	if len(sent) != 1 {
+		t.Fatalf("Sent len = %d, want 1", len(sent))
+	}
+	if sent[0].To != "test@example.com" {
+		t.Errorf("To = %q, want test@example.com", sent[0].To)
+	}
+	if !strings.Contains(sent[0].Subject, "Test rAthena") {
+		t.Errorf("Subject = %q, want server name embedded", sent[0].Subject)
+	}
+}
+
+func TestService_Create_VerificationInsertError_Wraps(t *testing.T) {
+	t.Parallel()
+	svc, _, tokenRepo, _ := newServiceWithVerification(t)
+	tokenRepo.insertHook = func(*domain.ActionToken) error { return errors.New("token insert boom") }
+
+	_, err := svc.Create(context.Background(), CreateCommand{
+		Username:        "testuser",
+		Password:        "Test1234!",
+		PasswordConfirm: "Test1234!",
+		Email:           "test@example.com",
+		Gender:          "F",
+	})
+	if err == nil {
+		t.Fatal("expected error from IssueVerification")
+	}
+	if !strings.Contains(err.Error(), "app.Service.Create") {
+		t.Errorf("not wrapped with Create: %v", err)
+	}
+}
+
+func TestService_IssueVerification_DeletesBeforeInsert(t *testing.T) {
+	t.Parallel()
+	svc, _, tokenRepo, mailer := newServiceWithVerification(t)
+
+	if err := svc.IssueVerification(context.Background(), 42, "user@example.com", "user"); err != nil {
+		t.Fatalf("IssueVerification: %v", err)
+	}
+	if len(tokenRepo.deleteCalls) != 1 {
+		t.Fatalf("DeleteUnconsumed calls = %d, want 1", len(tokenRepo.deleteCalls))
+	}
+	if tokenRepo.deleteCalls[0].AccountID != 42 {
+		t.Errorf("deleted accountID = %d, want 42", tokenRepo.deleteCalls[0].AccountID)
+	}
+	if tokenRepo.deleteCalls[0].Action != domain.ActionEmailVerification {
+		t.Errorf("deleted action = %v, want EmailVerification", tokenRepo.deleteCalls[0].Action)
+	}
+	if len(mailer.Sent()) != 1 {
+		t.Errorf("expected 1 mail sent")
+	}
+}
+
+func TestService_IssueVerification_TokenExpiresAtTTL(t *testing.T) {
+	t.Parallel()
+	svc, _, tokenRepo, _ := newServiceWithVerification(t)
+	fixed := time.Date(2026, 5, 11, 12, 0, 0, 0, time.UTC)
+	svc.now = func() time.Time { return fixed }
+
+	if err := svc.IssueVerification(context.Background(), 1, "user@example.com", "user"); err != nil {
+		t.Fatalf("IssueVerification: %v", err)
+	}
+	stored := tokenRepo.insertCalls[0]
+	wantExpiry := fixed.Add(24 * time.Hour)
+	if !stored.ExpiresAt.Equal(wantExpiry) {
+		t.Errorf("ExpiresAt = %v, want %v", stored.ExpiresAt, wantExpiry)
+	}
+	if !stored.CreatedAt.Equal(fixed) {
+		t.Errorf("CreatedAt = %v, want %v", stored.CreatedAt, fixed)
+	}
+}
+
+func TestService_IssueVerification_EmailURLContainsRoundTrippableToken(t *testing.T) {
+	t.Parallel()
+	svc, _, tokenRepo, mailer := newServiceWithVerification(t)
+
+	if err := svc.IssueVerification(context.Background(), 1, "user@example.com", "user"); err != nil {
+		t.Fatalf("IssueVerification: %v", err)
+	}
+	body := mailer.Sent()[0].Body
+	if !strings.Contains(body, "https://cp.example/verify?token=") {
+		t.Errorf("body missing verify URL: %s", body)
+	}
+	rawToken := extractRawTokenFromBody(t, body)
+	decoded, err := base64.RawURLEncoding.DecodeString(rawToken)
+	if err != nil {
+		t.Fatalf("token not RawURLEncoded: %v", err)
+	}
+	if len(decoded) != 32 {
+		t.Errorf("decoded len = %d, want 32", len(decoded))
+	}
+	if _, ok := tokenRepo.byHash[sha256.Sum256(decoded)]; !ok {
+		t.Errorf("stored token hash does not match sha256 of raw")
+	}
+}
+
+func TestService_IssueVerification_TrimsTrailingSlashInAppURL(t *testing.T) {
+	t.Parallel()
+	tokenRepo := newFakeTokenRepo()
+	mailer := &fakeMailer{}
+	cfg := VerificationConfig{
+		AppURL:     "https://cp.example///",
+		ServerName: "X",
+		TokenTTL:   time.Hour,
+	}
+	svc := NewService(newFakeUserRepo(), WithVerification(tokenRepo, mailer, cfg))
+
+	if err := svc.IssueVerification(context.Background(), 1, "u@x", "u"); err != nil {
+		t.Fatalf("IssueVerification: %v", err)
+	}
+	body := mailer.Sent()[0].Body
+	if strings.Contains(body, "////verify") || strings.Contains(body, "///verify") {
+		t.Errorf("trailing slashes not trimmed: %s", body)
+	}
+	if !strings.Contains(body, "https://cp.example/verify?token=") {
+		t.Errorf("body missing canonical URL: %s", body)
+	}
+}
+
+func TestService_IssueVerification_DeleteError_Wraps(t *testing.T) {
+	t.Parallel()
+	svc, _, tokenRepo, _ := newServiceWithVerification(t)
+	tokenRepo.deleteUnconsumedHook = func(int, domain.Action) error { return errors.New("delete boom") }
+
+	err := svc.IssueVerification(context.Background(), 1, "u@x", "u")
+	if err == nil || !strings.Contains(err.Error(), "app.Service.IssueVerification") {
+		t.Errorf("not wrapped: %v", err)
+	}
+}
+
+func TestService_ConsumeVerification_HappyPath(t *testing.T) {
+	t.Parallel()
+	svc, userRepo, _, mailer := newServiceWithVerification(t)
+	user, _ := userRepo.Create(context.Background(), &domain.User{
+		Username: "u", Email: "u@x", GroupID: 5,
+	})
+
+	if err := svc.IssueVerification(context.Background(), user.ID, user.Email, user.Username); err != nil {
+		t.Fatalf("IssueVerification: %v", err)
+	}
+	rawToken := extractRawTokenFromBody(t, mailer.Sent()[0].Body)
+
+	if err := svc.ConsumeVerification(context.Background(), rawToken); err != nil {
+		t.Fatalf("ConsumeVerification: %v", err)
+	}
+	got, _ := userRepo.GetByID(context.Background(), user.ID)
+	if got.GroupID != 0 {
+		t.Errorf("GroupID = %d, want 0 (verified)", got.GroupID)
+	}
+}
+
+func TestService_ConsumeVerification_InvalidEncoding(t *testing.T) {
+	t.Parallel()
+	svc, _, _, _ := newServiceWithVerification(t)
+
+	tests := []string{"", "***not-base64***", "short"}
+	for _, raw := range tests {
+		t.Run("input="+raw, func(t *testing.T) {
+			t.Parallel()
+			err := svc.ConsumeVerification(context.Background(), raw)
+			if !errors.Is(err, domain.ErrTokenInvalid) {
+				t.Errorf("got %v, want ErrTokenInvalid", err)
+			}
+		})
+	}
+}
+
+func TestService_ConsumeVerification_UnknownTokenInRepo(t *testing.T) {
+	t.Parallel()
+	svc, _, _, _ := newServiceWithVerification(t)
+	raw := make([]byte, 32)
+	for i := range raw {
+		raw[i] = byte(i)
+	}
+	rawToken := base64.RawURLEncoding.EncodeToString(raw)
+
+	err := svc.ConsumeVerification(context.Background(), rawToken)
+	if !errors.Is(err, domain.ErrTokenInvalid) {
+		t.Errorf("got %v, want ErrTokenInvalid", err)
+	}
+}
+
+func TestService_ConsumeVerification_WrongAction(t *testing.T) {
+	t.Parallel()
+	svc, _, tokenRepo, _ := newServiceWithVerification(t)
+	var rawBytes [32]byte
+	rawBytes[0] = 7
+	hash := sha256.Sum256(rawBytes[:])
+	tokenRepo.byHash[hash] = &domain.ActionToken{
+		TokenHash: hash,
+		AccountID: 1,
+		Action:    domain.ActionUnknown,
+		ExpiresAt: time.Now().Add(time.Hour),
+		CreatedAt: time.Now(),
+	}
+
+	err := svc.ConsumeVerification(context.Background(), base64.RawURLEncoding.EncodeToString(rawBytes[:]))
+	if !errors.Is(err, domain.ErrTokenInvalid) {
+		t.Errorf("got %v, want ErrTokenInvalid for wrong action", err)
+	}
+}
+
+func TestService_ConsumeVerification_AlreadyConsumed(t *testing.T) {
+	t.Parallel()
+	svc, _, tokenRepo, _ := newServiceWithVerification(t)
+	var rawBytes [32]byte
+	rawBytes[0] = 8
+	hash := sha256.Sum256(rawBytes[:])
+	now := time.Now()
+	tokenRepo.byHash[hash] = &domain.ActionToken{
+		TokenHash:  hash,
+		AccountID:  1,
+		Action:     domain.ActionEmailVerification,
+		ExpiresAt:  now.Add(time.Hour),
+		CreatedAt:  now,
+		ConsumedAt: sql.NullTime{Time: now, Valid: true},
+	}
+
+	err := svc.ConsumeVerification(context.Background(), base64.RawURLEncoding.EncodeToString(rawBytes[:]))
+	if !errors.Is(err, domain.ErrTokenAlreadyUsed) {
+		t.Errorf("got %v, want ErrTokenAlreadyUsed", err)
+	}
+}
+
+func TestService_ConsumeVerification_Expired(t *testing.T) {
+	t.Parallel()
+	svc, _, tokenRepo, _ := newServiceWithVerification(t)
+	fixed := time.Date(2026, 5, 11, 12, 0, 0, 0, time.UTC)
+	svc.now = func() time.Time { return fixed }
+	var rawBytes [32]byte
+	rawBytes[0] = 9
+	hash := sha256.Sum256(rawBytes[:])
+	tokenRepo.byHash[hash] = &domain.ActionToken{
+		TokenHash: hash,
+		AccountID: 1,
+		Action:    domain.ActionEmailVerification,
+		ExpiresAt: fixed.Add(-time.Second),
+		CreatedAt: fixed.Add(-time.Hour),
+	}
+
+	err := svc.ConsumeVerification(context.Background(), base64.RawURLEncoding.EncodeToString(rawBytes[:]))
+	if !errors.Is(err, domain.ErrTokenExpired) {
+		t.Errorf("got %v, want ErrTokenExpired", err)
+	}
+}
+
+func TestService_ConsumeVerification_MarkConsumedError_Wraps(t *testing.T) {
+	t.Parallel()
+	svc, _, tokenRepo, _ := newServiceWithVerification(t)
+	var rawBytes [32]byte
+	rawBytes[0] = 10
+	hash := sha256.Sum256(rawBytes[:])
+	tokenRepo.byHash[hash] = &domain.ActionToken{
+		TokenHash: hash, AccountID: 1, Action: domain.ActionEmailVerification,
+		ExpiresAt: time.Now().Add(time.Hour),
+		CreatedAt: time.Now(),
+	}
+	tokenRepo.markConsumedHook = func([32]byte, time.Time) error { return errors.New("mark boom") }
+
+	err := svc.ConsumeVerification(context.Background(), base64.RawURLEncoding.EncodeToString(rawBytes[:]))
+	if err == nil || !strings.Contains(err.Error(), "app.Service.ConsumeVerification") {
+		t.Errorf("not wrapped: %v", err)
+	}
+}
+
+func TestService_ConsumeVerification_MarkVerifiedError_Wraps(t *testing.T) {
+	t.Parallel()
+	svc, userRepo, tokenRepo, _ := newServiceWithVerification(t)
+	var rawBytes [32]byte
+	rawBytes[0] = 11
+	hash := sha256.Sum256(rawBytes[:])
+	tokenRepo.byHash[hash] = &domain.ActionToken{
+		TokenHash: hash, AccountID: 99, Action: domain.ActionEmailVerification,
+		ExpiresAt: time.Now().Add(time.Hour),
+		CreatedAt: time.Now(),
+	}
+	userRepo.markVerifiedHook = func(int) error { return errors.New("mark verified boom") }
+
+	err := svc.ConsumeVerification(context.Background(), base64.RawURLEncoding.EncodeToString(rawBytes[:]))
+	if err == nil || !strings.Contains(err.Error(), "app.Service.ConsumeVerification") {
+		t.Errorf("not wrapped: %v", err)
+	}
+}
+
+func TestService_ResendVerification_UserNotFound_Wraps(t *testing.T) {
+	t.Parallel()
+	svc, _, _, _ := newServiceWithVerification(t)
+
+	err := svc.ResendVerification(context.Background(), 999)
+	if err == nil || !strings.Contains(err.Error(), "app.Service.ResendVerification") {
+		t.Errorf("not wrapped: %v", err)
+	}
+}
+
+func TestService_ResendVerification_AlreadyVerifiedSilent(t *testing.T) {
+	t.Parallel()
+	svc, userRepo, tokenRepo, mailer := newServiceWithVerification(t)
+	user, _ := userRepo.Create(context.Background(), &domain.User{
+		Username: "u", Email: "u@x", GroupID: 0,
+	})
+
+	if err := svc.ResendVerification(context.Background(), user.ID); err != nil {
+		t.Fatalf("ResendVerification: %v", err)
+	}
+	if len(mailer.Sent()) != 0 {
+		t.Errorf("verified user should not receive mail; sent = %d", len(mailer.Sent()))
+	}
+	if len(tokenRepo.insertCalls) != 0 {
+		t.Errorf("verified user should not get a new token; inserts = %d", len(tokenRepo.insertCalls))
+	}
+}
+
+func TestService_ResendVerification_ThrottledSilent(t *testing.T) {
+	t.Parallel()
+	svc, userRepo, tokenRepo, mailer := newServiceWithVerification(t)
+	fixed := time.Date(2026, 5, 11, 12, 0, 0, 0, time.UTC)
+	svc.now = func() time.Time { return fixed }
+	user, _ := userRepo.Create(context.Background(), &domain.User{
+		Username: "u", Email: "u@x", GroupID: 5,
+	})
+	tokenRepo.mostRecentHook = func(int, domain.Action) (time.Time, error) {
+		return fixed.Add(-30 * time.Second), nil
+	}
+
+	if err := svc.ResendVerification(context.Background(), user.ID); err != nil {
+		t.Fatalf("ResendVerification: %v", err)
+	}
+	if len(mailer.Sent()) != 0 {
+		t.Errorf("throttled resend should not send mail; sent = %d", len(mailer.Sent()))
+	}
+	if len(tokenRepo.insertCalls) != 0 {
+		t.Errorf("throttled resend should not insert token; inserts = %d", len(tokenRepo.insertCalls))
+	}
+}
+
+func TestService_ResendVerification_CooldownElapsed_Issues(t *testing.T) {
+	t.Parallel()
+	svc, userRepo, tokenRepo, mailer := newServiceWithVerification(t)
+	fixed := time.Date(2026, 5, 11, 12, 0, 0, 0, time.UTC)
+	svc.now = func() time.Time { return fixed }
+	user, _ := userRepo.Create(context.Background(), &domain.User{
+		Username: "u", Email: "u@x", GroupID: 5,
+	})
+	tokenRepo.mostRecentHook = func(int, domain.Action) (time.Time, error) {
+		return fixed.Add(-2 * time.Minute), nil
+	}
+
+	if err := svc.ResendVerification(context.Background(), user.ID); err != nil {
+		t.Fatalf("ResendVerification: %v", err)
+	}
+	if len(mailer.Sent()) != 1 {
+		t.Errorf("expected 1 mail sent after cooldown; got %d", len(mailer.Sent()))
+	}
+}
+
+func TestService_ResendVerification_NoPriorToken_Issues(t *testing.T) {
+	t.Parallel()
+	svc, userRepo, _, mailer := newServiceWithVerification(t)
+	user, _ := userRepo.Create(context.Background(), &domain.User{
+		Username: "u", Email: "u@x", GroupID: 5,
+	})
+
+	if err := svc.ResendVerification(context.Background(), user.ID); err != nil {
+		t.Fatalf("ResendVerification: %v", err)
+	}
+	if len(mailer.Sent()) != 1 {
+		t.Errorf("expected 1 mail sent for first-time resend; got %d", len(mailer.Sent()))
+	}
+}
+
+func TestService_ResendVerification_MostRecentError_Wraps(t *testing.T) {
+	t.Parallel()
+	svc, userRepo, tokenRepo, _ := newServiceWithVerification(t)
+	user, _ := userRepo.Create(context.Background(), &domain.User{
+		Username: "u", Email: "u@x", GroupID: 5,
+	})
+	tokenRepo.mostRecentHook = func(int, domain.Action) (time.Time, error) {
+		return time.Time{}, errors.New("most recent boom")
+	}
+
+	err := svc.ResendVerification(context.Background(), user.ID)
+	if err == nil || !strings.Contains(err.Error(), "app.Service.ResendVerification") {
+		t.Errorf("not wrapped: %v", err)
+	}
+}
+
+func TestDecodeActionToken(t *testing.T) {
+	t.Parallel()
+	var raw [32]byte
+	for i := range raw {
+		raw[i] = byte(i + 1)
+	}
+	encoded := base64.RawURLEncoding.EncodeToString(raw[:])
+	wantHash := sha256.Sum256(raw[:])
+
+	tests := []struct {
+		name    string
+		input   string
+		wantOK  bool
+		wantHas bool
+	}{
+		{name: "empty", input: "", wantOK: false},
+		{name: "invalid base64", input: "***not-base64***", wantOK: false},
+		{name: "wrong length", input: base64.RawURLEncoding.EncodeToString([]byte("short")), wantOK: false},
+		{name: "valid 32-byte", input: encoded, wantOK: true, wantHas: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got, ok := decodeActionToken(tt.input)
+			if ok != tt.wantOK {
+				t.Errorf("ok = %v, want %v", ok, tt.wantOK)
+			}
+			if tt.wantHas && got != wantHash {
+				t.Errorf("hash = %x, want %x", got, wantHash)
+			}
+		})
+	}
 }

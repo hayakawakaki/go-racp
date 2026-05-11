@@ -61,3 +61,33 @@ func (s *stubSessionService) Destroy(ctx context.Context, rawToken string) error
 }
 
 func (s *stubSessionService) TTL() time.Duration { return stubSessionTTL }
+
+type stubUserLookup struct {
+	getByIDFn func(context.Context, int) (*domain.User, error)
+}
+
+func (s *stubUserLookup) GetByID(ctx context.Context, id int) (*domain.User, error) {
+	if s.getByIDFn != nil {
+		return s.getByIDFn(ctx, id)
+	}
+	return &domain.User{ID: id}, nil
+}
+
+type stubVerifyService struct {
+	consumeFn func(context.Context, string) error
+	resendFn  func(context.Context, int) error
+}
+
+func (s *stubVerifyService) ConsumeVerification(ctx context.Context, rawToken string) error {
+	if s.consumeFn != nil {
+		return s.consumeFn(ctx, rawToken)
+	}
+	return nil
+}
+
+func (s *stubVerifyService) ResendVerification(ctx context.Context, accountID int) error {
+	if s.resendFn != nil {
+		return s.resendFn(ctx, accountID)
+	}
+	return nil
+}
