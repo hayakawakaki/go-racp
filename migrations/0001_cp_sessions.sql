@@ -1,4 +1,5 @@
-CREATE TABLE IF NOT EXISTS cp_sessions (
+-- +goose Up
+CREATE TABLE cp_sessions (
     token_hash    BINARY(32)        NOT NULL PRIMARY KEY,
     user_id       INT(11) UNSIGNED  NOT NULL,
     expires_at    DATETIME          NOT NULL,
@@ -7,3 +8,6 @@ CREATE TABLE IF NOT EXISTS cp_sessions (
     KEY idx_cp_sessions_user    (user_id),
     KEY idx_cp_sessions_expires (expires_at)
 ) ENGINE=InnoDB;
+
+-- +goose Down
+DROP TABLE IF EXISTS cp_sessions;

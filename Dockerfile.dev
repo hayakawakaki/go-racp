@@ -28,8 +28,9 @@ RUN go mod download
 COPY . .
 
 RUN mkdir -p /app/tmp \
+    && chmod +x /app/scripts/*.sh \
     && chown -R app:app /app /go
 
 USER app
 
-CMD ["air", "-c", ".air.toml"]
+CMD ["./scripts/entrypoint.dev.sh"]

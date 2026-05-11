@@ -37,13 +37,6 @@ jobs:
           mysql -h 127.0.0.1 -P 3306 -uroot -ptestpassword log  \
             < docker/mariadb/init/ra-log.sql
 
-      - name: Apply CP migrations
-        run: |
-          for f in migrations/*.sql; do
-            echo "Applying $f"
-            mysql -h 127.0.0.1 -P 3306 -uroot -ptestpassword main < "$f"
-          done
-
       - name: Build image
         run: docker build -t go-racp:pr .
 
