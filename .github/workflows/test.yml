@@ -45,11 +45,9 @@ jobs:
           mysql -h 127.0.0.1 -P 3306 -uroot -ptestpassword main < docker/mariadb/init/ra-main.sql
           mysql -h 127.0.0.1 -P 3306 -uroot -ptestpassword log < docker/mariadb/init/ra-log.sql
       - name: Apply CP migrations
-        run: |
-          for f in migrations/*.sql; do
-            echo "Applying $f"
-            mysql -h 127.0.0.1 -P 3306 -uroot -ptestpassword main < "$f"
-          done
+        env:
+          DB_MAIN_URL: root:testpassword@tcp(127.0.0.1:3306)/main
+        run: go tool goose -dir migrations mysql "$DB_MAIN_URL" up
       - name: Run integration tests
         env:
           APP_URL: http://localhost:8080
