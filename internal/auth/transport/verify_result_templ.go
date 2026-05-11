@@ -14,7 +14,6 @@ type VerifyResultKind int
 
 const (
 	VerifyResultSuccess VerifyResultKind = iota
-	VerifyResultAlready
 	VerifyResultExpired
 	VerifyResultInvalid
 )
@@ -66,23 +65,18 @@ func verifyResultPage(layout httpx.Layout, state VerifyResultState) templ.Compon
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-			case VerifyResultAlready:
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<h1 class=\"text-2xl font-semibold mb-4 text-gray-900\">Already verified</h1><p class=\"text-gray-700 mb-4\">This account is already verified. You can log in.</p><a href=\"/login\" class=\"inline-block rounded bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 transition\">Log in</a>")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
 			case VerifyResultExpired:
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<h1 class=\"text-2xl font-semibold mb-4 text-gray-900\">Link expired</h1><p class=\"text-gray-700 mb-4\">Your verification link has expired. Log in to request a new one.</p><a href=\"/login\" class=\"inline-block rounded bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 transition\">Log in</a>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<h1 class=\"text-2xl font-semibold mb-4 text-gray-900\">Link expired</h1><p class=\"text-gray-700 mb-4\">Your verification link has expired. Log in to request a new one.</p><a href=\"/login\" class=\"inline-block rounded bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 transition\">Log in</a>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			case VerifyResultInvalid:
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<h1 class=\"text-2xl font-semibold mb-4 text-gray-900\">Invalid link</h1><p class=\"text-gray-700 mb-4\">This link is invalid or unknown.</p><a href=\"/login\" class=\"inline-block rounded bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 transition\">Log in</a>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<h1 class=\"text-2xl font-semibold mb-4 text-gray-900\">Invalid link</h1><p class=\"text-gray-700 mb-4\">This link is invalid or unknown.</p><a href=\"/login\" class=\"inline-block rounded bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 transition\">Log in</a>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

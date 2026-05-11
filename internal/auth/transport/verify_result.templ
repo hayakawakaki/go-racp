@@ -6,7 +6,6 @@ type VerifyResultKind int
 
 const (
 	VerifyResultSuccess VerifyResultKind = iota
-	VerifyResultAlready
 	VerifyResultExpired
 	VerifyResultInvalid
 )
@@ -22,10 +21,6 @@ templ verifyResultPage(layout httpx.Layout, state VerifyResultState) {
 				case VerifyResultSuccess:
 					<h1 class="text-2xl font-semibold mb-4 text-gray-900">Email verified</h1>
 					<p class="text-gray-700 mb-4">Your account is now active. You can log in.</p>
-					<a href="/login" class="inline-block rounded bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 transition">Log in</a>
-				case VerifyResultAlready:
-					<h1 class="text-2xl font-semibold mb-4 text-gray-900">Already verified</h1>
-					<p class="text-gray-700 mb-4">This account is already verified. You can log in.</p>
 					<a href="/login" class="inline-block rounded bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 transition">Log in</a>
 				case VerifyResultExpired:
 					<h1 class="text-2xl font-semibold mb-4 text-gray-900">Link expired</h1>

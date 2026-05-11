@@ -48,21 +48,34 @@ func (h *Handler) doVerify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	err := h.verifySvc.ConsumeVerification(r.Context(), token)
+
+	if (err == nil || errors.Is(err, domain.ErrTokenAlreadyUsed)) && h.hasActiveSession(r) {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
 	state := VerifyResultState{}
 	switch {
 	case err == nil:
 		state.Kind = VerifyResultSuccess
-	case errors.Is(err, domain.ErrTokenAlreadyUsed):
-		state.Kind = VerifyResultAlready
 	case errors.Is(err, domain.ErrTokenExpired):
 		state.Kind = VerifyResultExpired
-	case errors.Is(err, domain.ErrTokenInvalid):
-		state.Kind = VerifyResultInvalid
 	default:
-		h.logger.Error("verify consume", "err", err)
+		if !errors.Is(err, domain.ErrTokenInvalid) && !errors.Is(err, domain.ErrTokenAlreadyUsed) {
+			h.logger.Error("verify consume", "err", err)
+		}
 		state.Kind = VerifyResultInvalid
 	}
 	httpx.RenderHTML(w, r, h.logger, verifyResultPage(h.layout(), state))
+}
+
+func (h *Handler) hasActiveSession(r *http.Request) bool {
+	cookie, err := r.Cookie(sessionCookieName)
+	if err != nil || cookie.Value == "" {
+		return false
+	}
+	_, err = h.sessSvc.Validate(r.Context(), cookie.Value)
+	return err == nil
 }
 
 func (h *Handler) doResendVerification(w http.ResponseWriter, r *http.Request) {
