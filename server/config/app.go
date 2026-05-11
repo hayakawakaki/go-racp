@@ -13,17 +13,26 @@ type GeneralConfig struct {
 	ServerName string `yaml:"ServerName"`
 }
 
+// MailerConfig holds outgoing-mail settings.
+type MailerConfig struct {
+	FromAddress string `yaml:"FromAddress"`
+}
+
 // AppConfig holds operator-tunable application settings loaded from config.yml.
 type AppConfig struct {
-	General    GeneralConfig `yaml:"GeneralConfig"`
-	SessionTTL time.Duration `yaml:"SessionTTL"`
+	General              GeneralConfig `yaml:"GeneralConfig"`
+	Mailer               MailerConfig  `yaml:"MailerConfig"`
+	SessionTTL           time.Duration `yaml:"SessionTTL"`
+	VerificationTokenTTL time.Duration `yaml:"VerificationTokenTTL"`
 }
 
 // appConfigDefaults apply default config in case of missing config file
 func appConfigDefaults() *AppConfig {
 	return &AppConfig{
-		General:    GeneralConfig{ServerName: "Go Control Panel"},
-		SessionTTL: 24 * time.Hour,
+		General:              GeneralConfig{ServerName: "Go Control Panel"},
+		Mailer:               MailerConfig{FromAddress: "noreply@gocp.com"},
+		SessionTTL:           24 * time.Hour,
+		VerificationTokenTTL: 30 * time.Minute,
 	}
 }
 
@@ -50,6 +59,12 @@ func ProcessAppConfig() *AppConfig {
 
 	if cfg.SessionTTL <= 0 {
 		panic(fmt.Errorf("SessionTTL must be > 0, got %v", cfg.SessionTTL))
+	}
+	if cfg.VerificationTokenTTL <= 0 {
+		panic(fmt.Errorf("VerificationTokenTTL must be > 0, got %v", cfg.VerificationTokenTTL))
+	}
+	if cfg.Mailer.FromAddress == "" {
+		panic(fmt.Errorf("MailerConfig.FromAddress is required"))
 	}
 
 	return cfg

@@ -4,3 +4,10 @@ GeneralConfig:
 
 # Session Related Config
 SessionTTL: "24h"
+
+# Email verification token lifetime
+VerificationTokenTTL: "30m"
+
+# Outgoing mail
+MailerConfig:
+  FromAddress: "noreply@your-server.example"

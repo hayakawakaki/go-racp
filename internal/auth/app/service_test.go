@@ -22,6 +22,7 @@ type fakeUserRepo struct {
 	updateHook        func(*domain.User) (*domain.User, error)
 	deleteHook        func(int) error
 	authenticateHook  func(string, string) (*domain.User, error)
+	markVerifiedHook  func(int) error
 	mu                sync.Mutex
 	nextID            int
 }
@@ -140,6 +141,20 @@ func (f *fakeUserRepo) Authenticate(_ context.Context, username, password string
 		}
 	}
 	return nil, domain.ErrInvalidCredentials
+}
+
+func (f *fakeUserRepo) MarkVerified(_ context.Context, accountID int) error {
+	if f.markVerifiedHook != nil {
+		return f.markVerifiedHook(accountID)
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	u, ok := f.byID[accountID]
+	if !ok {
+		return domain.ErrUserNotFound
+	}
+	u.GroupID = 0
+	return nil
 }
 
 func TestService_Create(t *testing.T) {
