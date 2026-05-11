@@ -71,7 +71,7 @@ func verifyResultPage(layout httpx.Layout, state VerifyResultState) templ.Compon
 					return templ_7745c5c3_Err
 				}
 			case VerifyResultInvalid:
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<h1 class=\"text-2xl font-semibold mb-4 text-gray-900\">Invalid link</h1><p class=\"text-gray-700 mb-4\">This link is invalid or unknown.</p><a href=\"/login\" class=\"inline-block rounded bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 transition\">Log in</a>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<h1 class=\"text-2xl font-semibold mb-4 text-gray-900\">Invalid link</h1><p class=\"text-gray-700 mb-4\">This link is invalid.</p><a href=\"/\" class=\"inline-block rounded bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 transition\">Return to Home</a>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
