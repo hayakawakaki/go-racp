@@ -15,6 +15,7 @@ func TestProcessEnv(t *testing.T) {
 			name: "all set",
 			envVars: map[string]string{
 				"MODE":             "production",
+				"APP_URL":          "https://panel.example.com",
 				"DB_MAIN_URL":      "user:pass@tcp(10.0.0.1:3306)/main",
 				"DB_LOG_URL":       "user:pass@tcp(10.0.0.1:3306)/log",
 				"DB_MAX_OPEN_CONN": "10",
@@ -25,6 +26,7 @@ func TestProcessEnv(t *testing.T) {
 			},
 			expected: EnvConfig{
 				Mode:          "production",
+				AppURL:        "https://panel.example.com",
 				DBMainURL:     "user:pass@tcp(10.0.0.1:3306)/main",
 				DBLogURL:      "user:pass@tcp(10.0.0.1:3306)/log",
 				DBMaxOpenConn: 10,
@@ -37,12 +39,14 @@ func TestProcessEnv(t *testing.T) {
 		{
 			name: "defaults applied",
 			envVars: map[string]string{
+				"APP_URL":     "http://localhost:8080",
 				"DB_MAIN_URL": "user:pass@tcp(127.0.0.1:3306)/main",
 				"DB_LOG_URL":  "user:pass@tcp(127.0.0.1:3306)/log",
 				"SMTP_HOST":   "mailpit",
 			},
 			expected: EnvConfig{
 				Mode:          "development",
+				AppURL:        "http://localhost:8080",
 				DBMainURL:     "user:pass@tcp(127.0.0.1:3306)/main",
 				DBLogURL:      "user:pass@tcp(127.0.0.1:3306)/log",
 				DBMaxOpenConn: 4,
