@@ -53,7 +53,7 @@ func TestNewClient(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			got, err := NewClient(tt.host, tt.port)
+			got, err := NewClient(tt.host, tt.port, false)
 
 			if tt.expectedErr != nil {
 				if !errors.Is(err, tt.expectedErr) {

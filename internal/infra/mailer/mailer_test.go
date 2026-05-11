@@ -18,9 +18,9 @@ func discardLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(io.Discard, nil))
 }
 
-func newTestClient(t *testing.T, host string, port int) *gomail.Client {
+func newTestClient(t *testing.T, host string, port int, tls bool) *gomail.Client {
 	t.Helper()
-	client, err := NewClient(host, port)
+	client, err := NewClient(host, port, tls)
 	if err != nil {
 		t.Fatalf("NewClient(%q, %d): %v", host, port, err)
 	}
@@ -29,9 +29,8 @@ func newTestClient(t *testing.T, host string, port int) *gomail.Client {
 
 func TestNewSMTPMailer_FieldsWired(t *testing.T) {
 	t.Parallel()
-	client := newTestClient(t, "smtp.example.com", 587)
+	client := newTestClient(t, "smtp.example.com", 587, false)
 	logger := discardLogger()
-
 	mailer := NewSMTPMailer(client, "noreply@example.invalid", logger)
 
 	if mailer == nil {
@@ -50,7 +49,7 @@ func TestNewSMTPMailer_FieldsWired(t *testing.T) {
 
 func TestSMTPMailer_Close_Idempotent(t *testing.T) {
 	t.Parallel()
-	client := newTestClient(t, "smtp.example.com", 587)
+	client := newTestClient(t, "smtp.example.com", 587, false)
 	mailer := NewSMTPMailer(client, "noreply@example.invalid", discardLogger())
 
 	if err := mailer.Close(); err != nil {
@@ -63,7 +62,7 @@ func TestSMTPMailer_Close_Idempotent(t *testing.T) {
 
 func TestSMTPMailer_Send_InvalidFromAddress(t *testing.T) {
 	t.Parallel()
-	client := newTestClient(t, "smtp.example.com", 587)
+	client := newTestClient(t, "smtp.example.com", 587, false)
 	mailer := NewSMTPMailer(client, "not a valid address", discardLogger())
 
 	err := mailer.Send(context.Background(), "to@example.invalid", "subject", "body")
@@ -80,7 +79,7 @@ func TestSMTPMailer_Send_InvalidFromAddress(t *testing.T) {
 
 func TestSMTPMailer_Send_InvalidToAddress(t *testing.T) {
 	t.Parallel()
-	client := newTestClient(t, "smtp.example.com", 587)
+	client := newTestClient(t, "smtp.example.com", 587, false)
 	mailer := NewSMTPMailer(client, "noreply@example.invalid", discardLogger())
 
 	err := mailer.Send(context.Background(), "not a valid recipient", "subject", "body")
@@ -98,7 +97,7 @@ func TestSMTPMailer_Send_InvalidToAddress(t *testing.T) {
 func TestSMTPMailer_Send_DialFailureWraps(t *testing.T) {
 	t.Parallel()
 	port := pickClosedPort(t)
-	client := newTestClient(t, "127.0.0.1", port)
+	client := newTestClient(t, "127.0.0.1", port, false)
 	mailer := NewSMTPMailer(client, "noreply@example.invalid", discardLogger())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -117,7 +116,7 @@ func TestSMTPMailer_SendAsync_LogsOnFailure(t *testing.T) {
 	port := pickClosedPort(t)
 	logBuffer := newSyncBuffer()
 	logger := slog.New(slog.NewTextHandler(logBuffer, nil))
-	client := newTestClient(t, "127.0.0.1", port)
+	client := newTestClient(t, "127.0.0.1", port, false)
 	mailer := NewSMTPMailer(client, "noreply@example.invalid", logger)
 
 	mailer.SendAsync("to@example.invalid", "subject", "body")
@@ -135,7 +134,7 @@ func TestSMTPMailer_SendAsync_LogsOnFailure(t *testing.T) {
 func TestSMTPMailer_SendAsync_ReturnsImmediately(t *testing.T) {
 	t.Parallel()
 	port := pickClosedPort(t)
-	client := newTestClient(t, "127.0.0.1", port)
+	client := newTestClient(t, "127.0.0.1", port, false)
 	mailer := NewSMTPMailer(client, "noreply@example.invalid", discardLogger())
 
 	start := time.Now()

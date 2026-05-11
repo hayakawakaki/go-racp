@@ -29,7 +29,7 @@ func Start() error {
 	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
 
 	// Mailer (constructed before any defer-cleanup steps so a failure here can log.Fatal cleanly)
-	mailClient, err := mailer.NewClient(cfg.Env.SMTPHost, cfg.Env.SMTPPort)
+	mailClient, err := mailer.NewClient(cfg.Env.SMTPHost, cfg.Env.SMTPPort, cfg.Env.Mode != "development")
 	if err != nil {
 		log.Fatalf("init mailer: %v", err)
 	}
