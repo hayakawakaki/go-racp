@@ -1,5 +1,5 @@
 -- +goose Up
-CREATE TABLE IF NOT EXISTS cp_action_tokens (
+CREATE TABLE cp_action_tokens (
     token_hash    BINARY(32)           NOT NULL PRIMARY KEY,
     account_id    INT(11) UNSIGNED     NOT NULL,
     action        TINYINT(3) UNSIGNED  NOT NULL,

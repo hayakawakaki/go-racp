@@ -1,5 +1,5 @@
 -- +goose Up
-CREATE TABLE IF NOT EXISTS cp_sessions (
+CREATE TABLE cp_sessions (
     token_hash    BINARY(32)        NOT NULL PRIMARY KEY,
     user_id       INT(11) UNSIGNED  NOT NULL,
     expires_at    DATETIME          NOT NULL,
