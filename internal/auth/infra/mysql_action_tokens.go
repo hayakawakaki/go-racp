@@ -77,6 +77,17 @@ func (r *TokenRepository) MarkConsumed(ctx context.Context, hash [32]byte, at ti
 		return fmt.Errorf("infra.TokenRepository.MarkConsumed: %w", err)
 	}
 	if rows == 0 {
+		var consumedAt sql.NullTime
+		err := r.Client.QueryRowContext(ctx,
+			`SELECT consumed_at FROM cp_action_tokens WHERE token_hash = ?`,
+			hash[:],
+		).Scan(&consumedAt)
+		if errors.Is(err, sql.ErrNoRows) {
+			return domain.ErrTokenInvalid
+		}
+		if err != nil {
+			return fmt.Errorf("infra.TokenRepository.MarkConsumed: %w", err)
+		}
 		return domain.ErrTokenAlreadyUsed
 	}
 	return nil
