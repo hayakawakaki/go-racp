@@ -14,7 +14,10 @@ import (
 	mailtemplate "github.com/hayakawakaki/go-racp/internal/infra/mailer/template"
 )
 
-const fieldNewEmail = "new_email"
+const (
+	fieldNewEmail    = "new_email"
+	fieldNewPassword = "new_password"
+)
 
 type Mailer interface {
 	SendAsync(to, subject, body string)
@@ -103,10 +106,10 @@ func (s *Service) GetAccount(ctx context.Context, userID int) (*AccountDTO, erro
 //nolint:cyclop // sequential validation, splitting would break the flow
 func (s *Service) UpdatePassword(ctx context.Context, userID int, currentRawToken, currentPassword, newPassword, confirmPassword string) error {
 	if err := authdomain.ValidatePassword(newPassword); err != nil {
-		return &authdomain.ValidationError{Fields: authdomain.FieldErrors{"new_password": err.Error()}}
+		return &authdomain.ValidationError{Fields: authdomain.FieldErrors{fieldNewPassword: err.Error()}}
 	}
 	if err := authdomain.CheckRegistrationPassword(newPassword); err != nil {
-		return &authdomain.ValidationError{Fields: authdomain.FieldErrors{"new_password": err.Error()}}
+		return &authdomain.ValidationError{Fields: authdomain.FieldErrors{fieldNewPassword: err.Error()}}
 	}
 	if newPassword != confirmPassword {
 		return &authdomain.ValidationError{Fields: authdomain.FieldErrors{"new_password_confirm": "passwords do not match"}}
