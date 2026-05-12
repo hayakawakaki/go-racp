@@ -10,8 +10,6 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 )
 
-const fieldNewEmail = "new_email"
-
 func (h *Handler) showChangeEmail(w http.ResponseWriter, r *http.Request) {
 	h.renderChangeEmail(w, r, ChangeEmailState{}, true)
 }
@@ -26,7 +24,7 @@ func (h *Handler) doChangeEmail(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, maxAccountFormBytes)
 	if err := r.ParseForm(); err != nil {
 		h.renderChangeEmail(w, r, ChangeEmailState{
-			Errors: map[string]string{fieldNewEmail: "Invalid form data."},
+			Errors: map[string]string{fieldNewEmail: invalidFormDataMsg},
 		}, false)
 		return
 	}

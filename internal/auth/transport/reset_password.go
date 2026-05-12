@@ -9,13 +9,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 )
 
-const (
-	maxResetPasswordFormBytes = 2 << 10
-
-	fieldToken           = "token"
-	fieldPassword        = "password"
-	fieldPasswordConfirm = "password_confirm"
-)
+const maxResetPasswordFormBytes = 2 << 10
 
 func (h *Handler) showResetPassword(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Referrer-Policy", "no-referrer")

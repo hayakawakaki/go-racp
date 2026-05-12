@@ -20,6 +20,13 @@ const (
 
 	genericErrorMessage = "Something went wrong. Please try again."
 	invalidFormDataMsg  = "Invalid form data."
+
+	fieldUsername        = "username"
+	fieldEmail           = "email"
+	fieldPassword        = "password"
+	fieldPasswordConfirm = "password_confirm"
+	fieldGender          = "gender"
+	fieldToken           = "token"
 )
 
 type authService interface {
@@ -104,11 +111,11 @@ func (h *Handler) doRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cmd := app.CreateCommand{
-		Username:        r.PostFormValue("username"),
-		Email:           r.PostFormValue("email"),
-		Password:        r.PostFormValue("password"),
-		PasswordConfirm: r.PostFormValue("password_confirm"),
-		Gender:          r.PostFormValue("gender"),
+		Username:        r.PostFormValue(fieldUsername),
+		Email:           r.PostFormValue(fieldEmail),
+		Password:        r.PostFormValue(fieldPassword),
+		PasswordConfirm: r.PostFormValue(fieldPasswordConfirm),
+		Gender:          r.PostFormValue(fieldGender),
 	}
 
 	_, err := h.svc.Create(r.Context(), cmd)
@@ -157,8 +164,8 @@ func (h *Handler) doLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cmd := app.LoginCommand{
-		Username: r.PostFormValue("username"),
-		Password: r.PostFormValue("password"),
+		Username: r.PostFormValue(fieldUsername),
+		Password: r.PostFormValue(fieldPassword),
 	}
 
 	user, err := h.svc.Authenticate(r.Context(), cmd)

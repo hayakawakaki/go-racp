@@ -17,10 +17,10 @@ func (h *Handler) showForgotPassword(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) doForgotPassword(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, maxForgotPasswordFormBytes)
 	if err := r.ParseForm(); err != nil {
-		h.renderForgotPassword(w, r, ForgotPasswordState{Errors: map[string]string{"email": invalidFormDataMsg}})
+		h.renderForgotPassword(w, r, ForgotPasswordState{Errors: map[string]string{fieldEmail: invalidFormDataMsg}})
 		return
 	}
-	email := r.PostFormValue("email")
+	email := r.PostFormValue(fieldEmail)
 	err := h.resetSvc.RequestPasswordReset(r.Context(), email)
 	if err != nil {
 		state := ForgotPasswordState{Email: email}
@@ -29,7 +29,7 @@ func (h *Handler) doForgotPassword(w http.ResponseWriter, r *http.Request) {
 			state.Errors = ve.Fields
 		} else {
 			h.logger.Error("forgot_password", "err", err)
-			state.Errors = map[string]string{"email": genericErrorMessage}
+			state.Errors = map[string]string{fieldEmail: genericErrorMessage}
 		}
 		h.renderForgotPassword(w, r, state)
 		return

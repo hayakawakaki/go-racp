@@ -9,12 +9,6 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 )
 
-const (
-	fieldCurrentPassword    = "current_password"
-	fieldNewPassword        = "new_password"
-	fieldNewPasswordConfirm = "new_password_confirm"
-)
-
 func (h *Handler) showChangePassword(w http.ResponseWriter, r *http.Request) {
 	h.renderChangePassword(w, r, ChangePasswordState{}, true)
 }
@@ -28,9 +22,8 @@ func (h *Handler) doChangePassword(w http.ResponseWriter, r *http.Request) {
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, maxAccountFormBytes)
 	if err := r.ParseForm(); err != nil {
-		//nolint:gosec // G101 false-positive: form-error message, not a credential
 		h.renderChangePassword(w, r, ChangePasswordState{
-			Errors: map[string]string{fieldNewPassword: "Invalid form data."},
+			Errors: map[string]string{fieldNewPassword: invalidFormDataMsg},
 		}, false)
 		return
 	}

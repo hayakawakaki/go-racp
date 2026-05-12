@@ -16,7 +16,13 @@ const (
 	maxAccountFormBytes = 4 << 10
 
 	genericErrorMessage = "Something went wrong. Please try again."
+	invalidFormDataMsg  = "Invalid form data."
 	sessionCookieName   = "racp_session"
+
+	fieldCurrentPassword    = "current_password"
+	fieldNewPassword        = "new_password"
+	fieldNewPasswordConfirm = "new_password_confirm"
+	fieldNewEmail           = "new_email"
 )
 
 type accountService interface {
