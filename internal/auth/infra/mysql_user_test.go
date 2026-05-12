@@ -184,7 +184,7 @@ func TestRepository_MarkVerified(t *testing.T) {
 		}
 	})
 
-	t.Run("already verified user returns ErrUserNotFound", func(t *testing.T) {
+	t.Run("idempotent on already-verified user", func(t *testing.T) {
 		suf := randomizeSuffix(t)
 		user, err := repo.Create(ctx, &domain.User{
 			Username: "racp_test_" + suf,
@@ -200,9 +200,8 @@ func TestRepository_MarkVerified(t *testing.T) {
 		if firstErr := repo.MarkVerified(ctx, user.ID); firstErr != nil {
 			t.Fatalf("first MarkVerified: %v", firstErr)
 		}
-		err = repo.MarkVerified(ctx, user.ID)
-		if !errors.Is(err, domain.ErrUserNotFound) {
-			t.Errorf("second MarkVerified on already-verified user: got %v, want ErrUserNotFound", err)
+		if err := repo.MarkVerified(ctx, user.ID); err != nil {
+			t.Errorf("second MarkVerified on already-verified user: got %v, want nil (idempotent)", err)
 		}
 	})
 
