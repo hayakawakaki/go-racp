@@ -19,6 +19,7 @@ const (
 	maxLoginFormBytes    = 2 << 10
 
 	genericErrorMessage = "Something went wrong. Please try again."
+	invalidFormDataMsg  = "Invalid form data."
 )
 
 type authService interface {
@@ -98,7 +99,7 @@ func (h *Handler) showRegister(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) doRegister(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, maxRegisterFormBytes)
 	if err := r.ParseForm(); err != nil {
-		h.renderRegister(w, r, RegisterFormState{FormError: "Invalid form data."})
+		h.renderRegister(w, r, RegisterFormState{FormError: invalidFormDataMsg})
 		return
 	}
 
@@ -151,7 +152,7 @@ func (h *Handler) showLogin(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) doLogin(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, maxLoginFormBytes)
 	if err := r.ParseForm(); err != nil {
-		h.renderLogin(w, r, LoginFormState{Error: "Invalid form data."})
+		h.renderLogin(w, r, LoginFormState{Error: invalidFormDataMsg})
 		return
 	}
 

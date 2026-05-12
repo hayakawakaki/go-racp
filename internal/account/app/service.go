@@ -14,6 +14,8 @@ import (
 	mailtemplate "github.com/hayakawakaki/go-racp/internal/infra/mailer/template"
 )
 
+const fieldNewEmail = "new_email"
+
 type Mailer interface {
 	SendAsync(to, subject, body string)
 }
@@ -139,7 +141,7 @@ func (s *Service) UpdatePassword(ctx context.Context, userID int, currentRawToke
 func (s *Service) RequestEmailChange(ctx context.Context, userID int, currentPassword, newEmail string) error {
 	normalizedNewEmail, err := authdomain.ValidateEmail(newEmail)
 	if err != nil {
-		return &authdomain.ValidationError{Fields: authdomain.FieldErrors{"new_email": err.Error()}}
+		return &authdomain.ValidationError{Fields: authdomain.FieldErrors{fieldNewEmail: err.Error()}}
 	}
 	user, err := s.Repo.GetByID(ctx, userID)
 	if err != nil {
@@ -149,14 +151,14 @@ func (s *Service) RequestEmailChange(ctx context.Context, userID int, currentPas
 		return &authdomain.ValidationError{Fields: authdomain.FieldErrors{"current_password": "incorrect"}}
 	}
 	if strings.EqualFold(normalizedNewEmail, user.Email) {
-		return &authdomain.ValidationError{Fields: authdomain.FieldErrors{"new_email": "same as current"}}
+		return &authdomain.ValidationError{Fields: authdomain.FieldErrors{fieldNewEmail: "same as current"}}
 	}
 	existing, err := s.Repo.GetByEmail(ctx, normalizedNewEmail)
 	if err != nil && !errors.Is(err, authdomain.ErrUserNotFound) {
 		return fmt.Errorf("app.Service.RequestEmailChange: %w", err)
 	}
 	if existing != nil && existing.ID != userID {
-		return &authdomain.ValidationError{Fields: authdomain.FieldErrors{"new_email": "already in use"}}
+		return &authdomain.ValidationError{Fields: authdomain.FieldErrors{fieldNewEmail: "already in use"}}
 	}
 	lastChange, err := s.ChangeLog.MostRecent(ctx, userID, accountchange.Email)
 	if err != nil {

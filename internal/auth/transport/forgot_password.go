@@ -17,7 +17,7 @@ func (h *Handler) showForgotPassword(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) doForgotPassword(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, maxForgotPasswordFormBytes)
 	if err := r.ParseForm(); err != nil {
-		h.renderForgotPassword(w, r, ForgotPasswordState{Errors: map[string]string{"email": "Invalid form data."}})
+		h.renderForgotPassword(w, r, ForgotPasswordState{Errors: map[string]string{"email": invalidFormDataMsg}})
 		return
 	}
 	email := r.PostFormValue("email")
