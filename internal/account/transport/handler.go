@@ -124,6 +124,11 @@ func (h *Handler) birthdateBounds() (minDate, maxDate string) {
 }
 
 func (h *Handler) showRegister(w http.ResponseWriter, r *http.Request) {
+	if h.hasActiveSession(r) {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
 	minDate, maxDate := h.birthdateBounds()
 	httpx.RenderHTML(w, r, h.logger, registerPage(h.layout(), RegisterFormState{
 		BirthdateMin: minDate,
@@ -191,6 +196,11 @@ func (h *Handler) renderRegister(w http.ResponseWriter, r *http.Request, state R
 }
 
 func (h *Handler) showLogin(w http.ResponseWriter, r *http.Request) {
+	if h.hasActiveSession(r) {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
 	httpx.RenderHTML(w, r, h.logger, loginPage(h.layout(), LoginFormState{}))
 }
 
