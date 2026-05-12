@@ -14,6 +14,9 @@ type tokenPeek func(ctx context.Context, rawToken string) (*actiontoken.ActionTo
 
 func (h *Handler) validateTokenLink(w http.ResponseWriter, r *http.Request, peek tokenPeek, op string, expired templ.Component) (string, bool) {
 	w.Header().Set("Referrer-Policy", "no-referrer")
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Pragma", "no-cache")
+
 	token := r.URL.Query().Get("token")
 	if token == "" {
 		httpx.Render404(w, r, h.logger, h.layout())
