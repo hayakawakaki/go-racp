@@ -132,11 +132,5 @@ func (h *Handler) doResendVerification(w http.ResponseWriter, r *http.Request) {
 		notice = resendNoticeFailed
 	}
 
-	target := "/verify-account?notice=" + notice
-	if httpx.IsHTMX(r) {
-		w.Header().Set("HX-Redirect", target)
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-	http.Redirect(w, r, target, http.StatusSeeOther)
+	httpx.Redirect(w, r, "/verify-account?notice="+notice)
 }

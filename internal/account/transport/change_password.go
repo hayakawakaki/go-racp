@@ -56,12 +56,7 @@ func (h *Handler) doChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if httpx.IsHTMX(r) {
-		w.Header().Set("HX-Redirect", "/account?notice="+noticePasswordChanged)
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-	http.Redirect(w, r, "/account?notice="+noticePasswordChanged, http.StatusSeeOther)
+	httpx.Redirect(w, r, "/account?notice="+noticePasswordChanged)
 }
 
 // renderChangePassword renders the modal/form for HTMX requests and the full page for direct navigation.

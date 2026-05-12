@@ -85,10 +85,5 @@ func sessionMiddleware(
 // For HTMX requests it sets the "HX-Redirect" response header to "/login" and returns HTTP 204 No Content.
 // For non-HTMX requests it issues an HTTP 303 See Other redirect to "/login".
 func unauthorized(w http.ResponseWriter, r *http.Request) {
-	if httpx.IsHTMX(r) {
-		w.Header().Set("HX-Redirect", "/login")
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-	http.Redirect(w, r, "/login", http.StatusSeeOther)
+	httpx.Redirect(w, r, "/login")
 }
