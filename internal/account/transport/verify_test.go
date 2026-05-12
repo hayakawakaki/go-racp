@@ -111,7 +111,7 @@ func TestShowVerifyAccount_AlreadyVerified_RedirectsToHome(t *testing.T) {
 	}
 	users := &stubUserLookup{
 		getByIDFn: func(_ context.Context, id int) (*domain.User, error) {
-			return &domain.User{ID: id, GroupID: 0, Email: "v@x"}, nil
+			return &domain.User{ID: id, State: 0, Email: "v@x"}, nil
 		},
 	}
 	h := newVerifyHandler(users, sess, &stubAccountService{}, nil)
@@ -134,7 +134,7 @@ func TestShowVerifyAccount_Unverified_RendersPageWithEmail(t *testing.T) {
 	}
 	users := &stubUserLookup{
 		getByIDFn: func(_ context.Context, id int) (*domain.User, error) {
-			return &domain.User{ID: id, GroupID: 5, Email: "unverified@example.com"}, nil
+			return &domain.User{ID: id, State: 5, Email: "unverified@example.com"}, nil
 		},
 	}
 	h := newVerifyHandler(users, sess, &stubAccountService{}, nil)
@@ -180,7 +180,7 @@ func TestShowVerifyAccount_NoticeQueryParam(t *testing.T) {
 			}
 			users := &stubUserLookup{
 				getByIDFn: func(_ context.Context, id int) (*domain.User, error) {
-					return &domain.User{ID: id, GroupID: 5, Email: "u@x"}, nil
+					return &domain.User{ID: id, State: 5, Email: "u@x"}, nil
 				},
 			}
 			h := newVerifyHandler(users, sess, &stubAccountService{}, nil)
