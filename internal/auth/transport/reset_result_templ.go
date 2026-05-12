@@ -81,8 +81,13 @@ func resetResultPage(layout httpx.Layout, state ResetResultState) templ.Componen
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
+			default:
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<h1 class=\"text-2xl font-semibold mb-4 text-gray-900\">Unexpected result</h1><p class=\"text-gray-700 mb-4\">Something went wrong. Please request a new reset link or contact support.</p><a href=\"/forgot-password\" class=\"inline-block rounded bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 transition\">Request new link</a>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

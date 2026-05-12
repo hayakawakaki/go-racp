@@ -35,7 +35,7 @@ func changePasswordModal(state ChangePasswordState) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div id=\"modal\" class=\"fixed inset-0 z-50 flex items-center justify-center bg-black/40\"><div class=\"bg-white rounded-lg shadow-xl p-6 w-full max-w-md\"><div class=\"flex justify-between items-center mb-4\"><h2 class=\"text-xl font-semibold text-gray-900\">Change password</h2><button hx-get=\"/account\" hx-target=\"#modal\" hx-swap=\"outerHTML\" type=\"button\" class=\"text-gray-400 hover:text-gray-600\">&times;</button></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div id=\"modal\" class=\"fixed inset-0 z-50 flex items-center justify-center bg-black/40\"><div class=\"bg-white rounded-lg shadow-xl p-6 w-full max-w-md\"><div class=\"flex justify-between items-center mb-4\"><h2 class=\"text-xl font-semibold text-gray-900\">Change password</h2><button hx-get=\"/account\" hx-target=\"#modal\" hx-swap=\"outerHTML\" type=\"button\" aria-label=\"Close\" class=\"text-gray-400 hover:text-gray-600\">&times;</button></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -72,7 +72,7 @@ func changePasswordForm(state ChangePasswordState) templ.Component {
 			templ_7745c5c3_Var2 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<form hx-post=\"/account/password\" hx-swap=\"outerHTML\" method=\"post\" action=\"/account/password\" class=\"space-y-4\"><div><label for=\"current_password\" class=\"block text-sm font-medium text-gray-700 mb-1\">Current password</label> <input type=\"password\" id=\"current_password\" name=\"current_password\" required class=\"w-full rounded border border-gray-300 px-3 py-2\"> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<form hx-post=\"/account/password\" hx-swap=\"outerHTML\" method=\"post\" action=\"/account/password\" class=\"space-y-4\"><div><label for=\"current_password\" class=\"block text-sm font-medium text-gray-700 mb-1\">Current password</label> <input type=\"password\" id=\"current_password\" name=\"current_password\" required autocomplete=\"current-password\" class=\"w-full rounded border border-gray-300 px-3 py-2\"> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -95,7 +95,7 @@ func changePasswordForm(state ChangePasswordState) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div><div><label for=\"new_password\" class=\"block text-sm font-medium text-gray-700 mb-1\">New password</label> <input type=\"password\" id=\"new_password\" name=\"new_password\" required class=\"w-full rounded border border-gray-300 px-3 py-2\"> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div><div><label for=\"new_password\" class=\"block text-sm font-medium text-gray-700 mb-1\">New password</label> <input type=\"password\" id=\"new_password\" name=\"new_password\" required autocomplete=\"new-password\" class=\"w-full rounded border border-gray-300 px-3 py-2\"> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -118,7 +118,7 @@ func changePasswordForm(state ChangePasswordState) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div><div><label for=\"new_password_confirm\" class=\"block text-sm font-medium text-gray-700 mb-1\">Confirm new password</label> <input type=\"password\" id=\"new_password_confirm\" name=\"new_password_confirm\" required class=\"w-full rounded border border-gray-300 px-3 py-2\"> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div><div><label for=\"new_password_confirm\" class=\"block text-sm font-medium text-gray-700 mb-1\">Confirm new password</label> <input type=\"password\" id=\"new_password_confirm\" name=\"new_password_confirm\" required autocomplete=\"new-password\" class=\"w-full rounded border border-gray-300 px-3 py-2\"> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

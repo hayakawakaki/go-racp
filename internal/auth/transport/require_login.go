@@ -24,7 +24,7 @@ func RequireLogin(sessSvc sessionService, logger *slog.Logger) func(http.Handler
 					return
 				}
 				logger.Error("require_login: validate", "err", err)
-				http.Redirect(w, r, "/login", http.StatusSeeOther)
+				http.Error(w, "internal server error", http.StatusInternalServerError)
 				return
 			}
 			ctx := context.WithValue(r.Context(), sessionKey, sess)

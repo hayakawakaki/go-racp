@@ -61,7 +61,7 @@ func PasswordReset(data PasswordResetData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, ",</p><p>Click the link below to set a new password. The link expires in one hour.</p><p><a href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, ",</p><p>Click the link below to set a new password before the link expires.</p><p><a href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

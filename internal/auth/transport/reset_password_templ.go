@@ -61,7 +61,7 @@ func resetPasswordPage(layout httpx.Layout, state ResetPasswordState) templ.Comp
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\"><div><label for=\"password\" class=\"block text-sm font-medium text-gray-700 mb-1\">New password</label> <input type=\"password\" id=\"password\" name=\"password\" required class=\"w-full rounded border border-gray-300 px-3 py-2\"> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\"><div><label for=\"password\" class=\"block text-sm font-medium text-gray-700 mb-1\">New password</label> <input type=\"password\" id=\"password\" name=\"password\" required autocomplete=\"new-password\" class=\"w-full rounded border border-gray-300 px-3 py-2\"> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -84,7 +84,7 @@ func resetPasswordPage(layout httpx.Layout, state ResetPasswordState) templ.Comp
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div><div><label for=\"password_confirm\" class=\"block text-sm font-medium text-gray-700 mb-1\">Confirm new password</label> <input type=\"password\" id=\"password_confirm\" name=\"password_confirm\" required class=\"w-full rounded border border-gray-300 px-3 py-2\"> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div><div><label for=\"password_confirm\" class=\"block text-sm font-medium text-gray-700 mb-1\">Confirm new password</label> <input type=\"password\" id=\"password_confirm\" name=\"password_confirm\" required autocomplete=\"new-password\" class=\"w-full rounded border border-gray-300 px-3 py-2\"> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

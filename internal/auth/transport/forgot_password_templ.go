@@ -116,7 +116,7 @@ func forgotPasswordForm(state ForgotPasswordState) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" required class=\"w-full rounded border border-gray-300 px-3 py-2\"> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" required autocomplete=\"email\" class=\"w-full rounded border border-gray-300 px-3 py-2\"> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

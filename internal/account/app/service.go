@@ -42,7 +42,26 @@ type Service struct {
 	cfg            Config
 }
 
+//nolint:cyclop // linear nil-check would flag this, splitting would not improve readability
 func NewService(repo authdomain.Repository, sessSvc SessionInvalidator, tokenManager *actiontoken.Manager, changeLog accountchange.Repository, mail Mailer, emailUniqueMu *sync.Mutex, cfg Config) *Service {
+	if repo == nil {
+		panic("account: NewService: repo must not be nil")
+	}
+	if sessSvc == nil {
+		panic("account: NewService: sessSvc must not be nil")
+	}
+	if tokenManager == nil {
+		panic("account: NewService: tokenManager must not be nil")
+	}
+	if changeLog == nil {
+		panic("account: NewService: changeLog must not be nil")
+	}
+	if mail == nil {
+		panic("account: NewService: mail must not be nil")
+	}
+	if emailUniqueMu == nil {
+		panic("account: NewService: emailUniqueMu must not be nil")
+	}
 	if cfg.EmailChangeTokenTTL <= 0 {
 		panic("account: Config.EmailChangeTokenTTL must be > 0")
 	}

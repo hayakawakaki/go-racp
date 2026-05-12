@@ -9,7 +9,13 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 )
 
-const maxResetPasswordFormBytes = 2 << 10
+const (
+	maxResetPasswordFormBytes = 2 << 10
+
+	fieldToken           = "token"
+	fieldPassword        = "password"
+	fieldPasswordConfirm = "password_confirm"
+)
 
 func (h *Handler) showResetPassword(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Referrer-Policy", "no-referrer")
@@ -44,14 +50,14 @@ func (h *Handler) doResetPassword(w http.ResponseWriter, r *http.Request) {
 		httpx.RenderHTML(w, r, h.logger, resetResultPage(h.layout(), ResetResultState{Kind: ResetResultInvalid}))
 		return
 	}
-	token := r.PostFormValue("token")
-	password := r.PostFormValue("password")
-	confirm := r.PostFormValue("password_confirm")
+	token := r.PostFormValue(fieldToken)
+	password := r.PostFormValue(fieldPassword)
+	confirm := r.PostFormValue(fieldPasswordConfirm)
 
 	if password != confirm {
 		httpx.RenderHTML(w, r, h.logger, resetPasswordPage(h.layout(), ResetPasswordState{
 			Token:  token,
-			Errors: map[string]string{"password_confirm": "passwords do not match"},
+			Errors: map[string]string{fieldPasswordConfirm: "passwords do not match"},
 		}))
 		return
 	}

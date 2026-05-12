@@ -9,12 +9,14 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 )
 
+const (
+	fieldCurrentPassword    = "current_password"
+	fieldNewPassword        = "new_password"
+	fieldNewPasswordConfirm = "new_password_confirm"
+)
+
 func (h *Handler) showChangePassword(w http.ResponseWriter, r *http.Request) {
-	if httpx.IsHTMX(r) {
-		httpx.RenderHTML(w, r, h.logger, changePasswordModal(ChangePasswordState{}))
-		return
-	}
-	httpx.RenderHTML(w, r, h.logger, changePasswordPage(h.layout(), ChangePasswordState{}))
+	h.renderChangePassword(w, r, ChangePasswordState{}, true)
 }
 
 //nolint:cyclop // sequential session/form/cookie/service branches; splitting would obscure the flow
@@ -27,9 +29,9 @@ func (h *Handler) doChangePassword(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, maxAccountFormBytes)
 	if err := r.ParseForm(); err != nil {
 		//nolint:gosec // G101 false-positive: form-error message, not a credential
-		httpx.RenderHTML(w, r, h.logger, changePasswordForm(ChangePasswordState{
-			Errors: map[string]string{"new_password": "Invalid form data."},
-		}))
+		h.renderChangePassword(w, r, ChangePasswordState{
+			Errors: map[string]string{fieldNewPassword: "Invalid form data."},
+		}, false)
 		return
 	}
 	cookie, err := r.Cookie(sessionCookieName)
@@ -38,20 +40,20 @@ func (h *Handler) doChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	err = h.svc.UpdatePassword(r.Context(), sess.UserID, cookie.Value,
-		r.PostFormValue("current_password"),
-		r.PostFormValue("new_password"),
-		r.PostFormValue("new_password_confirm"),
+		r.PostFormValue(fieldCurrentPassword),
+		r.PostFormValue(fieldNewPassword),
+		r.PostFormValue(fieldNewPasswordConfirm),
 	)
 	if err != nil {
 		var ve *authdomain.ValidationError
 		if errors.As(err, &ve) {
-			httpx.RenderHTML(w, r, h.logger, changePasswordForm(ChangePasswordState{Errors: ve.Fields}))
+			h.renderChangePassword(w, r, ChangePasswordState{Errors: ve.Fields}, false)
 			return
 		}
 		if errors.Is(err, authdomain.ErrPasswordRecentlyChanged) {
-			httpx.RenderHTML(w, r, h.logger, changePasswordForm(ChangePasswordState{
-				Errors: map[string]string{"current_password": "Password was changed recently. Please try again later."},
-			}))
+			h.renderChangePassword(w, r, ChangePasswordState{
+				Errors: map[string]string{fieldCurrentPassword: "Password was changed recently. Please try again later."},
+			}, false)
 			return
 		}
 		h.logger.Error("update password", "err", err)
@@ -64,4 +66,18 @@ func (h *Handler) doChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, "/account?notice=password_changed", http.StatusSeeOther)
+}
+
+// renderChangePassword renders the modal/form for HTMX requests and the full page for direct navigation.
+// modalOnInitial selects between the modal wrapper (for initial GET) and the bare form (for re-renders after POST).
+func (h *Handler) renderChangePassword(w http.ResponseWriter, r *http.Request, state ChangePasswordState, modalOnInitial bool) {
+	if httpx.IsHTMX(r) {
+		if modalOnInitial {
+			httpx.RenderHTML(w, r, h.logger, changePasswordModal(state))
+			return
+		}
+		httpx.RenderHTML(w, r, h.logger, changePasswordForm(state))
+		return
+	}
+	httpx.RenderHTML(w, r, h.logger, changePasswordPage(h.layout(), state))
 }

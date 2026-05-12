@@ -101,8 +101,13 @@ func emailChangeResultPage(layout httpx.Layout, state EmailChangeResultState) te
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
+			default:
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<h1 class=\"text-2xl font-semibold mb-4 text-gray-900\">Unexpected result</h1><p class=\"text-gray-700 mb-4\">Something went wrong. Please try again from your account page or contact support.</p><a href=\"/login\" class=\"inline-block rounded bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 transition\">Log in</a>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

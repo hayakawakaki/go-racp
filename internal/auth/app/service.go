@@ -14,6 +14,11 @@ import (
 	mailtemplate "github.com/hayakawakaki/go-racp/internal/infra/mailer/template"
 )
 
+const (
+	fieldUsername = "username"
+	fieldPassword = "password"
+)
+
 type Mailer interface {
 	SendAsync(to, subject, body string)
 }
@@ -99,10 +104,36 @@ func WithSessionInvalidator(invalidator SessionInvalidator) Option {
 	return func(s *Service) { s.SessionInvalidator = invalidator }
 }
 
+//nolint:cyclop // linear nil-check would flag this, splitting would not improve readability
 func NewService(repo domain.Repository, opts ...Option) *Service {
+	if repo == nil {
+		panic("auth: NewService: repo must not be nil")
+	}
 	s := &Service{Repo: repo, now: time.Now}
 	for _, opt := range opts {
 		opt(s)
+	}
+	if s.enableVerify {
+		if s.TokenManager == nil {
+			panic("auth: WithVerification requires a non-nil TokenManager")
+		}
+		if s.Mail == nil {
+			panic("auth: WithVerification requires a non-nil Mailer")
+		}
+	}
+	if s.enableReset {
+		if s.TokenManager == nil {
+			panic("auth: WithPasswordReset requires a non-nil TokenManager")
+		}
+		if s.Mail == nil {
+			panic("auth: WithPasswordReset requires a non-nil Mailer")
+		}
+		if s.ChangeLog == nil {
+			panic("auth: WithPasswordReset requires WithChangeLog")
+		}
+		if s.SessionInvalidator == nil {
+			panic("auth: WithPasswordReset requires WithSessionInvalidator")
+		}
 	}
 	return s
 }
@@ -241,10 +272,10 @@ func (s *Service) RequestPasswordReset(ctx context.Context, email string) error 
 
 func (s *Service) ConsumePasswordReset(ctx context.Context, rawToken, newPassword string) error {
 	if err := domain.ValidatePassword(newPassword); err != nil {
-		return &domain.ValidationError{Fields: domain.FieldErrors{"password": err.Error()}}
+		return &domain.ValidationError{Fields: domain.FieldErrors{fieldPassword: err.Error()}}
 	}
 	if err := domain.CheckRegistrationPassword(newPassword); err != nil {
-		return &domain.ValidationError{Fields: domain.FieldErrors{"password": err.Error()}}
+		return &domain.ValidationError{Fields: domain.FieldErrors{fieldPassword: err.Error()}}
 	}
 	token, err := s.TokenManager.Consume(ctx, actiontoken.PasswordReset, rawToken)
 	if err != nil {
@@ -282,14 +313,14 @@ func validateRegistration(cmd CreateCommand) (string, error) {
 
 func validateRegistrationInvariants(cmd CreateCommand, fe domain.FieldErrors) string {
 	if err := domain.ValidateUsername(cmd.Username); err != nil {
-		fe.Add("username", err.Error())
+		fe.Add(fieldUsername, err.Error())
 	}
 	normalizedEmail, emailErr := domain.ValidateEmail(cmd.Email)
 	if emailErr != nil {
 		fe.Add("email", emailErr.Error())
 	}
 	if err := domain.ValidatePassword(cmd.Password); err != nil {
-		fe.Add("password", err.Error())
+		fe.Add(fieldPassword, err.Error())
 	}
 	if err := domain.ValidateGender(cmd.Gender); err != nil {
 		fe.Add("gender", err.Error())
@@ -298,14 +329,14 @@ func validateRegistrationInvariants(cmd CreateCommand, fe domain.FieldErrors) st
 }
 
 func applyRegistrationPolicies(cmd CreateCommand, fe domain.FieldErrors) {
-	if fe["username"] == "" {
+	if fe[fieldUsername] == "" {
 		if err := domain.CheckRegistrationUsername(cmd.Username); err != nil {
-			fe.Add("username", err.Error())
+			fe.Add(fieldUsername, err.Error())
 		}
 	}
-	if fe["password"] == "" {
+	if fe[fieldPassword] == "" {
 		if err := domain.CheckRegistrationPassword(cmd.Password); err != nil {
-			fe.Add("password", err.Error())
+			fe.Add(fieldPassword, err.Error())
 		}
 	}
 }
@@ -318,7 +349,7 @@ func (s *Service) checkRegistrationUniqueness(ctx context.Context, username, ema
 		return fmt.Errorf("app.Service.Create: %w", err)
 	}
 	if existing != nil {
-		fe.Add("username", "username already taken")
+		fe.Add(fieldUsername, "username already taken")
 	}
 
 	existing, err = s.Repo.GetByEmail(ctx, email)

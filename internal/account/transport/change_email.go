@@ -10,12 +10,10 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 )
 
+const fieldNewEmail = "new_email"
+
 func (h *Handler) showChangeEmail(w http.ResponseWriter, r *http.Request) {
-	if httpx.IsHTMX(r) {
-		httpx.RenderHTML(w, r, h.logger, changeEmailModal(ChangeEmailState{}))
-		return
-	}
-	httpx.RenderHTML(w, r, h.logger, changeEmailPage(h.layout(), ChangeEmailState{}))
+	h.renderChangeEmail(w, r, ChangeEmailState{}, true)
 }
 
 //nolint:cyclop // sequential session/form/service/validation branches; splitting would obscure the flow
@@ -27,13 +25,13 @@ func (h *Handler) doChangeEmail(w http.ResponseWriter, r *http.Request) {
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, maxAccountFormBytes)
 	if err := r.ParseForm(); err != nil {
-		httpx.RenderHTML(w, r, h.logger, changeEmailForm(ChangeEmailState{
-			Errors: map[string]string{"new_email": "Invalid form data."},
-		}))
+		h.renderChangeEmail(w, r, ChangeEmailState{
+			Errors: map[string]string{fieldNewEmail: "Invalid form data."},
+		}, false)
 		return
 	}
-	newEmail := r.PostFormValue("new_email")
-	err := h.svc.RequestEmailChange(r.Context(), sess.UserID, r.PostFormValue("current_password"), newEmail)
+	newEmail := r.PostFormValue(fieldNewEmail)
+	err := h.svc.RequestEmailChange(r.Context(), sess.UserID, r.PostFormValue(fieldCurrentPassword), newEmail)
 	if err != nil {
 		if errors.Is(err, accountapp.ErrEmailChangeCooldown) {
 			h.redirectWithNotice(w, r, "email_change_cooldown")
@@ -45,10 +43,10 @@ func (h *Handler) doChangeEmail(w http.ResponseWriter, r *http.Request) {
 		}
 		var ve *authdomain.ValidationError
 		if errors.As(err, &ve) {
-			httpx.RenderHTML(w, r, h.logger, changeEmailForm(ChangeEmailState{
+			h.renderChangeEmail(w, r, ChangeEmailState{
 				NewEmail: newEmail,
 				Errors:   ve.Fields,
-			}))
+			}, false)
 			return
 		}
 		h.logger.Error("request email change", "err", err)
@@ -56,6 +54,20 @@ func (h *Handler) doChangeEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.redirectWithNotice(w, r, "email_change_sent")
+}
+
+// renderChangeEmail renders the modal/form for HTMX requests and the full page for direct navigation.
+// modalOnInitial selects between the modal wrapper (for initial GET) and the bare form (for re-renders after POST).
+func (h *Handler) renderChangeEmail(w http.ResponseWriter, r *http.Request, state ChangeEmailState, modalOnInitial bool) {
+	if httpx.IsHTMX(r) {
+		if modalOnInitial {
+			httpx.RenderHTML(w, r, h.logger, changeEmailModal(state))
+			return
+		}
+		httpx.RenderHTML(w, r, h.logger, changeEmailForm(state))
+		return
+	}
+	httpx.RenderHTML(w, r, h.logger, changeEmailPage(h.layout(), state))
 }
 
 func (h *Handler) redirectWithNotice(w http.ResponseWriter, r *http.Request, notice string) {
