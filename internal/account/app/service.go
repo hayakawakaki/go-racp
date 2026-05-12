@@ -71,7 +71,7 @@ type Service struct {
 }
 
 func (s *Service) Now() time.Time {
-	return s.now()
+	return s.now().In(s.location)
 }
 
 type Option func(*Service)
@@ -197,7 +197,7 @@ func NewService(repo domain.Repository, opts ...Option) *Service {
 }
 
 func (s *Service) Create(ctx context.Context, cmd CreateCommand) (*GetDTO, error) {
-	normalizedEmail, parsedBirthdate, err := validateRegistration(cmd, s.now().In(s.location))
+	normalizedEmail, parsedBirthdate, err := validateRegistration(cmd, s.Now())
 	if err != nil {
 		return nil, err
 	}
