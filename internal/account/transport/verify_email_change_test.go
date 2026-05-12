@@ -3,7 +3,6 @@ package transport
 import (
 	"context"
 	"errors"
-	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -17,7 +16,7 @@ func TestDoVerifyEmailChange_NoToken_RendersInvalid(t *testing.T) {
 	h := newTestHandler(&stubAccountService{}, &stubSessionService{}, nil)
 
 	rr := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/verify-email-change", http.NoBody)
+	req := postForm("/verify-email-change", map[string]string{})
 	h.doVerifyEmailChange(rr, req)
 
 	if !strings.Contains(rr.Body.String(), "Invalid link") {
@@ -30,7 +29,7 @@ func TestDoVerifyEmailChange_SetsNoReferrerHeader(t *testing.T) {
 	h := newTestHandler(&stubAccountService{}, &stubSessionService{}, nil)
 
 	rr := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/verify-email-change", http.NoBody)
+	req := postForm("/verify-email-change", map[string]string{})
 	h.doVerifyEmailChange(rr, req)
 
 	if rr.Header().Get("Referrer-Policy") != "no-referrer" {
@@ -62,7 +61,7 @@ func TestDoVerifyEmailChange_TokenErrors_RenderMatchingResult(t *testing.T) {
 			h := newTestHandler(svc, &stubSessionService{}, nil)
 
 			rr := httptest.NewRecorder()
-			req := httptest.NewRequest(http.MethodGet, "/verify-email-change?token=abc", http.NoBody)
+			req := postForm("/verify-email-change", map[string]string{"token": "abc"})
 			h.doVerifyEmailChange(rr, req)
 
 			if !strings.Contains(rr.Body.String(), tt.wantText) {
@@ -82,7 +81,7 @@ func TestDoVerifyEmailChange_GenericError_RendersInvalid(t *testing.T) {
 	h := newTestHandler(svc, &stubSessionService{}, nil)
 
 	rr := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/verify-email-change?token=abc", http.NoBody)
+	req := postForm("/verify-email-change", map[string]string{"token": "abc"})
 	h.doVerifyEmailChange(rr, req)
 
 	if !strings.Contains(rr.Body.String(), "Invalid link") {
@@ -100,7 +99,7 @@ func TestDoVerifyEmailChange_Success_RendersSuccess(t *testing.T) {
 	h := newTestHandler(svc, &stubSessionService{}, nil)
 
 	rr := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/verify-email-change?token=abc", http.NoBody)
+	req := postForm("/verify-email-change", map[string]string{"token": "abc"})
 	h.doVerifyEmailChange(rr, req)
 
 	body := rr.Body.String()

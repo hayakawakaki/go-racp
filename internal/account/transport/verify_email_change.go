@@ -9,9 +9,44 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 )
 
-func (h *Handler) doVerifyEmailChange(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) showVerifyEmailChange(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Referrer-Policy", "no-referrer")
 	token := r.URL.Query().Get("token")
+	if token == "" {
+		httpx.RenderHTML(w, r, h.logger, emailChangeResultPage(h.layout(), EmailChangeResultState{Kind: EmailChangeResultInvalid}))
+		return
+	}
+	peeked, err := h.svc.PeekEmailChange(r.Context(), token)
+	if err != nil {
+		state := EmailChangeResultState{Kind: EmailChangeResultInvalid}
+		switch {
+		case errors.Is(err, actiontoken.ErrTokenExpired):
+			state.Kind = EmailChangeResultExpired
+		case errors.Is(err, actiontoken.ErrTokenAlreadyUsed):
+			state.Kind = EmailChangeResultAlready
+		case errors.Is(err, actiontoken.ErrTokenInvalid):
+			state.Kind = EmailChangeResultInvalid
+		default:
+			h.logger.Error("verify email change peek", "err", err)
+			state.Kind = EmailChangeResultInvalid
+		}
+		httpx.RenderHTML(w, r, h.logger, emailChangeResultPage(h.layout(), state))
+		return
+	}
+	httpx.RenderHTML(w, r, h.logger, verifyEmailChangeConfirmPage(h.layout(), VerifyEmailChangeConfirmState{
+		Token:    token,
+		NewEmail: string(peeked.Payload),
+	}))
+}
+
+func (h *Handler) doVerifyEmailChange(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Referrer-Policy", "no-referrer")
+	r.Body = http.MaxBytesReader(w, r.Body, maxVerifyFormBytes)
+	if err := r.ParseForm(); err != nil {
+		httpx.RenderHTML(w, r, h.logger, emailChangeResultPage(h.layout(), EmailChangeResultState{Kind: EmailChangeResultInvalid}))
+		return
+	}
+	token := r.PostFormValue(fieldToken)
 	if token == "" {
 		httpx.RenderHTML(w, r, h.logger, emailChangeResultPage(h.layout(), EmailChangeResultState{Kind: EmailChangeResultInvalid}))
 		return

@@ -25,8 +25,8 @@ type Mailer interface {
 }
 
 type SessionInvalidator interface {
-	InvalidateAllForUser(ctx context.Context, userID int) error
-	InvalidateAllForUserExceptCurrent(ctx context.Context, userID int, currentRawToken string) error
+	InvalidateAll(ctx context.Context, userID int) error
+	InvalidateOthers(ctx context.Context, userID int, currentRawToken string) error
 }
 
 type VerificationConfig struct {
@@ -331,7 +331,7 @@ func (s *Service) ConsumePasswordReset(ctx context.Context, rawToken, newPasswor
 	if err := s.Repo.MarkVerified(ctx, token.AccountID); err != nil {
 		return fmt.Errorf("app.Service.ConsumePasswordReset: %w", err)
 	}
-	if err := s.SessionInvalidator.InvalidateAllForUser(ctx, token.AccountID); err != nil {
+	if err := s.SessionInvalidator.InvalidateAll(ctx, token.AccountID); err != nil {
 		return fmt.Errorf("app.Service.ConsumePasswordReset: %w", err)
 	}
 	return nil
@@ -466,6 +466,22 @@ func (s *Service) PeekPasswordReset(ctx context.Context, rawToken string) (*acti
 	return token, nil
 }
 
+func (s *Service) PeekVerification(ctx context.Context, rawToken string) (*actiontoken.ActionToken, error) {
+	token, err := s.TokenManager.Peek(ctx, actiontoken.EmailVerification, rawToken)
+	if err != nil {
+		return nil, fmt.Errorf("app.Service.PeekVerification: %w", err)
+	}
+	return token, nil
+}
+
+func (s *Service) PeekEmailChange(ctx context.Context, rawToken string) (*actiontoken.ActionToken, error) {
+	token, err := s.TokenManager.Peek(ctx, actiontoken.EmailChange, rawToken)
+	if err != nil {
+		return nil, fmt.Errorf("app.Service.PeekEmailChange: %w", err)
+	}
+	return token, nil
+}
+
 func (s *Service) Authenticate(ctx context.Context, cmd LoginCommand) (*GetDTO, error) {
 	user, err := s.Repo.Authenticate(ctx, cmd.Username, cmd.Password)
 	if errors.Is(err, domain.ErrInvalidCredentials) {
@@ -525,7 +541,7 @@ func (s *Service) UpdatePassword(ctx context.Context, userID int, currentRawToke
 	if err := s.ChangeLog.Record(ctx, userID, domain.ChangeTypePassword, s.now()); err != nil {
 		return fmt.Errorf("app.Service.UpdatePassword: %w", err)
 	}
-	if err := s.SessionInvalidator.InvalidateAllForUserExceptCurrent(ctx, userID, currentRawToken); err != nil {
+	if err := s.SessionInvalidator.InvalidateOthers(ctx, userID, currentRawToken); err != nil {
 		return fmt.Errorf("app.Service.UpdatePassword: %w", err)
 	}
 	return nil

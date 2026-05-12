@@ -221,7 +221,7 @@ func TestDoVerify_EmptyToken_RendersInvalid(t *testing.T) {
 	h := newVerifyHandler(&stubUserLookup{}, &stubSessionService{}, verify, nil)
 
 	rr := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/verify", http.NoBody)
+	req := postForm("/verify", map[string]string{})
 	h.doVerify(rr, req)
 
 	if consumeCalled {
@@ -240,7 +240,7 @@ func TestDoVerify_Success_NoSession_RendersSuccess(t *testing.T) {
 	h := newVerifyHandler(&stubUserLookup{}, &stubSessionService{}, verify, nil)
 
 	rr := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/verify?token=abc", http.NoBody)
+	req := postForm("/verify", map[string]string{"token": "abc"})
 	h.doVerify(rr, req)
 
 	if rr.Code == http.StatusSeeOther {
@@ -264,7 +264,7 @@ func TestDoVerify_Success_ActiveSession_RedirectsHome(t *testing.T) {
 	h := newVerifyHandler(&stubUserLookup{}, sess, verify, nil)
 
 	rr := httptest.NewRecorder()
-	req := withSessionCookie(httptest.NewRequest(http.MethodGet, "/verify?token=abc", http.NoBody), "ok")
+	req := withSessionCookie(postForm("/verify", map[string]string{"token": "abc"}), "ok")
 	h.doVerify(rr, req)
 
 	if rr.Code != http.StatusSeeOther {
@@ -288,7 +288,7 @@ func TestDoVerify_AlreadyUsed_ActiveSession_RedirectsHome(t *testing.T) {
 	h := newVerifyHandler(&stubUserLookup{}, sess, verify, nil)
 
 	rr := httptest.NewRecorder()
-	req := withSessionCookie(httptest.NewRequest(http.MethodGet, "/verify?token=abc", http.NoBody), "ok")
+	req := withSessionCookie(postForm("/verify", map[string]string{"token": "abc"}), "ok")
 	h.doVerify(rr, req)
 
 	if rr.Code != http.StatusSeeOther {
@@ -307,7 +307,7 @@ func TestDoVerify_AlreadyUsed_NoSession_RendersInvalid(t *testing.T) {
 	h := newVerifyHandler(&stubUserLookup{}, &stubSessionService{}, verify, nil)
 
 	rr := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/verify?token=abc", http.NoBody)
+	req := postForm("/verify", map[string]string{"token": "abc"})
 	h.doVerify(rr, req)
 
 	if rr.Code == http.StatusSeeOther {
@@ -326,7 +326,7 @@ func TestDoVerify_Expired_RendersExpired(t *testing.T) {
 	h := newVerifyHandler(&stubUserLookup{}, &stubSessionService{}, verify, nil)
 
 	rr := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/verify?token=abc", http.NoBody)
+	req := postForm("/verify", map[string]string{"token": "abc"})
 	h.doVerify(rr, req)
 
 	if !strings.Contains(rr.Body.String(), "Link expired") {
@@ -342,7 +342,7 @@ func TestDoVerify_Invalid_RendersInvalid(t *testing.T) {
 	h := newVerifyHandler(&stubUserLookup{}, &stubSessionService{}, verify, nil)
 
 	rr := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/verify?token=abc", http.NoBody)
+	req := postForm("/verify", map[string]string{"token": "abc"})
 	h.doVerify(rr, req)
 
 	if !strings.Contains(rr.Body.String(), "Invalid link") {
@@ -359,7 +359,7 @@ func TestDoVerify_GenericError_LogsAndRendersInvalid(t *testing.T) {
 	h := newVerifyHandler(&stubUserLookup{}, &stubSessionService{}, verify, logBuffer)
 
 	rr := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/verify?token=abc", http.NoBody)
+	req := postForm("/verify", map[string]string{"token": "abc"})
 	h.doVerify(rr, req)
 
 	if !strings.Contains(rr.Body.String(), "Invalid link") {

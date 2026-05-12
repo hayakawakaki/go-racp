@@ -273,7 +273,7 @@ func TestSessionService_Destroy(t *testing.T) {
 	}
 }
 
-func TestSessionService_InvalidateAllForUser(t *testing.T) {
+func TestSessionService_InvalidateAll(t *testing.T) {
 	t.Parallel()
 	c := testutil.NewClock(time.Date(2026, 5, 7, 12, 0, 0, 0, time.UTC))
 	svc, repo := newSvc(t, c)
@@ -292,8 +292,8 @@ func TestSessionService_InvalidateAllForUser(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := svc.InvalidateAllForUser(ctx, 1); err != nil {
-		t.Fatalf("InvalidateAllForUser: %v", err)
+	if err := svc.InvalidateAll(ctx, 1); err != nil {
+		t.Fatalf("InvalidateAll: %v", err)
 	}
 	for h, s := range repo.byHash {
 		if s.UserID == 1 {
@@ -305,7 +305,7 @@ func TestSessionService_InvalidateAllForUser(t *testing.T) {
 	}
 }
 
-func TestSessionService_InvalidateAllForUserExceptCurrent(t *testing.T) {
+func TestSessionService_InvalidateOthers(t *testing.T) {
 	t.Parallel()
 	c := testutil.NewClock(time.Date(2026, 5, 7, 12, 0, 0, 0, time.UTC))
 	svc, repo := newSvc(t, c)
@@ -320,8 +320,8 @@ func TestSessionService_InvalidateAllForUserExceptCurrent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := svc.InvalidateAllForUserExceptCurrent(ctx, 1, currentToken); err != nil {
-		t.Fatalf("InvalidateAllForUserExceptCurrent: %v", err)
+	if err := svc.InvalidateOthers(ctx, 1, currentToken); err != nil {
+		t.Fatalf("InvalidateOthers: %v", err)
 	}
 	if _, err := repo.GetByTokenHash(ctx, currentSess.TokenHash); err != nil {
 		t.Errorf("current session must survive: %v", err)
@@ -331,7 +331,7 @@ func TestSessionService_InvalidateAllForUserExceptCurrent(t *testing.T) {
 	}
 }
 
-func TestSessionService_InvalidateAllForUserExceptCurrent_RejectsBadToken(t *testing.T) {
+func TestSessionService_InvalidateOthers_RejectsBadToken(t *testing.T) {
 	t.Parallel()
 	c := testutil.NewClock(time.Now())
 	svc, _ := newSvc(t, c)
@@ -347,7 +347,7 @@ func TestSessionService_InvalidateAllForUserExceptCurrent_RejectsBadToken(t *tes
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			err := svc.InvalidateAllForUserExceptCurrent(context.Background(), 1, tt.token)
+			err := svc.InvalidateOthers(context.Background(), 1, tt.token)
 			if !errors.Is(err, domain.ErrInvalidCurrentSessionToken) {
 				t.Errorf("got %v, want ErrInvalidCurrentSessionToken", err)
 			}

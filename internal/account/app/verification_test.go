@@ -187,7 +187,7 @@ type invalidateExceptCall struct {
 	UserID          int
 }
 
-func (f *fakeSessionInvalidator) InvalidateAllForUser(_ context.Context, userID int) error {
+func (f *fakeSessionInvalidator) InvalidateAll(_ context.Context, userID int) error {
 	f.mu.Lock()
 	f.invalidateAllCalls = append(f.invalidateAllCalls, userID)
 	f.mu.Unlock()
@@ -197,7 +197,7 @@ func (f *fakeSessionInvalidator) InvalidateAllForUser(_ context.Context, userID 
 	return nil
 }
 
-func (f *fakeSessionInvalidator) InvalidateAllForUserExceptCurrent(_ context.Context, userID int, rawToken string) error {
+func (f *fakeSessionInvalidator) InvalidateOthers(_ context.Context, userID int, rawToken string) error {
 	f.mu.Lock()
 	f.invalidateExceptCalls = append(f.invalidateExceptCalls, invalidateExceptCall{CurrentRawToken: rawToken, UserID: userID})
 	f.mu.Unlock()
@@ -866,7 +866,7 @@ func TestService_ConsumePasswordReset_HappyPath(t *testing.T) {
 		t.Errorf("password change not recorded; want a non-zero timestamp")
 	}
 	if len(fx.invalidator.invalidateAllCalls) != 1 || fx.invalidator.invalidateAllCalls[0] != user.ID {
-		t.Errorf("InvalidateAllForUser calls = %v, want [%d]", fx.invalidator.invalidateAllCalls, user.ID)
+		t.Errorf("InvalidateAll calls = %v, want [%d]", fx.invalidator.invalidateAllCalls, user.ID)
 	}
 }
 

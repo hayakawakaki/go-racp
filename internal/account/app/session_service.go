@@ -84,21 +84,21 @@ func (s *SessionService) Destroy(ctx context.Context, rawToken string) error {
 	return nil
 }
 
-func (s *SessionService) InvalidateAllForUser(ctx context.Context, userID int) error {
+func (s *SessionService) InvalidateAll(ctx context.Context, userID int) error {
 	if err := s.repo.DeleteByUserID(ctx, userID); err != nil {
-		return fmt.Errorf("app.SessionService.InvalidateAllForUser: %w", err)
+		return fmt.Errorf("app.SessionService.InvalidateAll: %w", err)
 	}
 	return nil
 }
 
-func (s *SessionService) InvalidateAllForUserExceptCurrent(ctx context.Context, userID int, rawCurrentToken string) error {
+func (s *SessionService) InvalidateOthers(ctx context.Context, userID int, rawCurrentToken string) error {
 	decoded, err := base64.RawURLEncoding.DecodeString(rawCurrentToken)
 	if err != nil || len(decoded) != 32 {
 		return domain.ErrInvalidCurrentSessionToken
 	}
 	hash := sha256.Sum256(decoded)
 	if err := s.repo.DeleteByUserIDExcept(ctx, userID, hash); err != nil {
-		return fmt.Errorf("app.SessionService.InvalidateAllForUserExceptCurrent: %w", err)
+		return fmt.Errorf("app.SessionService.InvalidateOthers: %w", err)
 	}
 	return nil
 }

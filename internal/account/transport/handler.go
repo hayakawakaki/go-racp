@@ -44,6 +44,8 @@ type accountService interface {
 	RequestPasswordReset(ctx context.Context, email string) error
 	ConsumePasswordReset(ctx context.Context, rawToken, newPassword string) error
 	PeekPasswordReset(ctx context.Context, rawToken string) (*actiontoken.ActionToken, error)
+	PeekVerification(ctx context.Context, rawToken string) (*actiontoken.ActionToken, error)
+	PeekEmailChange(ctx context.Context, rawToken string) (*actiontoken.ActionToken, error)
 	UpdatePassword(ctx context.Context, userID int, currentRawToken, currentPassword, newPassword, confirmPassword string) error
 	RequestEmailChange(ctx context.Context, userID int, currentPassword, newEmail string) error
 	ConsumeEmailChange(ctx context.Context, rawToken string) (*domain.User, error)
@@ -98,9 +100,11 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux, requireLogin func(http.Hand
 	mux.HandleFunc("GET /reset-password", h.showResetPassword)
 	mux.HandleFunc("POST /reset-password", h.doResetPassword)
 	mux.HandleFunc("GET /verify-account", h.showVerifyAccount)
-	mux.HandleFunc("GET /verify", h.doVerify)
+	mux.HandleFunc("GET /verify", h.showVerify)
+	mux.HandleFunc("POST /verify", h.doVerify)
 	mux.HandleFunc("POST /verify/resend", h.doResendVerification)
-	mux.HandleFunc("GET /verify-email-change", h.doVerifyEmailChange)
+	mux.HandleFunc("GET /verify-email-change", h.showVerifyEmailChange)
+	mux.HandleFunc("POST /verify-email-change", h.doVerifyEmailChange)
 
 	mux.Handle("GET /account", requireLogin(http.HandlerFunc(h.showAccount)))
 	mux.Handle("GET /account/password", requireLogin(http.HandlerFunc(h.showChangePassword)))
