@@ -1,10 +1,13 @@
 package domain
 
+import "time"
+
 type User struct {
-	Username string
-	Password string
-	Email    string
-	Gender   string
-	ID       int
-	GroupID  int
+	Birthdate time.Time
+	Username  string
+	Password  string
+	Email     string
+	Gender    string
+	ID        int
+	GroupID   int
 }

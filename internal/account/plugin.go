@@ -50,6 +50,7 @@ func buildServices(in *platinfra.Infra) (*app.Service, *app.SessionService, *inf
 	sessSvc := app.NewSessionService(sessRepo, in.Config.App.TTL.Session)
 
 	svc := app.NewService(userRepo,
+		app.WithLocation(in.Config.App.General.Location()),
 		app.WithSessionInvalidator(sessSvc),
 		app.WithChangeLog(changeLog),
 		app.WithVerification(in.TokenManager, in.Mailer, app.VerificationConfig{

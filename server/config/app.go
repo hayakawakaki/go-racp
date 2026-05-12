@@ -10,7 +10,16 @@ import (
 
 // GeneralConfig holds UI/branding settings shared across every page.
 type GeneralConfig struct {
+	location   *time.Location
 	ServerName string `yaml:"ServerName"`
+	Timezone   string `yaml:"Timezone"`
+}
+
+func (g GeneralConfig) Location() *time.Location {
+	if g.location == nil {
+		return time.UTC
+	}
+	return g.location
 }
 
 // MailerConfig holds outgoing-mail settings.
@@ -50,7 +59,7 @@ type AppConfig struct {
 // appConfigDefaults apply default config in case of missing config file
 func appConfigDefaults() *AppConfig {
 	return &AppConfig{
-		General: GeneralConfig{ServerName: "Go Control Panel"},
+		General: GeneralConfig{ServerName: "Go Control Panel", Timezone: "UTC"},
 		Mailer:  MailerConfig{FromAddress: "noreply@gocp.com"},
 		TTL: TTLConfig{
 			Session:       24 * time.Hour,
@@ -113,4 +122,12 @@ func validateAppConfig(cfg *AppConfig) {
 	if cfg.Mailer.FromAddress == "" {
 		panic(fmt.Errorf("MailerConfig.FromAddress is required"))
 	}
+	if cfg.General.Timezone == "" {
+		panic(fmt.Errorf("GeneralConfig.Timezone is required"))
+	}
+	loc, err := time.LoadLocation(cfg.General.Timezone)
+	if err != nil {
+		panic(fmt.Errorf("GeneralConfig.Timezone %q is not a valid IANA timezone: %w", cfg.General.Timezone, err))
+	}
+	cfg.General.location = loc
 }

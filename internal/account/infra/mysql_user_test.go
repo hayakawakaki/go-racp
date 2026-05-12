@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/hayakawakaki/go-racp/internal/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/testutil"
@@ -33,11 +34,16 @@ func TestRepository_CreateAndGet(t *testing.T) {
 	ctx := context.Background()
 
 	suf := randomizeSuffix(t)
+	wantBirthdate, err := time.Parse("2006-01-02", "1995-06-15")
+	if err != nil {
+		t.Fatalf("parse birthdate: %v", err)
+	}
 	u := &domain.User{
-		Username: "racp_test_" + suf,
-		Email:    "racp_test_" + suf + "@example.invalid",
-		Password: "Test1234!",
-		Gender:   "M",
+		Username:  "racp_test_" + suf,
+		Email:     "racp_test_" + suf + "@example.invalid",
+		Password:  "Test1234!",
+		Gender:    "M",
+		Birthdate: wantBirthdate,
 	}
 	created, err := repo.Create(ctx, u)
 	if err != nil {
@@ -54,6 +60,9 @@ func TestRepository_CreateAndGet(t *testing.T) {
 	}
 	if got.Username != u.Username || got.Email != u.Email {
 		t.Errorf("mismatch: %+v", got)
+	}
+	if got.Birthdate.Format("2006-01-02") != "1995-06-15" {
+		t.Errorf("Birthdate = %v; want 1995-06-15", got.Birthdate)
 	}
 
 	gotByU, err := repo.GetByUsername(ctx, u.Username)
@@ -87,11 +96,13 @@ func TestRepository_Authenticate(t *testing.T) {
 	ctx := context.Background()
 
 	suf := randomizeSuffix(t)
+	birthdate, _ := time.Parse("2006-01-02", "1995-06-15")
 	u := &domain.User{
-		Username: "racp_test_" + suf,
-		Email:    "racp_test_" + suf + "@example.invalid",
-		Password: "secret",
-		Gender:   "M",
+		Username:  "racp_test_" + suf,
+		Email:     "racp_test_" + suf + "@example.invalid",
+		Password:  "secret",
+		Gender:    "M",
+		Birthdate: birthdate,
 	}
 	created, err := repo.Create(ctx, u)
 	if err != nil {

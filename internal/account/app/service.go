@@ -56,6 +56,7 @@ type EmailChangeConfig struct {
 type Service struct {
 	TokenManager       *actiontoken.Manager
 	now                func() time.Time
+	location           *time.Location
 	Repo               domain.Repository
 	ChangeLog          domain.ChangeLog
 	Mail               Mailer
@@ -67,6 +68,10 @@ type Service struct {
 	enableVerify       bool
 	enableReset        bool
 	enableEmailChange  bool
+}
+
+func (s *Service) Now() time.Time {
+	return s.now().In(s.location)
 }
 
 type Option func(*Service)
@@ -125,6 +130,13 @@ func WithEmailChange(manager *actiontoken.Manager, mail Mailer, cfg EmailChangeC
 	}
 }
 
+func WithLocation(loc *time.Location) Option {
+	if loc == nil {
+		panic("account: WithLocation: loc must not be nil")
+	}
+	return func(s *Service) { s.location = loc }
+}
+
 func WithChangeLog(log domain.ChangeLog) Option {
 	return func(s *Service) { s.ChangeLog = log }
 }
@@ -141,6 +153,9 @@ func NewService(repo domain.Repository, opts ...Option) *Service {
 	s := &Service{Repo: repo, now: time.Now}
 	for _, opt := range opts {
 		opt(s)
+	}
+	if s.location == nil {
+		s.location = time.UTC
 	}
 	if s.enableVerify {
 		if s.TokenManager == nil {
@@ -182,7 +197,7 @@ func NewService(repo domain.Repository, opts ...Option) *Service {
 }
 
 func (s *Service) Create(ctx context.Context, cmd CreateCommand) (*GetDTO, error) {
-	normalizedEmail, err := validateRegistration(cmd)
+	normalizedEmail, parsedBirthdate, err := validateRegistration(cmd, s.Now())
 	if err != nil {
 		return nil, err
 	}
@@ -196,10 +211,11 @@ func (s *Service) Create(ctx context.Context, cmd CreateCommand) (*GetDTO, error
 	}
 
 	created, err := s.Repo.Create(ctx, &domain.User{
-		Username: cmd.Username,
-		Password: cmd.Password,
-		Email:    normalizedEmail,
-		Gender:   cmd.Gender,
+		Username:  cmd.Username,
+		Password:  cmd.Password,
+		Email:     normalizedEmail,
+		Gender:    cmd.Gender,
+		Birthdate: parsedBirthdate,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("app.Service.Create: %w", err)
@@ -337,9 +353,9 @@ func (s *Service) ConsumePasswordReset(ctx context.Context, rawToken, newPasswor
 	return nil
 }
 
-func validateRegistration(cmd CreateCommand) (string, error) {
+func validateRegistration(cmd CreateCommand, now time.Time) (string, time.Time, error) {
 	fe := domain.FieldErrors{}
-	normalizedEmail := validateRegistrationInvariants(cmd, fe)
+	normalizedEmail, parsedBirthdate := validateRegistrationInvariants(cmd, fe, now)
 	applyRegistrationPolicies(cmd, fe)
 
 	if cmd.Password != cmd.PasswordConfirm {
@@ -347,12 +363,12 @@ func validateRegistration(cmd CreateCommand) (string, error) {
 	}
 
 	if fe.Has() {
-		return "", &domain.ValidationError{Fields: fe}
+		return "", time.Time{}, &domain.ValidationError{Fields: fe}
 	}
-	return normalizedEmail, nil
+	return normalizedEmail, parsedBirthdate, nil
 }
 
-func validateRegistrationInvariants(cmd CreateCommand, fe domain.FieldErrors) string {
+func validateRegistrationInvariants(cmd CreateCommand, fe domain.FieldErrors, now time.Time) (string, time.Time) {
 	if err := domain.ValidateUsername(cmd.Username); err != nil {
 		fe.Add(fieldUsername, err.Error())
 	}
@@ -366,7 +382,11 @@ func validateRegistrationInvariants(cmd CreateCommand, fe domain.FieldErrors) st
 	if err := domain.ValidateGender(cmd.Gender); err != nil {
 		fe.Add("gender", err.Error())
 	}
-	return normalizedEmail
+	parsedBirthdate, birthdateErr := domain.ValidateBirthdate(cmd.Birthdate, now)
+	if birthdateErr != nil {
+		fe.Add("birthdate", birthdateErr.Error())
+	}
+	return normalizedEmail, parsedBirthdate
 }
 
 func applyRegistrationPolicies(cmd CreateCommand, fe domain.FieldErrors) {

@@ -183,6 +183,7 @@ func TestService_Create(t *testing.T) {
 		PasswordConfirm: "Test1234!",
 		Email:           "test@example.com",
 		Gender:          "F",
+		Birthdate:       "2000-01-01",
 	}
 
 	t.Run("happy", func(t *testing.T) {
@@ -328,6 +329,79 @@ func TestService_Create(t *testing.T) {
 			t.Errorf("not wrapped: %v", err)
 		}
 	})
+}
+
+func TestService_Create_StoresBirthdate(t *testing.T) {
+	t.Parallel()
+	repo := newFakeUserRepo()
+	svc := NewService(repo)
+	svc.now = func() time.Time { return time.Date(2026, 5, 12, 12, 0, 0, 0, time.UTC) }
+
+	dto, err := svc.Create(context.Background(), CreateCommand{
+		Username:        "testuser",
+		Password:        "Test1234!",
+		PasswordConfirm: "Test1234!",
+		Email:           "test@example.invalid",
+		Gender:          "M",
+		Birthdate:       "2000-01-15",
+	})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	stored, err := repo.GetByID(context.Background(), dto.ID)
+	if err != nil {
+		t.Fatalf("GetByID: %v", err)
+	}
+	wantDate, _ := time.Parse("2006-01-02", "2000-01-15")
+	if !stored.Birthdate.Equal(wantDate) {
+		t.Errorf("Birthdate = %v; want %v", stored.Birthdate, wantDate)
+	}
+}
+
+func TestService_Create_RejectsInvalidBirthdate(t *testing.T) {
+	t.Parallel()
+	repo := newFakeUserRepo()
+	svc := NewService(repo)
+	svc.now = func() time.Time { return time.Date(2026, 5, 12, 12, 0, 0, 0, time.UTC) }
+
+	_, err := svc.Create(context.Background(), CreateCommand{
+		Username:        "testuser",
+		Password:        "Test1234!",
+		PasswordConfirm: "Test1234!",
+		Email:           "test@example.invalid",
+		Gender:          "M",
+		Birthdate:       "",
+	})
+	var validationErr *domain.ValidationError
+	if !errors.As(err, &validationErr) {
+		t.Fatalf("Create err = %v; want *domain.ValidationError", err)
+	}
+	if validationErr.Fields["birthdate"] == "" {
+		t.Errorf("Fields[\"birthdate\"] not populated: %+v", validationErr.Fields)
+	}
+}
+
+func TestService_Create_BirthdateRespectsLocation(t *testing.T) {
+	t.Parallel()
+	tokyo, err := time.LoadLocation("Asia/Tokyo")
+	if err != nil {
+		t.Skipf("LoadLocation Asia/Tokyo: %v (likely missing tzdata)", err)
+	}
+	repo := newFakeUserRepo()
+	svc := NewService(repo, WithLocation(tokyo))
+	svc.now = func() time.Time { return time.Date(2026, 5, 12, 16, 0, 0, 0, time.UTC) }
+
+	_, err = svc.Create(context.Background(), CreateCommand{
+		Username:        "testuser",
+		Password:        "Test1234!",
+		PasswordConfirm: "Test1234!",
+		Email:           "test@example.invalid",
+		Gender:          "M",
+		Birthdate:       "2026-05-13",
+	})
+	if err != nil {
+		t.Fatalf("Create: %v; expected ok because 2026-05-13 is today in Tokyo when UTC is 2026-05-12 16:00", err)
+	}
 }
 
 func TestService_GetAll(t *testing.T) {

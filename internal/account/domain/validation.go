@@ -4,6 +4,7 @@ import (
 	"net/mail"
 	"regexp"
 	"strings"
+	"time"
 	"unicode/utf8"
 )
 
@@ -57,4 +58,24 @@ func ValidateGender(s string) error {
 		return ErrGenderInvalid
 	}
 	return nil
+}
+
+const BirthdateMaxAgeYears = 120
+
+func ValidateBirthdate(s string, now time.Time) (time.Time, error) {
+	if s == "" {
+		return time.Time{}, ErrBirthdateEmpty
+	}
+	parsed, err := time.Parse("2006-01-02", s)
+	if err != nil {
+		return time.Time{}, ErrBirthdateShape
+	}
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	if parsed.After(today) {
+		return time.Time{}, ErrBirthdateFuture
+	}
+	if parsed.Before(today.AddDate(-BirthdateMaxAgeYears, 0, 0)) {
+		return time.Time{}, ErrBirthdateTooOld
+	}
+	return parsed, nil
 }

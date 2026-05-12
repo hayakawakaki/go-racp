@@ -384,6 +384,7 @@ func TestService_Create_WithVerificationDeps_IssuesToken(t *testing.T) {
 		PasswordConfirm: "Test1234!",
 		Email:           "test@example.com",
 		Gender:          "F",
+		Birthdate:       "2000-01-01",
 	})
 	if err != nil {
 		t.Fatalf("Create: %v", err)
@@ -419,6 +420,7 @@ func TestService_Create_WithoutVerificationDeps_NoTokenIssued(t *testing.T) {
 		PasswordConfirm: "Test1234!",
 		Email:           "test@example.com",
 		Gender:          "F",
+		Birthdate:       "2000-01-01",
 	})
 	if err != nil {
 		t.Fatalf("Create: %v", err)
@@ -439,6 +441,7 @@ func TestService_Create_VerificationIssueError_Wraps(t *testing.T) {
 		PasswordConfirm: "Test1234!",
 		Email:           "test@example.com",
 		Gender:          "F",
+		Birthdate:       "2000-01-01",
 	})
 	if err == nil || !strings.Contains(err.Error(), "app.Service.Create") {
 		t.Errorf("not wrapped: %v", err)
