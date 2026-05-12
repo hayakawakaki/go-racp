@@ -16,7 +16,7 @@ func (h *Handler) validateTokenLink(w http.ResponseWriter, r *http.Request, peek
 	w.Header().Set("Referrer-Policy", "no-referrer")
 	token := r.URL.Query().Get("token")
 	if token == "" {
-		http.NotFound(w, r)
+		httpx.RenderNotFound(w, r, h.logger, h.layout())
 		return "", false
 	}
 	if _, err := peek(r.Context(), token); err != nil {
@@ -27,7 +27,7 @@ func (h *Handler) validateTokenLink(w http.ResponseWriter, r *http.Request, peek
 		if !errors.Is(err, actiontoken.ErrTokenInvalid) && !errors.Is(err, actiontoken.ErrTokenAlreadyUsed) {
 			h.logger.Error(op, "err", err)
 		}
-		http.NotFound(w, r)
+		httpx.RenderNotFound(w, r, h.logger, h.layout())
 		return "", false
 	}
 	return token, true
