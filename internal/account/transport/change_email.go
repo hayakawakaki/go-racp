@@ -20,6 +20,7 @@ func (h *Handler) doChangeEmail(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
+
 	r.Body = http.MaxBytesReader(w, r.Body, maxAccountFormBytes)
 	if err := r.ParseForm(); err != nil {
 		h.renderChangeEmail(w, r, ChangeEmailState{
@@ -27,6 +28,7 @@ func (h *Handler) doChangeEmail(w http.ResponseWriter, r *http.Request) {
 		}, false)
 		return
 	}
+
 	newEmail := r.PostFormValue(fieldNewEmail)
 	err := h.svc.RequestEmailChange(r.Context(), sess.UserID, r.PostFormValue(fieldCurrentPassword), newEmail)
 	if err != nil {
@@ -50,6 +52,7 @@ func (h *Handler) doChangeEmail(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, genericErrorMessage, http.StatusInternalServerError)
 		return
 	}
+
 	h.redirectWithNotice(w, r, noticeEmailChangeSent)
 }
 

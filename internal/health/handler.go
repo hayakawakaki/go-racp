@@ -23,6 +23,7 @@ func New(mainDB, logDB Pinger, logger *slog.Logger) http.HandlerFunc {
 			http.Error(w, "main db unavailable", http.StatusServiceUnavailable)
 			return
 		}
+
 		if err := logDB.PingContext(ctx); err != nil {
 			logger.Error("healthz: log db ping", "err", err)
 			http.Error(w, "log db unavailable", http.StatusServiceUnavailable)

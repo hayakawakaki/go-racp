@@ -59,14 +59,17 @@ func (e *ValidationError) Error() string {
 	if len(e.Fields) == 0 {
 		return "validation failed"
 	}
+
 	keys := make([]string, 0, len(e.Fields))
 	for k := range e.Fields {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
+
 	parts := make([]string, 0, len(keys))
 	for _, k := range keys {
 		parts = append(parts, k+": "+e.Fields[k])
 	}
+
 	return "validation failed: " + strings.Join(parts, "; ")
 }

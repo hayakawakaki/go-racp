@@ -11,6 +11,7 @@ func NewClient(host string, port int, requireTLS bool) (*mail.Client, error) {
 	if requireTLS {
 		policy = mail.TLSMandatory
 	}
+
 	c, err := mail.NewClient(host,
 		mail.WithPort(port),
 		mail.WithTLSPolicy(policy),
@@ -18,5 +19,6 @@ func NewClient(host string, port int, requireTLS bool) (*mail.Client, error) {
 	if err != nil {
 		return nil, fmt.Errorf("mailer: new client: %w", err)
 	}
+
 	return c, nil
 }

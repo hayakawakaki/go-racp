@@ -17,6 +17,7 @@ func (h *Handler) showResetPassword(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+
 	httpx.RenderHTML(w, r, h.logger, resetPasswordPage(h.layout(), ResetPasswordState{Token: token}))
 }
 
@@ -27,10 +28,10 @@ func (h *Handler) doResetPassword(w http.ResponseWriter, r *http.Request) {
 		httpx.RenderHTML(w, r, h.logger, resetResultPage(h.layout(), ResetResultState{Kind: ResetResultInvalid}))
 		return
 	}
+
 	token := r.PostFormValue(fieldToken)
 	password := r.PostFormValue(fieldPassword)
 	confirm := r.PostFormValue(fieldPasswordConfirm)
-
 	if password != confirm {
 		httpx.RenderHTML(w, r, h.logger, resetPasswordPage(h.layout(), ResetPasswordState{
 			Token:  token,
@@ -49,6 +50,7 @@ func (h *Handler) doResetPassword(w http.ResponseWriter, r *http.Request) {
 			}))
 			return
 		}
+
 		state := ResetResultState{Kind: ResetResultInvalid}
 		switch {
 		case errors.Is(err, actiontoken.ErrTokenExpired):
@@ -64,5 +66,6 @@ func (h *Handler) doResetPassword(w http.ResponseWriter, r *http.Request) {
 		httpx.RenderHTML(w, r, h.logger, resetResultPage(h.layout(), state))
 		return
 	}
+
 	httpx.RenderHTML(w, r, h.logger, resetResultPage(h.layout(), ResetResultState{Kind: ResetResultSuccess}))
 }

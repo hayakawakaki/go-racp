@@ -29,11 +29,13 @@ func Register(p Plugin) {
 	if p.Mount == nil && p.Middleware == nil {
 		panic("plugin: Mount or Middleware required for " + p.Name)
 	}
+
 	for _, existing := range registry {
 		if existing.Name == p.Name {
 			panic("plugin: duplicate plugin name: " + p.Name)
 		}
 	}
+
 	registry = append(registry, p)
 }
 
@@ -44,6 +46,7 @@ func MountAll(mux *http.ServeMux, in *infra.Infra) {
 		panic("plugin: MountAll called more than once")
 	}
 	mounted = true
+
 	for _, p := range registry {
 		if p.Mount != nil {
 			p.Mount(mux, in)
@@ -59,5 +62,6 @@ func Middlewares() []Plugin {
 			out = append(out, p)
 		}
 	}
+
 	return out
 }

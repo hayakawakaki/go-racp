@@ -11,11 +11,13 @@ import (
 
 func (h *Handler) showVerifyEmailChange(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Referrer-Policy", "no-referrer")
+
 	token := r.URL.Query().Get("token")
 	if token == "" {
 		httpx.RenderHTML(w, r, h.logger, emailChangeResultPage(h.layout(), EmailChangeResultState{Kind: EmailChangeResultInvalid}))
 		return
 	}
+
 	peeked, err := h.svc.PeekEmailChange(r.Context(), token)
 	if err != nil {
 		state := EmailChangeResultState{Kind: EmailChangeResultInvalid}
@@ -33,6 +35,7 @@ func (h *Handler) showVerifyEmailChange(w http.ResponseWriter, r *http.Request) 
 		httpx.RenderHTML(w, r, h.logger, emailChangeResultPage(h.layout(), state))
 		return
 	}
+
 	httpx.RenderHTML(w, r, h.logger, verifyEmailChangeConfirmPage(h.layout(), VerifyEmailChangeConfirmState{
 		Token:    token,
 		NewEmail: string(peeked.Payload),
@@ -46,11 +49,13 @@ func (h *Handler) doVerifyEmailChange(w http.ResponseWriter, r *http.Request) {
 		httpx.RenderHTML(w, r, h.logger, emailChangeResultPage(h.layout(), EmailChangeResultState{Kind: EmailChangeResultInvalid}))
 		return
 	}
+
 	token := r.PostFormValue(fieldToken)
 	if token == "" {
 		httpx.RenderHTML(w, r, h.logger, emailChangeResultPage(h.layout(), EmailChangeResultState{Kind: EmailChangeResultInvalid}))
 		return
 	}
+
 	user, err := h.svc.ConsumeEmailChange(r.Context(), token)
 	if err != nil {
 		state := EmailChangeResultState{Kind: EmailChangeResultInvalid}
@@ -70,6 +75,7 @@ func (h *Handler) doVerifyEmailChange(w http.ResponseWriter, r *http.Request) {
 		httpx.RenderHTML(w, r, h.logger, emailChangeResultPage(h.layout(), state))
 		return
 	}
+
 	httpx.RenderHTML(w, r, h.logger, emailChangeResultPage(h.layout(), EmailChangeResultState{
 		Kind:     EmailChangeResultSuccess,
 		NewEmail: user.Email,

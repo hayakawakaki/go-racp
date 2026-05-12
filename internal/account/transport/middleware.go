@@ -64,6 +64,7 @@ func sessionMiddleware(
 				onNoSession(w, r, next)
 				return
 			}
+
 			sess, err := sessSvc.Validate(r.Context(), c.Value)
 			if err != nil {
 				clearSessionCookie(w, secure)
@@ -73,6 +74,7 @@ func sessionMiddleware(
 				onNoSession(w, r, next)
 				return
 			}
+
 			ctx := context.WithValue(r.Context(), sessionKey, sess)
 			next(w, r.WithContext(ctx))
 		}

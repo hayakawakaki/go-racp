@@ -119,6 +119,7 @@ func (h *Handler) birthdateBounds() (minDate, maxDate string) {
 	today := h.svc.Now().In(h.general.Location())
 	maxDate = today.Format("2006-01-02")
 	minDate = today.AddDate(-domain.BirthdateMaxAgeYears, 0, 0).Format("2006-01-02")
+
 	return minDate, maxDate
 }
 

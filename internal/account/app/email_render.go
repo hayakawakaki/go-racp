@@ -13,6 +13,7 @@ func renderVerificationEmail(ctx context.Context, d mailtemplate.VerificationDat
 	if err := mailtemplate.Verification(d).Render(ctx, &buf); err != nil {
 		return "", fmt.Errorf("renderVerificationEmail: %w", err)
 	}
+
 	return buf.String(), nil
 }
 
@@ -21,6 +22,7 @@ func renderPasswordResetEmail(ctx context.Context, d mailtemplate.PasswordResetD
 	if err := mailtemplate.PasswordReset(d).Render(ctx, &buf); err != nil {
 		return "", fmt.Errorf("renderPasswordResetEmail: %w", err)
 	}
+
 	return buf.String(), nil
 }
 
@@ -29,5 +31,6 @@ func renderEmailChangeEmail(ctx context.Context, d mailtemplate.EmailChangeData)
 	if err := mailtemplate.EmailChange(d).Render(ctx, &buf); err != nil {
 		return "", fmt.Errorf("renderEmailChangeEmail: %w", err)
 	}
+
 	return buf.String(), nil
 }

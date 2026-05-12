@@ -20,6 +20,7 @@ func (h *Handler) doForgotPassword(w http.ResponseWriter, r *http.Request) {
 		h.renderForgotPassword(w, r, ForgotPasswordState{Errors: map[string]string{fieldEmail: invalidFormDataMsg}})
 		return
 	}
+
 	email := r.PostFormValue(fieldEmail)
 	err := h.svc.RequestPasswordReset(r.Context(), email)
 	if err != nil {
@@ -34,6 +35,7 @@ func (h *Handler) doForgotPassword(w http.ResponseWriter, r *http.Request) {
 		h.renderForgotPassword(w, r, state)
 		return
 	}
+
 	h.renderForgotPassword(w, r, ForgotPasswordState{Submitted: true})
 }
 

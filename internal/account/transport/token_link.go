@@ -22,6 +22,7 @@ func (h *Handler) validateTokenLink(w http.ResponseWriter, r *http.Request, peek
 		httpx.Render404(w, r, h.logger, h.layout())
 		return "", false
 	}
+
 	if _, err := peek(r.Context(), token); err != nil {
 		if errors.Is(err, actiontoken.ErrTokenExpired) {
 			httpx.RenderHTML(w, r, h.logger, expired)
@@ -33,5 +34,6 @@ func (h *Handler) validateTokenLink(w http.ResponseWriter, r *http.Request, peek
 		httpx.Render404(w, r, h.logger, h.layout())
 		return "", false
 	}
+
 	return token, true
 }

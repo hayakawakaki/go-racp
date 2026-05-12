@@ -27,6 +27,7 @@ func (r *SessionRepository) Create(ctx context.Context, s *domain.Session) error
 	if err != nil {
 		return fmt.Errorf("infra.SessionRepository.Create: %w", err)
 	}
+
 	return nil
 }
 
@@ -39,7 +40,6 @@ func (r *SessionRepository) GetByTokenHash(ctx context.Context, hash [32]byte) (
 		`SELECT token_hash, user_id, expires_at, last_seen_at, created_at
 		 FROM cp_sessions WHERE token_hash = ?`, hash[:],
 	).Scan(&raw, &s.UserID, &s.ExpiresAt, &s.LastSeenAt, &s.CreatedAt)
-
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, domain.ErrSessionNotFound
 	}
@@ -49,7 +49,9 @@ func (r *SessionRepository) GetByTokenHash(ctx context.Context, hash [32]byte) (
 	if len(raw) != 32 {
 		return nil, fmt.Errorf("infra.SessionRepository.GetByTokenHash: token_hash len=%d", len(raw))
 	}
+
 	copy(s.TokenHash[:], raw)
+
 	return &s, nil
 }
 
@@ -68,6 +70,7 @@ func (r *SessionRepository) Refresh(ctx context.Context, hash [32]byte, lastSeen
 	if rows == 0 {
 		return domain.ErrSessionNotFound
 	}
+
 	return nil
 }
 
@@ -85,6 +88,7 @@ func (r *SessionRepository) Delete(ctx context.Context, hash [32]byte) error {
 	if rows == 0 {
 		return domain.ErrSessionNotFound
 	}
+
 	return nil
 }
 
@@ -95,6 +99,7 @@ func (r *SessionRepository) DeleteByUserID(ctx context.Context, userID int) erro
 	); err != nil {
 		return fmt.Errorf("infra.SessionRepository.DeleteByUserID: %w", err)
 	}
+
 	return nil
 }
 
@@ -105,5 +110,6 @@ func (r *SessionRepository) DeleteByUserIDExcept(ctx context.Context, userID int
 	); err != nil {
 		return fmt.Errorf("infra.SessionRepository.DeleteByUserIDExcept: %w", err)
 	}
+
 	return nil
 }

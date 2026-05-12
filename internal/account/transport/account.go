@@ -28,15 +28,18 @@ func (h *Handler) showAccount(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
+
 	account, err := h.svc.GetAccount(r.Context(), sess.UserID)
 	if err != nil {
 		h.logger.Error("account get", "err", err)
 		http.Error(w, genericErrorMessage, http.StatusInternalServerError)
 		return
 	}
+
 	state := AccountState{Account: account}
 	if notice, ok := accountNoticeText[r.URL.Query().Get("notice")]; ok {
 		state.Notice = notice
 	}
+
 	httpx.RenderHTML(w, r, h.logger, accountPage(h.layout(), state))
 }

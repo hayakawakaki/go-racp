@@ -52,5 +52,6 @@ func (h *Handler) show(w http.ResponseWriter, r *http.Request) {
 			state.Username = user.Username
 		}
 	}
+
 	httpx.RenderHTML(w, r, h.logger, homePage(h.layout(), state))
 }

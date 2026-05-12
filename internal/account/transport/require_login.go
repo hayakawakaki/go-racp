@@ -17,6 +17,7 @@ func RequireLogin(sessSvc sessionService, logger *slog.Logger) func(http.Handler
 				http.Redirect(w, r, "/login", http.StatusSeeOther)
 				return
 			}
+
 			sess, err := sessSvc.Validate(r.Context(), cookie.Value)
 			if err != nil {
 				if errors.Is(err, domain.ErrSessionNotFound) || errors.Is(err, domain.ErrSessionExpired) {
@@ -27,6 +28,7 @@ func RequireLogin(sessSvc sessionService, logger *slog.Logger) func(http.Handler
 				http.Error(w, "internal server error", http.StatusInternalServerError)
 				return
 			}
+
 			ctx := context.WithValue(r.Context(), sessionKey, sess)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})

@@ -32,11 +32,13 @@ func (h *Handler) showVerifyAccount(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
+
 	sess, err := h.sessSvc.Validate(r.Context(), cookie.Value)
 	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
+
 	user, err := h.users.GetByID(r.Context(), sess.UserID)
 	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -46,6 +48,7 @@ func (h *Handler) showVerifyAccount(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
+
 	state := VerifyAccountState{Email: user.Email}
 	if notice, ok := resendNoticeText[r.URL.Query().Get("notice")]; ok {
 		state.Notice = notice
@@ -59,6 +62,7 @@ func (h *Handler) showVerify(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+
 	httpx.RenderHTML(w, r, h.logger, verifyConfirmPage(h.layout(), VerifyConfirmState{Token: token}))
 }
 
@@ -70,13 +74,14 @@ func (h *Handler) doVerify(w http.ResponseWriter, r *http.Request) {
 		httpx.RenderHTML(w, r, h.logger, verifyResultPage(h.layout(), VerifyResultState{Kind: VerifyResultInvalid}))
 		return
 	}
+
 	token := r.PostFormValue(fieldToken)
 	if token == "" {
 		httpx.RenderHTML(w, r, h.logger, verifyResultPage(h.layout(), VerifyResultState{Kind: VerifyResultInvalid}))
 		return
 	}
-	err := h.svc.ConsumeVerification(r.Context(), token)
 
+	err := h.svc.ConsumeVerification(r.Context(), token)
 	if (err == nil || errors.Is(err, actiontoken.ErrTokenAlreadyUsed)) && h.hasActiveSession(r) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
@@ -102,7 +107,9 @@ func (h *Handler) hasActiveSession(r *http.Request) bool {
 	if err != nil || cookie.Value == "" {
 		return false
 	}
+
 	_, err = h.sessSvc.Validate(r.Context(), cookie.Value)
+
 	return err == nil
 }
 
@@ -112,16 +119,19 @@ func (h *Handler) doResendVerification(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
+
 	sess, err := h.sessSvc.Validate(r.Context(), cookie.Value)
 	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
+
 	notice := resendNoticeSent
 	if err := h.svc.ResendVerification(r.Context(), sess.UserID); err != nil {
 		h.logger.Error("verify resend", "err", err)
 		notice = resendNoticeFailed
 	}
+
 	target := "/verify-account?notice=" + notice
 	if httpx.IsHTMX(r) {
 		w.Header().Set("HX-Redirect", target)

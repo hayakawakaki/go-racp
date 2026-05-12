@@ -25,6 +25,7 @@ func CheckRegistrationPassword(password string) error {
 	if utf8.RuneCountInString(password) < regPasswordMinLen {
 		return ErrRegPasswordTooShort
 	}
+
 	var hasUpper, hasDigit, hasSymbol bool
 	for _, r := range password {
 		switch {
@@ -36,14 +37,18 @@ func CheckRegistrationPassword(password string) error {
 			hasSymbol = true
 		}
 	}
+
 	if !hasUpper {
 		return ErrRegPasswordNoUpper
 	}
+
 	if !hasDigit {
 		return ErrRegPasswordNoDigit
 	}
+
 	if !hasSymbol {
 		return ErrRegPasswordNoSymbol
 	}
+
 	return nil
 }

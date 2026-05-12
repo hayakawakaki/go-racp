@@ -28,6 +28,7 @@ func (r *ChangeLogRepository) Record(ctx context.Context, accountID int, changeT
 	if err != nil {
 		return fmt.Errorf("infra.ChangeLogRepository.Record: %w", err)
 	}
+
 	return nil
 }
 
@@ -43,5 +44,6 @@ func (r *ChangeLogRepository) MostRecent(ctx context.Context, accountID int, cha
 	if err != nil {
 		return time.Time{}, fmt.Errorf("infra.ChangeLogRepository.MostRecent: %w", err)
 	}
+
 	return changedAt, nil
 }

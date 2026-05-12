@@ -32,6 +32,7 @@ func (s *SessionService) Create(ctx context.Context, userID int) (string, *domai
 	if _, err := rand.Read(raw[:]); err != nil {
 		return "", nil, fmt.Errorf("app.SessionService.Create: %w", err)
 	}
+
 	hash := sha256.Sum256(raw[:])
 	now := s.now()
 	sess := &domain.Session{
@@ -41,9 +42,11 @@ func (s *SessionService) Create(ctx context.Context, userID int) (string, *domai
 		LastSeenAt: now,
 		ExpiresAt:  now.Add(s.ttl),
 	}
+
 	if err := s.repo.Create(ctx, sess); err != nil {
 		return "", nil, fmt.Errorf("app.SessionService.Create: %w", err)
 	}
+
 	return base64.RawURLEncoding.EncodeToString(raw[:]), sess, nil
 }
 
@@ -52,6 +55,7 @@ func (s *SessionService) Validate(ctx context.Context, rawToken string) (*domain
 	if !ok {
 		return nil, domain.ErrSessionNotFound
 	}
+
 	sess, err := s.repo.GetByTokenHash(ctx, hash)
 	if err != nil {
 		if errors.Is(err, domain.ErrSessionNotFound) {
@@ -59,17 +63,20 @@ func (s *SessionService) Validate(ctx context.Context, rawToken string) (*domain
 		}
 		return nil, fmt.Errorf("app.SessionService.Validate: %w", err)
 	}
+
 	now := s.now()
 	if sess.IsExpired(now) {
 		_ = s.repo.Delete(ctx, hash)
 		return nil, domain.ErrSessionExpired
 	}
+
 	newExp := now.Add(s.ttl)
 	if err := s.repo.Refresh(ctx, hash, now, newExp); err != nil {
 		return nil, fmt.Errorf("app.SessionService.Validate: %w", err)
 	}
 	sess.LastSeenAt = now
 	sess.ExpiresAt = newExp
+
 	return sess, nil
 }
 
@@ -78,9 +85,11 @@ func (s *SessionService) Destroy(ctx context.Context, rawToken string) error {
 	if !ok {
 		return nil
 	}
+
 	if err := s.repo.Delete(ctx, hash); err != nil && !errors.Is(err, domain.ErrSessionNotFound) {
 		return fmt.Errorf("app.SessionService.Destroy: %w", err)
 	}
+
 	return nil
 }
 
@@ -88,6 +97,7 @@ func (s *SessionService) InvalidateAll(ctx context.Context, userID int) error {
 	if err := s.repo.DeleteByUserID(ctx, userID); err != nil {
 		return fmt.Errorf("app.SessionService.InvalidateAll: %w", err)
 	}
+
 	return nil
 }
 
@@ -96,10 +106,12 @@ func (s *SessionService) InvalidateOthers(ctx context.Context, userID int, rawCu
 	if err != nil || len(decoded) != 32 {
 		return domain.ErrInvalidCurrentSessionToken
 	}
+
 	hash := sha256.Sum256(decoded)
 	if err := s.repo.DeleteByUserIDExcept(ctx, userID, hash); err != nil {
 		return fmt.Errorf("app.SessionService.InvalidateOthers: %w", err)
 	}
+
 	return nil
 }
 
@@ -109,5 +121,6 @@ func decodeTokenToHash(rawToken string) ([32]byte, bool) {
 	if err != nil || len(raw) != 32 {
 		return [32]byte{}, false
 	}
+
 	return sha256.Sum256(raw), true
 }

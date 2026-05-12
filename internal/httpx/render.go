@@ -16,6 +16,7 @@ func RenderHTML(w http.ResponseWriter, r *http.Request, logger *slog.Logger, com
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	_, _ = buf.WriteTo(w)
 }
@@ -27,6 +28,7 @@ func Render404(w http.ResponseWriter, r *http.Request, logger *slog.Logger, layo
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusNotFound)
 	_, _ = buf.WriteTo(w)

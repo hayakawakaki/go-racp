@@ -40,6 +40,7 @@ func middleware(in *platinfra.Infra, h http.Handler) http.Handler {
 		"/verify-email-change",
 		"/healthz", "/static",
 	}
+
 	return transport.RequireVerified(sessSvc, userRepo, in.Logger, allow)(h)
 }
 
@@ -75,5 +76,6 @@ func buildServices(in *platinfra.Infra) (*app.Service, *app.SessionService, *inf
 			PasswordCooldown: in.Config.App.Cooldown.PasswordChange,
 		}),
 	)
+
 	return svc, sessSvc, userRepo
 }

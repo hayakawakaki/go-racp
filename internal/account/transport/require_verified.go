@@ -23,11 +23,13 @@ func RequireVerified(
 				next.ServeHTTP(w, r)
 				return
 			}
+
 			cookie, err := r.Cookie(sessionCookieName)
 			if err != nil || cookie.Value == "" {
 				next.ServeHTTP(w, r)
 				return
 			}
+
 			sess, err := sessSvc.Validate(r.Context(), cookie.Value)
 			if err != nil {
 				if errors.Is(err, domain.ErrSessionNotFound) || errors.Is(err, domain.ErrSessionExpired) {
@@ -38,6 +40,7 @@ func RequireVerified(
 				next.ServeHTTP(w, r)
 				return
 			}
+
 			user, err := users.GetByID(r.Context(), sess.UserID)
 			if err != nil {
 				logger.Error("require_verified: load user", "err", err)
@@ -48,6 +51,7 @@ func RequireVerified(
 				http.Redirect(w, r, verifyAccountPath, http.StatusSeeOther)
 				return
 			}
+
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -59,5 +63,6 @@ func isAllowed(path string, prefixes []string) bool {
 			return true
 		}
 	}
+
 	return false
 }

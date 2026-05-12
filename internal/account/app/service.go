@@ -193,6 +193,7 @@ func NewService(repo domain.Repository, opts ...Option) *Service {
 			panic("account: WithEmailChange requires WithSessionInvalidator")
 		}
 	}
+
 	return s
 }
 
@@ -239,6 +240,7 @@ func (s *Service) IssueVerification(ctx context.Context, accountID int, email, u
 	if err != nil {
 		return fmt.Errorf("app.Service.IssueVerification: %w", err)
 	}
+
 	url := strings.TrimRight(s.verifyCfg.AppURL, "/") + "/verify?token=" + raw
 	body, err := renderVerificationEmail(ctx, mailtemplate.VerificationData{
 		ServerName: s.verifyCfg.ServerName,
@@ -248,8 +250,10 @@ func (s *Service) IssueVerification(ctx context.Context, accountID int, email, u
 	if err != nil {
 		return fmt.Errorf("app.Service.IssueVerification: %w", err)
 	}
+
 	subject := s.verifyCfg.ServerName + " - verify your email"
 	s.Mail.SendAsync(email, subject, body)
+
 	return nil
 }
 
@@ -258,9 +262,11 @@ func (s *Service) ConsumeVerification(ctx context.Context, rawToken string) erro
 	if err != nil {
 		return fmt.Errorf("app.Service.ConsumeVerification: %w", err)
 	}
+
 	if err := s.Repo.MarkVerified(ctx, token.AccountID); err != nil {
 		return fmt.Errorf("app.Service.ConsumeVerification: %w", err)
 	}
+
 	return nil
 }
 
@@ -272,6 +278,7 @@ func (s *Service) ResendVerification(ctx context.Context, accountID int) error {
 	if user.GroupID != 5 {
 		return nil
 	}
+
 	last, err := s.TokenManager.MostRecentIssuedAt(ctx, accountID, actiontoken.EmailVerification)
 	if err != nil {
 		return fmt.Errorf("app.Service.ResendVerification: %w", err)
@@ -279,6 +286,7 @@ func (s *Service) ResendVerification(ctx context.Context, accountID int) error {
 	if !last.IsZero() && s.now().Sub(last) < s.verifyCfg.ResendCooldown {
 		return nil
 	}
+
 	return s.IssueVerification(ctx, accountID, user.Email, user.Username)
 }
 
@@ -288,6 +296,7 @@ func (s *Service) RequestPasswordReset(ctx context.Context, email string) error 
 	if err != nil {
 		return &domain.ValidationError{Fields: domain.FieldErrors{"email": err.Error()}}
 	}
+
 	user, err := s.Repo.GetByEmail(ctx, normalizedEmail)
 	if errors.Is(err, domain.ErrUserNotFound) {
 		return nil
@@ -295,6 +304,7 @@ func (s *Service) RequestPasswordReset(ctx context.Context, email string) error 
 	if err != nil {
 		return fmt.Errorf("app.Service.RequestPasswordReset: %w", err)
 	}
+
 	lastChange, err := s.ChangeLog.MostRecent(ctx, user.ID, domain.ChangeTypePassword)
 	if err != nil {
 		return fmt.Errorf("app.Service.RequestPasswordReset: %w", err)
@@ -302,6 +312,7 @@ func (s *Service) RequestPasswordReset(ctx context.Context, email string) error 
 	if !lastChange.IsZero() && s.now().Sub(lastChange) < s.resetCfg.ChangeCooldown {
 		return nil
 	}
+
 	last, err := s.TokenManager.MostRecentIssuedAt(ctx, user.ID, actiontoken.PasswordReset)
 	if err != nil {
 		return fmt.Errorf("app.Service.RequestPasswordReset: %w", err)
@@ -309,10 +320,12 @@ func (s *Service) RequestPasswordReset(ctx context.Context, email string) error 
 	if !last.IsZero() && s.now().Sub(last) < s.resetCfg.ResendCooldown {
 		return nil
 	}
+
 	raw, err := s.TokenManager.Issue(ctx, actiontoken.PasswordReset, user.ID, nil, s.resetCfg.TokenTTL)
 	if err != nil {
 		return fmt.Errorf("app.Service.RequestPasswordReset: %w", err)
 	}
+
 	url := strings.TrimRight(s.resetCfg.AppURL, "/") + "/reset-password?token=" + raw
 	body, err := renderPasswordResetEmail(ctx, mailtemplate.PasswordResetData{
 		ServerName: s.resetCfg.ServerName,
@@ -322,8 +335,10 @@ func (s *Service) RequestPasswordReset(ctx context.Context, email string) error 
 	if err != nil {
 		return fmt.Errorf("app.Service.RequestPasswordReset: %w", err)
 	}
+
 	subject := s.resetCfg.ServerName + " - reset your password"
 	s.Mail.SendAsync(user.Email, subject, body)
+
 	return nil
 }
 
@@ -334,10 +349,12 @@ func (s *Service) ConsumePasswordReset(ctx context.Context, rawToken, newPasswor
 	if err := domain.CheckRegistrationPassword(newPassword); err != nil {
 		return &domain.ValidationError{Fields: domain.FieldErrors{fieldPassword: err.Error()}}
 	}
+
 	token, err := s.TokenManager.Consume(ctx, actiontoken.PasswordReset, rawToken)
 	if err != nil {
 		return fmt.Errorf("app.Service.ConsumePasswordReset: %w", err)
 	}
+
 	if err := s.Repo.UpdatePassword(ctx, token.AccountID, newPassword); err != nil {
 		return fmt.Errorf("app.Service.ConsumePasswordReset: %w", err)
 	}
@@ -350,6 +367,7 @@ func (s *Service) ConsumePasswordReset(ctx context.Context, rawToken, newPasswor
 	if err := s.SessionInvalidator.InvalidateAll(ctx, token.AccountID); err != nil {
 		return fmt.Errorf("app.Service.ConsumePasswordReset: %w", err)
 	}
+
 	return nil
 }
 
@@ -365,6 +383,7 @@ func validateRegistration(cmd CreateCommand, now time.Time) (string, time.Time, 
 	if fe.Has() {
 		return "", time.Time{}, &domain.ValidationError{Fields: fe}
 	}
+
 	return normalizedEmail, parsedBirthdate, nil
 }
 
@@ -372,20 +391,25 @@ func validateRegistrationInvariants(cmd CreateCommand, fe domain.FieldErrors, no
 	if err := domain.ValidateUsername(cmd.Username); err != nil {
 		fe.Add(fieldUsername, err.Error())
 	}
+
 	normalizedEmail, emailErr := domain.ValidateEmail(cmd.Email)
 	if emailErr != nil {
 		fe.Add("email", emailErr.Error())
 	}
+
 	if err := domain.ValidatePassword(cmd.Password); err != nil {
 		fe.Add(fieldPassword, err.Error())
 	}
+
 	if err := domain.ValidateGender(cmd.Gender); err != nil {
 		fe.Add("gender", err.Error())
 	}
+
 	parsedBirthdate, birthdateErr := domain.ValidateBirthdate(cmd.Birthdate, now)
 	if birthdateErr != nil {
 		fe.Add("birthdate", birthdateErr.Error())
 	}
+
 	return normalizedEmail, parsedBirthdate
 }
 
@@ -395,6 +419,7 @@ func applyRegistrationPolicies(cmd CreateCommand, fe domain.FieldErrors) {
 			fe.Add(fieldUsername, err.Error())
 		}
 	}
+
 	if fe[fieldPassword] == "" {
 		if err := domain.CheckRegistrationPassword(cmd.Password); err != nil {
 			fe.Add(fieldPassword, err.Error())
@@ -424,6 +449,7 @@ func (s *Service) checkRegistrationUniqueness(ctx context.Context, username, ema
 	if fe.Has() {
 		return &domain.ValidationError{Fields: fe}
 	}
+
 	return nil
 }
 
@@ -483,6 +509,7 @@ func (s *Service) PeekPasswordReset(ctx context.Context, rawToken string) (*acti
 	if err != nil {
 		return nil, fmt.Errorf("app.Service.PeekPasswordReset: %w", err)
 	}
+
 	return token, nil
 }
 
@@ -491,6 +518,7 @@ func (s *Service) PeekVerification(ctx context.Context, rawToken string) (*actio
 	if err != nil {
 		return nil, fmt.Errorf("app.Service.PeekVerification: %w", err)
 	}
+
 	return token, nil
 }
 
@@ -499,6 +527,7 @@ func (s *Service) PeekEmailChange(ctx context.Context, rawToken string) (*action
 	if err != nil {
 		return nil, fmt.Errorf("app.Service.PeekEmailChange: %w", err)
 	}
+
 	return token, nil
 }
 
@@ -523,6 +552,7 @@ func (s *Service) GetAccount(ctx context.Context, userID int) (*AccountDTO, erro
 	if err != nil {
 		return nil, fmt.Errorf("app.Service.GetAccount: %w", err)
 	}
+
 	return &AccountDTO{
 		Username: user.Username,
 		Email:    user.Email,
@@ -541,6 +571,7 @@ func (s *Service) UpdatePassword(ctx context.Context, userID int, currentRawToke
 	if newPassword != confirmPassword {
 		return &domain.ValidationError{Fields: domain.FieldErrors{"new_password_confirm": "passwords do not match"}}
 	}
+
 	user, err := s.Repo.GetByID(ctx, userID)
 	if err != nil {
 		return fmt.Errorf("app.Service.UpdatePassword: %w", err)
@@ -548,6 +579,7 @@ func (s *Service) UpdatePassword(ctx context.Context, userID int, currentRawToke
 	if user.Password != currentPassword {
 		return &domain.ValidationError{Fields: domain.FieldErrors{"current_password": "incorrect"}}
 	}
+
 	lastChange, err := s.ChangeLog.MostRecent(ctx, userID, domain.ChangeTypePassword)
 	if err != nil {
 		return fmt.Errorf("app.Service.UpdatePassword: %w", err)
@@ -555,6 +587,7 @@ func (s *Service) UpdatePassword(ctx context.Context, userID int, currentRawToke
 	if !lastChange.IsZero() && s.now().Sub(lastChange) < s.emailCfg.PasswordCooldown {
 		return domain.ErrPasswordRecentlyChanged
 	}
+
 	if err := s.Repo.UpdatePassword(ctx, userID, newPassword); err != nil {
 		return fmt.Errorf("app.Service.UpdatePassword: %w", err)
 	}
@@ -564,6 +597,7 @@ func (s *Service) UpdatePassword(ctx context.Context, userID int, currentRawToke
 	if err := s.SessionInvalidator.InvalidateOthers(ctx, userID, currentRawToken); err != nil {
 		return fmt.Errorf("app.Service.UpdatePassword: %w", err)
 	}
+
 	return nil
 }
 
@@ -573,6 +607,7 @@ func (s *Service) RequestEmailChange(ctx context.Context, userID int, currentPas
 	if err != nil {
 		return &domain.ValidationError{Fields: domain.FieldErrors{fieldNewEmail: err.Error()}}
 	}
+
 	user, err := s.Repo.GetByID(ctx, userID)
 	if err != nil {
 		return fmt.Errorf("app.Service.RequestEmailChange: %w", err)
@@ -580,9 +615,11 @@ func (s *Service) RequestEmailChange(ctx context.Context, userID int, currentPas
 	if user.Password != currentPassword {
 		return &domain.ValidationError{Fields: domain.FieldErrors{"current_password": "incorrect"}}
 	}
+
 	if strings.EqualFold(normalizedNewEmail, user.Email) {
 		return &domain.ValidationError{Fields: domain.FieldErrors{fieldNewEmail: "same as current"}}
 	}
+
 	existing, err := s.Repo.GetByEmail(ctx, normalizedNewEmail)
 	if err != nil && !errors.Is(err, domain.ErrUserNotFound) {
 		return fmt.Errorf("app.Service.RequestEmailChange: %w", err)
@@ -590,6 +627,7 @@ func (s *Service) RequestEmailChange(ctx context.Context, userID int, currentPas
 	if existing != nil && existing.ID != userID {
 		return &domain.ValidationError{Fields: domain.FieldErrors{fieldNewEmail: "already in use"}}
 	}
+
 	lastChange, err := s.ChangeLog.MostRecent(ctx, userID, domain.ChangeTypeEmail)
 	if err != nil {
 		return fmt.Errorf("app.Service.RequestEmailChange: %w", err)
@@ -597,6 +635,7 @@ func (s *Service) RequestEmailChange(ctx context.Context, userID int, currentPas
 	if !lastChange.IsZero() && s.now().Sub(lastChange) < s.emailCfg.ChangeCooldown {
 		return domain.ErrEmailRecentlyChanged
 	}
+
 	last, err := s.TokenManager.MostRecentIssuedAt(ctx, userID, actiontoken.EmailChange)
 	if err != nil {
 		return fmt.Errorf("app.Service.RequestEmailChange: %w", err)
@@ -604,10 +643,12 @@ func (s *Service) RequestEmailChange(ctx context.Context, userID int, currentPas
 	if !last.IsZero() && s.now().Sub(last) < s.emailCfg.RequestCooldown {
 		return ErrEmailChangeCooldown
 	}
+
 	raw, err := s.TokenManager.Issue(ctx, actiontoken.EmailChange, userID, []byte(normalizedNewEmail), s.emailCfg.TokenTTL)
 	if err != nil {
 		return fmt.Errorf("app.Service.RequestEmailChange: %w", err)
 	}
+
 	url := strings.TrimRight(s.emailCfg.AppURL, "/") + "/verify-email-change?token=" + raw
 	body, err := renderEmailChangeEmail(ctx, mailtemplate.EmailChangeData{
 		ServerName: s.emailCfg.ServerName,
@@ -618,8 +659,10 @@ func (s *Service) RequestEmailChange(ctx context.Context, userID int, currentPas
 	if err != nil {
 		return fmt.Errorf("app.Service.RequestEmailChange: %w", err)
 	}
+
 	subject := s.emailCfg.ServerName + " - confirm your new email"
 	s.Mail.SendAsync(normalizedNewEmail, subject, body)
+
 	return nil
 }
 
@@ -628,6 +671,7 @@ func (s *Service) ConsumeEmailChange(ctx context.Context, rawToken string) (*dom
 	if err != nil {
 		return nil, fmt.Errorf("app.Service.ConsumeEmailChange: %w", err)
 	}
+
 	newEmail := string(token.Payload)
 	if _, validateErr := domain.ValidateEmail(newEmail); validateErr != nil {
 		return nil, actiontoken.ErrTokenInvalid
@@ -643,15 +687,18 @@ func (s *Service) ConsumeEmailChange(ctx context.Context, rawToken string) (*dom
 	if existing != nil && existing.ID != token.AccountID {
 		return nil, domain.ErrEmailTaken
 	}
+
 	if updateErr := s.Repo.UpdateEmail(ctx, token.AccountID, newEmail); updateErr != nil {
 		return nil, fmt.Errorf("app.Service.ConsumeEmailChange: %w", updateErr)
 	}
 	if recordErr := s.ChangeLog.Record(ctx, token.AccountID, domain.ChangeTypeEmail, s.now()); recordErr != nil {
 		return nil, fmt.Errorf("app.Service.ConsumeEmailChange: %w", recordErr)
 	}
+
 	user, err := s.Repo.GetByID(ctx, token.AccountID)
 	if err != nil {
 		return nil, fmt.Errorf("app.Service.ConsumeEmailChange: %w", err)
 	}
+
 	return user, nil
 }

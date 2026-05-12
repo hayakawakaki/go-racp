@@ -25,6 +25,7 @@ func (r *MySQLRepository) Insert(ctx context.Context, t *ActionToken) error {
 	if err != nil {
 		return fmt.Errorf("actiontoken.MySQLRepository.Insert: %w", err)
 	}
+
 	return nil
 }
 
@@ -37,7 +38,6 @@ func (r *MySQLRepository) GetByHash(ctx context.Context, hash [32]byte) (*Action
 		`SELECT token_hash, account_id, action, expires_at, consumed_at, created_at, payload
 		 FROM cp_action_tokens WHERE token_hash = ?`, hash[:],
 	).Scan(&raw, &t.AccountID, &t.Action, &t.ExpiresAt, &t.ConsumedAt, &t.CreatedAt, &t.Payload)
-
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrTokenInvalid
 	}
@@ -48,6 +48,7 @@ func (r *MySQLRepository) GetByHash(ctx context.Context, hash [32]byte) (*Action
 		return nil, fmt.Errorf("actiontoken.MySQLRepository.GetByHash: token_hash len=%d", len(raw))
 	}
 	copy(t.TokenHash[:], raw)
+
 	return &t, nil
 }
 
@@ -59,6 +60,7 @@ func (r *MySQLRepository) DeleteUnconsumed(ctx context.Context, accountID int, a
 	if err != nil {
 		return fmt.Errorf("actiontoken.MySQLRepository.DeleteUnconsumed: %w", err)
 	}
+
 	return nil
 }
 
@@ -77,6 +79,7 @@ func (r *MySQLRepository) MarkConsumed(ctx context.Context, hash [32]byte, at ti
 	if rows == 0 {
 		return ErrTokenAlreadyUsed
 	}
+
 	return nil
 }
 
@@ -92,5 +95,6 @@ func (r *MySQLRepository) MostRecentIssuedAt(ctx context.Context, accountID int,
 	if !t.Valid {
 		return time.Time{}, nil
 	}
+
 	return t.Time, nil
 }

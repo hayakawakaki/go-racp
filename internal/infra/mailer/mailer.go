@@ -29,6 +29,7 @@ func (m *SMTPMailer) Close() error {
 	if err := m.client.Close(); err != nil {
 		return fmt.Errorf("mailer.SMTPMailer.Close: %w", err)
 	}
+
 	return nil
 }
 
@@ -42,9 +43,11 @@ func (m *SMTPMailer) Send(ctx context.Context, to, subject, body string) error {
 	}
 	msg.Subject(subject)
 	msg.SetBodyString(gomail.TypeTextHTML, body)
+
 	if err := m.client.DialAndSendWithContext(ctx, msg); err != nil {
 		return fmt.Errorf("mailer.SMTPMailer.Send: %w", err)
 	}
+
 	return nil
 }
 

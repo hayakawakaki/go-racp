@@ -19,6 +19,7 @@ func (h *Handler) doChangePassword(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
+
 	r.Body = http.MaxBytesReader(w, r.Body, maxAccountFormBytes)
 	if err := r.ParseForm(); err != nil {
 		h.renderChangePassword(w, r, ChangePasswordState{
@@ -26,11 +27,13 @@ func (h *Handler) doChangePassword(w http.ResponseWriter, r *http.Request) {
 		}, false)
 		return
 	}
+
 	cookie, err := r.Cookie(sessionCookieName)
 	if err != nil || cookie.Value == "" {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
+
 	err = h.svc.UpdatePassword(r.Context(), sess.UserID, cookie.Value,
 		r.PostFormValue(fieldCurrentPassword),
 		r.PostFormValue(fieldNewPassword),
@@ -52,6 +55,7 @@ func (h *Handler) doChangePassword(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, genericErrorMessage, http.StatusInternalServerError)
 		return
 	}
+
 	if httpx.IsHTMX(r) {
 		w.Header().Set("HX-Redirect", "/account?notice="+noticePasswordChanged)
 		w.WriteHeader(http.StatusNoContent)

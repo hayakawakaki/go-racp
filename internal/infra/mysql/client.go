@@ -35,6 +35,7 @@ func Connect(env *config.EnvConfig) (mainDB, logsDB *sql.DB) {
 	}
 
 	log.Fatalf("unable to connect to MySQL after %d attempts", connMaxRetryAttempt)
+
 	return nil, nil
 }
 
@@ -60,6 +61,7 @@ func configure(url string) (*gomysql.Config, error) {
 	}
 	cfg.ParseTime = true
 	cfg.ClientFoundRows = true
+
 	return cfg, nil
 }
 
@@ -68,18 +70,22 @@ func open(url string, maxOpen, maxIdle int) (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	connector, err := gomysql.NewConnector(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("NewConnector: %w", err)
 	}
+
 	db := sql.OpenDB(connector)
 	db.SetMaxOpenConns(maxOpen)
 	db.SetMaxIdleConns(maxIdle)
 	db.SetConnMaxLifetime(connMaxLifetime)
 	db.SetConnMaxIdleTime(connMaxIdleTime)
+
 	if err := db.Ping(); err != nil {
 		_ = db.Close()
 		return nil, fmt.Errorf("db.Ping: %w", err)
 	}
+
 	return db, nil
 }
