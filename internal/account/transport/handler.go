@@ -125,7 +125,7 @@ func (h *Handler) birthdateBounds() (minDate, maxDate string) {
 
 func (h *Handler) showRegister(w http.ResponseWriter, r *http.Request) {
 	if h.hasActiveSession(r) {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		httpx.Redirect(w, r, "/")
 		return
 	}
 
@@ -179,12 +179,7 @@ func (h *Handler) doRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if httpx.IsHTMX(r) {
-		w.Header().Set("HX-Redirect", "/login")
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-	http.Redirect(w, r, "/login", http.StatusSeeOther)
+	httpx.Redirect(w, r, "/login")
 }
 
 func (h *Handler) renderRegister(w http.ResponseWriter, r *http.Request, state RegisterFormState) {
@@ -197,7 +192,7 @@ func (h *Handler) renderRegister(w http.ResponseWriter, r *http.Request, state R
 
 func (h *Handler) showLogin(w http.ResponseWriter, r *http.Request) {
 	if h.hasActiveSession(r) {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		httpx.Redirect(w, r, "/")
 		return
 	}
 
@@ -240,12 +235,7 @@ func (h *Handler) doLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	setSessionCookie(w, token, h.sessSvc.TTL(), h.secure)
 
-	if httpx.IsHTMX(r) {
-		w.Header().Set("HX-Redirect", "/")
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	httpx.Redirect(w, r, "/")
 }
 
 func (h *Handler) renderLogin(w http.ResponseWriter, r *http.Request, state LoginFormState) {
@@ -262,10 +252,5 @@ func (h *Handler) doLogout(w http.ResponseWriter, r *http.Request) {
 	}
 	clearSessionCookie(w, h.secure)
 
-	if httpx.IsHTMX(r) {
-		w.Header().Set("HX-Redirect", "/login")
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-	http.Redirect(w, r, "/login", http.StatusSeeOther)
+	httpx.Redirect(w, r, "/login")
 }

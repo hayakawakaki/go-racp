@@ -71,11 +71,5 @@ func (h *Handler) renderChangeEmail(w http.ResponseWriter, r *http.Request, stat
 }
 
 func (h *Handler) redirectWithNotice(w http.ResponseWriter, r *http.Request, notice string) {
-	target := "/account?notice=" + notice
-	if httpx.IsHTMX(r) {
-		w.Header().Set("HX-Redirect", target)
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-	http.Redirect(w, r, target, http.StatusSeeOther)
+	httpx.Redirect(w, r, "/account?notice="+notice)
 }
