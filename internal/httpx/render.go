@@ -20,9 +20,9 @@ func RenderHTML(w http.ResponseWriter, r *http.Request, logger *slog.Logger, com
 	_, _ = buf.WriteTo(w)
 }
 
-func RenderNotFound(w http.ResponseWriter, r *http.Request, logger *slog.Logger, layout Layout) {
+func Render404(w http.ResponseWriter, r *http.Request, logger *slog.Logger, layout Layout) {
 	var buf bytes.Buffer
-	if err := NotFound(layout).Render(r.Context(), &buf); err != nil {
+	if err := Page404(layout).Render(r.Context(), &buf); err != nil {
 		logger.Error("render", "err", err, "path", r.URL.Path)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return

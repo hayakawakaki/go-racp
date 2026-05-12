@@ -77,7 +77,7 @@ func Start() error {
 	mux.HandleFunc("GET /healthz", health.New(mainDB, logsDB, logger))
 	plugin.MountAll(mux, in)
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		httpx.RenderNotFound(w, r, logger, httpx.Layout{GeneralConfig: cfg.App.General})
+		httpx.Render404(w, r, logger, httpx.Layout{GeneralConfig: cfg.App.General})
 	})
 
 	var handler http.Handler = mux
