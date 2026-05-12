@@ -80,6 +80,28 @@ func (f *fakeSessionRepo) Delete(_ context.Context, h [32]byte) error {
 	return nil
 }
 
+func (f *fakeSessionRepo) DeleteByUserID(_ context.Context, userID int) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	for hash, sess := range f.byHash {
+		if sess.UserID == userID {
+			delete(f.byHash, hash)
+		}
+	}
+	return nil
+}
+
+func (f *fakeSessionRepo) DeleteByUserIDExcept(_ context.Context, userID int, exceptHash [32]byte) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	for hash, sess := range f.byHash {
+		if sess.UserID == userID && hash != exceptHash {
+			delete(f.byHash, hash)
+		}
+	}
+	return nil
+}
+
 const testSessionTTL = 24 * time.Hour
 
 func newSvc(t *testing.T, c *testutil.Clock) (*SessionService, *fakeSessionRepo) {

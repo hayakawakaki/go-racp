@@ -124,49 +124,6 @@ func TestRepository_Authenticate(t *testing.T) {
 	})
 }
 
-func TestRepository_Update(t *testing.T) {
-	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
-	repo := NewRepository(db)
-	ctx := context.Background()
-
-	suf := randomizeSuffix(t)
-	u, err := repo.Create(ctx, &domain.User{
-		Username: "racp_test_" + suf,
-		Email:    "old_" + suf + "@x",
-		Password: "old",
-		Gender:   "M",
-	})
-	if err != nil {
-		t.Fatalf("Create: %v", err)
-	}
-	cleanupUser(t, repo, u.ID)
-
-	t.Run("happy", func(t *testing.T) {
-		updated, err := repo.Update(ctx, &domain.User{
-			ID:       u.ID,
-			Email:    "new_" + suf + "@x",
-			Password: "new",
-		})
-		if err != nil {
-			t.Fatalf("Update: %v", err)
-		}
-		if updated.Email != "new_"+suf+"@x" {
-			t.Errorf("email not updated")
-		}
-		got, _ := repo.Authenticate(ctx, u.Username, "new")
-		if got == nil || got.ID != u.ID {
-			t.Errorf("password not updated")
-		}
-	})
-
-	t.Run("missing", func(t *testing.T) {
-		_, err := repo.Update(ctx, &domain.User{ID: 0, Email: "x", Password: "y"})
-		if !errors.Is(err, domain.ErrUserNotFound) {
-			t.Errorf("got %v, want ErrUserNotFound", err)
-		}
-	})
-}
-
 func TestRepository_Create_SetsGroupIDFiveAndPersistsIt(t *testing.T) {
 	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
 	repo := NewRepository(db)

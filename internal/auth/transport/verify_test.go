@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hayakawakaki/go-racp/internal/actiontoken"
 	"github.com/hayakawakaki/go-racp/internal/auth/domain"
 )
 
@@ -282,7 +283,7 @@ func TestDoVerify_AlreadyUsed_ActiveSession_RedirectsHome(t *testing.T) {
 		},
 	}
 	verify := &stubVerifyService{
-		consumeFn: func(context.Context, string) error { return domain.ErrTokenAlreadyUsed },
+		consumeFn: func(context.Context, string) error { return actiontoken.ErrTokenAlreadyUsed },
 	}
 	h := newVerifyHandler(&stubUserLookup{}, sess, verify, nil)
 
@@ -301,7 +302,7 @@ func TestDoVerify_AlreadyUsed_ActiveSession_RedirectsHome(t *testing.T) {
 func TestDoVerify_AlreadyUsed_NoSession_RendersInvalid(t *testing.T) {
 	t.Parallel()
 	verify := &stubVerifyService{
-		consumeFn: func(context.Context, string) error { return domain.ErrTokenAlreadyUsed },
+		consumeFn: func(context.Context, string) error { return actiontoken.ErrTokenAlreadyUsed },
 	}
 	h := newVerifyHandler(&stubUserLookup{}, &stubSessionService{}, verify, nil)
 
@@ -320,7 +321,7 @@ func TestDoVerify_AlreadyUsed_NoSession_RendersInvalid(t *testing.T) {
 func TestDoVerify_Expired_RendersExpired(t *testing.T) {
 	t.Parallel()
 	verify := &stubVerifyService{
-		consumeFn: func(context.Context, string) error { return domain.ErrTokenExpired },
+		consumeFn: func(context.Context, string) error { return actiontoken.ErrTokenExpired },
 	}
 	h := newVerifyHandler(&stubUserLookup{}, &stubSessionService{}, verify, nil)
 
@@ -336,7 +337,7 @@ func TestDoVerify_Expired_RendersExpired(t *testing.T) {
 func TestDoVerify_Invalid_RendersInvalid(t *testing.T) {
 	t.Parallel()
 	verify := &stubVerifyService{
-		consumeFn: func(context.Context, string) error { return domain.ErrTokenInvalid },
+		consumeFn: func(context.Context, string) error { return actiontoken.ErrTokenInvalid },
 	}
 	h := newVerifyHandler(&stubUserLookup{}, &stubSessionService{}, verify, nil)
 
@@ -379,9 +380,9 @@ func TestDoVerify_KnownErrorsNotLogged(t *testing.T) {
 		err  error
 		name string
 	}{
-		{name: "invalid", err: domain.ErrTokenInvalid},
-		{name: "already used", err: domain.ErrTokenAlreadyUsed},
-		{name: "expired", err: domain.ErrTokenExpired},
+		{name: "invalid", err: actiontoken.ErrTokenInvalid},
+		{name: "already used", err: actiontoken.ErrTokenAlreadyUsed},
+		{name: "expired", err: actiontoken.ErrTokenExpired},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -27,6 +27,7 @@ func mount(mux *http.ServeMux, in *platinfra.Infra) {
 		Logger:    in.Logger,
 		Users:     userRepo,
 		VerifySvc: svc,
+		ResetSvc:  svc,
 		Secure:    in.Config.Env.Mode != "development",
 		General:   in.Config.App.General,
 	})
@@ -38,6 +39,8 @@ func middleware(in *platinfra.Infra, h http.Handler) http.Handler {
 	allow := []string{
 		"/login", "/logout", "/register",
 		"/verify-account", "/verify", "/verify/resend",
+		"/forgot-password", "/reset-password",
+		"/verify-email-change",
 		"/healthz", "/static",
 	}
 	mw := transport.RequireVerified(sessSvc, userRepo, in.Logger, allow)
@@ -47,13 +50,25 @@ func middleware(in *platinfra.Infra, h http.Handler) http.Handler {
 func buildServices(in *platinfra.Infra) (*app.Service, *app.SessionService, *infra.Repository) {
 	userRepo := infra.NewRepository(in.MainDB)
 	sessRepo := infra.NewSessionRepository(in.MainDB)
-	tokenRepo := infra.NewTokenRepository(in.MainDB)
+	sessSvc := app.NewSessionService(sessRepo, in.Config.App.TTL.Session)
 
-	svc := app.NewService(userRepo, app.WithVerification(tokenRepo, in.Mailer, app.VerificationConfig{
-		AppURL:     in.Config.Env.AppURL,
-		ServerName: in.Config.App.General.ServerName,
-		TokenTTL:   in.Config.App.VerificationTokenTTL,
-	}))
-	sessSvc := app.NewSessionService(sessRepo, in.Config.App.SessionTTL)
+	svc := app.NewService(userRepo,
+		app.WithEmailUniquenessLock(in.EmailUniqueMu),
+		app.WithSessionInvalidator(sessSvc),
+		app.WithChangeLog(in.ChangeLog),
+		app.WithVerification(in.TokenManager, in.Mailer, app.VerificationConfig{
+			AppURL:         in.Config.Env.AppURL,
+			ServerName:     in.Config.App.General.ServerName,
+			TokenTTL:       in.Config.App.TTL.Verification,
+			ResendCooldown: in.Config.App.Cooldown.VerificationResend,
+		}),
+		app.WithPasswordReset(in.TokenManager, in.Mailer, app.PasswordResetConfig{
+			AppURL:         in.Config.Env.AppURL,
+			ServerName:     in.Config.App.General.ServerName,
+			TokenTTL:       in.Config.App.TTL.PasswordReset,
+			ResendCooldown: in.Config.App.Cooldown.PasswordResetRequest,
+			ChangeCooldown: in.Config.App.Cooldown.PasswordChange,
+		}),
+	)
 	return svc, sessSvc, userRepo
 }

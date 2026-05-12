@@ -15,3 +15,11 @@ func renderVerificationEmail(ctx context.Context, d mailtemplate.VerificationDat
 	}
 	return buf.String(), nil
 }
+
+func renderPasswordResetEmail(ctx context.Context, d mailtemplate.PasswordResetData) (string, error) {
+	var buf bytes.Buffer
+	if err := mailtemplate.PasswordReset(d).Render(ctx, &buf); err != nil {
+		return "", fmt.Errorf("renderPasswordResetEmail: %w", err)
+	}
+	return buf.String(), nil
+}

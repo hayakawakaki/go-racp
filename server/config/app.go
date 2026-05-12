@@ -18,21 +18,53 @@ type MailerConfig struct {
 	FromAddress string `yaml:"FromAddress"`
 }
 
+// TTLConfig groups every lifetime knob (HTTP session + action-token lifetimes).
+type TTLConfig struct {
+	Session       time.Duration `yaml:"Session"`
+	Verification  time.Duration `yaml:"Verification"`
+	PasswordReset time.Duration `yaml:"PasswordReset"`
+	EmailChange   time.Duration `yaml:"EmailChange"`
+}
+
+// CooldownConfig groups per-flow rate-limit windows.
+// VerificationResend, PasswordResetRequest, EmailChangeRequest are request rate limits
+// (caps on how often a new token can be issued for a given account+action).
+// PasswordChange and EmailChange are post-success lockouts (caps on how often the
+// underlying credential can actually be mutated).
+type CooldownConfig struct {
+	VerificationResend   time.Duration `yaml:"VerificationResend"`
+	PasswordResetRequest time.Duration `yaml:"PasswordResetRequest"`
+	PasswordChange       time.Duration `yaml:"PasswordChange"`
+	EmailChangeRequest   time.Duration `yaml:"EmailChangeRequest"`
+	EmailChange          time.Duration `yaml:"EmailChange"`
+}
+
 // AppConfig holds operator-tunable application settings loaded from config.yml.
 type AppConfig struct {
-	General              GeneralConfig `yaml:"GeneralConfig"`
-	Mailer               MailerConfig  `yaml:"MailerConfig"`
-	SessionTTL           time.Duration `yaml:"SessionTTL"`
-	VerificationTokenTTL time.Duration `yaml:"VerificationTokenTTL"`
+	General  GeneralConfig  `yaml:"GeneralConfig"`
+	Mailer   MailerConfig   `yaml:"MailerConfig"`
+	TTL      TTLConfig      `yaml:"TTL"`
+	Cooldown CooldownConfig `yaml:"Cooldown"`
 }
 
 // appConfigDefaults apply default config in case of missing config file
 func appConfigDefaults() *AppConfig {
 	return &AppConfig{
-		General:              GeneralConfig{ServerName: "Go Control Panel"},
-		Mailer:               MailerConfig{FromAddress: "noreply@gocp.com"},
-		SessionTTL:           24 * time.Hour,
-		VerificationTokenTTL: 30 * time.Minute,
+		General: GeneralConfig{ServerName: "Go Control Panel"},
+		Mailer:  MailerConfig{FromAddress: "noreply@gocp.com"},
+		TTL: TTLConfig{
+			Session:       24 * time.Hour,
+			Verification:  30 * time.Minute,
+			PasswordReset: 1 * time.Hour,
+			EmailChange:   24 * time.Hour,
+		},
+		Cooldown: CooldownConfig{
+			VerificationResend:   60 * time.Second,
+			PasswordResetRequest: 30 * time.Minute,
+			PasswordChange:       7 * 24 * time.Hour,
+			EmailChangeRequest:   60 * time.Second,
+			EmailChange:          14 * 24 * time.Hour,
+		},
 	}
 }
 
@@ -57,15 +89,28 @@ func ProcessAppConfig() *AppConfig {
 		}
 	}
 
-	if cfg.SessionTTL <= 0 {
-		panic(fmt.Errorf("SessionTTL must be > 0, got %v", cfg.SessionTTL))
+	validateAppConfig(cfg)
+	return cfg
+}
+
+func validateAppConfig(cfg *AppConfig) {
+	durations := map[string]time.Duration{
+		"TTL.Session":                   cfg.TTL.Session,
+		"TTL.Verification":              cfg.TTL.Verification,
+		"TTL.PasswordReset":             cfg.TTL.PasswordReset,
+		"TTL.EmailChange":               cfg.TTL.EmailChange,
+		"Cooldown.VerificationResend":   cfg.Cooldown.VerificationResend,
+		"Cooldown.PasswordResetRequest": cfg.Cooldown.PasswordResetRequest,
+		"Cooldown.PasswordChange":       cfg.Cooldown.PasswordChange,
+		"Cooldown.EmailChangeRequest":   cfg.Cooldown.EmailChangeRequest,
+		"Cooldown.EmailChange":          cfg.Cooldown.EmailChange,
 	}
-	if cfg.VerificationTokenTTL <= 0 {
-		panic(fmt.Errorf("VerificationTokenTTL must be > 0, got %v", cfg.VerificationTokenTTL))
+	for name, value := range durations {
+		if value <= 0 {
+			panic(fmt.Errorf("%s must be > 0, got %v", name, value))
+		}
 	}
 	if cfg.Mailer.FromAddress == "" {
 		panic(fmt.Errorf("MailerConfig.FromAddress is required"))
 	}
-
-	return cfg
 }

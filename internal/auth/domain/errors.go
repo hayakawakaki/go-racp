@@ -13,10 +13,12 @@ var (
 	ErrSessionNotFound = errors.New("session not found")
 	ErrSessionExpired  = errors.New("session expired")
 
-	ErrAccountUnverified = errors.New("auth: account not verified")
-	ErrTokenInvalid      = errors.New("auth: token invalid")
-	ErrTokenExpired      = errors.New("auth: token expired")
-	ErrTokenAlreadyUsed  = errors.New("auth: token already used")
+	ErrAccountUnverified       = errors.New("auth: account not verified")
+	ErrEmailTaken              = errors.New("auth: email already in use")
+	ErrPasswordRecentlyChanged = errors.New("auth: password was recently changed")
+	ErrEmailRecentlyChanged    = errors.New("auth: email was recently changed")
+
+	ErrInvalidCurrentSessionToken = errors.New("auth: current session token undecodable")
 
 	ErrUsernameEmpty      = errors.New("username is required")
 	ErrUsernameTooLong    = errors.New("username must be at most 23 characters")

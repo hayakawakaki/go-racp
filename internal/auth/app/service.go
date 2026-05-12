@@ -2,21 +2,25 @@ package app
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/sha256"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/hayakawakaki/go-racp/internal/accountchange"
+	"github.com/hayakawakaki/go-racp/internal/actiontoken"
 	"github.com/hayakawakaki/go-racp/internal/auth/domain"
 	mailtemplate "github.com/hayakawakaki/go-racp/internal/infra/mailer/template"
 )
 
 type Mailer interface {
 	SendAsync(to, subject, body string)
+}
+
+type SessionInvalidator interface {
+	InvalidateAllForUser(ctx context.Context, userID int) error
+	InvalidateAllForUserExceptCurrent(ctx context.Context, userID int, currentRawToken string) error
 }
 
 type VerificationConfig struct {
@@ -26,36 +30,77 @@ type VerificationConfig struct {
 	ResendCooldown time.Duration
 }
 
+type PasswordResetConfig struct {
+	AppURL         string
+	ServerName     string
+	TokenTTL       time.Duration
+	ResendCooldown time.Duration
+	ChangeCooldown time.Duration
+}
+
 type Service struct {
-	Repo      domain.Repository
-	TokenRepo domain.TokenRepository
-	Mail      Mailer
-	now       func() time.Time
-	cfg       VerificationConfig
-	createMu  sync.Mutex
+	Repo               domain.Repository
+	TokenManager       *actiontoken.Manager
+	ChangeLog          accountchange.Repository
+	Mail               Mailer
+	SessionInvalidator SessionInvalidator
+	EmailUniqueMu      *sync.Mutex
+	now                func() time.Time
+	verifyCfg          VerificationConfig
+	resetCfg           PasswordResetConfig
+	enableVerify       bool
+	enableReset        bool
 }
 
 type Option func(*Service)
 
-func WithVerification(tokenRepo domain.TokenRepository, mailer Mailer, cfg VerificationConfig) Option {
+func WithVerification(manager *actiontoken.Manager, mail Mailer, cfg VerificationConfig) Option {
 	if cfg.TokenTTL <= 0 {
 		panic("auth: VerificationConfig.TokenTTL must be > 0")
 	}
 	if cfg.ResendCooldown <= 0 {
-		cfg.ResendCooldown = 60 * time.Second
+		panic("auth: VerificationConfig.ResendCooldown must be > 0")
 	}
 	return func(s *Service) {
-		s.TokenRepo = tokenRepo
-		s.Mail = mailer
-		s.cfg = cfg
+		s.TokenManager = manager
+		s.Mail = mail
+		s.verifyCfg = cfg
+		s.enableVerify = true
 	}
 }
 
-func NewService(repo domain.Repository, opts ...Option) *Service {
-	s := &Service{
-		Repo: repo,
-		now:  time.Now,
+func WithPasswordReset(manager *actiontoken.Manager, mail Mailer, cfg PasswordResetConfig) Option {
+	if cfg.TokenTTL <= 0 {
+		panic("auth: PasswordResetConfig.TokenTTL must be > 0")
 	}
+	if cfg.ResendCooldown <= 0 {
+		panic("auth: PasswordResetConfig.ResendCooldown must be > 0")
+	}
+	if cfg.ChangeCooldown <= 0 {
+		panic("auth: PasswordResetConfig.ChangeCooldown must be > 0")
+	}
+	return func(s *Service) {
+		s.TokenManager = manager
+		s.Mail = mail
+		s.resetCfg = cfg
+		s.enableReset = true
+	}
+}
+
+func WithChangeLog(log accountchange.Repository) Option {
+	return func(s *Service) { s.ChangeLog = log }
+}
+
+func WithEmailUniquenessLock(mu *sync.Mutex) Option {
+	return func(s *Service) { s.EmailUniqueMu = mu }
+}
+
+func WithSessionInvalidator(invalidator SessionInvalidator) Option {
+	return func(s *Service) { s.SessionInvalidator = invalidator }
+}
+
+func NewService(repo domain.Repository, opts ...Option) *Service {
+	s := &Service{Repo: repo, now: time.Now}
 	for _, opt := range opts {
 		opt(s)
 	}
@@ -68,8 +113,10 @@ func (s *Service) Create(ctx context.Context, cmd CreateCommand) (*GetDTO, error
 		return nil, err
 	}
 
-	s.createMu.Lock()
-	defer s.createMu.Unlock()
+	if s.EmailUniqueMu != nil {
+		s.EmailUniqueMu.Lock()
+		defer s.EmailUniqueMu.Unlock()
+	}
 
 	err = s.checkRegistrationUniqueness(ctx, cmd.Username, normalizedEmail)
 	if err != nil {
@@ -86,7 +133,7 @@ func (s *Service) Create(ctx context.Context, cmd CreateCommand) (*GetDTO, error
 		return nil, fmt.Errorf("app.Service.Create: %w", err)
 	}
 
-	if s.TokenRepo != nil && s.Mail != nil {
+	if s.enableVerify {
 		if err := s.IssueVerification(ctx, created.ID, created.Email, created.Username); err != nil {
 			return nil, fmt.Errorf("app.Service.Create: %w", err)
 		}
@@ -100,62 +147,27 @@ func (s *Service) Create(ctx context.Context, cmd CreateCommand) (*GetDTO, error
 }
 
 func (s *Service) IssueVerification(ctx context.Context, accountID int, email, username string) error {
-	if err := s.TokenRepo.DeleteUnconsumed(ctx, accountID, domain.ActionEmailVerification); err != nil {
+	raw, err := s.TokenManager.Issue(ctx, actiontoken.EmailVerification, accountID, nil, s.verifyCfg.TokenTTL)
+	if err != nil {
 		return fmt.Errorf("app.Service.IssueVerification: %w", err)
 	}
-	var raw [32]byte
-	if _, err := rand.Read(raw[:]); err != nil {
-		return fmt.Errorf("app.Service.IssueVerification: %w", err)
-	}
-	hash := sha256.Sum256(raw[:])
-	now := s.now()
-	token := &domain.ActionToken{
-		TokenHash: hash,
-		AccountID: accountID,
-		Action:    domain.ActionEmailVerification,
-		ExpiresAt: now.Add(s.cfg.TokenTTL),
-		CreatedAt: now,
-	}
-	if err := s.TokenRepo.Insert(ctx, token); err != nil {
-		return fmt.Errorf("app.Service.IssueVerification: %w", err)
-	}
-
-	rawToken := base64.RawURLEncoding.EncodeToString(raw[:])
-	url := strings.TrimRight(s.cfg.AppURL, "/") + "/verify?token=" + rawToken
-
+	url := strings.TrimRight(s.verifyCfg.AppURL, "/") + "/verify?token=" + raw
 	body, err := renderVerificationEmail(ctx, mailtemplate.VerificationData{
-		ServerName: s.cfg.ServerName,
+		ServerName: s.verifyCfg.ServerName,
 		Username:   username,
 		URL:        url,
 	})
 	if err != nil {
 		return fmt.Errorf("app.Service.IssueVerification: %w", err)
 	}
-	subject := s.cfg.ServerName + " - verify your email"
+	subject := s.verifyCfg.ServerName + " - verify your email"
 	s.Mail.SendAsync(email, subject, body)
 	return nil
 }
 
 func (s *Service) ConsumeVerification(ctx context.Context, rawToken string) error {
-	hash, ok := decodeActionToken(rawToken)
-	if !ok {
-		return domain.ErrTokenInvalid
-	}
-	token, err := s.TokenRepo.GetByHash(ctx, hash)
+	token, err := s.TokenManager.Consume(ctx, actiontoken.EmailVerification, rawToken)
 	if err != nil {
-		return fmt.Errorf("app.Service.ConsumeVerification: %w", err)
-	}
-	if token.Action != domain.ActionEmailVerification {
-		return domain.ErrTokenInvalid
-	}
-	if token.IsConsumed() {
-		return domain.ErrTokenAlreadyUsed
-	}
-	now := s.now()
-	if token.IsExpired(now) {
-		return domain.ErrTokenExpired
-	}
-	if err := s.TokenRepo.MarkConsumed(ctx, hash, now); err != nil {
 		return fmt.Errorf("app.Service.ConsumeVerification: %w", err)
 	}
 	if err := s.Repo.MarkVerified(ctx, token.AccountID); err != nil {
@@ -172,22 +184,85 @@ func (s *Service) ResendVerification(ctx context.Context, accountID int) error {
 	if user.GroupID != 5 {
 		return nil
 	}
-	last, err := s.TokenRepo.MostRecentIssuedAt(ctx, accountID, domain.ActionEmailVerification)
+	last, err := s.TokenManager.MostRecentIssuedAt(ctx, accountID, actiontoken.EmailVerification)
 	if err != nil {
 		return fmt.Errorf("app.Service.ResendVerification: %w", err)
 	}
-	if !last.IsZero() && s.now().Sub(last) < s.cfg.ResendCooldown {
+	if !last.IsZero() && s.now().Sub(last) < s.verifyCfg.ResendCooldown {
 		return nil
 	}
 	return s.IssueVerification(ctx, accountID, user.Email, user.Username)
 }
 
-func decodeActionToken(rawToken string) ([32]byte, bool) {
-	decoded, err := base64.RawURLEncoding.DecodeString(rawToken)
-	if err != nil || len(decoded) != 32 {
-		return [32]byte{}, false
+//nolint:cyclop // sequential validation + repo + change-log + token + mail steps; splitting would obscure the flow
+func (s *Service) RequestPasswordReset(ctx context.Context, email string) error {
+	normalizedEmail, err := domain.ValidateEmail(email)
+	if err != nil {
+		return &domain.ValidationError{Fields: domain.FieldErrors{"email": err.Error()}}
 	}
-	return sha256.Sum256(decoded), true
+	user, err := s.Repo.GetByEmail(ctx, normalizedEmail)
+	if errors.Is(err, domain.ErrUserNotFound) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("app.Service.RequestPasswordReset: %w", err)
+	}
+	lastChange, err := s.ChangeLog.MostRecent(ctx, user.ID, accountchange.Password)
+	if err != nil {
+		return fmt.Errorf("app.Service.RequestPasswordReset: %w", err)
+	}
+	if !lastChange.IsZero() && s.now().Sub(lastChange) < s.resetCfg.ChangeCooldown {
+		return nil
+	}
+	last, err := s.TokenManager.MostRecentIssuedAt(ctx, user.ID, actiontoken.PasswordReset)
+	if err != nil {
+		return fmt.Errorf("app.Service.RequestPasswordReset: %w", err)
+	}
+	if !last.IsZero() && s.now().Sub(last) < s.resetCfg.ResendCooldown {
+		return nil
+	}
+	raw, err := s.TokenManager.Issue(ctx, actiontoken.PasswordReset, user.ID, nil, s.resetCfg.TokenTTL)
+	if err != nil {
+		return fmt.Errorf("app.Service.RequestPasswordReset: %w", err)
+	}
+	url := strings.TrimRight(s.resetCfg.AppURL, "/") + "/reset-password?token=" + raw
+	body, err := renderPasswordResetEmail(ctx, mailtemplate.PasswordResetData{
+		ServerName: s.resetCfg.ServerName,
+		Username:   user.Username,
+		URL:        url,
+	})
+	if err != nil {
+		return fmt.Errorf("app.Service.RequestPasswordReset: %w", err)
+	}
+	subject := s.resetCfg.ServerName + " - reset your password"
+	s.Mail.SendAsync(user.Email, subject, body)
+	return nil
+}
+
+func (s *Service) ConsumePasswordReset(ctx context.Context, rawToken, newPassword string) error {
+	if err := domain.ValidatePassword(newPassword); err != nil {
+		return &domain.ValidationError{Fields: domain.FieldErrors{"password": err.Error()}}
+	}
+	if err := domain.CheckRegistrationPassword(newPassword); err != nil {
+		return &domain.ValidationError{Fields: domain.FieldErrors{"password": err.Error()}}
+	}
+	token, err := s.TokenManager.Consume(ctx, actiontoken.PasswordReset, rawToken)
+	if err != nil {
+		return fmt.Errorf("app.Service.ConsumePasswordReset: %w", err)
+	}
+	if err := s.Repo.UpdatePassword(ctx, token.AccountID, newPassword); err != nil {
+		return fmt.Errorf("app.Service.ConsumePasswordReset: %w", err)
+	}
+	if err := s.ChangeLog.Record(ctx, token.AccountID, accountchange.Password, s.now()); err != nil {
+		return fmt.Errorf("app.Service.ConsumePasswordReset: %w", err)
+	}
+	if err := s.Repo.MarkVerified(ctx, token.AccountID); err != nil {
+		return fmt.Errorf("app.Service.ConsumePasswordReset: %w", err)
+	}
+	if err := s.SessionInvalidator.InvalidateAllForUser(ctx, token.AccountID); err != nil {
+		return fmt.Errorf("app.Service.ConsumePasswordReset: %w", err)
+	}
+	return nil
 }
 
 func validateRegistration(cmd CreateCommand) (string, error) {
@@ -304,45 +379,19 @@ func (s *Service) GetByEmail(ctx context.Context, email string) (*GetDTO, error)
 	}, nil
 }
 
-func (s *Service) Update(ctx context.Context, id int, cmd UpdateCommand) (*GetDTO, error) {
-	userData, err := s.Repo.GetByID(ctx, id)
-	if err != nil {
-		return nil, fmt.Errorf("app.Service.Update: %w", err)
-	}
-
-	normalizedEmail, err := domain.ValidateEmail(cmd.Email)
-	if err != nil {
-		return nil, &domain.ValidationError{Fields: domain.FieldErrors{"email": err.Error()}}
-	}
-	if pwErr := domain.ValidatePassword(cmd.Password); pwErr != nil {
-		return nil, &domain.ValidationError{Fields: domain.FieldErrors{"password": pwErr.Error()}}
-	}
-
-	updated := &domain.User{
-		ID:       userData.ID,
-		Username: userData.Username,
-		Email:    normalizedEmail,
-		Password: cmd.Password,
-		Gender:   userData.Gender,
-	}
-
-	updatedData, err := s.Repo.Update(ctx, updated)
-	if err != nil {
-		return nil, fmt.Errorf("app.Service.Update: %w", err)
-	}
-
-	return &GetDTO{
-		ID:       updatedData.ID,
-		Username: updatedData.Username,
-		Email:    updatedData.Email,
-	}, nil
-}
-
 func (s *Service) Delete(ctx context.Context, id int) error {
 	if err := s.Repo.Delete(ctx, id); err != nil {
 		return fmt.Errorf("app.Service.Delete: %w", err)
 	}
 	return nil
+}
+
+func (s *Service) PeekPasswordReset(ctx context.Context, rawToken string) (*actiontoken.ActionToken, error) {
+	token, err := s.TokenManager.Peek(ctx, actiontoken.PasswordReset, rawToken)
+	if err != nil {
+		return nil, fmt.Errorf("app.Service.PeekPasswordReset: %w", err)
+	}
+	return token, nil
 }
 
 func (s *Service) Authenticate(ctx context.Context, cmd LoginCommand) (*GetDTO, error) {

@@ -1,13 +1,22 @@
-# UI / branding (everything operators rebrand)
+# UI Related Stuffs
 GeneralConfig:
   ServerName: "GoCP"
 
-# Session Related Config
-SessionTTL: "24h"
+# Session/Token Lifetime
+TTL:
+  Session: "24h"
+  Verification: "30m"
+  PasswordReset: "1h"
+  EmailChange: "24h"
 
-# Email verification token lifetime
-VerificationTokenTTL: "30m"
+# Action Cooldowns
+Cooldown:
+  VerificationResend: "60s"
+  PasswordResetRequest: "30m"
+  PasswordChange: "168h"
+  EmailChangeRequest: "60s"
+  EmailChange: "336h"
 
-# Outgoing mail
+# Mail Stuffs
 MailerConfig:
   FromAddress: "noreply@your-server.example"

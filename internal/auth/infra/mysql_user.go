@@ -105,25 +105,6 @@ func (r *Repository) GetByEmail(ctx context.Context, email string) (*domain.User
 	return &u, nil
 }
 
-func (r *Repository) Update(ctx context.Context, user *domain.User) (*domain.User, error) {
-	res, err := r.Client.ExecContext(ctx,
-		"UPDATE login SET email = ?, user_pass = ? WHERE account_id = ?",
-		user.Email, user.Password, user.ID)
-	if err != nil {
-		return nil, fmt.Errorf("infra.Repository.Update: %w", err)
-	}
-
-	rows, err := res.RowsAffected()
-	if err != nil {
-		return nil, fmt.Errorf("infra.Repository.Update: %w", err)
-	}
-	if rows == 0 {
-		return nil, domain.ErrUserNotFound
-	}
-
-	return user, nil
-}
-
 func (r *Repository) Authenticate(ctx context.Context, username, password string) (*domain.User, error) {
 	var u domain.User
 	err := r.Client.QueryRowContext(ctx,
@@ -141,16 +122,55 @@ func (r *Repository) Authenticate(ctx context.Context, username, password string
 }
 
 func (r *Repository) MarkVerified(ctx context.Context, accountID int) error {
-	res, err := r.Client.ExecContext(ctx,
-		"UPDATE login SET group_id = 0 WHERE account_id = ? AND group_id = 5",
+	var exists int
+	err := r.Client.QueryRowContext(ctx,
+		"SELECT account_id FROM login WHERE account_id = ?",
 		accountID,
-	)
+	).Scan(&exists)
+	if errors.Is(err, sql.ErrNoRows) {
+		return domain.ErrUserNotFound
+	}
 	if err != nil {
 		return fmt.Errorf("infra.Repository.MarkVerified: %w", err)
 	}
+	if _, err := r.Client.ExecContext(ctx,
+		"UPDATE login SET group_id = 0 WHERE account_id = ? AND group_id = 5",
+		accountID,
+	); err != nil {
+		return fmt.Errorf("infra.Repository.MarkVerified: %w", err)
+	}
+	return nil
+}
+
+func (r *Repository) UpdatePassword(ctx context.Context, accountID int, newPassword string) error {
+	res, err := r.Client.ExecContext(ctx,
+		"UPDATE login SET user_pass = ? WHERE account_id = ?",
+		newPassword, accountID,
+	)
+	if err != nil {
+		return fmt.Errorf("infra.Repository.UpdatePassword: %w", err)
+	}
 	rows, err := res.RowsAffected()
 	if err != nil {
-		return fmt.Errorf("infra.Repository.MarkVerified: %w", err)
+		return fmt.Errorf("infra.Repository.UpdatePassword: %w", err)
+	}
+	if rows == 0 {
+		return domain.ErrUserNotFound
+	}
+	return nil
+}
+
+func (r *Repository) UpdateEmail(ctx context.Context, accountID int, newEmail string) error {
+	res, err := r.Client.ExecContext(ctx,
+		"UPDATE login SET email = ? WHERE account_id = ?",
+		newEmail, accountID,
+	)
+	if err != nil {
+		return fmt.Errorf("infra.Repository.UpdateEmail: %w", err)
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("infra.Repository.UpdateEmail: %w", err)
 	}
 	if rows == 0 {
 		return domain.ErrUserNotFound

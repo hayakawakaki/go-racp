@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/hayakawakaki/go-racp/internal/actiontoken"
 	"github.com/hayakawakaki/go-racp/internal/auth/app"
 	"github.com/hayakawakaki/go-racp/internal/auth/domain"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
@@ -32,10 +33,17 @@ type sessionService interface {
 	TTL() time.Duration
 }
 
+type passwordResetService interface {
+	RequestPasswordReset(ctx context.Context, email string) error
+	ConsumePasswordReset(ctx context.Context, rawToken, newPassword string) error
+	PeekPasswordReset(ctx context.Context, rawToken string) (*actiontoken.ActionToken, error)
+}
+
 type HandlerConfig struct {
 	Logger    *slog.Logger
 	Users     userLookup
 	VerifySvc verificationService
+	ResetSvc  passwordResetService
 	General   config.GeneralConfig
 	Secure    bool
 }
@@ -45,6 +53,7 @@ type Handler struct {
 	sessSvc   sessionService
 	users     userLookup
 	verifySvc verificationService
+	resetSvc  passwordResetService
 	logger    *slog.Logger
 	general   config.GeneralConfig
 	secure    bool
@@ -56,6 +65,7 @@ func NewHandler(svc authService, sessSvc sessionService, cfg HandlerConfig) *Han
 		sessSvc:   sessSvc,
 		users:     cfg.Users,
 		verifySvc: cfg.VerifySvc,
+		resetSvc:  cfg.ResetSvc,
 		logger:    cfg.Logger,
 		general:   cfg.General,
 		secure:    cfg.Secure,
@@ -75,6 +85,10 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /verify-account", h.showVerifyAccount)
 	mux.HandleFunc("GET /verify", h.doVerify)
 	mux.HandleFunc("POST /verify/resend", h.doResendVerification)
+	mux.HandleFunc("GET /forgot-password", h.showForgotPassword)
+	mux.HandleFunc("POST /forgot-password", h.doForgotPassword)
+	mux.HandleFunc("GET /reset-password", h.showResetPassword)
+	mux.HandleFunc("POST /reset-password", h.doResetPassword)
 }
 
 func (h *Handler) showRegister(w http.ResponseWriter, r *http.Request) {

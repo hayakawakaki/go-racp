@@ -87,3 +87,23 @@ func (r *SessionRepository) Delete(ctx context.Context, hash [32]byte) error {
 	}
 	return nil
 }
+
+func (r *SessionRepository) DeleteByUserID(ctx context.Context, userID int) error {
+	if _, err := r.Client.ExecContext(ctx,
+		"DELETE FROM cp_sessions WHERE user_id = ?",
+		userID,
+	); err != nil {
+		return fmt.Errorf("infra.SessionRepository.DeleteByUserID: %w", err)
+	}
+	return nil
+}
+
+func (r *SessionRepository) DeleteByUserIDExcept(ctx context.Context, userID int, exceptHash [32]byte) error {
+	if _, err := r.Client.ExecContext(ctx,
+		"DELETE FROM cp_sessions WHERE user_id = ? AND token_hash <> ?",
+		userID, exceptHash[:],
+	); err != nil {
+		return fmt.Errorf("infra.SessionRepository.DeleteByUserIDExcept: %w", err)
+	}
+	return nil
+}
