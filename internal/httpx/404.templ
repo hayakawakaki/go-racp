@@ -1,0 +1,11 @@
+package httpx
+
+templ Page404(layout Layout) {
+	@Base(layout, "Not Found") {
+		<div class="w-full max-w-md bg-white rounded-lg shadow-md p-8 text-center">
+			<h1 class="text-6xl font-bold mb-2 text-red-600">Error 404</h1>
+			<p class="text-gray-700 mb-6">The page you are looking for doesn't exist.</p>
+			<a href="/" class="inline-block rounded bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 transition">Return to Home</a>
+		</div>
+	}
+}

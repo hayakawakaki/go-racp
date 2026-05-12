@@ -14,6 +14,7 @@ import (
 
 	"github.com/hayakawakaki/go-racp/internal/actiontoken"
 	"github.com/hayakawakaki/go-racp/internal/health"
+	"github.com/hayakawakaki/go-racp/internal/httpx"
 	"github.com/hayakawakaki/go-racp/internal/infra"
 	"github.com/hayakawakaki/go-racp/internal/infra/mailer"
 	"github.com/hayakawakaki/go-racp/internal/infra/mysql"
@@ -75,6 +76,9 @@ func Start() error {
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 	mux.HandleFunc("GET /healthz", health.New(mainDB, logsDB, logger))
 	plugin.MountAll(mux, in)
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		httpx.Render404(w, r, logger, httpx.Layout{GeneralConfig: cfg.App.General})
+	})
 
 	var handler http.Handler = mux
 	for _, p := range plugin.Middlewares() {

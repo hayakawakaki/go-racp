@@ -3,7 +3,6 @@ package transport
 import (
 	"context"
 	"errors"
-	"log/slog"
 	"net/http"
 
 	"github.com/hayakawakaki/go-racp/internal/account/domain"
@@ -55,14 +54,9 @@ func (h *Handler) showVerifyAccount(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) showVerify(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Referrer-Policy", "no-referrer")
-	token := r.URL.Query().Get("token")
-	if token == "" {
-		httpx.RenderHTML(w, r, h.logger, verifyResultPage(h.layout(), VerifyResultState{Kind: VerifyResultInvalid}))
-		return
-	}
-	if _, err := h.svc.PeekVerification(r.Context(), token); err != nil {
-		httpx.RenderHTML(w, r, h.logger, verifyResultPage(h.layout(), verifyResultStateFromTokenErr(err, h.logger, "verify peek")))
+	expired := verifyResultPage(h.layout(), VerifyResultState{Kind: VerifyResultExpired})
+	token, ok := h.validateTokenLink(w, r, h.svc.PeekVerification, "verify peek", expired)
+	if !ok {
 		return
 	}
 	httpx.RenderHTML(w, r, h.logger, verifyConfirmPage(h.layout(), VerifyConfirmState{Token: token}))
@@ -101,18 +95,6 @@ func (h *Handler) doVerify(w http.ResponseWriter, r *http.Request) {
 		state.Kind = VerifyResultInvalid
 	}
 	httpx.RenderHTML(w, r, h.logger, verifyResultPage(h.layout(), state))
-}
-
-func verifyResultStateFromTokenErr(err error, logger *slog.Logger, op string) VerifyResultState {
-	switch {
-	case errors.Is(err, actiontoken.ErrTokenExpired):
-		return VerifyResultState{Kind: VerifyResultExpired}
-	case errors.Is(err, actiontoken.ErrTokenAlreadyUsed), errors.Is(err, actiontoken.ErrTokenInvalid):
-		return VerifyResultState{Kind: VerifyResultInvalid}
-	default:
-		logger.Error(op, "err", err)
-		return VerifyResultState{Kind: VerifyResultInvalid}
-	}
 }
 
 func (h *Handler) hasActiveSession(r *http.Request) bool {
