@@ -33,6 +33,11 @@ var (
 
 	ErrGenderInvalid = errors.New("gender must be M or F")
 
+	ErrBirthdateEmpty  = errors.New("birthdate is required")
+	ErrBirthdateShape  = errors.New("birthdate must be a valid date")
+	ErrBirthdateFuture = errors.New("birthdate cannot be in the future")
+	ErrBirthdateTooOld = errors.New("birthdate is unrealistic")
+
 	ErrRegUsernameTooShort = errors.New("username must be at least 6 characters")
 	ErrRegPasswordTooShort = errors.New("password must be at least 8 characters")
 	ErrRegPasswordNoUpper  = errors.New("password must contain an uppercase letter")

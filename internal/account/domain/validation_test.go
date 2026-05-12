@@ -1,8 +1,10 @@
 package domain
 
 import (
+	"errors"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestValidateUsername(t *testing.T) {
@@ -136,6 +138,51 @@ func TestValidateGender(t *testing.T) {
 			}
 			if !tc.wantErr && err != nil {
 				t.Errorf("ValidateGender(%q) = %v; want nil", tc.input, err)
+			}
+		})
+	}
+}
+
+func TestValidateBirthdate(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, 5, 12, 0, 0, 0, 0, time.UTC)
+
+	cases := []struct {
+		wantErr error
+		name    string
+		input   string
+	}{
+		{name: "ok common", input: "2000-01-01"},
+		{name: "ok today", input: "2026-05-12"},
+		{name: "ok exactly 120y ago", input: "1906-05-12"},
+		{name: "empty", input: "", wantErr: ErrBirthdateEmpty},
+		{name: "not a date", input: "not-a-date", wantErr: ErrBirthdateShape},
+		{name: "month 13", input: "2026-13-01", wantErr: ErrBirthdateShape},
+		{name: "wrong format slashes", input: "2000/01/01", wantErr: ErrBirthdateShape},
+		{name: "future tomorrow", input: "2026-05-13", wantErr: ErrBirthdateFuture},
+		{name: "older than 120y", input: "1905-05-11", wantErr: ErrBirthdateTooOld},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			got, err := ValidateBirthdate(tc.input, now)
+			if tc.wantErr != nil {
+				if !errors.Is(err, tc.wantErr) {
+					t.Fatalf("ValidateBirthdate(%q) err = %v; want %v", tc.input, err, tc.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("ValidateBirthdate(%q) = %v; want nil", tc.input, err)
+			}
+			want, parseErr := time.Parse("2006-01-02", tc.input)
+			if parseErr != nil {
+				t.Fatalf("test data %q failed to parse: %v", tc.input, parseErr)
+			}
+			if !got.Equal(want) {
+				t.Errorf("ValidateBirthdate(%q) = %v; want %v", tc.input, got, want)
 			}
 		})
 	}

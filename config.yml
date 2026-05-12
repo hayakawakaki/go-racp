@@ -1,6 +1,7 @@
 # UI Related Stuffs
 GeneralConfig:
   ServerName: "GoCP"
+  Timezone: "UTC"
 
 # Session/Token Lifetime
 TTL:

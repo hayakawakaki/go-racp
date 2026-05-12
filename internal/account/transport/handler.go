@@ -27,6 +27,7 @@ const (
 	fieldPassword           = "password"
 	fieldPasswordConfirm    = "password_confirm"
 	fieldGender             = "gender"
+	fieldBirthdate          = "birthdate"
 	fieldToken              = "token"
 	fieldCurrentPassword    = "current_password"
 	fieldNewPassword        = "new_password"
@@ -35,6 +36,7 @@ const (
 )
 
 type accountService interface {
+	Now() time.Time
 	Create(ctx context.Context, cmd accountapp.CreateCommand) (*accountapp.GetDTO, error)
 	Authenticate(ctx context.Context, cmd accountapp.LoginCommand) (*accountapp.GetDTO, error)
 	GetAccount(ctx context.Context, userID int) (*accountapp.AccountDTO, error)
@@ -113,14 +115,31 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux, requireLogin func(http.Hand
 	mux.Handle("POST /account/email", requireLogin(http.HandlerFunc(h.doChangeEmail)))
 }
 
+func (h *Handler) birthdateBounds() (minDate, maxDate string) {
+	today := h.svc.Now().In(h.general.Location())
+	maxDate = today.Format("2006-01-02")
+	minDate = today.AddDate(-domain.BirthdateMaxAgeYears, 0, 0).Format("2006-01-02")
+	return minDate, maxDate
+}
+
 func (h *Handler) showRegister(w http.ResponseWriter, r *http.Request) {
-	httpx.RenderHTML(w, r, h.logger, registerPage(h.layout(), RegisterFormState{}))
+	minDate, maxDate := h.birthdateBounds()
+	httpx.RenderHTML(w, r, h.logger, registerPage(h.layout(), RegisterFormState{
+		BirthdateMin: minDate,
+		BirthdateMax: maxDate,
+	}))
 }
 
 func (h *Handler) doRegister(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, maxRegisterFormBytes)
+	minDate, maxDate := h.birthdateBounds()
+
 	if err := r.ParseForm(); err != nil {
-		h.renderRegister(w, r, RegisterFormState{FormError: invalidFormDataMsg})
+		h.renderRegister(w, r, RegisterFormState{
+			FormError:    invalidFormDataMsg,
+			BirthdateMin: minDate,
+			BirthdateMax: maxDate,
+		})
 		return
 	}
 
@@ -130,14 +149,18 @@ func (h *Handler) doRegister(w http.ResponseWriter, r *http.Request) {
 		Password:        r.PostFormValue(fieldPassword),
 		PasswordConfirm: r.PostFormValue(fieldPasswordConfirm),
 		Gender:          r.PostFormValue(fieldGender),
+		Birthdate:       r.PostFormValue(fieldBirthdate),
 	}
 
 	_, err := h.svc.Create(r.Context(), cmd)
 	if err != nil {
 		state := RegisterFormState{
-			Username: cmd.Username,
-			Email:    cmd.Email,
-			Gender:   cmd.Gender,
+			Username:     cmd.Username,
+			Email:        cmd.Email,
+			Gender:       cmd.Gender,
+			Birthdate:    cmd.Birthdate,
+			BirthdateMin: minDate,
+			BirthdateMax: maxDate,
 		}
 		var ve *domain.ValidationError
 		if errors.As(err, &ve) {

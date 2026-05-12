@@ -6,6 +6,7 @@ type CreateCommand struct {
 	PasswordConfirm string
 	Email           string
 	Gender          string
+	Birthdate       string
 }
 
 type LoginCommand struct {

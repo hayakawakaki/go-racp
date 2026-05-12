@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 
+	_ "time/tzdata"
+
 	"github.com/hayakawakaki/go-racp/server"
 )
 

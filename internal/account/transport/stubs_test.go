@@ -87,6 +87,10 @@ type requestEmailCall struct {
 	UserID          int
 }
 
+func (s *stubAccountService) Now() time.Time {
+	return time.Date(2026, 5, 12, 12, 0, 0, 0, time.UTC)
+}
+
 func (s *stubAccountService) Create(ctx context.Context, cmd accountapp.CreateCommand) (*accountapp.GetDTO, error) {
 	if s.createFn != nil {
 		return s.createFn(ctx, cmd)

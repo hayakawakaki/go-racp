@@ -138,6 +138,70 @@ func TestDoRegister_FieldValidationErrors(t *testing.T) {
 	}
 }
 
+func TestDoRegister_PassesBirthdate(t *testing.T) {
+	t.Parallel()
+	var captured accountapp.CreateCommand
+	auth := &stubAccountService{
+		createFn: func(_ context.Context, cmd accountapp.CreateCommand) (*accountapp.GetDTO, error) {
+			captured = cmd
+			return &accountapp.GetDTO{ID: 1, Username: cmd.Username, Email: cmd.Email}, nil
+		},
+	}
+	h := newAuthHandler(auth, &stubSessionService{})
+
+	rr := httptest.NewRecorder()
+	req := postForm("/register", map[string]string{
+		"username":         "testuser",
+		"email":            "test@x",
+		"password":         "Test1234!",
+		"password_confirm": "Test1234!",
+		"gender":           "F",
+		"birthdate":        "2000-01-15",
+	})
+	h.doRegister(rr, req)
+
+	if rr.Code != http.StatusSeeOther {
+		t.Fatalf("status = %d, want 303", rr.Code)
+	}
+	if captured.Birthdate != "2000-01-15" {
+		t.Errorf("Birthdate = %q; want 2000-01-15", captured.Birthdate)
+	}
+}
+
+func TestDoRegister_BirthdateErrorIsRendered(t *testing.T) {
+	t.Parallel()
+	auth := &stubAccountService{
+		createFn: func(context.Context, accountapp.CreateCommand) (*accountapp.GetDTO, error) {
+			return nil, &domain.ValidationError{Fields: domain.FieldErrors{
+				"birthdate": "birthdate is required",
+			}}
+		},
+	}
+	h := newAuthHandler(auth, &stubSessionService{})
+
+	rr := httptest.NewRecorder()
+	req := postForm("/register", map[string]string{
+		"username":         "testuser",
+		"email":            "test@x",
+		"password":         "Test1234!",
+		"password_confirm": "Test1234!",
+		"gender":           "F",
+		"birthdate":        "",
+	})
+	h.doRegister(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rr.Code)
+	}
+	body := rr.Body.String()
+	if !strings.Contains(body, "birthdate is required") {
+		t.Errorf("body missing birthdate error; got: %s", body)
+	}
+	if !strings.Contains(body, `value="testuser"`) {
+		t.Errorf("username not echoed back on error")
+	}
+}
+
 func TestDoRegister_GenericError(t *testing.T) {
 	t.Parallel()
 	auth := &stubAccountService{
