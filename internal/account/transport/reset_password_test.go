@@ -21,7 +21,7 @@ func newResetHandler(reset *stubAccountService) *Handler {
 	}
 }
 
-func TestShowResetPassword_NoToken_RendersInvalid(t *testing.T) {
+func TestShowResetPassword_NoToken_ReturnsNotFound(t *testing.T) {
 	t.Parallel()
 	h := newResetHandler(&stubAccountService{})
 
@@ -29,22 +29,37 @@ func TestShowResetPassword_NoToken_RendersInvalid(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/reset-password", http.NoBody)
 	h.showResetPassword(rr, req)
 
-	if !strings.Contains(rr.Body.String(), "Invalid link") {
-		t.Errorf("body should render invalid result: %s", rr.Body.String())
+	if rr.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want %d", rr.Code, http.StatusNotFound)
 	}
 }
 
-func TestShowResetPassword_PeekKnownErrors_RendersMatchingResult(t *testing.T) {
+func TestShowResetPassword_PeekExpired_RendersExpired(t *testing.T) {
+	t.Parallel()
+	h := newResetHandler(&stubAccountService{
+		peekResetFn: func(context.Context, string) (*actiontoken.ActionToken, error) {
+			return nil, actiontoken.ErrTokenExpired
+		},
+	})
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/reset-password?token=abc", http.NoBody)
+	h.showResetPassword(rr, req)
+
+	if !strings.Contains(rr.Body.String(), "Link expired") {
+		t.Errorf("body missing %q: %s", "Link expired", rr.Body.String())
+	}
+}
+
+func TestShowResetPassword_PeekInvalidOrAlreadyUsed_ReturnsNotFound(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		peekErr  error
-		name     string
-		wantText string
+		peekErr error
+		name    string
 	}{
-		{name: "expired", peekErr: actiontoken.ErrTokenExpired, wantText: "Link expired"},
-		{name: "already used", peekErr: actiontoken.ErrTokenAlreadyUsed, wantText: "Link already used"},
-		{name: "invalid", peekErr: actiontoken.ErrTokenInvalid, wantText: "Invalid link"},
+		{name: "already used", peekErr: actiontoken.ErrTokenAlreadyUsed},
+		{name: "invalid", peekErr: actiontoken.ErrTokenInvalid},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -59,14 +74,14 @@ func TestShowResetPassword_PeekKnownErrors_RendersMatchingResult(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/reset-password?token=abc", http.NoBody)
 			h.showResetPassword(rr, req)
 
-			if !strings.Contains(rr.Body.String(), tt.wantText) {
-				t.Errorf("body missing %q: %s", tt.wantText, rr.Body.String())
+			if rr.Code != http.StatusNotFound {
+				t.Errorf("status = %d, want %d", rr.Code, http.StatusNotFound)
 			}
 		})
 	}
 }
 
-func TestShowResetPassword_PeekGenericError_RendersInvalid(t *testing.T) {
+func TestShowResetPassword_PeekGenericError_ReturnsNotFound(t *testing.T) {
 	t.Parallel()
 	h := newResetHandler(&stubAccountService{
 		peekResetFn: func(context.Context, string) (*actiontoken.ActionToken, error) {
@@ -78,8 +93,8 @@ func TestShowResetPassword_PeekGenericError_RendersInvalid(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/reset-password?token=abc", http.NoBody)
 	h.showResetPassword(rr, req)
 
-	if !strings.Contains(rr.Body.String(), "Invalid link") {
-		t.Errorf("body should render invalid for opaque error: %s", rr.Body.String())
+	if rr.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want %d", rr.Code, http.StatusNotFound)
 	}
 }
 

@@ -12,26 +12,9 @@ import (
 const maxResetPasswordFormBytes = 2 << 10
 
 func (h *Handler) showResetPassword(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Referrer-Policy", "no-referrer")
-	token := r.URL.Query().Get("token")
-	if token == "" {
-		httpx.RenderHTML(w, r, h.logger, resetResultPage(h.layout(), ResetResultState{Kind: ResetResultInvalid}))
-		return
-	}
-	if _, err := h.svc.PeekPasswordReset(r.Context(), token); err != nil {
-		state := ResetResultState{Kind: ResetResultInvalid}
-		switch {
-		case errors.Is(err, actiontoken.ErrTokenExpired):
-			state.Kind = ResetResultExpired
-		case errors.Is(err, actiontoken.ErrTokenAlreadyUsed):
-			state.Kind = ResetResultAlreadyUsed
-		case errors.Is(err, actiontoken.ErrTokenInvalid):
-			state.Kind = ResetResultInvalid
-		default:
-			h.logger.Error("reset_password peek", "err", err)
-			state.Kind = ResetResultInvalid
-		}
-		httpx.RenderHTML(w, r, h.logger, resetResultPage(h.layout(), state))
+	expired := resetResultPage(h.layout(), ResetResultState{Kind: ResetResultExpired})
+	token, ok := h.validateTokenLink(w, r, h.svc.PeekPasswordReset, "reset_password peek", expired)
+	if !ok {
 		return
 	}
 	httpx.RenderHTML(w, r, h.logger, resetPasswordPage(h.layout(), ResetPasswordState{Token: token}))
