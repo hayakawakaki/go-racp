@@ -3,7 +3,6 @@ package transport
 import (
 	"net/http"
 
-	authtransport "github.com/hayakawakaki/go-racp/internal/auth/transport"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 )
 
@@ -24,7 +23,7 @@ var accountNoticeText = map[string]string{
 }
 
 func (h *Handler) showAccount(w http.ResponseWriter, r *http.Request) {
-	sess, ok := authtransport.SessionFromContext(r.Context())
+	sess, ok := SessionFromContext(r.Context())
 	if !ok || sess == nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return

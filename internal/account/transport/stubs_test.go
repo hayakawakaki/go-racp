@@ -10,8 +10,8 @@ import (
 	"time"
 
 	accountapp "github.com/hayakawakaki/go-racp/internal/account/app"
-	authdomain "github.com/hayakawakaki/go-racp/internal/auth/domain"
-	authtransport "github.com/hayakawakaki/go-racp/internal/auth/transport"
+	authdomain "github.com/hayakawakaki/go-racp/internal/account/domain"
+	"github.com/hayakawakaki/go-racp/internal/actiontoken"
 )
 
 const stubSessionTTL = 24 * time.Hour
@@ -29,12 +29,19 @@ func newTestHandler(svc accountService, sess sessionService, logBuffer io.Writer
 
 func reqWithSession(method, target string, userID int, body io.Reader) *http.Request {
 	req := httptest.NewRequest(method, target, body)
-	ctx := authtransport.ContextWithSession(req.Context(), &authdomain.Session{UserID: userID})
+	ctx := ContextWithSession(req.Context(), &authdomain.Session{UserID: userID})
 	return req.WithContext(ctx)
 }
 
 func postWithSession(target string, userID int, values map[string]string) *http.Request {
 	req := reqWithSession(http.MethodPost, target, userID, strings.NewReader(encodeForm(values)))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	return req
+}
+
+func postForm(target string, values map[string]string) *http.Request {
+	form := strings.NewReader(encodeForm(values))
+	req := httptest.NewRequest(http.MethodPost, target, form)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	return req
 }
@@ -48,12 +55,20 @@ func encodeForm(v map[string]string) string {
 }
 
 type stubAccountService struct {
-	getAccountFn         func(context.Context, int) (*accountapp.AccountDTO, error)
-	updatePasswordFn     func(context.Context, int, string, string, string, string) error
-	requestEmailChangeFn func(context.Context, int, string, string) error
-	consumeEmailChangeFn func(context.Context, string) (*authdomain.User, error)
-	updatePasswordCalls  []updatePasswordCall
-	requestEmailCalls    []requestEmailCall
+	createFn              func(context.Context, accountapp.CreateCommand) (*accountapp.GetDTO, error)
+	authNFn               func(context.Context, accountapp.LoginCommand) (*accountapp.GetDTO, error)
+	getAccountFn          func(context.Context, int) (*accountapp.AccountDTO, error)
+	issueVerificationFn   func(context.Context, int, string, string) error
+	consumeVerificationFn func(context.Context, string) error
+	resendVerificationFn  func(context.Context, int) error
+	requestResetFn        func(context.Context, string) error
+	consumeResetFn        func(context.Context, string, string) error
+	peekResetFn           func(context.Context, string) (*actiontoken.ActionToken, error)
+	updatePasswordFn      func(context.Context, int, string, string, string, string) error
+	requestEmailChangeFn  func(context.Context, int, string, string) error
+	consumeEmailChangeFn  func(context.Context, string) (*authdomain.User, error)
+	updatePasswordCalls   []updatePasswordCall
+	requestEmailCalls     []requestEmailCall
 }
 
 type updatePasswordCall struct {
@@ -70,11 +85,67 @@ type requestEmailCall struct {
 	UserID          int
 }
 
+func (s *stubAccountService) Create(ctx context.Context, cmd accountapp.CreateCommand) (*accountapp.GetDTO, error) {
+	if s.createFn != nil {
+		return s.createFn(ctx, cmd)
+	}
+	return &accountapp.GetDTO{ID: 1, Username: cmd.Username, Email: cmd.Email}, nil
+}
+
+func (s *stubAccountService) Authenticate(ctx context.Context, cmd accountapp.LoginCommand) (*accountapp.GetDTO, error) {
+	if s.authNFn != nil {
+		return s.authNFn(ctx, cmd)
+	}
+	return &accountapp.GetDTO{ID: 1, Username: cmd.Username}, nil
+}
+
 func (s *stubAccountService) GetAccount(ctx context.Context, userID int) (*accountapp.AccountDTO, error) {
 	if s.getAccountFn != nil {
 		return s.getAccountFn(ctx, userID)
 	}
 	return &accountapp.AccountDTO{Username: "u", Email: "u@x", Verified: true}, nil
+}
+
+func (s *stubAccountService) IssueVerification(ctx context.Context, accountID int, email, username string) error {
+	if s.issueVerificationFn != nil {
+		return s.issueVerificationFn(ctx, accountID, email, username)
+	}
+	return nil
+}
+
+func (s *stubAccountService) ConsumeVerification(ctx context.Context, rawToken string) error {
+	if s.consumeVerificationFn != nil {
+		return s.consumeVerificationFn(ctx, rawToken)
+	}
+	return nil
+}
+
+func (s *stubAccountService) ResendVerification(ctx context.Context, accountID int) error {
+	if s.resendVerificationFn != nil {
+		return s.resendVerificationFn(ctx, accountID)
+	}
+	return nil
+}
+
+func (s *stubAccountService) RequestPasswordReset(ctx context.Context, email string) error {
+	if s.requestResetFn != nil {
+		return s.requestResetFn(ctx, email)
+	}
+	return nil
+}
+
+func (s *stubAccountService) ConsumePasswordReset(ctx context.Context, rawToken, newPassword string) error {
+	if s.consumeResetFn != nil {
+		return s.consumeResetFn(ctx, rawToken, newPassword)
+	}
+	return nil
+}
+
+func (s *stubAccountService) PeekPasswordReset(ctx context.Context, rawToken string) (*actiontoken.ActionToken, error) {
+	if s.peekResetFn != nil {
+		return s.peekResetFn(ctx, rawToken)
+	}
+	return &actiontoken.ActionToken{}, nil
 }
 
 func (s *stubAccountService) UpdatePassword(ctx context.Context, userID int, currentRawToken, currentPassword, newPassword, confirmPassword string) error {
@@ -111,7 +182,19 @@ func (s *stubAccountService) ConsumeEmailChange(ctx context.Context, rawToken st
 }
 
 type stubSessionService struct {
-	validateFn func(context.Context, string) (*authdomain.Session, error)
+	createFn     func(context.Context, int) (string, *authdomain.Session, error)
+	validateFn   func(context.Context, string) (*authdomain.Session, error)
+	destroyFn    func(context.Context, string) error
+	createCalls  []int
+	destroyCalls []string
+}
+
+func (s *stubSessionService) Create(ctx context.Context, userID int) (string, *authdomain.Session, error) {
+	s.createCalls = append(s.createCalls, userID)
+	if s.createFn != nil {
+		return s.createFn(ctx, userID)
+	}
+	return "stub-token", &authdomain.Session{UserID: userID}, nil
 }
 
 func (s *stubSessionService) Validate(ctx context.Context, rawToken string) (*authdomain.Session, error) {
@@ -121,4 +204,23 @@ func (s *stubSessionService) Validate(ctx context.Context, rawToken string) (*au
 	return nil, authdomain.ErrSessionNotFound
 }
 
+func (s *stubSessionService) Destroy(ctx context.Context, rawToken string) error {
+	s.destroyCalls = append(s.destroyCalls, rawToken)
+	if s.destroyFn != nil {
+		return s.destroyFn(ctx, rawToken)
+	}
+	return nil
+}
+
 func (s *stubSessionService) TTL() time.Duration { return stubSessionTTL }
+
+type stubUserLookup struct {
+	getByIDFn func(context.Context, int) (*authdomain.User, error)
+}
+
+func (s *stubUserLookup) GetByID(ctx context.Context, id int) (*authdomain.User, error) {
+	if s.getByIDFn != nil {
+		return s.getByIDFn(ctx, id)
+	}
+	return &authdomain.User{ID: id}, nil
+}

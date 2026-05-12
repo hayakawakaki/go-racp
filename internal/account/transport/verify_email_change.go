@@ -4,8 +4,8 @@ import (
 	"errors"
 	"net/http"
 
+	authdomain "github.com/hayakawakaki/go-racp/internal/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/actiontoken"
-	authdomain "github.com/hayakawakaki/go-racp/internal/auth/domain"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 )
 

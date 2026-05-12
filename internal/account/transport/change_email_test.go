@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	accountapp "github.com/hayakawakaki/go-racp/internal/account/app"
-	authdomain "github.com/hayakawakaki/go-racp/internal/auth/domain"
+	authdomain "github.com/hayakawakaki/go-racp/internal/account/domain"
 )
 
 func TestShowChangeEmail_RendersForm(t *testing.T) {

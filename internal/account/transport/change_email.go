@@ -5,8 +5,7 @@ import (
 	"net/http"
 
 	accountapp "github.com/hayakawakaki/go-racp/internal/account/app"
-	authdomain "github.com/hayakawakaki/go-racp/internal/auth/domain"
-	authtransport "github.com/hayakawakaki/go-racp/internal/auth/transport"
+	authdomain "github.com/hayakawakaki/go-racp/internal/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 )
 
@@ -16,7 +15,7 @@ func (h *Handler) showChangeEmail(w http.ResponseWriter, r *http.Request) {
 
 //nolint:cyclop // sequential session/form/service/validation branches; splitting would obscure the flow
 func (h *Handler) doChangeEmail(w http.ResponseWriter, r *http.Request) {
-	sess, ok := authtransport.SessionFromContext(r.Context())
+	sess, ok := SessionFromContext(r.Context())
 	if !ok || sess == nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return

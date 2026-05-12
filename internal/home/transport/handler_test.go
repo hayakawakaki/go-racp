@@ -10,9 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hayakawakaki/go-racp/internal/auth/app"
-	"github.com/hayakawakaki/go-racp/internal/auth/domain"
-	authtransport "github.com/hayakawakaki/go-racp/internal/auth/transport"
+	"github.com/hayakawakaki/go-racp/internal/account/app"
+	"github.com/hayakawakaki/go-racp/internal/account/domain"
+	accounttransport "github.com/hayakawakaki/go-racp/internal/account/transport"
 )
 
 type stubUserService struct {
@@ -70,7 +70,7 @@ func TestHome_ShowAuthenticated(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
-	ctx := authtransport.ContextWithSession(req.Context(), &domain.Session{UserID: 7})
+	ctx := accounttransport.ContextWithSession(req.Context(), &domain.Session{UserID: 7})
 	h.show(rr, req.WithContext(ctx))
 
 	if rr.Code != http.StatusOK {
@@ -97,7 +97,7 @@ func TestHome_ShowAuthenticated_UserFetchFails(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
-	ctx := authtransport.ContextWithSession(req.Context(), &domain.Session{UserID: 7})
+	ctx := accounttransport.ContextWithSession(req.Context(), &domain.Session{UserID: 7})
 	h.show(rr, req.WithContext(ctx))
 
 	// Falls back to anonymous render rather than 500.

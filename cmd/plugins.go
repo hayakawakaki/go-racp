@@ -4,6 +4,5 @@ package main
 // server.Start() later calls plugin.MountAll to wire them into the mux.
 import (
 	_ "github.com/hayakawakaki/go-racp/internal/account"
-	_ "github.com/hayakawakaki/go-racp/internal/auth"
 	_ "github.com/hayakawakaki/go-racp/internal/home"
 )

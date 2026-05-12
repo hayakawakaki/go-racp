@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	authdomain "github.com/hayakawakaki/go-racp/internal/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/actiontoken"
-	authdomain "github.com/hayakawakaki/go-racp/internal/auth/domain"
 )
 
 func TestDoVerifyEmailChange_NoToken_RendersInvalid(t *testing.T) {

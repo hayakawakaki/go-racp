@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	authdomain "github.com/hayakawakaki/go-racp/internal/auth/domain"
+	authdomain "github.com/hayakawakaki/go-racp/internal/account/domain"
 )
 
 func TestShowChangePassword_RendersForm(t *testing.T) {

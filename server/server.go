@@ -12,9 +12,6 @@ import (
 	"syscall"
 	"time"
 
-	"sync"
-
-	"github.com/hayakawakaki/go-racp/internal/accountchange"
 	"github.com/hayakawakaki/go-racp/internal/actiontoken"
 	"github.com/hayakawakaki/go-racp/internal/health"
 	"github.com/hayakawakaki/go-racp/internal/infra"
@@ -63,18 +60,14 @@ func Start() error {
 
 	actionTokenRepo := actiontoken.NewMySQLRepository(mainDB)
 	tokenMgr := actiontoken.NewManager(actionTokenRepo)
-	changeLog := accountchange.NewMySQLRepository(mainDB)
-	emailUniqueMu := &sync.Mutex{}
 
 	in := &infra.Infra{
-		MainDB:        mainDB,
-		LogDB:         logsDB,
-		Logger:        logger,
-		Mailer:        smtpMailer,
-		TokenManager:  tokenMgr,
-		ChangeLog:     changeLog,
-		EmailUniqueMu: emailUniqueMu,
-		Config:        cfg,
+		MainDB:       mainDB,
+		LogDB:        logsDB,
+		Logger:       logger,
+		Mailer:       smtpMailer,
+		TokenManager: tokenMgr,
+		Config:       cfg,
 	}
 
 	// Plugin Mounting
