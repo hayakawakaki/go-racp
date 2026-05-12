@@ -35,7 +35,7 @@ func changePasswordModal(state ChangePasswordState) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div id=\"modal\" class=\"fixed inset-0 z-50 flex items-center justify-center bg-black/40\"><div class=\"bg-white rounded-lg shadow-xl p-6 w-full max-w-md\"><div class=\"flex justify-between items-center mb-4\"><h2 class=\"text-xl font-semibold text-gray-900\">Change password</h2><button hx-get=\"/account\" hx-target=\"#modal\" hx-swap=\"outerHTML\" type=\"button\" aria-label=\"Close\" class=\"text-gray-400 hover:text-gray-600\">&times;</button></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"fixed inset-0 z-50 flex items-center justify-center bg-black/40\"><div class=\"bg-white rounded-lg shadow-xl p-6 w-full max-w-md\"><div class=\"flex justify-between items-center mb-4\"><h2 class=\"text-xl font-semibold text-gray-900\">Change password</h2><button onclick=\"document.getElementById('modal').innerHTML=''\" type=\"button\" aria-label=\"Close\" class=\"text-gray-400 hover:text-gray-600\">&times;</button></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
