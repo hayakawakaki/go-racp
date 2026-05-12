@@ -3,9 +3,9 @@ package home
 import (
 	"net/http"
 
-	authapp "github.com/hayakawakaki/go-racp/internal/auth/app"
-	authinfra "github.com/hayakawakaki/go-racp/internal/auth/infra"
-	authtransport "github.com/hayakawakaki/go-racp/internal/auth/transport"
+	accountapp "github.com/hayakawakaki/go-racp/internal/account/app"
+	accountinfra "github.com/hayakawakaki/go-racp/internal/account/infra"
+	accounttransport "github.com/hayakawakaki/go-racp/internal/account/transport"
 	"github.com/hayakawakaki/go-racp/internal/home/transport"
 	platinfra "github.com/hayakawakaki/go-racp/internal/infra"
 	"github.com/hayakawakaki/go-racp/internal/plugin"
@@ -18,14 +18,14 @@ func init() {
 
 // mount registers the home HTTP routes on mux using the provided Infra by creating authentication repositories and services, configuring session middleware (secure when Env.Mode != "development"), and attaching the handler.
 func mount(mux *http.ServeMux, in *platinfra.Infra) {
-	userRepo := authinfra.NewRepository(in.MainDB)
-	sessRepo := authinfra.NewSessionRepository(in.MainDB)
+	userRepo := accountinfra.NewRepository(in.MainDB)
+	sessRepo := accountinfra.NewSessionRepository(in.MainDB)
 
-	userSvc := authapp.NewService(userRepo)
-	sessSvc := authapp.NewSessionService(sessRepo, in.Config.App.SessionTTL)
+	userSvc := accountapp.NewService(userRepo)
+	sessSvc := accountapp.NewSessionService(sessRepo, in.Config.App.TTL.Session)
 
 	secure := in.Config.Env.Mode != "development"
-	withSession := authtransport.WithSession(sessSvc, in.Logger, secure)
+	withSession := accounttransport.WithSession(sessSvc, in.Logger, secure)
 
 	homeH := transport.NewHandler(userSvc, transport.HandlerConfig{
 		Logger:  in.Logger,

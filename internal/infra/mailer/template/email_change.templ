@@ -1,0 +1,26 @@
+package template
+
+type EmailChangeData struct {
+	ServerName string
+	Username   string
+	NewEmail   string
+	URL        string
+}
+
+templ EmailChange(data EmailChangeData) {
+	<!DOCTYPE html>
+	<html>
+		<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #111;">
+			<h2>Confirm your new email for { data.ServerName }</h2>
+			<p>Hi { data.Username },</p>
+			<p>Click the link below to confirm <strong>{ data.NewEmail }</strong> as the new email for your account before the link expires.</p>
+			<p>
+				<a href={ templ.URL(data.URL) } style="display:inline-block; background:#2563eb; color:#fff; padding:10px 16px; border-radius:6px; text-decoration:none;">
+					Confirm new email
+				</a>
+			</p>
+			<p style="color:#555; font-size:14px;">Or paste this URL into your browser:<br/><span>{ data.URL }</span></p>
+			<p style="color:#777; font-size:12px;">If you didn't request this change, you can safely ignore this email.</p>
+		</body>
+	</html>
+}

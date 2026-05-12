@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/hayakawakaki/go-racp/internal/actiontoken"
 	"github.com/hayakawakaki/go-racp/internal/health"
 	"github.com/hayakawakaki/go-racp/internal/infra"
 	"github.com/hayakawakaki/go-racp/internal/infra/mailer"
@@ -57,12 +58,16 @@ func Start() error {
 		}
 	}()
 
+	actionTokenRepo := actiontoken.NewMySQLRepository(mainDB)
+	tokenMgr := actiontoken.NewManager(actionTokenRepo)
+
 	in := &infra.Infra{
-		MainDB: mainDB,
-		LogDB:  logsDB,
-		Logger: logger,
-		Mailer: smtpMailer,
-		Config: cfg,
+		MainDB:       mainDB,
+		LogDB:        logsDB,
+		Logger:       logger,
+		Mailer:       smtpMailer,
+		TokenManager: tokenMgr,
+		Config:       cfg,
 	}
 
 	// Plugin Mounting
