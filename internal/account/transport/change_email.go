@@ -32,11 +32,11 @@ func (h *Handler) doChangeEmail(w http.ResponseWriter, r *http.Request) {
 	err := h.svc.RequestEmailChange(r.Context(), sess.UserID, r.PostFormValue(fieldCurrentPassword), newEmail)
 	if err != nil {
 		if errors.Is(err, accountapp.ErrEmailChangeCooldown) {
-			h.redirectWithNotice(w, r, "email_change_cooldown")
+			h.redirectWithNotice(w, r, noticeEmailChangeCooldown)
 			return
 		}
 		if errors.Is(err, authdomain.ErrEmailRecentlyChanged) {
-			h.redirectWithNotice(w, r, "email_change_locked")
+			h.redirectWithNotice(w, r, noticeEmailChangeLocked)
 			return
 		}
 		var ve *authdomain.ValidationError
@@ -51,7 +51,7 @@ func (h *Handler) doChangeEmail(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, genericErrorMessage, http.StatusInternalServerError)
 		return
 	}
-	h.redirectWithNotice(w, r, "email_change_sent")
+	h.redirectWithNotice(w, r, noticeEmailChangeSent)
 }
 
 // renderChangeEmail renders the modal/form for HTMX requests and the full page for direct navigation.
