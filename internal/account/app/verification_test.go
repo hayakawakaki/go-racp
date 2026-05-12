@@ -539,7 +539,7 @@ func TestService_ConsumeVerification_HappyPath(t *testing.T) {
 	t.Parallel()
 	svc, userRepo, _, mailer := newServiceWithVerification(t)
 	user, _ := userRepo.Create(context.Background(), &domain.User{
-		Username: "u", Email: "u@x", GroupID: 5,
+		Username: "u", Email: "u@x", State: 5,
 	})
 
 	if err := svc.IssueVerification(context.Background(), user.ID, user.Email, user.Username); err != nil {
@@ -551,8 +551,8 @@ func TestService_ConsumeVerification_HappyPath(t *testing.T) {
 		t.Fatalf("ConsumeVerification: %v", err)
 	}
 	got, _ := userRepo.GetByID(context.Background(), user.ID)
-	if got.GroupID != 0 {
-		t.Errorf("GroupID = %d, want 0 (verified)", got.GroupID)
+	if got.State != 0 {
+		t.Errorf("State = %d, want 0 (verified)", got.State)
 	}
 }
 
@@ -659,7 +659,7 @@ func TestService_ResendVerification_AlreadyVerifiedSilent(t *testing.T) {
 	t.Parallel()
 	svc, userRepo, tokenRepo, mailer := newServiceWithVerification(t)
 	user, _ := userRepo.Create(context.Background(), &domain.User{
-		Username: "u", Email: "u@x", GroupID: 0,
+		Username: "u", Email: "u@x", State: 0,
 	})
 
 	if err := svc.ResendVerification(context.Background(), user.ID); err != nil {
@@ -679,7 +679,7 @@ func TestService_ResendVerification_ThrottledSilent(t *testing.T) {
 	fixed := time.Date(2026, 5, 11, 12, 0, 0, 0, time.UTC)
 	svc.now = func() time.Time { return fixed }
 	user, _ := userRepo.Create(context.Background(), &domain.User{
-		Username: "u", Email: "u@x", GroupID: 5,
+		Username: "u", Email: "u@x", State: 5,
 	})
 	tokenRepo.mostRecentIssuedAtHook = func(int, actiontoken.Action) (time.Time, error) {
 		return fixed.Add(-30 * time.Second), nil
@@ -702,7 +702,7 @@ func TestService_ResendVerification_CooldownElapsed_Issues(t *testing.T) {
 	fixed := time.Date(2026, 5, 11, 12, 0, 0, 0, time.UTC)
 	svc.now = func() time.Time { return fixed }
 	user, _ := userRepo.Create(context.Background(), &domain.User{
-		Username: "u", Email: "u@x", GroupID: 5,
+		Username: "u", Email: "u@x", State: 5,
 	})
 	tokenRepo.mostRecentIssuedAtHook = func(int, actiontoken.Action) (time.Time, error) {
 		return fixed.Add(-2 * time.Minute), nil
@@ -842,7 +842,7 @@ func TestService_ConsumePasswordReset_HappyPath(t *testing.T) {
 	t.Parallel()
 	fx := newServiceWithReset(t)
 	user, _ := fx.userRepo.Create(context.Background(), &domain.User{
-		Username: "u", Email: "u@example.com", Password: "Old1234!", GroupID: 5,
+		Username: "u", Email: "u@example.com", Password: "Old1234!", State: 5,
 	})
 
 	now := time.Now()
@@ -862,8 +862,8 @@ func TestService_ConsumePasswordReset_HappyPath(t *testing.T) {
 	if got.Password != "NewPass1!" {
 		t.Errorf("password not updated; got %q", got.Password)
 	}
-	if got.GroupID != 0 {
-		t.Errorf("GroupID after reset = %d, want 0 (verified as side effect)", got.GroupID)
+	if got.State != 0 {
+		t.Errorf("State after reset = %d, want 0 (verified as side effect)", got.State)
 	}
 	if at := fx.changeLog.byKey[changeKey{user.ID, domain.ChangeTypePassword}]; at.IsZero() {
 		t.Errorf("password change not recorded; want a non-zero timestamp")

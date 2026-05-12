@@ -201,7 +201,7 @@ func TestRequireVerified_UnverifiedUser_RedirectsToVerifyAccount(t *testing.T) {
 	}
 	users := &stubUserLookup{
 		getByIDFn: func(_ context.Context, id int) (*domain.User, error) {
-			return &domain.User{ID: id, GroupID: 5}, nil
+			return &domain.User{ID: id, State: 5}, nil
 		},
 	}
 	middleware, _ := newTestVerifiedMiddleware(t, sess, users, nil)
@@ -234,7 +234,7 @@ func TestRequireVerified_VerifiedUser_PassesThrough(t *testing.T) {
 	}
 	users := &stubUserLookup{
 		getByIDFn: func(_ context.Context, id int) (*domain.User, error) {
-			return &domain.User{ID: id, GroupID: 0}, nil
+			return &domain.User{ID: id, State: 0}, nil
 		},
 	}
 	middleware, _ := newTestVerifiedMiddleware(t, sess, users, nil)
@@ -266,7 +266,7 @@ func TestRequireVerified_AllowlistShortCircuitsBeforeSessionLookup(t *testing.T)
 	}
 	users := &stubUserLookup{
 		getByIDFn: func(_ context.Context, id int) (*domain.User, error) {
-			return &domain.User{ID: id, GroupID: 5}, nil
+			return &domain.User{ID: id, State: 5}, nil
 		},
 	}
 	middleware, _ := newTestVerifiedMiddleware(t, sess, users, []string{"/verify-account"})

@@ -47,7 +47,7 @@ func RequireVerified(
 				next.ServeHTTP(w, r)
 				return
 			}
-			if user.GroupID == 5 {
+			if user.State == 5 {
 				http.Redirect(w, r, verifyAccountPath, http.StatusSeeOther)
 				return
 			}

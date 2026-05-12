@@ -142,7 +142,7 @@ func (f *fakeUserRepo) MarkVerified(_ context.Context, accountID int) error {
 	if !ok {
 		return domain.ErrUserNotFound
 	}
-	u.GroupID = 0
+	u.State = 0
 	return nil
 }
 
@@ -634,7 +634,7 @@ func TestService_GetAccount_Happy(t *testing.T) {
 	t.Parallel()
 	fx := newEmailChangeFixture(t)
 	user, _ := fx.userRepo.Create(context.Background(), &domain.User{
-		Username: "u", Email: "u@example.com", GroupID: 0,
+		Username: "u", Email: "u@example.com", State: 0,
 	})
 
 	got, err := fx.svc.GetAccount(context.Background(), user.ID)
@@ -650,7 +650,7 @@ func TestService_GetAccount_UnverifiedFlag(t *testing.T) {
 	t.Parallel()
 	fx := newEmailChangeFixture(t)
 	user, _ := fx.userRepo.Create(context.Background(), &domain.User{
-		Username: "u", Email: "u@example.com", GroupID: 5,
+		Username: "u", Email: "u@example.com", State: 5,
 	})
 
 	got, err := fx.svc.GetAccount(context.Background(), user.ID)
@@ -658,7 +658,7 @@ func TestService_GetAccount_UnverifiedFlag(t *testing.T) {
 		t.Fatalf("GetAccount: %v", err)
 	}
 	if got.Verified {
-		t.Errorf("Verified = true, want false for group_id=5")
+		t.Errorf("Verified = true, want false for state=5")
 	}
 }
 

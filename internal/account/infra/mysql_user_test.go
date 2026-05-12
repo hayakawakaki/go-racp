@@ -135,7 +135,7 @@ func TestRepository_Authenticate(t *testing.T) {
 	})
 }
 
-func TestRepository_Create_SetsGroupIDFiveAndPersistsIt(t *testing.T) {
+func TestRepository_Create_SetsStateFiveAndPersistsIt(t *testing.T) {
 	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
 	repo := NewRepository(db)
 	ctx := context.Background()
@@ -152,16 +152,16 @@ func TestRepository_Create_SetsGroupIDFiveAndPersistsIt(t *testing.T) {
 	}
 	cleanupUser(t, repo, created.ID)
 
-	if created.GroupID != 5 {
-		t.Errorf("returned GroupID = %d, want 5 (unverified)", created.GroupID)
+	if created.State != 5 {
+		t.Errorf("returned State = %d, want 5 (unverified)", created.State)
 	}
 
 	got, err := repo.GetByID(ctx, created.ID)
 	if err != nil {
 		t.Fatalf("GetByID: %v", err)
 	}
-	if got.GroupID != 5 {
-		t.Errorf("persisted GroupID = %d, want 5", got.GroupID)
+	if got.State != 5 {
+		t.Errorf("persisted State = %d, want 5", got.State)
 	}
 }
 
@@ -170,7 +170,7 @@ func TestRepository_MarkVerified(t *testing.T) {
 	repo := NewRepository(db)
 	ctx := context.Background()
 
-	t.Run("flips group_id from 5 to 0", func(t *testing.T) {
+	t.Run("flips state from 5 to 0", func(t *testing.T) {
 		suf := randomizeSuffix(t)
 		user, err := repo.Create(ctx, &domain.User{
 			Username: "racp_test_" + suf,
@@ -190,8 +190,8 @@ func TestRepository_MarkVerified(t *testing.T) {
 		if err != nil {
 			t.Fatalf("GetByID: %v", err)
 		}
-		if got.GroupID != 0 {
-			t.Errorf("GroupID after MarkVerified = %d, want 0", got.GroupID)
+		if got.State != 0 {
+			t.Errorf("State after MarkVerified = %d, want 0", got.State)
 		}
 	})
 
