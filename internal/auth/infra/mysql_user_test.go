@@ -214,6 +214,84 @@ func TestRepository_MarkVerified(t *testing.T) {
 	})
 }
 
+func TestRepository_UpdatePassword(t *testing.T) {
+	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
+	repo := NewRepository(db)
+	ctx := context.Background()
+
+	suf := randomizeSuffix(t)
+	u, err := repo.Create(ctx, &domain.User{
+		Username: "racp_test_" + suf,
+		Email:    "racp_test_" + suf + "@example.invalid",
+		Password: "Old1234!",
+		Gender:   "M",
+	})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	cleanupUser(t, repo, u.ID)
+
+	t.Run("happy", func(t *testing.T) {
+		if err := repo.UpdatePassword(ctx, u.ID, "New1234!"); err != nil {
+			t.Fatalf("UpdatePassword: %v", err)
+		}
+		got, authErr := repo.Authenticate(ctx, u.Username, "New1234!")
+		if authErr != nil {
+			t.Fatalf("Authenticate with new password: %v", authErr)
+		}
+		if got.ID != u.ID {
+			t.Errorf("ID = %d, want %d", got.ID, u.ID)
+		}
+		if _, oldErr := repo.Authenticate(ctx, u.Username, "Old1234!"); !errors.Is(oldErr, domain.ErrInvalidCredentials) {
+			t.Errorf("old password should fail: got %v", oldErr)
+		}
+	})
+
+	t.Run("missing user returns ErrUserNotFound", func(t *testing.T) {
+		if err := repo.UpdatePassword(ctx, -1, "Whatever1!"); !errors.Is(err, domain.ErrUserNotFound) {
+			t.Errorf("got %v, want ErrUserNotFound", err)
+		}
+	})
+}
+
+func TestRepository_UpdateEmail(t *testing.T) {
+	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
+	repo := NewRepository(db)
+	ctx := context.Background()
+
+	suf := randomizeSuffix(t)
+	u, err := repo.Create(ctx, &domain.User{
+		Username: "racp_test_" + suf,
+		Email:    "old_" + suf + "@example.invalid",
+		Password: "Old1234!",
+		Gender:   "M",
+	})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	cleanupUser(t, repo, u.ID)
+
+	t.Run("happy", func(t *testing.T) {
+		newEmail := "new_" + suf + "@example.invalid"
+		if err := repo.UpdateEmail(ctx, u.ID, newEmail); err != nil {
+			t.Fatalf("UpdateEmail: %v", err)
+		}
+		got, getErr := repo.GetByEmail(ctx, newEmail)
+		if getErr != nil {
+			t.Fatalf("GetByEmail: %v", getErr)
+		}
+		if got.ID != u.ID {
+			t.Errorf("ID = %d, want %d", got.ID, u.ID)
+		}
+	})
+
+	t.Run("missing user returns ErrUserNotFound", func(t *testing.T) {
+		if err := repo.UpdateEmail(ctx, -1, "ghost@example.invalid"); !errors.Is(err, domain.ErrUserNotFound) {
+			t.Errorf("got %v, want ErrUserNotFound", err)
+		}
+	})
+}
+
 func TestRepository_Delete(t *testing.T) {
 	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
 	repo := NewRepository(db)

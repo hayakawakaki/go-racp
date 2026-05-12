@@ -115,6 +115,76 @@ func TestSessionRepository_Refresh_NotFound(t *testing.T) {
 	}
 }
 
+func TestSessionRepository_DeleteByUserID(t *testing.T) {
+	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
+	testutil.TruncateMariaDB(t, db, "cp_sessions")
+	repo := NewSessionRepository(db)
+	ctx := context.Background()
+
+	base := time.Now().UTC().Truncate(time.Second)
+	user1A := newSession(11, base, 0xd1)
+	user1B := newSession(11, base, 0xd2)
+	user2 := newSession(22, base, 0xd3)
+	for _, s := range []*domain.Session{user1A, user1B, user2} {
+		if err := repo.Create(ctx, s); err != nil {
+			t.Fatalf("Create: %v", err)
+		}
+	}
+
+	if err := repo.DeleteByUserID(ctx, 11); err != nil {
+		t.Fatalf("DeleteByUserID: %v", err)
+	}
+	if _, err := repo.GetByTokenHash(ctx, user1A.TokenHash); !errors.Is(err, domain.ErrSessionNotFound) {
+		t.Errorf("user1A should be deleted; err = %v", err)
+	}
+	if _, err := repo.GetByTokenHash(ctx, user1B.TokenHash); !errors.Is(err, domain.ErrSessionNotFound) {
+		t.Errorf("user1B should be deleted; err = %v", err)
+	}
+	if _, err := repo.GetByTokenHash(ctx, user2.TokenHash); err != nil {
+		t.Errorf("user2 should survive: %v", err)
+	}
+}
+
+func TestSessionRepository_DeleteByUserID_NoRowsReturnsNil(t *testing.T) {
+	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
+	testutil.TruncateMariaDB(t, db, "cp_sessions")
+	repo := NewSessionRepository(db)
+
+	if err := repo.DeleteByUserID(context.Background(), 999); err != nil {
+		t.Errorf("DeleteByUserID on empty set: got %v, want nil", err)
+	}
+}
+
+func TestSessionRepository_DeleteByUserIDExcept(t *testing.T) {
+	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
+	testutil.TruncateMariaDB(t, db, "cp_sessions")
+	repo := NewSessionRepository(db)
+	ctx := context.Background()
+
+	base := time.Now().UTC().Truncate(time.Second)
+	current := newSession(33, base, 0xe1)
+	other := newSession(33, base, 0xe2)
+	another := newSession(44, base, 0xe3)
+	for _, s := range []*domain.Session{current, other, another} {
+		if err := repo.Create(ctx, s); err != nil {
+			t.Fatalf("Create: %v", err)
+		}
+	}
+
+	if err := repo.DeleteByUserIDExcept(ctx, 33, current.TokenHash); err != nil {
+		t.Fatalf("DeleteByUserIDExcept: %v", err)
+	}
+	if _, err := repo.GetByTokenHash(ctx, current.TokenHash); err != nil {
+		t.Errorf("current session must survive: %v", err)
+	}
+	if _, err := repo.GetByTokenHash(ctx, other.TokenHash); !errors.Is(err, domain.ErrSessionNotFound) {
+		t.Errorf("other session not deleted; err = %v", err)
+	}
+	if _, err := repo.GetByTokenHash(ctx, another.TokenHash); err != nil {
+		t.Errorf("another-user session must survive: %v", err)
+	}
+}
+
 func TestSessionRepository_Delete(t *testing.T) {
 	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
 	testutil.TruncateMariaDB(t, db, "cp_sessions")

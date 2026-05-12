@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/hayakawakaki/go-racp/internal/actiontoken"
 	"github.com/hayakawakaki/go-racp/internal/auth/app"
 	"github.com/hayakawakaki/go-racp/internal/auth/domain"
 )
@@ -90,4 +91,31 @@ func (s *stubVerifyService) ResendVerification(ctx context.Context, accountID in
 		return s.resendFn(ctx, accountID)
 	}
 	return nil
+}
+
+type stubResetService struct {
+	requestFn func(context.Context, string) error
+	consumeFn func(context.Context, string, string) error
+	peekFn    func(context.Context, string) (*actiontoken.ActionToken, error)
+}
+
+func (s *stubResetService) RequestPasswordReset(ctx context.Context, email string) error {
+	if s.requestFn != nil {
+		return s.requestFn(ctx, email)
+	}
+	return nil
+}
+
+func (s *stubResetService) ConsumePasswordReset(ctx context.Context, rawToken, newPassword string) error {
+	if s.consumeFn != nil {
+		return s.consumeFn(ctx, rawToken, newPassword)
+	}
+	return nil
+}
+
+func (s *stubResetService) PeekPasswordReset(ctx context.Context, rawToken string) (*actiontoken.ActionToken, error) {
+	if s.peekFn != nil {
+		return s.peekFn(ctx, rawToken)
+	}
+	return &actiontoken.ActionToken{}, nil
 }

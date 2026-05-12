@@ -273,6 +273,88 @@ func TestSessionService_Destroy(t *testing.T) {
 	}
 }
 
+func TestSessionService_InvalidateAllForUser(t *testing.T) {
+	t.Parallel()
+	c := testutil.NewClock(time.Date(2026, 5, 7, 12, 0, 0, 0, time.UTC))
+	svc, repo := newSvc(t, c)
+	ctx := context.Background()
+
+	_, _, err := svc.Create(ctx, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, _, err = svc.Create(ctx, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, sessOther, err := svc.Create(ctx, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := svc.InvalidateAllForUser(ctx, 1); err != nil {
+		t.Fatalf("InvalidateAllForUser: %v", err)
+	}
+	for h, s := range repo.byHash {
+		if s.UserID == 1 {
+			t.Errorf("user 1 session %x still present", h)
+		}
+	}
+	if _, err := repo.GetByTokenHash(ctx, sessOther.TokenHash); err != nil {
+		t.Errorf("user 2 session deleted: %v", err)
+	}
+}
+
+func TestSessionService_InvalidateAllForUserExceptCurrent(t *testing.T) {
+	t.Parallel()
+	c := testutil.NewClock(time.Date(2026, 5, 7, 12, 0, 0, 0, time.UTC))
+	svc, repo := newSvc(t, c)
+	ctx := context.Background()
+
+	currentToken, currentSess, err := svc.Create(ctx, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, otherSess, err := svc.Create(ctx, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := svc.InvalidateAllForUserExceptCurrent(ctx, 1, currentToken); err != nil {
+		t.Fatalf("InvalidateAllForUserExceptCurrent: %v", err)
+	}
+	if _, err := repo.GetByTokenHash(ctx, currentSess.TokenHash); err != nil {
+		t.Errorf("current session must survive: %v", err)
+	}
+	if _, err := repo.GetByTokenHash(ctx, otherSess.TokenHash); !errors.Is(err, domain.ErrSessionNotFound) {
+		t.Errorf("other session not deleted: %v", err)
+	}
+}
+
+func TestSessionService_InvalidateAllForUserExceptCurrent_RejectsBadToken(t *testing.T) {
+	t.Parallel()
+	c := testutil.NewClock(time.Now())
+	svc, _ := newSvc(t, c)
+
+	tests := []struct {
+		name  string
+		token string
+	}{
+		{name: "empty", token: ""},
+		{name: "not base64", token: "***"},
+		{name: "wrong length", token: base64.RawURLEncoding.EncodeToString(make([]byte, 16))},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := svc.InvalidateAllForUserExceptCurrent(context.Background(), 1, tt.token)
+			if !errors.Is(err, domain.ErrInvalidCurrentSessionToken) {
+				t.Errorf("got %v, want ErrInvalidCurrentSessionToken", err)
+			}
+		})
+	}
+}
+
 func TestSessionService_Validate_WrapsRepoError(t *testing.T) {
 	t.Parallel()
 	c := testutil.NewClock(time.Now())
