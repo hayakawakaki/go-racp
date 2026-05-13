@@ -1,4 +1,4 @@
-package transport
+package middleware
 
 import (
 	"bytes"
@@ -45,7 +45,7 @@ func TestRequireLogin_EmptyCookie_RedirectsToLogin(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/account", http.NoBody)
-	req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: ""})
+	req.AddCookie(&http.Cookie{Name: SessionCookieName, Value: ""})
 	handler.ServeHTTP(rr, req)
 
 	if rr.Header().Get("Location") != "/login" {
@@ -76,7 +76,7 @@ func TestRequireLogin_StaleSession_RedirectsToLogin(t *testing.T) {
 
 			rr := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodGet, "/account", http.NoBody)
-			req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: "stale"})
+			req.AddCookie(&http.Cookie{Name: SessionCookieName, Value: "stale"})
 			handler.ServeHTTP(rr, req)
 
 			if called {
@@ -104,7 +104,7 @@ func TestRequireLogin_GenericError_ReturnsInternalErrorAndLogs(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/account", http.NoBody)
-	req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: "x"})
+	req.AddCookie(&http.Cookie{Name: SessionCookieName, Value: "x"})
 	handler.ServeHTTP(rr, req)
 
 	if called {
@@ -134,7 +134,7 @@ func TestRequireLogin_ValidSession_AttachesSessionAndPassesThrough(t *testing.T)
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/account", http.NoBody)
-	req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: "ok"})
+	req.AddCookie(&http.Cookie{Name: SessionCookieName, Value: "ok"})
 	handler.ServeHTTP(rr, req)
 
 	if !ok {

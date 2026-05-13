@@ -9,6 +9,7 @@ import (
 
 	accountapp "github.com/hayakawakaki/go-racp/internal/account/app"
 	"github.com/hayakawakaki/go-racp/internal/account/domain"
+	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/actiontoken"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 	"github.com/hayakawakaki/go-racp/server/config"
@@ -247,10 +248,10 @@ func (h *Handler) renderLogin(w http.ResponseWriter, r *http.Request, state Logi
 }
 
 func (h *Handler) doLogout(w http.ResponseWriter, r *http.Request) {
-	if c, err := r.Cookie(sessionCookieName); err == nil {
+	if c, err := r.Cookie(middleware.SessionCookieName); err == nil {
 		_ = h.sessSvc.Destroy(r.Context(), c.Value)
 	}
-	clearSessionCookie(w, h.secure)
+	middleware.ClearSessionCookie(w, h.secure)
 
 	httpx.Redirect(w, r, "/login")
 }

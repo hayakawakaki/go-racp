@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	authdomain "github.com/hayakawakaki/go-racp/internal/account/domain"
+	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
 )
 
 func TestShowChangePassword_RendersForm(t *testing.T) {
@@ -68,7 +69,7 @@ func TestDoChangePassword_HappyPath_RedirectsWithNotice(t *testing.T) {
 		"new_password":         "NewPass1!",
 		"new_password_confirm": "NewPass1!",
 	})
-	req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: "current-token"})
+	req.AddCookie(&http.Cookie{Name: middleware.SessionCookieName, Value: "current-token"})
 	h.doChangePassword(rr, req)
 
 	if rr.Code != http.StatusSeeOther {
@@ -96,7 +97,7 @@ func TestDoChangePassword_HTMX_UsesHXRedirect(t *testing.T) {
 		"new_password":         "NewPass1!",
 		"new_password_confirm": "NewPass1!",
 	})
-	req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: "tok"})
+	req.AddCookie(&http.Cookie{Name: middleware.SessionCookieName, Value: "tok"})
 	req.Header.Set("HX-Request", "true")
 	h.doChangePassword(rr, req)
 
@@ -125,7 +126,7 @@ func TestDoChangePassword_ValidationError_RendersFieldError(t *testing.T) {
 		"new_password":         "WeakPass!",
 		"new_password_confirm": "WeakPass!",
 	})
-	req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: "tok"})
+	req.AddCookie(&http.Cookie{Name: middleware.SessionCookieName, Value: "tok"})
 	h.doChangePassword(rr, req)
 
 	if !strings.Contains(rr.Body.String(), "password must contain a digit") {
@@ -148,7 +149,7 @@ func TestDoChangePassword_RecentlyChanged_RendersFriendlyMessage(t *testing.T) {
 		"new_password":         "NewPass1!",
 		"new_password_confirm": "NewPass1!",
 	})
-	req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: "tok"})
+	req.AddCookie(&http.Cookie{Name: middleware.SessionCookieName, Value: "tok"})
 	h.doChangePassword(rr, req)
 
 	if !strings.Contains(rr.Body.String(), "Password was changed recently") {
@@ -171,7 +172,7 @@ func TestDoChangePassword_GenericError_500(t *testing.T) {
 		"new_password":         "NewPass1!",
 		"new_password_confirm": "NewPass1!",
 	})
-	req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: "tok"})
+	req.AddCookie(&http.Cookie{Name: middleware.SessionCookieName, Value: "tok"})
 	h.doChangePassword(rr, req)
 
 	if rr.Code != http.StatusInternalServerError {

@@ -3,6 +3,7 @@ package transport
 import (
 	"net/http"
 
+	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 )
 
@@ -23,7 +24,7 @@ var accountNoticeText = map[string]string{
 }
 
 func (h *Handler) showAccount(w http.ResponseWriter, r *http.Request) {
-	sess, ok := SessionFromContext(r.Context())
+	sess, ok := middleware.SessionFromContext(r.Context())
 	if !ok || sess == nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return

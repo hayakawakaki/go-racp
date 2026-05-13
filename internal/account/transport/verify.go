@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/hayakawakaki/go-racp/internal/account/domain"
+	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/actiontoken"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 )
@@ -27,7 +28,7 @@ var resendNoticeText = map[string]string{
 }
 
 func (h *Handler) showVerifyAccount(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie(sessionCookieName)
+	cookie, err := r.Cookie(middleware.SessionCookieName)
 	if err != nil || cookie.Value == "" {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
@@ -103,7 +104,7 @@ func (h *Handler) doVerify(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) hasActiveSession(r *http.Request) bool {
-	cookie, err := r.Cookie(sessionCookieName)
+	cookie, err := r.Cookie(middleware.SessionCookieName)
 	if err != nil || cookie.Value == "" {
 		return false
 	}
@@ -114,7 +115,7 @@ func (h *Handler) hasActiveSession(r *http.Request) bool {
 }
 
 func (h *Handler) doResendVerification(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie(sessionCookieName)
+	cookie, err := r.Cookie(middleware.SessionCookieName)
 	if err != nil || cookie.Value == "" {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return

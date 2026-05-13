@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/hayakawakaki/go-racp/internal/account/domain"
+	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/actiontoken"
 )
 
@@ -28,7 +29,7 @@ func newVerifyHandler(users *stubUserLookup, sess *stubSessionService, verify *s
 }
 
 func withSessionCookie(req *http.Request, value string) *http.Request {
-	req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: value})
+	req.AddCookie(&http.Cookie{Name: middleware.SessionCookieName, Value: value})
 	return req
 }
 

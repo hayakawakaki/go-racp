@@ -5,7 +5,7 @@ import (
 
 	accountapp "github.com/hayakawakaki/go-racp/internal/account/app"
 	accountinfra "github.com/hayakawakaki/go-racp/internal/account/infra"
-	accounttransport "github.com/hayakawakaki/go-racp/internal/account/transport"
+	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/home/transport"
 	platinfra "github.com/hayakawakaki/go-racp/internal/infra"
 	"github.com/hayakawakaki/go-racp/internal/plugin"
@@ -25,7 +25,7 @@ func mount(mux *http.ServeMux, in *platinfra.Infra) {
 	sessSvc := accountapp.NewSessionService(sessRepo, in.Config.App.TTL.Session)
 
 	secure := in.Config.Env.Mode != "development"
-	withSession := accounttransport.WithSession(sessSvc, in.Logger, secure)
+	withSession := middleware.WithSession(sessSvc, in.Logger, secure)
 
 	homeH := transport.NewHandler(userSvc, transport.HandlerConfig{
 		Logger:  in.Logger,

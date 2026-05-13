@@ -12,7 +12,17 @@ import (
 
 	accountapp "github.com/hayakawakaki/go-racp/internal/account/app"
 	"github.com/hayakawakaki/go-racp/internal/account/domain"
+	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
 )
+
+func findSetCookie(rr *httptest.ResponseRecorder, name string) *http.Cookie {
+	for _, raw := range rr.Result().Cookies() {
+		if raw.Name == name {
+			return raw
+		}
+	}
+	return nil
+}
 
 func newAuthHandler(auth *stubAccountService, sess *stubSessionService) *Handler {
 	return &Handler{
@@ -254,9 +264,9 @@ func TestDoLogin_Happy_SetsCookie(t *testing.T) {
 	if len(sess.createCalls) != 1 || sess.createCalls[0] != 99 {
 		t.Errorf("createCalls = %v, want [99]", sess.createCalls)
 	}
-	cookie := findSetCookie(rr, sessionCookieName)
+	cookie := findSetCookie(rr, middleware.SessionCookieName)
 	if cookie == nil {
-		t.Fatalf("Set-Cookie %s missing", sessionCookieName)
+		t.Fatalf("Set-Cookie %s missing", middleware.SessionCookieName)
 	}
 	if cookie.Value != "issued-token" {
 		t.Errorf("cookie.Value = %q, want issued-token", cookie.Value)
@@ -305,7 +315,7 @@ func TestDoLogin_SessionCreateFails(t *testing.T) {
 	if !strings.Contains(rr.Body.String(), "Something went wrong") {
 		t.Errorf("body missing generic error: %s", rr.Body.String())
 	}
-	if findSetCookie(rr, sessionCookieName) != nil {
+	if findSetCookie(rr, middleware.SessionCookieName) != nil {
 		t.Errorf("cookie should not be set on session create failure")
 	}
 }
@@ -319,13 +329,13 @@ func TestDoLogout_WithCookie(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/logout", http.NoBody)
-	req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: "to-destroy"})
+	req.AddCookie(&http.Cookie{Name: middleware.SessionCookieName, Value: "to-destroy"})
 	h.doLogout(rr, req)
 
 	if len(sess.destroyCalls) != 1 || sess.destroyCalls[0] != "to-destroy" {
 		t.Errorf("destroyCalls = %v, want [to-destroy]", sess.destroyCalls)
 	}
-	cookie := findSetCookie(rr, sessionCookieName)
+	cookie := findSetCookie(rr, middleware.SessionCookieName)
 	if cookie == nil || cookie.MaxAge >= 0 {
 		t.Errorf("expected cookie cleared, got %+v", cookie)
 	}

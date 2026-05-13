@@ -6,6 +6,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/account/app"
 	"github.com/hayakawakaki/go-racp/internal/account/infra"
 	"github.com/hayakawakaki/go-racp/internal/account/transport"
+	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
 	platinfra "github.com/hayakawakaki/go-racp/internal/infra"
 	"github.com/hayakawakaki/go-racp/internal/plugin"
 )
@@ -14,13 +15,13 @@ func init() {
 	plugin.Register(plugin.Plugin{
 		Name:       "account",
 		Mount:      mount,
-		Middleware: middleware,
+		Middleware: requireVerified,
 	})
 }
 
 func mount(mux *http.ServeMux, in *platinfra.Infra) {
 	svc, sessSvc, userRepo := buildServices(in)
-	requireLogin := transport.RequireLogin(sessSvc, in.Logger)
+	requireLogin := middleware.RequireLogin(sessSvc, in.Logger)
 
 	h := transport.NewHandler(svc, sessSvc, transport.HandlerConfig{
 		Logger:  in.Logger,
@@ -31,7 +32,7 @@ func mount(mux *http.ServeMux, in *platinfra.Infra) {
 	h.RegisterRoutes(mux, requireLogin)
 }
 
-func middleware(in *platinfra.Infra, h http.Handler) http.Handler {
+func requireVerified(in *platinfra.Infra, h http.Handler) http.Handler {
 	_, sessSvc, userRepo := buildServices(in)
 	allow := []string{
 		"/login", "/logout", "/register",
@@ -41,7 +42,7 @@ func middleware(in *platinfra.Infra, h http.Handler) http.Handler {
 		"/healthz", "/static",
 	}
 
-	return transport.RequireVerified(sessSvc, userRepo, in.Logger, allow)(h)
+	return middleware.RequireVerified(sessSvc, userRepo, in.Logger, allow)(h)
 }
 
 func buildServices(in *platinfra.Infra) (*app.Service, *app.SessionService, *infra.Repository) {

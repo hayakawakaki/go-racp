@@ -1,6 +1,7 @@
-package transport
+package middleware
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -11,9 +12,13 @@ import (
 
 const verifyAccountPath = "/verify-account"
 
+type UserLookup interface {
+	GetByID(ctx context.Context, id int) (*domain.User, error)
+}
+
 func RequireVerified(
-	sessSvc sessionService,
-	users userLookup,
+	sessSvc SessionValidator,
+	users UserLookup,
 	logger *slog.Logger,
 	allowPrefixes []string,
 ) func(http.Handler) http.Handler {
@@ -24,7 +29,7 @@ func RequireVerified(
 				return
 			}
 
-			cookie, err := r.Cookie(sessionCookieName)
+			cookie, err := r.Cookie(SessionCookieName)
 			if err != nil || cookie.Value == "" {
 				next.ServeHTTP(w, r)
 				return
