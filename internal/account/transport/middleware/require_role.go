@@ -18,23 +18,39 @@ func roleAllowed(role domain.Role, anyAllowed bool, allowSet map[domain.Role]str
 	return ok
 }
 
-func handleSessionError(w http.ResponseWriter, r *http.Request, err error, logger *slog.Logger, secure bool) {
+func rejectUnauthenticated(w http.ResponseWriter, r *http.Request, hide bool) {
+	if hide {
+		http.NotFound(w, r)
+		return
+	}
+	httpx.Redirect(w, r, "/login")
+}
+
+func rejectForbidden(w http.ResponseWriter, r *http.Request, hide bool) {
+	if hide {
+		http.NotFound(w, r)
+		return
+	}
+	http.Error(w, "forbidden", http.StatusForbidden)
+}
+
+func handleSessionError(w http.ResponseWriter, r *http.Request, err error, logger *slog.Logger, secure, hide bool) {
 	if errors.Is(err, domain.ErrSessionNotFound) || errors.Is(err, domain.ErrSessionExpired) {
 		ClearSessionCookie(w, secure)
-		httpx.Redirect(w, r, "/login")
+		rejectUnauthenticated(w, r, hide)
 		return
 	}
 	logger.Error("require_role: session validate", "err", err)
 	http.Error(w, "internal server error", http.StatusInternalServerError)
 }
 
-func RequireRole(
+func requireRoleCore(
 	sessSvc SessionValidator,
 	users UserLookup,
 	resolver domain.RoleResolver,
 	logger *slog.Logger,
-	secure bool,
-	allowed ...domain.Role,
+	secure, hide bool,
+	allowed []domain.Role,
 ) func(http.Handler) http.Handler {
 	allowSet := make(map[domain.Role]struct{}, len(allowed))
 	for _, role := range allowed {
@@ -46,13 +62,13 @@ func RequireRole(
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			cookie, err := r.Cookie(SessionCookieName)
 			if err != nil || cookie.Value == "" {
-				httpx.Redirect(w, r, "/login")
+				rejectUnauthenticated(w, r, hide)
 				return
 			}
 
 			sess, err := sessSvc.Validate(r.Context(), cookie.Value)
 			if err != nil {
-				handleSessionError(w, r, err, logger, secure)
+				handleSessionError(w, r, err, logger, secure, hide)
 				return
 			}
 
@@ -65,7 +81,7 @@ func RequireRole(
 
 			role := resolver.Resolve(user.GroupID)
 			if !roleAllowed(role, anyAllowed, allowSet) {
-				http.Error(w, "forbidden", http.StatusForbidden)
+				rejectForbidden(w, r, hide)
 				return
 			}
 
@@ -73,4 +89,26 @@ func RequireRole(
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
+}
+
+func RequireRole(
+	sessSvc SessionValidator,
+	users UserLookup,
+	resolver domain.RoleResolver,
+	logger *slog.Logger,
+	secure bool,
+	allowed ...domain.Role,
+) func(http.Handler) http.Handler {
+	return requireRoleCore(sessSvc, users, resolver, logger, secure, false, allowed)
+}
+
+func RequireRoleHidden(
+	sessSvc SessionValidator,
+	users UserLookup,
+	resolver domain.RoleResolver,
+	logger *slog.Logger,
+	secure bool,
+	allowed ...domain.Role,
+) func(http.Handler) http.Handler {
+	return requireRoleCore(sessSvc, users, resolver, logger, secure, true, allowed)
 }

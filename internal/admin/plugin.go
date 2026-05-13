@@ -24,7 +24,7 @@ func mount(mux *http.ServeMux, in *platinfra.Infra) {
 	sessSvc := app.NewSessionService(sessRepo, in.Config.App.TTL.Session)
 
 	secure := in.Config.Env.Mode != "development"
-	requireAdmin := middleware.RequireRole(sessSvc, userRepo, in.Roles, in.Logger, secure)
+	requireAdmin := middleware.RequireRoleHidden(sessSvc, userRepo, in.Roles, in.Logger, secure)
 
 	h := transport.NewHandler(transport.HandlerConfig{
 		Logger:  in.Logger,
