@@ -38,7 +38,7 @@ func (r *Repository) Create(ctx context.Context, user *domain.User) (*domain.Use
 
 func (r *Repository) GetAll(ctx context.Context) ([]domain.User, error) {
 	rows, err := r.Client.QueryContext(ctx,
-		"SELECT account_id, userid, email, birthdate, state FROM login")
+		"SELECT account_id, userid, email, birthdate, state, group_id FROM login")
 	if err != nil {
 		return nil, fmt.Errorf("infra.Repository.GetAll: %w", err)
 	}
@@ -47,7 +47,7 @@ func (r *Repository) GetAll(ctx context.Context) ([]domain.User, error) {
 	var userList []domain.User
 	for rows.Next() {
 		var u domain.User
-		if err := rows.Scan(&u.ID, &u.Username, &u.Email, &u.Birthdate, &u.State); err != nil {
+		if err := rows.Scan(&u.ID, &u.Username, &u.Email, &u.Birthdate, &u.State, &u.GroupID); err != nil {
 			return nil, fmt.Errorf("infra.Repository.GetAll: %w", err)
 		}
 		userList = append(userList, u)
@@ -62,8 +62,8 @@ func (r *Repository) GetAll(ctx context.Context) ([]domain.User, error) {
 func (r *Repository) GetByID(ctx context.Context, id int) (*domain.User, error) {
 	var u domain.User
 	err := r.Client.QueryRowContext(ctx,
-		"SELECT account_id, userid, email, birthdate, state FROM login WHERE account_id = ?", id,
-	).Scan(&u.ID, &u.Username, &u.Email, &u.Birthdate, &u.State)
+		"SELECT account_id, userid, email, birthdate, state, group_id FROM login WHERE account_id = ?", id,
+	).Scan(&u.ID, &u.Username, &u.Email, &u.Birthdate, &u.State, &u.GroupID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, domain.ErrUserNotFound
 	}
@@ -77,8 +77,8 @@ func (r *Repository) GetByID(ctx context.Context, id int) (*domain.User, error) 
 func (r *Repository) GetByUsername(ctx context.Context, username string) (*domain.User, error) {
 	var u domain.User
 	err := r.Client.QueryRowContext(ctx,
-		"SELECT account_id, userid, email, birthdate, state FROM login WHERE userid = ?", username,
-	).Scan(&u.ID, &u.Username, &u.Email, &u.Birthdate, &u.State)
+		"SELECT account_id, userid, email, birthdate, state, group_id FROM login WHERE userid = ?", username,
+	).Scan(&u.ID, &u.Username, &u.Email, &u.Birthdate, &u.State, &u.GroupID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, domain.ErrUserNotFound
 	}
@@ -92,8 +92,8 @@ func (r *Repository) GetByUsername(ctx context.Context, username string) (*domai
 func (r *Repository) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
 	var u domain.User
 	err := r.Client.QueryRowContext(ctx,
-		"SELECT account_id, userid, email, birthdate, state FROM login WHERE email = ?", email,
-	).Scan(&u.ID, &u.Username, &u.Email, &u.Birthdate, &u.State)
+		"SELECT account_id, userid, email, birthdate, state, group_id FROM login WHERE email = ?", email,
+	).Scan(&u.ID, &u.Username, &u.Email, &u.Birthdate, &u.State, &u.GroupID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, domain.ErrUserNotFound
 	}
@@ -107,9 +107,9 @@ func (r *Repository) GetByEmail(ctx context.Context, email string) (*domain.User
 func (r *Repository) Authenticate(ctx context.Context, username, password string) (*domain.User, error) {
 	var u domain.User
 	err := r.Client.QueryRowContext(ctx,
-		"SELECT account_id, userid, email, birthdate, state FROM login WHERE userid = ? AND user_pass = ?",
+		"SELECT account_id, userid, email, birthdate, state, group_id FROM login WHERE userid = ? AND user_pass = ?",
 		username, password,
-	).Scan(&u.ID, &u.Username, &u.Email, &u.Birthdate, &u.State)
+	).Scan(&u.ID, &u.Username, &u.Email, &u.Birthdate, &u.State, &u.GroupID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, domain.ErrInvalidCredentials
 	}

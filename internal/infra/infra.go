@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log/slog"
 
+	"github.com/hayakawakaki/go-racp/internal/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/actiontoken"
 	"github.com/hayakawakaki/go-racp/internal/infra/mailer"
 	"github.com/hayakawakaki/go-racp/server/config"
@@ -16,4 +17,5 @@ type Infra struct {
 	Mailer       *mailer.SMTPMailer
 	TokenManager *actiontoken.Manager
 	Config       *config.Config
+	Roles        domain.RoleResolver
 }
