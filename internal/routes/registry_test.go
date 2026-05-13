@@ -40,10 +40,10 @@ func (s *stubUsers) GetByID(ctx context.Context, id int) (*domain.User, error) {
 	return &domain.User{ID: id}, nil
 }
 
-func newRegistry(t *testing.T, cfg config.RolesConfig) (*Registry, *bytes.Buffer) {
+func newRegistry(t *testing.T, cfg config.AccessConfig) (*Registry, *bytes.Buffer) {
 	t.Helper()
 	buf := &bytes.Buffer{}
-	resolver := domain.NewRoleResolver(config.GroupConfig{Moderator: 20, Enforcer: 10, Event: 2})
+	resolver := domain.NewRoleResolver(config.RolesConfig{"Moderator": 20, "Enforcer": 10, "Event": 2})
 	logger := slog.New(slog.NewTextHandler(buf, nil))
 	return NewRegistry(cfg, resolver, &stubSession{}, &stubUsers{}, logger, false, httpx.Layout{}), buf
 }
@@ -58,7 +58,7 @@ func okHandler() http.Handler {
 func TestRegistry_Public_PassesThroughUnwrapped(t *testing.T) {
 	t.Parallel()
 	mux := http.NewServeMux()
-	reg, _ := newRegistry(t, config.RolesConfig{})
+	reg, _ := newRegistry(t, config.AccessConfig{})
 
 	reg.Public(mux, "GET /login", okHandler())
 
@@ -73,7 +73,7 @@ func TestRegistry_Public_PassesThroughUnwrapped(t *testing.T) {
 func TestRegistry_Wrap_AdminTagIsHardcoded(t *testing.T) {
 	t.Parallel()
 	mux := http.NewServeMux()
-	reg, _ := newRegistry(t, config.RolesConfig{})
+	reg, _ := newRegistry(t, config.AccessConfig{})
 
 	reg.Wrap(mux, "Admin.Dashboard", "GET /admin", okHandler())
 
@@ -88,7 +88,7 @@ func TestRegistry_Wrap_AdminTagIsHardcoded(t *testing.T) {
 func TestRegistry_Wrap_TaggedWithoutConfigIsPublic(t *testing.T) {
 	t.Parallel()
 	mux := http.NewServeMux()
-	reg, _ := newRegistry(t, config.RolesConfig{})
+	reg, _ := newRegistry(t, config.AccessConfig{})
 
 	reg.Wrap(mux, "Forum.View", "GET /forum", okHandler())
 
@@ -103,7 +103,7 @@ func TestRegistry_Wrap_TaggedWithoutConfigIsPublic(t *testing.T) {
 func TestRegistry_Wrap_TaggedWithConfigGatesRequest(t *testing.T) {
 	t.Parallel()
 	mux := http.NewServeMux()
-	reg, _ := newRegistry(t, config.RolesConfig{
+	reg, _ := newRegistry(t, config.AccessConfig{
 		"News": config.ActionRoles{"View": config.RoleList{"Moderator"}},
 	})
 
@@ -120,7 +120,7 @@ func TestRegistry_Wrap_TaggedWithConfigGatesRequest(t *testing.T) {
 func TestRegistry_Wrap_StarMeansAuthenticated(t *testing.T) {
 	t.Parallel()
 	mux := http.NewServeMux()
-	reg, _ := newRegistry(t, config.RolesConfig{
+	reg, _ := newRegistry(t, config.AccessConfig{
 		"Account": config.ActionRoles{"View": config.RoleList{"*"}},
 	})
 
@@ -150,7 +150,7 @@ func TestRegistry_Wrap_RejectsMalformedTag(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			mux := http.NewServeMux()
-			reg, _ := newRegistry(t, config.RolesConfig{})
+			reg, _ := newRegistry(t, config.AccessConfig{})
 			defer func() {
 				if recover() == nil {
 					t.Errorf("Wrap(%q) did not panic", tt.tag)
@@ -164,7 +164,7 @@ func TestRegistry_Wrap_RejectsMalformedTag(t *testing.T) {
 func TestRegistry_Finalize_PanicsOnDeadConfig(t *testing.T) {
 	t.Parallel()
 	mux := http.NewServeMux()
-	reg, _ := newRegistry(t, config.RolesConfig{
+	reg, _ := newRegistry(t, config.AccessConfig{
 		"News": config.ActionRoles{"Edit": config.RoleList{"Moderator"}},
 	})
 	reg.Wrap(mux, "News.View", "GET /news", okHandler())
@@ -185,7 +185,7 @@ func TestRegistry_Finalize_PanicsOnDeadConfig(t *testing.T) {
 func TestRegistry_Finalize_LogsUngatedAudit(t *testing.T) {
 	t.Parallel()
 	mux := http.NewServeMux()
-	reg, buf := newRegistry(t, config.RolesConfig{})
+	reg, buf := newRegistry(t, config.AccessConfig{})
 	reg.Wrap(mux, "Forum.View", "GET /forum", okHandler())
 	reg.Finalize()
 	if !strings.Contains(buf.String(), "ungated") {
@@ -199,7 +199,7 @@ func TestRegistry_Finalize_LogsUngatedAudit(t *testing.T) {
 func TestRegistry_Finalize_SilentForAdminTagsAndPublic(t *testing.T) {
 	t.Parallel()
 	mux := http.NewServeMux()
-	reg, buf := newRegistry(t, config.RolesConfig{})
+	reg, buf := newRegistry(t, config.AccessConfig{})
 	reg.Wrap(mux, "Admin.Dashboard", "GET /admin", okHandler())
 	reg.Public(mux, "GET /login", okHandler())
 	reg.Finalize()

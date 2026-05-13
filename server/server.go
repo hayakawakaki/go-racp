@@ -74,17 +74,17 @@ func Start() error {
 		Mailer:       smtpMailer,
 		TokenManager: tokenMgr,
 		Config:       cfg,
-		Roles:        domain.NewRoleResolver(cfg.App.Group),
+		Roles:        domain.NewRoleResolver(cfg.App.UserRoles),
 	}
 
 	sessSvc := app.NewSessionService(accountinfra.NewSessionRepository(mainDB), cfg.App.TTL.Session)
 	secure := cfg.Env.Mode != "development"
 	withSession := middleware.WithSession(sessSvc, logger, secure)
 
-	rolesCfg := config.ProcessRolesConfig()
+	accessCfg := config.ProcessAccessConfig()
 	userRepo := accountinfra.NewRepository(mainDB)
 	reg := routes.NewRegistry(
-		rolesCfg,
+		accessCfg,
 		in.Roles,
 		sessSvc,
 		userRepo,

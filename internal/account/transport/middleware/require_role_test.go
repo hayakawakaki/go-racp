@@ -16,12 +16,17 @@ import (
 )
 
 func newTestRoleResolver() domain.RoleResolver {
-	return domain.NewRoleResolver(config.GroupConfig{
-		Moderator: 20,
-		Enforcer:  10,
-		Event:     2,
+	return domain.NewRoleResolver(config.RolesConfig{
+		"Moderator": 20,
+		"Enforcer":  10,
+		"Event":     2,
 	})
 }
+
+var (
+	testRoleModerator = domain.Role{Name: "Moderator", GroupID: 20}
+	testRoleEvent     = domain.Role{Name: "Event", GroupID: 2}
+)
 
 func newTestRoleMiddleware(sess *stubSessionService, users *stubUserLookup, hidden bool, allowed ...domain.Role) (func(http.Handler) http.Handler, *bytes.Buffer) {
 	buf := &bytes.Buffer{}
@@ -252,7 +257,7 @@ func TestRequireRole_AllowedRole_PassesThroughWithSessionInContext(t *testing.T)
 		validateFn: func(context.Context, string) (*domain.Session, error) { return wantSession, nil },
 	}
 	users := &stubUserLookup{getByIDFn: userWithGroup(20)}
-	middleware, _ := newTestRoleMiddleware(sess, users, false, domain.RoleModerator)
+	middleware, _ := newTestRoleMiddleware(sess, users, false, testRoleModerator)
 
 	var gotSession *domain.Session
 	var ok bool
@@ -281,7 +286,7 @@ func TestRequireRole_AdminAlwaysAllowed(t *testing.T) {
 		},
 	}
 	users := &stubUserLookup{getByIDFn: userWithGroup(99)}
-	middleware, _ := newTestRoleMiddleware(sess, users, false, domain.RoleEvent)
+	middleware, _ := newTestRoleMiddleware(sess, users, false, testRoleEvent)
 
 	called := false
 	handler := middleware(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }))
@@ -343,7 +348,7 @@ func TestRequireRole_DisallowedRole_Forbidden(t *testing.T) {
 		},
 	}
 	users := &stubUserLookup{getByIDFn: userWithGroup(0)}
-	middleware, _ := newTestRoleMiddleware(sess, users, false, domain.RoleModerator)
+	middleware, _ := newTestRoleMiddleware(sess, users, false, testRoleModerator)
 
 	called := false
 	handler := middleware(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }))

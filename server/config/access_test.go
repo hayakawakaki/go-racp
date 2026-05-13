@@ -8,17 +8,17 @@ import (
 	"testing"
 )
 
-func writeRolesYAML(t *testing.T, body string) string {
+func writeAccessYAML(t *testing.T, body string) string {
 	t.Helper()
 	dir := t.TempDir()
-	path := filepath.Join(dir, "roles.yml")
+	path := filepath.Join(dir, "access.yml")
 	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
 		t.Fatalf("write: %v", err)
 	}
 	return path
 }
 
-func TestParseRolesConfig(t *testing.T) {
+func TestParseAccessConfig(t *testing.T) {
 	t.Parallel()
 
 	body := `
@@ -31,12 +31,12 @@ Events:
   View:   ["*"]
   Manage: ["Event", "Moderator"]
 `
-	cfg, err := parseRolesConfig([]byte(body))
+	cfg, err := parseAccessConfig([]byte(body))
 	if err != nil {
-		t.Fatalf("parseRolesConfig: %v", err)
+		t.Fatalf("parseAccessConfig: %v", err)
 	}
 
-	want := RolesConfig{
+	want := AccessConfig{
 		"News": ActionRoles{
 			"View":   nil,
 			"Create": RoleList{"Moderator"},
@@ -52,11 +52,11 @@ Events:
 	}
 }
 
-func TestParseRolesConfig_Empty(t *testing.T) {
+func TestParseAccessConfig_Empty(t *testing.T) {
 	t.Parallel()
-	cfg, err := parseRolesConfig(nil)
+	cfg, err := parseAccessConfig(nil)
 	if err != nil {
-		t.Fatalf("parseRolesConfig: %v", err)
+		t.Fatalf("parseAccessConfig: %v", err)
 	}
 	if len(cfg) != 0 {
 		t.Errorf("empty file produced %#v, want empty", cfg)
@@ -83,45 +83,40 @@ func mustPanicMessage(t *testing.T, fn func()) string {
 	return ""
 }
 
-func TestValidateRolesConfig_RejectsInvalid(t *testing.T) {
+func TestValidateAccessConfig_RejectsInvalid(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		cfg         RolesConfig
+		cfg         AccessConfig
 		name        string
 		wantContain string
 	}{
 		{
 			name:        "admin top-level key",
 			wantContain: "Admin is hardcoded",
-			cfg:         RolesConfig{"Admin": ActionRoles{"Dashboard": nil}},
+			cfg:         AccessConfig{"Admin": ActionRoles{"Dashboard": nil}},
 		},
 		{
 			name:        "empty action list",
 			wantContain: "Action 'News.Edit' has an empty list",
-			cfg:         RolesConfig{"News": ActionRoles{"Edit": RoleList{}}},
-		},
-		{
-			name:        "unknown role",
-			wantContain: "unknown role 'Modartor'",
-			cfg:         RolesConfig{"News": ActionRoles{"Edit": RoleList{"Modartor"}}},
+			cfg:         AccessConfig{"News": ActionRoles{"Edit": RoleList{}}},
 		},
 		{
 			name:        "admin inside list",
 			wantContain: "Admin is implicit",
-			cfg:         RolesConfig{"News": ActionRoles{"Edit": RoleList{"Admin"}}},
+			cfg:         AccessConfig{"News": ActionRoles{"Edit": RoleList{"Admin"}}},
 		},
 		{
-			name:        "lowercase role typo",
-			wantContain: "unknown role 'moderator'",
-			cfg:         RolesConfig{"News": ActionRoles{"Edit": RoleList{"moderator"}}},
+			name:        "empty role name",
+			wantContain: "empty role name",
+			cfg:         AccessConfig{"News": ActionRoles{"Edit": RoleList{""}}},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			cfg := tt.cfg
-			msg := mustPanicMessage(t, func() { validateRolesConfig(cfg) })
+			msg := mustPanicMessage(t, func() { validateAccessConfig(cfg) })
 			if !strings.Contains(msg, tt.wantContain) {
 				t.Errorf("panic message = %q, want substring %q", msg, tt.wantContain)
 			}
@@ -129,25 +124,25 @@ func TestValidateRolesConfig_RejectsInvalid(t *testing.T) {
 	}
 }
 
-func TestValidateRolesConfig_AcceptsHappyPath(t *testing.T) {
+func TestValidateAccessConfig_AcceptsHappyPath(t *testing.T) {
 	t.Parallel()
-	cfg := RolesConfig{
+	cfg := AccessConfig{
 		"News": ActionRoles{
 			"View":   nil,
 			"Create": RoleList{"Moderator"},
 			"Edit":   RoleList{"*"},
 		},
 	}
-	validateRolesConfig(cfg)
+	validateAccessConfig(cfg)
 }
 
-func TestProcessRolesConfig_ReadsFile(t *testing.T) {
+func TestLoadAccessConfig_ReadsFile(t *testing.T) {
 	t.Parallel()
-	path := writeRolesYAML(t, "News:\n  Edit: [\"Moderator\"]\n")
+	path := writeAccessYAML(t, "News:\n  Edit: [\"Moderator\"]\n")
 
-	cfg, err := loadRolesConfig(path)
+	cfg, err := loadAccessConfig(path)
 	if err != nil {
-		t.Fatalf("loadRolesConfig: %v", err)
+		t.Fatalf("loadAccessConfig: %v", err)
 	}
 	if got := cfg["News"]["Edit"]; !reflect.DeepEqual(got, RoleList{"Moderator"}) {
 		t.Errorf("News.Edit = %#v, want [\"Moderator\"]", got)

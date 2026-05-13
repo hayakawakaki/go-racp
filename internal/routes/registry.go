@@ -15,14 +15,14 @@ import (
 const adminGroup = "Admin"
 
 type Registry struct {
+	hiddenLayout httpx.Layout
 	sessSvc      middleware.SessionValidator
 	users        middleware.UserLookup
-	cfg          config.RolesConfig
+	resolver     domain.RoleResolver
+	cfg          config.AccessConfig
 	logger       *slog.Logger
 	registered   map[string]struct{}
-	hiddenLayout httpx.Layout
 	ungated      []ungatedRoute
-	resolver     domain.RoleResolver
 	secure       bool
 }
 
@@ -32,7 +32,7 @@ type ungatedRoute struct {
 }
 
 func NewRegistry(
-	cfg config.RolesConfig,
+	cfg config.AccessConfig,
 	resolver domain.RoleResolver,
 	sessSvc middleware.SessionValidator,
 	users middleware.UserLookup,
@@ -86,27 +86,14 @@ func (r *Registry) lookup(group, action string) ([]domain.Role, bool) {
 	}
 	roles := make([]domain.Role, 0, len(list))
 	for _, name := range list {
-		roles = append(roles, mapRoleName(name))
+		role, ok := r.resolver.GetRole(name)
+		if !ok {
+			panic(fmt.Errorf("routes: access.yml entry %q.%q references unknown role %q — add it under UserRoles in config.yml", group, action, name))
+		}
+		roles = append(roles, role)
 	}
 
 	return roles, true
-}
-
-func mapRoleName(name string) domain.Role {
-	switch name {
-	case "*":
-		return domain.RoleAuthenticated
-	case "Player":
-		return domain.RolePlayer
-	case "Event":
-		return domain.RoleEvent
-	case "Moderator":
-		return domain.RoleModerator
-	case "Enforcer":
-		return domain.RoleEnforcer
-	default:
-		panic(fmt.Errorf("routes: unmapped role %q (validateRolesConfig should have caught this)", name))
-	}
 }
 
 func parseTag(tag string) (group, action string) {
@@ -129,7 +116,7 @@ func (r *Registry) Finalize() error {
 		}
 	}
 	if len(deadEntries) > 0 {
-		panic(fmt.Errorf("roles.yml references tags not registered by any plugin: %s", strings.Join(deadEntries, ", ")))
+		panic(fmt.Errorf("access.yml references tags not registered by any plugin: %s", strings.Join(deadEntries, ", ")))
 	}
 
 	for _, ungated := range r.ungated {

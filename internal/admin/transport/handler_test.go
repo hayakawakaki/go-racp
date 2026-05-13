@@ -105,8 +105,8 @@ func TestHandler_RegisterRoutes_WrapsAdminRouteInRegistry(t *testing.T) {
 	h := newTestHandler()
 
 	reg := routes.NewRegistry(
-		config.RolesConfig{},
-		domain.NewRoleResolver(config.GroupConfig{Moderator: 20, Enforcer: 10, Event: 2}),
+		config.AccessConfig{},
+		domain.NewRoleResolver(config.RolesConfig{"Moderator": 20, "Enforcer": 10, "Event": 2}),
 		newStubSession(),
 		newStubUserLookup(),
 		slog.New(slog.NewTextHandler(io.Discard, nil)),
@@ -129,8 +129,8 @@ func TestHandler_RegisterRoutes_RejectsNonGet(t *testing.T) {
 	h := newTestHandler()
 
 	reg := routes.NewRegistry(
-		config.RolesConfig{},
-		domain.NewRoleResolver(config.GroupConfig{Moderator: 20, Enforcer: 10, Event: 2}),
+		config.AccessConfig{},
+		domain.NewRoleResolver(config.RolesConfig{"Moderator": 20, "Enforcer": 10, "Event": 2}),
 		newStubSession(),
 		newStubUserLookup(),
 		slog.New(slog.NewTextHandler(io.Discard, nil)),
