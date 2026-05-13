@@ -1,7 +1,9 @@
 package config
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 
 	"github.com/goccy/go-yaml"
@@ -24,9 +26,13 @@ var allowedRoleStrings = map[string]struct{}{
 func ProcessRolesConfig() RolesConfig {
 	cfgPath, err := GetTargetFilePath("roles.yml")
 	if err != nil {
-		cfg := RolesConfig{}
-		validateRolesConfig(cfg)
-		return cfg
+		if errors.Is(err, fs.ErrNotExist) {
+			cfg := RolesConfig{}
+			validateRolesConfig(cfg)
+
+			return cfg
+		}
+		panic(fmt.Errorf("locate roles.yml: %w", err))
 	}
 	cfg, err := loadRolesConfig(cfgPath)
 	if err != nil {

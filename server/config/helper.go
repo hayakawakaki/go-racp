@@ -30,7 +30,7 @@ func GetTargetFilePath(target string) (string, error) {
 		_, statErr = os.Stat(filepath.Join(dir, "go.mod"))
 		switch {
 		case statErr == nil:
-			return "", fmt.Errorf("target file %s was not found", target)
+			return "", fmt.Errorf("target file %s: %w", target, fs.ErrNotExist)
 		case !errors.Is(statErr, fs.ErrNotExist):
 			return "", fmt.Errorf("stat go.mod: %w", statErr)
 		}
@@ -43,5 +43,5 @@ func GetTargetFilePath(target string) (string, error) {
 		dir = parentDir
 	}
 
-	return "", fmt.Errorf("target file %s was not found", target)
+	return "", fmt.Errorf("target file %s: %w", target, fs.ErrNotExist)
 }

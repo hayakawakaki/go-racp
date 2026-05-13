@@ -98,7 +98,7 @@ func TestRegister_PanicsOnDuplicateName(t *testing.T) {
 func TestRegister_PanicsAfterMountAll(t *testing.T) {
 	resetRegistry(t)
 	Register(Plugin{Name: "first", Mount: noopMount})
-	MountAll(nil, http.NewServeMux(), testInfra())
+	MountAll(&routes.Registry{}, http.NewServeMux(), testInfra())
 	expectPanic(t, "Register called after MountAll: late", func() {
 		Register(Plugin{Name: "late", Mount: noopMount})
 	})
@@ -117,7 +117,7 @@ func TestMountAll_InvokesMountInRegistrationOrder(t *testing.T) {
 		mountOrder = append(mountOrder, "gamma")
 	}})
 
-	MountAll(nil, http.NewServeMux(), testInfra())
+	MountAll(&routes.Registry{}, http.NewServeMux(), testInfra())
 
 	want := []string{"alpha", "beta", "gamma"}
 	if len(mountOrder) != len(want) {
@@ -138,7 +138,7 @@ func TestMountAll_SkipsPluginsWithoutMount(t *testing.T) {
 		mounted = true
 	}})
 
-	MountAll(nil, http.NewServeMux(), testInfra())
+	MountAll(&routes.Registry{}, http.NewServeMux(), testInfra())
 
 	if !mounted {
 		t.Errorf("Mount-bearing plugin was not invoked")
@@ -148,9 +148,9 @@ func TestMountAll_SkipsPluginsWithoutMount(t *testing.T) {
 func TestMountAll_PanicsOnSecondCall(t *testing.T) {
 	resetRegistry(t)
 	Register(Plugin{Name: "x", Mount: noopMount})
-	MountAll(nil, http.NewServeMux(), testInfra())
+	MountAll(&routes.Registry{}, http.NewServeMux(), testInfra())
 	expectPanic(t, "MountAll called more than once", func() {
-		MountAll(nil, http.NewServeMux(), testInfra())
+		MountAll(&routes.Registry{}, http.NewServeMux(), testInfra())
 	})
 }
 
