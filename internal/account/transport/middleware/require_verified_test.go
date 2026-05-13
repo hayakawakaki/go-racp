@@ -1,4 +1,4 @@
-package transport
+package middleware
 
 import (
 	"bytes"
@@ -88,7 +88,7 @@ func TestRequireVerified_EmptyCookieValue_PassesThrough(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/dashboard", http.NoBody)
-	req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: ""})
+	req.AddCookie(&http.Cookie{Name: SessionCookieName, Value: ""})
 	handler.ServeHTTP(rr, req)
 
 	if !called {
@@ -123,7 +123,7 @@ func TestRequireVerified_StaleSessionErrors_PassThrough(t *testing.T) {
 
 			rr := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodGet, "/dashboard", http.NoBody)
-			req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: "stale"})
+			req.AddCookie(&http.Cookie{Name: SessionCookieName, Value: "stale"})
 			handler.ServeHTTP(rr, req)
 
 			if !called {
@@ -148,7 +148,7 @@ func TestRequireVerified_GenericSessionError_LogsAndPassesThrough(t *testing.T) 
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/dashboard", http.NoBody)
-	req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: "x"})
+	req.AddCookie(&http.Cookie{Name: SessionCookieName, Value: "x"})
 	handler.ServeHTTP(rr, req)
 
 	if !called {
@@ -181,7 +181,7 @@ func TestRequireVerified_UserLookupError_LogsAndPassesThrough(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/dashboard", http.NoBody)
-	req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: "ok"})
+	req.AddCookie(&http.Cookie{Name: SessionCookieName, Value: "ok"})
 	handler.ServeHTTP(rr, req)
 
 	if !called {
@@ -211,7 +211,7 @@ func TestRequireVerified_UnverifiedUser_RedirectsToVerifyAccount(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/dashboard", http.NoBody)
-	req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: "ok"})
+	req.AddCookie(&http.Cookie{Name: SessionCookieName, Value: "ok"})
 	handler.ServeHTTP(rr, req)
 
 	if called {
@@ -244,7 +244,7 @@ func TestRequireVerified_VerifiedUser_PassesThrough(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/dashboard", http.NoBody)
-	req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: "ok"})
+	req.AddCookie(&http.Cookie{Name: SessionCookieName, Value: "ok"})
 	handler.ServeHTTP(rr, req)
 
 	if !called {
@@ -276,7 +276,7 @@ func TestRequireVerified_AllowlistShortCircuitsBeforeSessionLookup(t *testing.T)
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/verify-account", http.NoBody)
-	req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: "ok"})
+	req.AddCookie(&http.Cookie{Name: SessionCookieName, Value: "ok"})
 	handler.ServeHTTP(rr, req)
 
 	if !called {

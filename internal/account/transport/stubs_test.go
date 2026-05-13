@@ -11,6 +11,7 @@ import (
 
 	accountapp "github.com/hayakawakaki/go-racp/internal/account/app"
 	authdomain "github.com/hayakawakaki/go-racp/internal/account/domain"
+	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/actiontoken"
 )
 
@@ -29,7 +30,7 @@ func newTestHandler(svc accountService, sess sessionService, logBuffer io.Writer
 
 func reqWithSession(method, target string, userID int, body io.Reader) *http.Request {
 	req := httptest.NewRequest(method, target, body)
-	ctx := ContextWithSession(req.Context(), &authdomain.Session{UserID: userID})
+	ctx := middleware.ContextWithSession(req.Context(), &authdomain.Session{UserID: userID})
 	return req.WithContext(ctx)
 }
 

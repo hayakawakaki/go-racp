@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	authdomain "github.com/hayakawakaki/go-racp/internal/account/domain"
+	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 )
 
@@ -14,7 +15,7 @@ func (h *Handler) showChangePassword(w http.ResponseWriter, r *http.Request) {
 
 //nolint:cyclop // sequential session/form/cookie/service branches; splitting would obscure the flow
 func (h *Handler) doChangePassword(w http.ResponseWriter, r *http.Request) {
-	sess, ok := SessionFromContext(r.Context())
+	sess, ok := middleware.SessionFromContext(r.Context())
 	if !ok || sess == nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
@@ -28,7 +29,7 @@ func (h *Handler) doChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cookie, err := r.Cookie(sessionCookieName)
+	cookie, err := r.Cookie(middleware.SessionCookieName)
 	if err != nil || cookie.Value == "" {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return

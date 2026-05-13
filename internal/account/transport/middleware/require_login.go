@@ -1,4 +1,4 @@
-package transport
+package middleware
 
 import (
 	"context"
@@ -9,10 +9,10 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/account/domain"
 )
 
-func RequireLogin(sessSvc sessionService, logger *slog.Logger) func(http.Handler) http.Handler {
+func RequireLogin(sessSvc SessionValidator, logger *slog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			cookie, err := r.Cookie(sessionCookieName)
+			cookie, err := r.Cookie(SessionCookieName)
 			if err != nil || cookie.Value == "" {
 				http.Redirect(w, r, "/login", http.StatusSeeOther)
 				return

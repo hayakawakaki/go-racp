@@ -1,4 +1,4 @@
-package transport
+package middleware
 
 import (
 	"context"
@@ -9,6 +9,8 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 )
+
+const SessionCookieName = "racp_session"
 
 type ctxKey int
 
@@ -28,6 +30,21 @@ func SessionFromContext(ctx context.Context) (*domain.Session, bool) {
 // under the package session key so handlers and middleware can access the session.
 func ContextWithSession(ctx context.Context, sess *domain.Session) context.Context {
 	return context.WithValue(ctx, sessionKey, sess)
+}
+
+// ClearSessionCookie clears the HTTP session cookie (`racp_session`) so the browser removes it.
+// The secure parameter controls whether the cookie's Secure attribute is set.
+func ClearSessionCookie(w http.ResponseWriter, secure bool) {
+	//nolint:gosec // G124: Secure is env-driven (true in production, false in development for HTTP localhost). Wired in plugin.go.
+	http.SetCookie(w, &http.Cookie{
+		Name:     SessionCookieName,
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   secure,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   -1,
+	})
 }
 
 // RequireAuth returns an HTTP middleware that enforces a valid session.
@@ -59,7 +76,7 @@ func sessionMiddleware(
 ) func(http.HandlerFunc) http.HandlerFunc {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			c, err := r.Cookie(sessionCookieName)
+			c, err := r.Cookie(SessionCookieName)
 			if err != nil {
 				onNoSession(w, r, next)
 				return
@@ -67,7 +84,7 @@ func sessionMiddleware(
 
 			sess, err := sessSvc.Validate(r.Context(), c.Value)
 			if err != nil {
-				clearSessionCookie(w, secure)
+				ClearSessionCookie(w, secure)
 				if !errors.Is(err, domain.ErrSessionNotFound) && !errors.Is(err, domain.ErrSessionExpired) {
 					logger.Error("session validate", "err", err)
 				}

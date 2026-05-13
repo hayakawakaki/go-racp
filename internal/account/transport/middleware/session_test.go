@@ -1,4 +1,4 @@
-package transport
+package middleware
 
 import (
 	"bytes"
@@ -76,7 +76,7 @@ func TestRequireAuth_ValidSession(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/profile", http.NoBody)
-	req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: "any-token"})
+	req.AddCookie(&http.Cookie{Name: SessionCookieName, Value: "any-token"})
 	wrapped(rr, req)
 
 	if !gotOk {
@@ -106,15 +106,15 @@ func TestRequireAuth_ExpiredOrNotFound_ClearsCookie(t *testing.T) {
 
 			rr := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodGet, "/profile", http.NoBody)
-			req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: "stale"})
+			req.AddCookie(&http.Cookie{Name: SessionCookieName, Value: "stale"})
 			wrapped(rr, req)
 
 			if rr.Code != http.StatusSeeOther {
 				t.Errorf("status = %d, want %d", rr.Code, http.StatusSeeOther)
 			}
-			cookie := findSetCookie(rr, sessionCookieName)
+			cookie := findSetCookie(rr, SessionCookieName)
 			if cookie == nil {
-				t.Fatalf("expected Set-Cookie clearing %s", sessionCookieName)
+				t.Fatalf("expected Set-Cookie clearing %s", SessionCookieName)
 			}
 			if cookie.MaxAge >= 0 {
 				t.Errorf("cookie.MaxAge = %d, want < 0 to clear", cookie.MaxAge)
@@ -134,7 +134,7 @@ func TestRequireAuth_GenericError_Logged(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/profile", http.NoBody)
-	req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: "x"})
+	req.AddCookie(&http.Cookie{Name: SessionCookieName, Value: "x"})
 	wrapped(rr, req)
 
 	if rr.Code != http.StatusSeeOther {
@@ -166,7 +166,7 @@ func TestWithSession_NoCookie_PassesThroughAnonymous(t *testing.T) {
 	if ctxHadSession {
 		t.Errorf("context should not contain a session for anonymous request")
 	}
-	if findSetCookie(rr, sessionCookieName) != nil {
+	if findSetCookie(rr, SessionCookieName) != nil {
 		t.Errorf("anonymous request should not set Set-Cookie")
 	}
 }
@@ -186,7 +186,7 @@ func TestWithSession_ValidCookie_AttachesSession(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
-	req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: "any-token"})
+	req.AddCookie(&http.Cookie{Name: SessionCookieName, Value: "any-token"})
 	wrapped(rr, req)
 
 	if !ok {
@@ -222,7 +222,7 @@ func TestWithSession_StaleCookie_ClearsAndPassesAnonymous(t *testing.T) {
 
 			rr := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
-			req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: "stale"})
+			req.AddCookie(&http.Cookie{Name: SessionCookieName, Value: "stale"})
 			wrapped(rr, req)
 
 			if !called {
@@ -231,7 +231,7 @@ func TestWithSession_StaleCookie_ClearsAndPassesAnonymous(t *testing.T) {
 			if ctxHadSession {
 				t.Errorf("context should not contain a session after stale cookie")
 			}
-			cookie := findSetCookie(rr, sessionCookieName)
+			cookie := findSetCookie(rr, SessionCookieName)
 			if cookie == nil || cookie.MaxAge >= 0 {
 				t.Errorf("stale cookie not cleared: %+v", cookie)
 			}

@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/hayakawakaki/go-racp/internal/account/app"
-	accounttransport "github.com/hayakawakaki/go-racp/internal/account/transport"
+	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
@@ -44,7 +44,7 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux, wrap func(http.HandlerFunc)
 
 func (h *Handler) show(w http.ResponseWriter, r *http.Request) {
 	state := HomeState{}
-	if sess, ok := accounttransport.SessionFromContext(r.Context()); ok {
+	if sess, ok := middleware.SessionFromContext(r.Context()); ok {
 		user, err := h.userSvc.GetByID(r.Context(), sess.UserID)
 		if err != nil {
 			h.logger.Error("home: fetch user", "err", err, "userID", sess.UserID)

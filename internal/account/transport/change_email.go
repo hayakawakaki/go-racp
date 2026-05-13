@@ -6,6 +6,7 @@ import (
 
 	accountapp "github.com/hayakawakaki/go-racp/internal/account/app"
 	authdomain "github.com/hayakawakaki/go-racp/internal/account/domain"
+	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 )
 
@@ -15,7 +16,7 @@ func (h *Handler) showChangeEmail(w http.ResponseWriter, r *http.Request) {
 
 //nolint:cyclop // sequential session/form/service/validation branches; splitting would obscure the flow
 func (h *Handler) doChangeEmail(w http.ResponseWriter, r *http.Request) {
-	sess, ok := SessionFromContext(r.Context())
+	sess, ok := middleware.SessionFromContext(r.Context())
 	if !ok || sess == nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
