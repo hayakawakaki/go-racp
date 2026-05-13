@@ -9,7 +9,7 @@ tmp_dir = "tmp"
   ]
   cmd = "go build -o ./tmp/racp.exe ./cmd"
   bin = "./tmp/racp.exe"
-  include_ext = ["go", "templ"]
+  include_ext = ["go", "templ", "yml"]
   exclude_dir = ["tmp", "docs", "docker", ".git", ".claude", "node_modules", "static/vendor", "testdata"]
   exclude_regex = ["_test\\.go$", "_templ\\.go$"]
   delay = 500
