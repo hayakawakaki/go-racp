@@ -18,26 +18,26 @@ func roleAllowed(role domain.Role, anyAllowed bool, allowSet map[domain.Role]str
 	return ok
 }
 
-func rejectUnauthenticated(w http.ResponseWriter, r *http.Request, hide bool) {
-	if hide {
-		http.NotFound(w, r)
+func rejectUnauthenticated(w http.ResponseWriter, r *http.Request, logger *slog.Logger, hidden bool, layout httpx.Layout) {
+	if hidden {
+		httpx.Render404(w, r, logger, layout)
 		return
 	}
 	httpx.Redirect(w, r, "/login")
 }
 
-func rejectForbidden(w http.ResponseWriter, r *http.Request, hide bool) {
-	if hide {
-		http.NotFound(w, r)
+func rejectForbidden(w http.ResponseWriter, r *http.Request, logger *slog.Logger, hidden bool, layout httpx.Layout) {
+	if hidden {
+		httpx.Render404(w, r, logger, layout)
 		return
 	}
 	http.Error(w, "forbidden", http.StatusForbidden)
 }
 
-func handleSessionError(w http.ResponseWriter, r *http.Request, err error, logger *slog.Logger, secure, hide bool) {
+func handleSessionError(w http.ResponseWriter, r *http.Request, err error, logger *slog.Logger, secure, hidden bool, layout httpx.Layout) {
 	if errors.Is(err, domain.ErrSessionNotFound) || errors.Is(err, domain.ErrSessionExpired) {
 		ClearSessionCookie(w, secure)
-		rejectUnauthenticated(w, r, hide)
+		rejectUnauthenticated(w, r, logger, hidden, layout)
 		return
 	}
 	logger.Error("require_role: session validate", "err", err)
@@ -49,7 +49,8 @@ func requireRoleCore(
 	users UserLookup,
 	resolver domain.RoleResolver,
 	logger *slog.Logger,
-	secure, hide bool,
+	secure, hidden bool,
+	layout httpx.Layout,
 	allowed []domain.Role,
 ) func(http.Handler) http.Handler {
 	allowSet := make(map[domain.Role]struct{}, len(allowed))
@@ -62,13 +63,13 @@ func requireRoleCore(
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			cookie, err := r.Cookie(SessionCookieName)
 			if err != nil || cookie.Value == "" {
-				rejectUnauthenticated(w, r, hide)
+				rejectUnauthenticated(w, r, logger, hidden, layout)
 				return
 			}
 
 			sess, err := sessSvc.Validate(r.Context(), cookie.Value)
 			if err != nil {
-				handleSessionError(w, r, err, logger, secure, hide)
+				handleSessionError(w, r, err, logger, secure, hidden, layout)
 				return
 			}
 
@@ -81,7 +82,7 @@ func requireRoleCore(
 
 			role := resolver.Resolve(user.GroupID)
 			if !roleAllowed(role, anyAllowed, allowSet) {
-				rejectForbidden(w, r, hide)
+				rejectForbidden(w, r, logger, hidden, layout)
 				return
 			}
 
@@ -99,7 +100,7 @@ func RequireRole(
 	secure bool,
 	allowed ...domain.Role,
 ) func(http.Handler) http.Handler {
-	return requireRoleCore(sessSvc, users, resolver, logger, secure, false, allowed)
+	return requireRoleCore(sessSvc, users, resolver, logger, secure, false, httpx.Layout{}, allowed)
 }
 
 func RequireRoleHidden(
@@ -108,7 +109,8 @@ func RequireRoleHidden(
 	resolver domain.RoleResolver,
 	logger *slog.Logger,
 	secure bool,
+	layout httpx.Layout,
 	allowed ...domain.Role,
 ) func(http.Handler) http.Handler {
-	return requireRoleCore(sessSvc, users, resolver, logger, secure, true, allowed)
+	return requireRoleCore(sessSvc, users, resolver, logger, secure, true, layout, allowed)
 }
