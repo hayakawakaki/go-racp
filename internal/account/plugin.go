@@ -21,12 +21,13 @@ func init() {
 
 func mount(mux *http.ServeMux, in *platinfra.Infra) {
 	svc, sessSvc, userRepo := buildServices(in)
-	requireLogin := middleware.RequireLogin(sessSvc, in.Logger)
+	secure := in.Config.Env.Mode != "development"
+	requireLogin := middleware.RequireLogin(sessSvc, in.Logger, secure)
 
 	h := transport.NewHandler(svc, sessSvc, transport.HandlerConfig{
 		Logger:  in.Logger,
 		Users:   userRepo,
-		Secure:  in.Config.Env.Mode != "development",
+		Secure:  secure,
 		General: in.Config.App.General,
 	})
 	h.RegisterRoutes(mux, requireLogin)

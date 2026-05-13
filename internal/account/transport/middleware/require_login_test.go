@@ -15,7 +15,7 @@ import (
 
 func newRequireLogin(sess *stubSessionService, logBuffer *bytes.Buffer) func(http.Handler) http.Handler {
 	logger := slog.New(slog.NewTextHandler(logBuffer, nil))
-	return RequireLogin(sess, logger)
+	return RequireLogin(sess, logger, false)
 }
 
 func TestRequireLogin_NoCookie_RedirectsToLogin(t *testing.T) {
@@ -37,6 +37,25 @@ func TestRequireLogin_NoCookie_RedirectsToLogin(t *testing.T) {
 	}
 }
 
+func TestRequireLogin_NoCookie_HTMX(t *testing.T) {
+	t.Parallel()
+	middleware := newRequireLogin(&stubSessionService{}, &bytes.Buffer{})
+
+	handler := middleware(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/account", http.NoBody)
+	req.Header.Set("HX-Request", "true")
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusNoContent {
+		t.Errorf("status = %d, want %d", rr.Code, http.StatusNoContent)
+	}
+	if rr.Header().Get("HX-Redirect") != "/login" {
+		t.Errorf("HX-Redirect = %q, want /login", rr.Header().Get("HX-Redirect"))
+	}
+}
+
 func TestRequireLogin_EmptyCookie_RedirectsToLogin(t *testing.T) {
 	t.Parallel()
 	middleware := newRequireLogin(&stubSessionService{}, &bytes.Buffer{})
@@ -53,7 +72,7 @@ func TestRequireLogin_EmptyCookie_RedirectsToLogin(t *testing.T) {
 	}
 }
 
-func TestRequireLogin_StaleSession_RedirectsToLogin(t *testing.T) {
+func TestRequireLogin_StaleSession_ClearsCookieAndRedirects(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -84,6 +103,13 @@ func TestRequireLogin_StaleSession_RedirectsToLogin(t *testing.T) {
 			}
 			if rr.Header().Get("Location") != "/login" {
 				t.Errorf("Location = %q, want /login", rr.Header().Get("Location"))
+			}
+			cookie := findSetCookie(rr, SessionCookieName)
+			if cookie == nil {
+				t.Fatalf("expected Set-Cookie clearing %s", SessionCookieName)
+			}
+			if cookie.MaxAge >= 0 {
+				t.Errorf("cookie.MaxAge = %d, want < 0 to clear", cookie.MaxAge)
 			}
 		})
 	}

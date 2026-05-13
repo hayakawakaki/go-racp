@@ -3,11 +3,9 @@ package middleware
 import (
 	"bytes"
 	"context"
-	"errors"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
@@ -18,131 +16,6 @@ func mwTestRig(sess *stubSessionService, secure bool) (*stubSessionService, *slo
 	buf := &bytes.Buffer{}
 	logger := slog.New(slog.NewTextHandler(buf, nil))
 	return sess, logger, secure, buf
-}
-
-func TestRequireAuth_NoCookie(t *testing.T) {
-	t.Parallel()
-	sess, logger, secure, _ := mwTestRig(&stubSessionService{}, false)
-
-	called := false
-	wrapped := RequireAuth(sess, logger, secure)(func(http.ResponseWriter, *http.Request) { called = true })
-
-	rr := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/profile", http.NoBody)
-	wrapped(rr, req)
-
-	if called {
-		t.Errorf("downstream should not be called")
-	}
-	if rr.Code != http.StatusSeeOther {
-		t.Errorf("status = %d, want %d", rr.Code, http.StatusSeeOther)
-	}
-	if rr.Header().Get("Location") != "/login" {
-		t.Errorf("Location = %q, want /login", rr.Header().Get("Location"))
-	}
-}
-
-func TestRequireAuth_NoCookie_HTMX(t *testing.T) {
-	t.Parallel()
-	sess, logger, secure, _ := mwTestRig(&stubSessionService{}, false)
-
-	wrapped := RequireAuth(sess, logger, secure)(func(http.ResponseWriter, *http.Request) {})
-
-	rr := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/profile", http.NoBody)
-	req.Header.Set("HX-Request", "true")
-	wrapped(rr, req)
-
-	if rr.Code != http.StatusNoContent {
-		t.Errorf("status = %d, want %d", rr.Code, http.StatusNoContent)
-	}
-	if rr.Header().Get("HX-Redirect") != "/login" {
-		t.Errorf("HX-Redirect = %q, want /login", rr.Header().Get("HX-Redirect"))
-	}
-}
-
-func TestRequireAuth_ValidSession(t *testing.T) {
-	t.Parallel()
-	want := &domain.Session{UserID: 42, ExpiresAt: time.Now().Add(time.Hour)}
-	sess, logger, secure, _ := mwTestRig(&stubSessionService{
-		validateFn: func(context.Context, string) (*domain.Session, error) { return want, nil },
-	}, false)
-
-	var gotSess *domain.Session
-	var gotOk bool
-	wrapped := RequireAuth(sess, logger, secure)(func(_ http.ResponseWriter, r *http.Request) {
-		gotSess, gotOk = SessionFromContext(r.Context())
-	})
-
-	rr := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/profile", http.NoBody)
-	req.AddCookie(&http.Cookie{Name: SessionCookieName, Value: "any-token"})
-	wrapped(rr, req)
-
-	if !gotOk {
-		t.Fatalf("SessionFromContext returned !ok")
-	}
-	if gotSess.UserID != want.UserID {
-		t.Errorf("UserID = %d, want %d", gotSess.UserID, want.UserID)
-	}
-}
-
-func TestRequireAuth_ExpiredOrNotFound_ClearsCookie(t *testing.T) {
-	t.Parallel()
-	cases := []struct {
-		err  error
-		name string
-	}{
-		{name: "expired", err: domain.ErrSessionExpired},
-		{name: "not found", err: domain.ErrSessionNotFound},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			sess, logger, secure, _ := mwTestRig(&stubSessionService{
-				validateFn: func(context.Context, string) (*domain.Session, error) { return nil, tc.err },
-			}, false)
-			wrapped := RequireAuth(sess, logger, secure)(func(http.ResponseWriter, *http.Request) {})
-
-			rr := httptest.NewRecorder()
-			req := httptest.NewRequest(http.MethodGet, "/profile", http.NoBody)
-			req.AddCookie(&http.Cookie{Name: SessionCookieName, Value: "stale"})
-			wrapped(rr, req)
-
-			if rr.Code != http.StatusSeeOther {
-				t.Errorf("status = %d, want %d", rr.Code, http.StatusSeeOther)
-			}
-			cookie := findSetCookie(rr, SessionCookieName)
-			if cookie == nil {
-				t.Fatalf("expected Set-Cookie clearing %s", SessionCookieName)
-			}
-			if cookie.MaxAge >= 0 {
-				t.Errorf("cookie.MaxAge = %d, want < 0 to clear", cookie.MaxAge)
-			}
-		})
-	}
-}
-
-func TestRequireAuth_GenericError_Logged(t *testing.T) {
-	t.Parallel()
-	sess, logger, secure, buf := mwTestRig(&stubSessionService{
-		validateFn: func(context.Context, string) (*domain.Session, error) {
-			return nil, errors.New("db unreachable")
-		},
-	}, false)
-	wrapped := RequireAuth(sess, logger, secure)(func(http.ResponseWriter, *http.Request) {})
-
-	rr := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/profile", http.NoBody)
-	req.AddCookie(&http.Cookie{Name: SessionCookieName, Value: "x"})
-	wrapped(rr, req)
-
-	if rr.Code != http.StatusSeeOther {
-		t.Errorf("status = %d, want %d", rr.Code, http.StatusSeeOther)
-	}
-	if !strings.Contains(buf.String(), "db unreachable") {
-		t.Errorf("expected error logged, got: %q", buf.String())
-	}
 }
 
 func TestWithSession_NoCookie_PassesThroughAnonymous(t *testing.T) {

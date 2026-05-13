@@ -7,21 +7,23 @@ import (
 	"net/http"
 
 	"github.com/hayakawakaki/go-racp/internal/account/domain"
+	"github.com/hayakawakaki/go-racp/internal/httpx"
 )
 
-func RequireLogin(sessSvc SessionValidator, logger *slog.Logger) func(http.Handler) http.Handler {
+func RequireLogin(sessSvc SessionValidator, logger *slog.Logger, secure bool) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			cookie, err := r.Cookie(SessionCookieName)
 			if err != nil || cookie.Value == "" {
-				http.Redirect(w, r, "/login", http.StatusSeeOther)
+				httpx.Redirect(w, r, "/login")
 				return
 			}
 
 			sess, err := sessSvc.Validate(r.Context(), cookie.Value)
 			if err != nil {
 				if errors.Is(err, domain.ErrSessionNotFound) || errors.Is(err, domain.ErrSessionExpired) {
-					http.Redirect(w, r, "/login", http.StatusSeeOther)
+					ClearSessionCookie(w, secure)
+					httpx.Redirect(w, r, "/login")
 					return
 				}
 				logger.Error("require_login: validate", "err", err)
