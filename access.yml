@@ -1,0 +1,16 @@
+# Admin is implicit on every gated entry
+# * is any authenticated user
+# Leaving a route blank will allow any user to access it
+#
+# Valid Roles: ["*", "Event", "Moderator", "Enforcer"]
+# Declare Custom Roles in config.yml under UserRoles:
+#
+## Example:
+# GroupName:
+#   Action: ["*"]
+#   Delete: ["Moderator"]
+
+Account:
+  View:           ["*"]
+  ChangePassword: ["*"]
+  ChangeEmail:    ["*"]

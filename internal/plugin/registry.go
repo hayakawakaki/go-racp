@@ -4,10 +4,11 @@ import (
 	"net/http"
 
 	"github.com/hayakawakaki/go-racp/internal/infra"
+	"github.com/hayakawakaki/go-racp/internal/routes"
 )
 
 type Plugin struct {
-	Mount      func(mux *http.ServeMux, in *infra.Infra)
+	Mount      func(reg *routes.Registry, mux *http.ServeMux, in *infra.Infra)
 	Middleware func(in *infra.Infra, h http.Handler) http.Handler
 	Name       string
 }
@@ -41,7 +42,16 @@ func Register(p Plugin) {
 
 // MountAll mounts all registered plugins onto the provided HTTP ServeMux using the given Infra.
 // Plugins are mounted in registration order; each mount is logged via in.Logger.Info. MountAll panics if called more than once.
-func MountAll(mux *http.ServeMux, in *infra.Infra) {
+func MountAll(reg *routes.Registry, mux *http.ServeMux, in *infra.Infra) {
+	if reg == nil {
+		panic("plugin: MountAll requires non-nil routes registry")
+	}
+	if mux == nil {
+		panic("plugin: MountAll requires non-nil mux")
+	}
+	if in == nil || in.Logger == nil {
+		panic("plugin: MountAll requires non-nil infra with logger")
+	}
 	if mounted {
 		panic("plugin: MountAll called more than once")
 	}
@@ -49,7 +59,7 @@ func MountAll(mux *http.ServeMux, in *infra.Infra) {
 
 	for _, p := range registry {
 		if p.Mount != nil {
-			p.Mount(mux, in)
+			p.Mount(reg, mux, in)
 		}
 		in.Logger.Info("plugin mounted", "name", p.Name)
 	}

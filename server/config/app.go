@@ -48,19 +48,15 @@ type CooldownConfig struct {
 	EmailChange          time.Duration `yaml:"EmailChange"`
 }
 
-type GroupConfig struct {
-	Moderator int `yaml:"Moderator"`
-	Enforcer  int `yaml:"Enforcer"`
-	Event     int `yaml:"Event"`
-}
+type RolesConfig map[string]int
 
 // AppConfig holds operator-tunable application settings loaded from config.yml.
 type AppConfig struct {
-	General  GeneralConfig  `yaml:"GeneralConfig"`
-	Mailer   MailerConfig   `yaml:"MailerConfig"`
-	TTL      TTLConfig      `yaml:"TTL"`
-	Cooldown CooldownConfig `yaml:"Cooldown"`
-	Group    GroupConfig    `yaml:"Group"`
+	General   GeneralConfig  `yaml:"GeneralConfig"`
+	UserRoles RolesConfig    `yaml:"UserRoles"`
+	Mailer    MailerConfig   `yaml:"MailerConfig"`
+	Cooldown  CooldownConfig `yaml:"Cooldown"`
+	TTL       TTLConfig      `yaml:"TTL"`
 }
 
 // appConfigDefaults apply default config in case of missing config file
@@ -81,7 +77,7 @@ func appConfigDefaults() *AppConfig {
 			EmailChangeRequest:   60 * time.Second,
 			EmailChange:          14 * 24 * time.Hour,
 		},
-		Group: GroupConfig{Moderator: 20, Enforcer: 10, Event: 2},
+		UserRoles: RolesConfig{"Moderator": 20, "Enforcer": 10, "Event": 2},
 	}
 }
 
@@ -139,26 +135,34 @@ func validateAppConfig(cfg *AppConfig) {
 	}
 	cfg.General.location = loc
 
-	validateGroupConfig(&cfg.Group)
+	validateRolesConfig(cfg.UserRoles)
 }
 
-func validateGroupConfig(group *GroupConfig) {
-	groups := map[string]int{
-		"Group.Moderator": group.Moderator,
-		"Group.Enforcer":  group.Enforcer,
-		"Group.Event":     group.Event,
-	}
-	for name, value := range groups {
+var reservedRoleNames = map[string]struct{}{
+	"Admin":  {},
+	"Player": {},
+	"*":      {},
+}
+
+func validateRolesConfig(roles RolesConfig) {
+	seenGroupIDs := map[int]string{}
+	for name, value := range roles {
+		if name == "" {
+			panic(fmt.Errorf("user roles config: empty role name"))
+		}
+		qualified := "UserRoles." + name
+		if _, reserved := reservedRoleNames[name]; reserved {
+			panic(fmt.Errorf("%s is reserved and cannot be redefined", qualified))
+		}
 		if value <= 0 {
-			panic(fmt.Errorf("%s must be > 0, got %d", name, value))
+			panic(fmt.Errorf("%s must be > 0, got %d", qualified, value))
 		}
 		if value == 99 {
-			panic(fmt.Errorf("%s = 99 is reserved for admin", name))
+			panic(fmt.Errorf("%s = 99 is reserved for admin", qualified))
 		}
-	}
-	if group.Moderator == group.Enforcer ||
-		group.Moderator == group.Event ||
-		group.Enforcer == group.Event {
-		panic(fmt.Errorf("Group.Moderator, Group.Enforcer, Group.Event must be distinct"))
+		if previousName, dup := seenGroupIDs[value]; dup {
+			panic(fmt.Errorf("%s shares group_id %d with UserRoles.%s", qualified, value, previousName))
+		}
+		seenGroupIDs[value] = name
 	}
 }

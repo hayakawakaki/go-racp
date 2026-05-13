@@ -57,7 +57,7 @@ func requireRoleCore(
 	for _, role := range allowed {
 		allowSet[role] = struct{}{}
 	}
-	_, anyAllowed := allowSet[domain.RoleAny]
+	_, anyAllowed := allowSet[domain.RoleAuthenticated]
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -26,71 +26,66 @@ func mustPanic(t *testing.T, fn func()) string {
 	}
 }
 
-func TestValidateGroupConfig_AcceptsDistinctPositiveNonAdminValues(t *testing.T) {
+func TestValidateRolesConfig_AcceptsDistinctPositiveNonReservedValues(t *testing.T) {
 	t.Parallel()
-	cfg := &GroupConfig{Moderator: 20, Enforcer: 10, Event: 2}
-	validateGroupConfig(cfg)
+	cfg := RolesConfig{"Moderator": 20, "Enforcer": 10, "Event": 2, "VIP": 5}
+	validateRolesConfig(cfg)
 }
 
-func TestValidateGroupConfig_RejectsInvalidValues(t *testing.T) {
+func TestValidateRolesConfig_AcceptsEmptyMap(t *testing.T) {
+	t.Parallel()
+	validateRolesConfig(RolesConfig{})
+}
+
+func TestValidateRolesConfig_RejectsInvalidValues(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
+		cfg         RolesConfig
 		name        string
 		wantContain string
-		cfg         GroupConfig
 	}{
 		{
-			name:        "moderator zero",
-			cfg:         GroupConfig{Moderator: 0, Enforcer: 10, Event: 2},
-			wantContain: "Group.Moderator must be > 0",
+			name:        "zero value",
+			cfg:         RolesConfig{"Moderator": 0},
+			wantContain: "UserRoles.Moderator must be > 0",
 		},
 		{
-			name:        "enforcer negative",
-			cfg:         GroupConfig{Moderator: 20, Enforcer: -1, Event: 2},
-			wantContain: "Group.Enforcer must be > 0",
+			name:        "negative value",
+			cfg:         RolesConfig{"Enforcer": -1},
+			wantContain: "UserRoles.Enforcer must be > 0",
 		},
 		{
-			name:        "event zero",
-			cfg:         GroupConfig{Moderator: 20, Enforcer: 10, Event: 0},
-			wantContain: "Group.Event must be > 0",
+			name:        "reserved 99 for non-admin role",
+			cfg:         RolesConfig{"Moderator": 99},
+			wantContain: "UserRoles.Moderator = 99 is reserved for admin",
 		},
 		{
-			name:        "moderator reserved 99",
-			cfg:         GroupConfig{Moderator: 99, Enforcer: 10, Event: 2},
-			wantContain: "Group.Moderator = 99 is reserved for admin",
+			name:        "reserved name Admin",
+			cfg:         RolesConfig{"Admin": 50},
+			wantContain: "UserRoles.Admin is reserved",
 		},
 		{
-			name:        "enforcer reserved 99",
-			cfg:         GroupConfig{Moderator: 20, Enforcer: 99, Event: 2},
-			wantContain: "Group.Enforcer = 99 is reserved for admin",
+			name:        "reserved name star",
+			cfg:         RolesConfig{"*": 50},
+			wantContain: "UserRoles.* is reserved",
 		},
 		{
-			name:        "event reserved 99",
-			cfg:         GroupConfig{Moderator: 20, Enforcer: 10, Event: 99},
-			wantContain: "Group.Event = 99 is reserved for admin",
+			name:        "reserved name Player",
+			cfg:         RolesConfig{"Player": 50},
+			wantContain: "UserRoles.Player is reserved",
 		},
 		{
-			name:        "moderator equals enforcer",
-			cfg:         GroupConfig{Moderator: 10, Enforcer: 10, Event: 2},
-			wantContain: "must be distinct",
-		},
-		{
-			name:        "moderator equals event",
-			cfg:         GroupConfig{Moderator: 5, Enforcer: 10, Event: 5},
-			wantContain: "must be distinct",
-		},
-		{
-			name:        "enforcer equals event",
-			cfg:         GroupConfig{Moderator: 20, Enforcer: 7, Event: 7},
-			wantContain: "must be distinct",
+			name:        "duplicate group_id",
+			cfg:         RolesConfig{"Moderator": 10, "Enforcer": 10},
+			wantContain: "shares group_id 10",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			cfg := tt.cfg
-			msg := mustPanic(t, func() { validateGroupConfig(&cfg) })
+			msg := mustPanic(t, func() { validateRolesConfig(cfg) })
 			if !strings.Contains(msg, tt.wantContain) {
 				t.Errorf("panic message = %q, want substring %q", msg, tt.wantContain)
 			}

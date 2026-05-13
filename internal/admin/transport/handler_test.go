@@ -1,15 +1,47 @@
 package transport
 
 import (
+	"context"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/hayakawakaki/go-racp/internal/account/domain"
+	"github.com/hayakawakaki/go-racp/internal/httpx"
+	"github.com/hayakawakaki/go-racp/internal/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
+
+type stubSession struct {
+	validateFn func(context.Context, string) (*domain.Session, error)
+}
+
+func (s *stubSession) Validate(ctx context.Context, token string) (*domain.Session, error) {
+	if s.validateFn != nil {
+		return s.validateFn(ctx, token)
+	}
+	return nil, domain.ErrSessionNotFound
+}
+
+func (s *stubSession) TTL() time.Duration { return time.Hour }
+
+type stubUsers struct {
+	getFn func(context.Context, int) (*domain.User, error)
+}
+
+func (s *stubUsers) GetByID(ctx context.Context, id int) (*domain.User, error) {
+	if s.getFn != nil {
+		return s.getFn(ctx, id)
+	}
+	return &domain.User{ID: id}, nil
+}
+
+func newStubSession() *stubSession  { return &stubSession{} }
+func newStubUserLookup() *stubUsers { return &stubUsers{} }
 
 func newTestHandler() *Handler {
 	return NewHandler(HandlerConfig{
@@ -68,30 +100,27 @@ func TestHandler_ShowDashboard_HTMXFragment(t *testing.T) {
 	}
 }
 
-func TestHandler_RegisterRoutes_WrapsAdminRouteInMiddleware(t *testing.T) {
+func TestHandler_RegisterRoutes_WrapsAdminRouteInRegistry(t *testing.T) {
 	t.Parallel()
 	h := newTestHandler()
 
-	wrapped := false
-	requireAdmin := func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			wrapped = true
-			next.ServeHTTP(w, r)
-		})
-	}
-
+	reg := routes.NewRegistry(
+		config.AccessConfig{},
+		domain.NewRoleResolver(config.RolesConfig{"Moderator": 20, "Enforcer": 10, "Event": 2}),
+		newStubSession(),
+		newStubUserLookup(),
+		slog.New(slog.NewTextHandler(io.Discard, nil)),
+		false,
+		httpx.Layout{},
+	)
 	mux := http.NewServeMux()
-	h.RegisterRoutes(mux, requireAdmin)
+	h.RegisterRoutes(reg, mux)
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/admin", http.NoBody)
 	mux.ServeHTTP(rr, req)
-
-	if !wrapped {
-		t.Errorf("requireAdmin middleware must wrap /admin")
-	}
-	if rr.Code != http.StatusOK {
-		t.Errorf("status = %d, want 200", rr.Code)
+	if rr.Code != http.StatusNotFound {
+		t.Errorf("anonymous to admin must 404 (hidden); status = %d", rr.Code)
 	}
 }
 
@@ -99,15 +128,21 @@ func TestHandler_RegisterRoutes_RejectsNonGet(t *testing.T) {
 	t.Parallel()
 	h := newTestHandler()
 
-	requireAdmin := func(next http.Handler) http.Handler { return next }
-
+	reg := routes.NewRegistry(
+		config.AccessConfig{},
+		domain.NewRoleResolver(config.RolesConfig{"Moderator": 20, "Enforcer": 10, "Event": 2}),
+		newStubSession(),
+		newStubUserLookup(),
+		slog.New(slog.NewTextHandler(io.Discard, nil)),
+		false,
+		httpx.Layout{},
+	)
 	mux := http.NewServeMux()
-	h.RegisterRoutes(mux, requireAdmin)
+	h.RegisterRoutes(reg, mux)
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/admin", http.NoBody)
 	mux.ServeHTTP(rr, req)
-
 	if rr.Code != http.StatusMethodNotAllowed {
 		t.Errorf("status = %d, want %d", rr.Code, http.StatusMethodNotAllowed)
 	}

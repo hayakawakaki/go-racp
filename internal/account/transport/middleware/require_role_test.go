@@ -16,12 +16,17 @@ import (
 )
 
 func newTestRoleResolver() domain.RoleResolver {
-	return domain.NewRoleResolver(config.GroupConfig{
-		Moderator: 20,
-		Enforcer:  10,
-		Event:     2,
+	return domain.NewRoleResolver(config.RolesConfig{
+		"Moderator": 20,
+		"Enforcer":  10,
+		"Event":     2,
 	})
 }
+
+var (
+	testRoleModerator = domain.Role{Name: "Moderator", GroupID: 20}
+	testRoleEvent     = domain.Role{Name: "Event", GroupID: 2}
+)
 
 func newTestRoleMiddleware(sess *stubSessionService, users *stubUserLookup, hidden bool, allowed ...domain.Role) (func(http.Handler) http.Handler, *bytes.Buffer) {
 	buf := &bytes.Buffer{}
@@ -41,7 +46,7 @@ func userWithGroup(groupID int) func(context.Context, int) (*domain.User, error)
 
 func TestRequireRole_NoCookie_RedirectsToLogin(t *testing.T) {
 	t.Parallel()
-	middleware, _ := newTestRoleMiddleware(&stubSessionService{}, &stubUserLookup{}, false, domain.RoleAny)
+	middleware, _ := newTestRoleMiddleware(&stubSessionService{}, &stubUserLookup{}, false, domain.RoleAuthenticated)
 
 	called := false
 	handler := middleware(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }))
@@ -63,7 +68,7 @@ func TestRequireRole_NoCookie_RedirectsToLogin(t *testing.T) {
 
 func TestRequireRole_NoCookie_HTMXSendsHXRedirect(t *testing.T) {
 	t.Parallel()
-	middleware, _ := newTestRoleMiddleware(&stubSessionService{}, &stubUserLookup{}, false, domain.RoleAny)
+	middleware, _ := newTestRoleMiddleware(&stubSessionService{}, &stubUserLookup{}, false, domain.RoleAuthenticated)
 
 	handler := middleware(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 
@@ -104,7 +109,7 @@ func TestRequireRole_NoCookie_HiddenReturns404(t *testing.T) {
 
 func TestRequireRole_EmptyCookieValue_RedirectsToLogin(t *testing.T) {
 	t.Parallel()
-	middleware, _ := newTestRoleMiddleware(&stubSessionService{}, &stubUserLookup{}, false, domain.RoleAny)
+	middleware, _ := newTestRoleMiddleware(&stubSessionService{}, &stubUserLookup{}, false, domain.RoleAuthenticated)
 
 	handler := middleware(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 
@@ -134,7 +139,7 @@ func TestRequireRole_StaleSession_ClearsCookieAndRedirects(t *testing.T) {
 			sess := &stubSessionService{
 				validateFn: func(context.Context, string) (*domain.Session, error) { return nil, tt.err },
 			}
-			middleware, _ := newTestRoleMiddleware(sess, &stubUserLookup{}, false, domain.RoleAny)
+			middleware, _ := newTestRoleMiddleware(sess, &stubUserLookup{}, false, domain.RoleAuthenticated)
 
 			called := false
 			handler := middleware(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }))
@@ -191,7 +196,7 @@ func TestRequireRole_GenericSessionError_Returns500AndLogs(t *testing.T) {
 			return nil, errors.New("db unreachable")
 		},
 	}
-	middleware, logBuffer := newTestRoleMiddleware(sess, &stubUserLookup{}, false, domain.RoleAny)
+	middleware, logBuffer := newTestRoleMiddleware(sess, &stubUserLookup{}, false, domain.RoleAuthenticated)
 
 	called := false
 	handler := middleware(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }))
@@ -224,7 +229,7 @@ func TestRequireRole_UserLookupError_Returns500AndLogs(t *testing.T) {
 			return nil, errors.New("user lookup boom")
 		},
 	}
-	middleware, logBuffer := newTestRoleMiddleware(sess, users, false, domain.RoleAny)
+	middleware, logBuffer := newTestRoleMiddleware(sess, users, false, domain.RoleAuthenticated)
 
 	called := false
 	handler := middleware(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }))
@@ -252,7 +257,7 @@ func TestRequireRole_AllowedRole_PassesThroughWithSessionInContext(t *testing.T)
 		validateFn: func(context.Context, string) (*domain.Session, error) { return wantSession, nil },
 	}
 	users := &stubUserLookup{getByIDFn: userWithGroup(20)}
-	middleware, _ := newTestRoleMiddleware(sess, users, false, domain.RoleModerator)
+	middleware, _ := newTestRoleMiddleware(sess, users, false, testRoleModerator)
 
 	var gotSession *domain.Session
 	var ok bool
@@ -281,7 +286,7 @@ func TestRequireRole_AdminAlwaysAllowed(t *testing.T) {
 		},
 	}
 	users := &stubUserLookup{getByIDFn: userWithGroup(99)}
-	middleware, _ := newTestRoleMiddleware(sess, users, false, domain.RoleEvent)
+	middleware, _ := newTestRoleMiddleware(sess, users, false, testRoleEvent)
 
 	called := false
 	handler := middleware(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }))
@@ -296,7 +301,7 @@ func TestRequireRole_AdminAlwaysAllowed(t *testing.T) {
 	}
 }
 
-func TestRequireRole_RoleAnyAllowsAllAuthenticated(t *testing.T) {
+func TestRequireRole_RoleAuthenticatedAllowsAllSessions(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -318,7 +323,7 @@ func TestRequireRole_RoleAnyAllowsAllAuthenticated(t *testing.T) {
 				},
 			}
 			users := &stubUserLookup{getByIDFn: userWithGroup(tt.groupID)}
-			middleware, _ := newTestRoleMiddleware(sess, users, false, domain.RoleAny)
+			middleware, _ := newTestRoleMiddleware(sess, users, false, domain.RoleAuthenticated)
 
 			called := false
 			handler := middleware(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }))
@@ -329,7 +334,7 @@ func TestRequireRole_RoleAnyAllowsAllAuthenticated(t *testing.T) {
 			handler.ServeHTTP(rr, req)
 
 			if !called {
-				t.Errorf("RoleAny must allow groupID=%d through", tt.groupID)
+				t.Errorf("RoleAuthenticated must allow groupID=%d through", tt.groupID)
 			}
 		})
 	}
@@ -343,7 +348,7 @@ func TestRequireRole_DisallowedRole_Forbidden(t *testing.T) {
 		},
 	}
 	users := &stubUserLookup{getByIDFn: userWithGroup(0)}
-	middleware, _ := newTestRoleMiddleware(sess, users, false, domain.RoleModerator)
+	middleware, _ := newTestRoleMiddleware(sess, users, false, testRoleModerator)
 
 	called := false
 	handler := middleware(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }))

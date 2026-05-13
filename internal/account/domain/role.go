@@ -2,65 +2,56 @@ package domain
 
 import "github.com/hayakawakaki/go-racp/server/config"
 
-type Role int
+type Role struct {
+	Name    string
+	GroupID int
+}
 
-const (
-	RoleAny       Role = -1
-	RolePlayer    Role = 0
-	RoleEvent     Role = 1
-	RoleModerator Role = 2
-	RoleEnforcer  Role = 3
-	RoleAdmin     Role = 4
+var (
+	RoleAuthenticated = Role{Name: "*", GroupID: -1}
+	RolePlayer        = Role{Name: "Player", GroupID: 0}
+	RoleAdmin         = Role{Name: "Admin", GroupID: 99}
 )
 
 func (r Role) String() string {
-	switch r {
-	case RoleAny:
-		return "any"
-	case RolePlayer:
-		return "player"
-	case RoleEvent:
-		return "event"
-	case RoleModerator:
-		return "moderator"
-	case RoleEnforcer:
-		return "enforcer"
-	case RoleAdmin:
-		return "admin"
-	default:
+	if r.Name == "" {
 		return "unknown"
 	}
-}
-
-func (r Role) AtLeast(minimum Role) bool {
-	return r >= minimum
+	return r.Name
 }
 
 type RoleResolver struct {
-	moderator int
-	enforcer  int
-	event     int
+	byGroupID map[int]Role
+	byName    map[string]Role
 }
 
-func NewRoleResolver(cfg config.GroupConfig) RoleResolver {
-	return RoleResolver{
-		moderator: cfg.Moderator,
-		enforcer:  cfg.Enforcer,
-		event:     cfg.Event,
+func NewRoleResolver(roles config.RolesConfig) RoleResolver {
+	byGroupID := make(map[int]Role, len(roles)+1)
+	byName := make(map[string]Role, len(roles)+1)
+	byGroupID[RoleAdmin.GroupID] = RoleAdmin
+	byName[RoleAdmin.Name] = RoleAdmin
+	for name, groupID := range roles {
+		role := Role{Name: name, GroupID: groupID}
+		byGroupID[groupID] = role
+		byName[name] = role
 	}
+
+	return RoleResolver{byGroupID: byGroupID, byName: byName}
 }
 
 func (r RoleResolver) Resolve(groupID int) Role {
-	switch groupID {
-	case 99:
-		return RoleAdmin
-	case r.enforcer:
-		return RoleEnforcer
-	case r.moderator:
-		return RoleModerator
-	case r.event:
-		return RoleEvent
-	default:
-		return RolePlayer
+	if role, ok := r.byGroupID[groupID]; ok {
+		return role
 	}
+
+	return RolePlayer
+}
+
+func (r RoleResolver) GetRole(name string) (Role, bool) {
+	if name == RoleAuthenticated.Name {
+		return RoleAuthenticated, true
+	}
+	role, ok := r.byName[name]
+
+	return role, ok
 }

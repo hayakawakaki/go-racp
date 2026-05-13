@@ -12,7 +12,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/hayakawakaki/go-racp/internal/account/app"
 	"github.com/hayakawakaki/go-racp/internal/account/domain"
+	accountinfra "github.com/hayakawakaki/go-racp/internal/account/infra"
+	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/actiontoken"
 	"github.com/hayakawakaki/go-racp/internal/health"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
@@ -20,6 +23,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/infra/mailer"
 	"github.com/hayakawakaki/go-racp/internal/infra/mysql"
 	"github.com/hayakawakaki/go-racp/internal/plugin"
+	"github.com/hayakawakaki/go-racp/internal/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 
@@ -70,14 +74,31 @@ func Start() error {
 		Mailer:       smtpMailer,
 		TokenManager: tokenMgr,
 		Config:       cfg,
-		Roles:        domain.NewRoleResolver(cfg.App.Group),
+		Roles:        domain.NewRoleResolver(cfg.App.UserRoles),
 	}
+
+	sessSvc := app.NewSessionService(accountinfra.NewSessionRepository(mainDB), cfg.App.TTL.Session)
+	secure := cfg.Env.Mode != "development"
+	withSession := middleware.WithSession(sessSvc, logger, secure)
+
+	accessCfg := config.ProcessAccessConfig()
+	userRepo := accountinfra.NewRepository(mainDB)
+	reg := routes.NewRegistry(
+		accessCfg,
+		in.Roles,
+		sessSvc,
+		userRepo,
+		logger,
+		secure,
+		httpx.Layout{GeneralConfig: cfg.App.General},
+	)
 
 	// Plugin Mounting
 	mux := http.NewServeMux()
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 	mux.HandleFunc("GET /healthz", health.New(mainDB, logsDB, logger))
-	plugin.MountAll(mux, in)
+	plugin.MountAll(reg, mux, in)
+	reg.Finalize()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		httpx.Render404(w, r, logger, httpx.Layout{GeneralConfig: cfg.App.General})
 	})
@@ -86,6 +107,7 @@ func Start() error {
 	for _, p := range plugin.Middlewares() {
 		handler = p.Middleware(in, handler)
 	}
+	handler = http.HandlerFunc(withSession(handler.ServeHTTP))
 
 	addr := fmt.Sprintf(":%d", cfg.Env.AppPort)
 	srv := &http.Server{

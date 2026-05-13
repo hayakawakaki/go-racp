@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/hayakawakaki/go-racp/internal/infra"
+	"github.com/hayakawakaki/go-racp/internal/routes"
 )
 
 func resetRegistry(t *testing.T) {
@@ -26,7 +27,7 @@ func testInfra() *infra.Infra {
 	return &infra.Infra{Logger: slog.New(slog.NewTextHandler(io.Discard, nil))}
 }
 
-func noopMount(_ *http.ServeMux, _ *infra.Infra) {}
+func noopMount(_ *routes.Registry, _ *http.ServeMux, _ *infra.Infra) {}
 
 func noopMiddleware(_ *infra.Infra, h http.Handler) http.Handler { return h }
 
@@ -97,7 +98,7 @@ func TestRegister_PanicsOnDuplicateName(t *testing.T) {
 func TestRegister_PanicsAfterMountAll(t *testing.T) {
 	resetRegistry(t)
 	Register(Plugin{Name: "first", Mount: noopMount})
-	MountAll(http.NewServeMux(), testInfra())
+	MountAll(&routes.Registry{}, http.NewServeMux(), testInfra())
 	expectPanic(t, "Register called after MountAll: late", func() {
 		Register(Plugin{Name: "late", Mount: noopMount})
 	})
@@ -106,17 +107,17 @@ func TestRegister_PanicsAfterMountAll(t *testing.T) {
 func TestMountAll_InvokesMountInRegistrationOrder(t *testing.T) {
 	resetRegistry(t)
 	var mountOrder []string
-	Register(Plugin{Name: "alpha", Mount: func(_ *http.ServeMux, _ *infra.Infra) {
+	Register(Plugin{Name: "alpha", Mount: func(_ *routes.Registry, _ *http.ServeMux, _ *infra.Infra) {
 		mountOrder = append(mountOrder, "alpha")
 	}})
-	Register(Plugin{Name: "beta", Mount: func(_ *http.ServeMux, _ *infra.Infra) {
+	Register(Plugin{Name: "beta", Mount: func(_ *routes.Registry, _ *http.ServeMux, _ *infra.Infra) {
 		mountOrder = append(mountOrder, "beta")
 	}})
-	Register(Plugin{Name: "gamma", Mount: func(_ *http.ServeMux, _ *infra.Infra) {
+	Register(Plugin{Name: "gamma", Mount: func(_ *routes.Registry, _ *http.ServeMux, _ *infra.Infra) {
 		mountOrder = append(mountOrder, "gamma")
 	}})
 
-	MountAll(http.NewServeMux(), testInfra())
+	MountAll(&routes.Registry{}, http.NewServeMux(), testInfra())
 
 	want := []string{"alpha", "beta", "gamma"}
 	if len(mountOrder) != len(want) {
@@ -133,11 +134,11 @@ func TestMountAll_SkipsPluginsWithoutMount(t *testing.T) {
 	resetRegistry(t)
 	mounted := false
 	Register(Plugin{Name: "middleware-only", Middleware: noopMiddleware})
-	Register(Plugin{Name: "has-mount", Mount: func(_ *http.ServeMux, _ *infra.Infra) {
+	Register(Plugin{Name: "has-mount", Mount: func(_ *routes.Registry, _ *http.ServeMux, _ *infra.Infra) {
 		mounted = true
 	}})
 
-	MountAll(http.NewServeMux(), testInfra())
+	MountAll(&routes.Registry{}, http.NewServeMux(), testInfra())
 
 	if !mounted {
 		t.Errorf("Mount-bearing plugin was not invoked")
@@ -147,9 +148,9 @@ func TestMountAll_SkipsPluginsWithoutMount(t *testing.T) {
 func TestMountAll_PanicsOnSecondCall(t *testing.T) {
 	resetRegistry(t)
 	Register(Plugin{Name: "x", Mount: noopMount})
-	MountAll(http.NewServeMux(), testInfra())
+	MountAll(&routes.Registry{}, http.NewServeMux(), testInfra())
 	expectPanic(t, "MountAll called more than once", func() {
-		MountAll(http.NewServeMux(), testInfra())
+		MountAll(&routes.Registry{}, http.NewServeMux(), testInfra())
 	})
 }
 
