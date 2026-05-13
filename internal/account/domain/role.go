@@ -5,18 +5,18 @@ import "github.com/hayakawakaki/go-racp/server/config"
 type Role int
 
 const (
-	RoleAny       Role = -1
-	RolePlayer    Role = 0
-	RoleEvent     Role = 1
-	RoleModerator Role = 2
-	RoleEnforcer  Role = 3
-	RoleAdmin     Role = 4
+	RoleAuthenticated Role = -1
+	RolePlayer        Role = 0
+	RoleEvent         Role = 1
+	RoleModerator     Role = 2
+	RoleEnforcer      Role = 3
+	RoleAdmin         Role = 4
 )
 
 func (r Role) String() string {
 	switch r {
-	case RoleAny:
-		return "any"
+	case RoleAuthenticated:
+		return "authenticated"
 	case RolePlayer:
 		return "player"
 	case RoleEvent:

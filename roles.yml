@@ -1,0 +1,21 @@
+# roles.yml — per-route role allowlists
+#
+# Top-level keys are GROUPS. Their children are ACTIONS. Each action's value
+# is the list of roles allowed to access routes tagged "Group.Action" in code.
+#
+# Allowed role names (strict casing):
+#   "*"          any authenticated user (anonymous bounced to /login)
+#   Player, Event, Moderator, Enforcer
+#
+# Admin (rAthena group_id 99) is implicit on every gated entry — do NOT add
+# it to a list and do NOT define a top-level "Admin:" key. The Admin.* group
+# is hardcoded as admin-only.
+#
+# An action with no value (or missing entirely) means the route is public —
+# anonymous and authenticated users alike. Empty lists (Action: []) are
+# rejected at startup as ambiguous.
+
+Account:
+  View:           ["*"]
+  ChangePassword: ["*"]
+  ChangeEmail:    ["*"]

@@ -12,6 +12,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/actiontoken"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
+	"github.com/hayakawakaki/go-racp/internal/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 
@@ -92,28 +93,28 @@ func (h *Handler) layout() httpx.Layout {
 	return httpx.Layout{GeneralConfig: h.general}
 }
 
-func (h *Handler) RegisterRoutes(mux *http.ServeMux, requireLogin func(http.Handler) http.Handler) {
-	mux.HandleFunc("GET /register", h.showRegister)
-	mux.HandleFunc("POST /register", h.doRegister)
-	mux.HandleFunc("GET /login", h.showLogin)
-	mux.HandleFunc("POST /login", h.doLogin)
-	mux.HandleFunc("POST /logout", h.doLogout)
-	mux.HandleFunc("GET /forgot-password", h.showForgotPassword)
-	mux.HandleFunc("POST /forgot-password", h.doForgotPassword)
-	mux.HandleFunc("GET /reset-password", h.showResetPassword)
-	mux.HandleFunc("POST /reset-password", h.doResetPassword)
-	mux.HandleFunc("GET /verify-account", h.showVerifyAccount)
-	mux.HandleFunc("GET /verify", h.showVerify)
-	mux.HandleFunc("POST /verify", h.doVerify)
-	mux.HandleFunc("POST /verify/resend", h.doResendVerification)
-	mux.HandleFunc("GET /verify-email-change", h.showVerifyEmailChange)
-	mux.HandleFunc("POST /verify-email-change", h.doVerifyEmailChange)
+func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
+	reg.Public(mux, "GET /register", http.HandlerFunc(h.showRegister))
+	reg.Public(mux, "POST /register", http.HandlerFunc(h.doRegister))
+	reg.Public(mux, "GET /login", http.HandlerFunc(h.showLogin))
+	reg.Public(mux, "POST /login", http.HandlerFunc(h.doLogin))
+	reg.Public(mux, "POST /logout", http.HandlerFunc(h.doLogout))
+	reg.Public(mux, "GET /forgot-password", http.HandlerFunc(h.showForgotPassword))
+	reg.Public(mux, "POST /forgot-password", http.HandlerFunc(h.doForgotPassword))
+	reg.Public(mux, "GET /reset-password", http.HandlerFunc(h.showResetPassword))
+	reg.Public(mux, "POST /reset-password", http.HandlerFunc(h.doResetPassword))
+	reg.Public(mux, "GET /verify-account", http.HandlerFunc(h.showVerifyAccount))
+	reg.Public(mux, "GET /verify", http.HandlerFunc(h.showVerify))
+	reg.Public(mux, "POST /verify", http.HandlerFunc(h.doVerify))
+	reg.Public(mux, "POST /verify/resend", http.HandlerFunc(h.doResendVerification))
+	reg.Public(mux, "GET /verify-email-change", http.HandlerFunc(h.showVerifyEmailChange))
+	reg.Public(mux, "POST /verify-email-change", http.HandlerFunc(h.doVerifyEmailChange))
 
-	mux.Handle("GET /account", requireLogin(http.HandlerFunc(h.showAccount)))
-	mux.Handle("GET /account/password", requireLogin(http.HandlerFunc(h.showChangePassword)))
-	mux.Handle("POST /account/password", requireLogin(http.HandlerFunc(h.doChangePassword)))
-	mux.Handle("GET /account/email", requireLogin(http.HandlerFunc(h.showChangeEmail)))
-	mux.Handle("POST /account/email", requireLogin(http.HandlerFunc(h.doChangeEmail)))
+	reg.Wrap(mux, "Account.View", "GET /account", http.HandlerFunc(h.showAccount))
+	reg.Wrap(mux, "Account.ChangePassword", "GET /account/password", http.HandlerFunc(h.showChangePassword))
+	reg.Wrap(mux, "Account.ChangePassword", "POST /account/password", http.HandlerFunc(h.doChangePassword))
+	reg.Wrap(mux, "Account.ChangeEmail", "GET /account/email", http.HandlerFunc(h.showChangeEmail))
+	reg.Wrap(mux, "Account.ChangeEmail", "POST /account/email", http.HandlerFunc(h.doChangeEmail))
 }
 
 func (h *Handler) birthdateBounds() (minDate, maxDate string) {

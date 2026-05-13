@@ -5,10 +5,10 @@ import (
 
 	accountapp "github.com/hayakawakaki/go-racp/internal/account/app"
 	accountinfra "github.com/hayakawakaki/go-racp/internal/account/infra"
-	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/home/transport"
 	platinfra "github.com/hayakawakaki/go-racp/internal/infra"
 	"github.com/hayakawakaki/go-racp/internal/plugin"
+	"github.com/hayakawakaki/go-racp/internal/routes"
 )
 
 // init registers the home plugin.
@@ -17,19 +17,13 @@ func init() {
 }
 
 // mount registers the home HTTP routes on mux using the provided Infra by creating authentication repositories and services, configuring session middleware (secure when Env.Mode != "development"), and attaching the handler.
-func mount(mux *http.ServeMux, in *platinfra.Infra) {
+func mount(reg *routes.Registry, mux *http.ServeMux, in *platinfra.Infra) {
 	userRepo := accountinfra.NewRepository(in.MainDB)
-	sessRepo := accountinfra.NewSessionRepository(in.MainDB)
-
 	userSvc := accountapp.NewService(userRepo)
-	sessSvc := accountapp.NewSessionService(sessRepo, in.Config.App.TTL.Session)
-
-	secure := in.Config.Env.Mode != "development"
-	withSession := middleware.WithSession(sessSvc, in.Logger, secure)
 
 	homeH := transport.NewHandler(userSvc, transport.HandlerConfig{
 		Logger:  in.Logger,
 		General: in.Config.App.General,
 	})
-	homeH.RegisterRoutes(mux, withSession)
+	homeH.RegisterRoutes(reg, mux)
 }

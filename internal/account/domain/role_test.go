@@ -14,7 +14,7 @@ func TestRole_String(t *testing.T) {
 		want string
 		role Role
 	}{
-		{name: "any", role: RoleAny, want: "any"},
+		{name: "authenticated", role: RoleAuthenticated, want: "authenticated"},
 		{name: "player", role: RolePlayer, want: "player"},
 		{name: "event", role: RoleEvent, want: "event"},
 		{name: "moderator", role: RoleModerator, want: "moderator"},
@@ -48,8 +48,8 @@ func TestRole_AtLeast(t *testing.T) {
 		{name: "player below moderator", role: RolePlayer, minimum: RoleModerator, want: false},
 		{name: "event below moderator", role: RoleEvent, minimum: RoleModerator, want: false},
 		{name: "enforcer above moderator", role: RoleEnforcer, minimum: RoleModerator, want: true},
-		{name: "any below player", role: RoleAny, minimum: RolePlayer, want: false},
-		{name: "any below admin", role: RoleAny, minimum: RoleAdmin, want: false},
+		{name: "authenticated below player", role: RoleAuthenticated, minimum: RolePlayer, want: false},
+		{name: "authenticated below admin", role: RoleAuthenticated, minimum: RoleAdmin, want: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

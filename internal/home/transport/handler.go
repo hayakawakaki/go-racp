@@ -8,6 +8,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/account/app"
 	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
+	"github.com/hayakawakaki/go-racp/internal/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 
@@ -38,8 +39,8 @@ func (h *Handler) layout() httpx.Layout {
 	return httpx.Layout{GeneralConfig: h.general}
 }
 
-func (h *Handler) RegisterRoutes(mux *http.ServeMux, wrap func(http.HandlerFunc) http.HandlerFunc) {
-	mux.HandleFunc("GET /{$}", wrap(h.show))
+func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
+	reg.Public(mux, "GET /{$}", http.HandlerFunc(h.show))
 }
 
 func (h *Handler) show(w http.ResponseWriter, r *http.Request) {

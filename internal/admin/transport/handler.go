@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/hayakawakaki/go-racp/internal/httpx"
+	"github.com/hayakawakaki/go-racp/internal/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 
@@ -29,8 +30,8 @@ func (h *Handler) layout() httpx.Layout {
 	return httpx.Layout{GeneralConfig: h.general}
 }
 
-func (h *Handler) RegisterRoutes(mux *http.ServeMux, requireAdmin func(http.Handler) http.Handler) {
-	mux.Handle("GET /admin", requireAdmin(http.HandlerFunc(h.showDashboard)))
+func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
+	reg.Wrap(mux, "Admin.Dashboard", "GET /admin", http.HandlerFunc(h.showDashboard))
 }
 
 func (h *Handler) showDashboard(w http.ResponseWriter, r *http.Request) {
