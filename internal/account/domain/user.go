@@ -9,5 +9,6 @@ type User struct {
 	Email     string
 	Gender    string
 	ID        int
+	GroupID   int
 	State     int
 }

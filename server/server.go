@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/hayakawakaki/go-racp/internal/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/actiontoken"
 	"github.com/hayakawakaki/go-racp/internal/health"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
@@ -69,6 +70,7 @@ func Start() error {
 		Mailer:       smtpMailer,
 		TokenManager: tokenMgr,
 		Config:       cfg,
+		Roles:        domain.NewRoleResolver(cfg.App.Group),
 	}
 
 	// Plugin Mounting

@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/hayakawakaki/go-racp/internal/account/app"
+	"github.com/hayakawakaki/go-racp/internal/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/account/infra"
 	"github.com/hayakawakaki/go-racp/internal/account/transport"
 	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
@@ -22,7 +23,7 @@ func init() {
 func mount(mux *http.ServeMux, in *platinfra.Infra) {
 	svc, sessSvc, userRepo := buildServices(in)
 	secure := in.Config.Env.Mode != "development"
-	requireLogin := middleware.RequireLogin(sessSvc, in.Logger, secure)
+	requireLogin := middleware.RequireRole(sessSvc, userRepo, in.Roles, in.Logger, secure, domain.RoleAny)
 
 	h := transport.NewHandler(svc, sessSvc, transport.HandlerConfig{
 		Logger:  in.Logger,

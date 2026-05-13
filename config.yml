@@ -21,3 +21,9 @@ Cooldown:
 # Mail Stuffs
 MailerConfig:
   FromAddress: "noreply@your-server.example"
+
+# rAthena group_id values for each CP role (Admin is hardcoded to 99).
+Group:
+  Moderator: 20
+  Enforcer: 10
+  Event: 2
