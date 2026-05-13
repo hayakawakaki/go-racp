@@ -98,9 +98,7 @@ func Start() error {
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 	mux.HandleFunc("GET /healthz", health.New(mainDB, logsDB, logger))
 	plugin.MountAll(reg, mux, in)
-	if err := reg.Finalize(); err != nil {
-		return fmt.Errorf("finalize routes: %w", err)
-	}
+	reg.Finalize()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		httpx.Render404(w, r, logger, httpx.Layout{GeneralConfig: cfg.App.General})
 	})

@@ -105,7 +105,7 @@ func parseTag(tag string) (group, action string) {
 	return parts[0], parts[1]
 }
 
-func (r *Registry) Finalize() error {
+func (r *Registry) Finalize() {
 	var deadEntries []string
 	for groupName, actions := range r.cfg {
 		for actionName := range actions {
@@ -122,6 +122,4 @@ func (r *Registry) Finalize() error {
 	for _, ungated := range r.ungated {
 		r.logger.Warn("route audit: ungated", "tag", ungated.tag, "pattern", ungated.pattern)
 	}
-
-	return nil
 }
