@@ -22,6 +22,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/infra"
 	"github.com/hayakawakaki/go-racp/internal/infra/mailer"
 	"github.com/hayakawakaki/go-racp/internal/infra/mysql"
+	"github.com/hayakawakaki/go-racp/internal/infra/postgres"
 	"github.com/hayakawakaki/go-racp/internal/plugin"
 	"github.com/hayakawakaki/go-racp/internal/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
@@ -58,6 +59,10 @@ func Start() error {
 			log.Printf("close logs db: %v", err)
 		}
 	}()
+
+	cpPool := postgres.Connect(cfg.Env)
+	defer cpPool.Close()
+
 	defer func() {
 		if err := smtpMailer.Close(); err != nil {
 			log.Printf("close mailer: %v", err)
@@ -70,6 +75,7 @@ func Start() error {
 	in := &infra.Infra{
 		MainDB:       mainDB,
 		LogDB:        logsDB,
+		DB:           cpPool,
 		Logger:       logger,
 		Mailer:       smtpMailer,
 		TokenManager: tokenMgr,
@@ -96,7 +102,7 @@ func Start() error {
 	// Plugin Mounting
 	mux := http.NewServeMux()
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
-	mux.HandleFunc("GET /healthz", health.New(mainDB, logsDB, logger))
+	mux.HandleFunc("GET /healthz", health.New(mainDB, logsDB, postgres.NewHealthPinger(cpPool), logger))
 	plugin.MountAll(reg, mux, in)
 	reg.Finalize()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

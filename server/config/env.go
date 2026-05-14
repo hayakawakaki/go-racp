@@ -18,10 +18,13 @@ type EnvConfig struct {
 	AppURL  string `env:"APP_URL" required:"true"`
 
 	// MySQL or MariaDB. Populated by Docker Compose.
-	DBMainURL     string `env:"DB_MAIN_URL" required:"true"`
-	DBLogURL      string `env:"DB_LOG_URL" required:"true"`
-	DBMaxOpenConn int    `env:"DB_MAX_OPEN_CONN" default:"4"`
-	DBMaxIdleConn int    `env:"DB_MAX_IDLE_CONN" default:"4"`
+	DBMainURL       string `env:"DB_MAIN_URL" required:"true"`
+	DBLogURL        string `env:"DB_LOG_URL" required:"true"`
+	DBMaxOpenConn   int    `env:"DB_MAX_OPEN_CONN" default:"4"`
+	DBMaxIdleConn   int    `env:"DB_MAX_IDLE_CONN" default:"4"`
+	DBCPURL         string `env:"DB_CP_URL" required:"true"`
+	DBCPMaxOpenConn int    `env:"DB_CP_MAX_OPEN_CONN" default:"8"`
+	DBCPMaxIdleConn int    `env:"DB_CP_MAX_IDLE_CONN" default:"4"`
 
 	// Mailer
 	SMTPHost string `env:"SMTP_HOST" required:"true"`
