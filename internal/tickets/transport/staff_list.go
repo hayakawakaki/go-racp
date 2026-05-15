@@ -10,9 +10,8 @@ import (
 )
 
 func (h *Handler) staffList(w http.ResponseWriter, r *http.Request) {
-	user, role, ok := h.currentUser(r)
+	user, role, ok := h.resolveUser(w, r)
 	if !ok {
-		httpx.Redirect(w, r, "/login")
 		return
 	}
 	allowed := h.svc.Categories().AllowedForRole(role.Name, role == accountdomain.RoleAdmin)

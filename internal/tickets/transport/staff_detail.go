@@ -11,9 +11,8 @@ import (
 )
 
 func (h *Handler) staffDetail(w http.ResponseWriter, r *http.Request) {
-	user, role, ok := h.currentUser(r)
+	user, role, ok := h.resolveUser(w, r)
 	if !ok {
-		httpx.Redirect(w, r, "/login")
 		return
 	}
 	ticketID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)

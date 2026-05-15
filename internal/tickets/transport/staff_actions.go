@@ -47,9 +47,8 @@ func (h *Handler) staffEditSubject(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) staffMutate(w http.ResponseWriter, r *http.Request, maxBytes int64, action func(ticketID int64, staffID int) error) {
-	user, role, ok := h.currentUser(r)
+	user, role, ok := h.resolveUser(w, r)
 	if !ok {
-		httpx.Redirect(w, r, "/login")
 		return
 	}
 	ticketID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)

@@ -14,9 +14,8 @@ import (
 const markViewedTimeout = 5 * time.Second
 
 func (h *Handler) playerDetail(w http.ResponseWriter, r *http.Request) {
-	user, _, ok := h.currentUser(r)
+	user, _, ok := h.resolveUser(w, r)
 	if !ok {
-		httpx.Redirect(w, r, "/login")
 		return
 	}
 	ticketID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
@@ -49,9 +48,8 @@ func (h *Handler) deferMarkViewed(parent context.Context, accountID int, ticketI
 }
 
 func (h *Handler) playerReply(w http.ResponseWriter, r *http.Request) {
-	user, _, ok := h.currentUser(r)
+	user, _, ok := h.resolveUser(w, r)
 	if !ok {
-		httpx.Redirect(w, r, "/login")
 		return
 	}
 	ticketID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)

@@ -10,9 +10,8 @@ import (
 )
 
 func (h *Handler) playerNewForm(w http.ResponseWriter, r *http.Request) {
-	_, _, ok := h.currentUser(r)
+	_, _, ok := h.resolveUser(w, r)
 	if !ok {
-		httpx.Redirect(w, r, "/login")
 		return
 	}
 	httpx.RenderHTML(w, r, h.logger, playerNewPage(h.layout(), PlayerNewState{
@@ -21,48 +20,48 @@ func (h *Handler) playerNewForm(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) playerCreate(w http.ResponseWriter, r *http.Request) {
-	user, _, ok := h.currentUser(r)
+	user, _, ok := h.resolveUser(w, r)
 	if !ok {
-		httpx.Redirect(w, r, "/login")
 		return
 	}
 
 	r.Body = http.MaxBytesReader(w, r.Body, maxOpenFormBytes)
 	if err := r.ParseForm(); err != nil {
-		h.renderNewWithError(w, r, "Invalid form data.", nil)
+		h.renderNewWithError(w, r, PlayerNewState{FormError: "Invalid form data."})
 		return
 	}
 
-	category := r.PostFormValue(fieldCategory)
-	subject := r.PostFormValue(fieldSubject)
-	body := r.PostFormValue(fieldBody)
+	submission := PlayerNewState{
+		Category: r.PostFormValue(fieldCategory),
+		Subject:  r.PostFormValue(fieldSubject),
+		Body:     r.PostFormValue(fieldBody),
+	}
 
-	id, err := h.svc.OpenTicket(r.Context(), user.ID, category, subject, body)
+	id, err := h.svc.OpenTicket(r.Context(), user.ID, submission.Category, submission.Subject, submission.Body)
 	if err != nil {
+		state := submission
 		var validation *domain.ValidationError
 		switch {
 		case errors.As(err, &validation):
-			h.renderNewWithError(w, r, "", validation.Fields)
+			state.Errors = validation.Fields
 		case errors.Is(err, domain.ErrTooManyOpenTickets):
-			h.renderNewWithError(w, r, "You have too many open tickets.", nil)
+			state.FormError = "You have too many open tickets."
 		case errors.Is(err, domain.ErrTicketCooldown):
-			h.renderNewWithError(w, r, "Please wait before opening another ticket.", nil)
+			state.FormError = "Please wait before opening another ticket."
 		case errors.Is(err, domain.ErrUnknownCategory):
-			h.renderNewWithError(w, r, "Unknown category.", nil)
+			state.FormError = "Unknown category."
 		default:
 			h.logger.Error("playerCreate", "err", err)
-			h.renderNewWithError(w, r, "Something went wrong.", nil)
+			state.FormError = "Something went wrong."
 		}
+		h.renderNewWithError(w, r, state)
 		return
 	}
 
 	httpx.Redirect(w, r, "/tickets/"+strconv.FormatInt(id, 10))
 }
 
-func (h *Handler) renderNewWithError(w http.ResponseWriter, r *http.Request, formError string, fieldErrors domain.FieldErrors) {
-	httpx.RenderHTML(w, r, h.logger, playerNewPage(h.layout(), PlayerNewState{
-		Categories: h.svc.Categories().All(),
-		FormError:  formError,
-		Errors:     fieldErrors,
-	}))
+func (h *Handler) renderNewWithError(w http.ResponseWriter, r *http.Request, state PlayerNewState) {
+	state.Categories = h.svc.Categories().All()
+	httpx.RenderHTML(w, r, h.logger, playerNewPage(h.layout(), state))
 }

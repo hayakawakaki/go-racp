@@ -10,6 +10,9 @@ import (
 type PlayerNewState struct {
 	Errors     domain.FieldErrors
 	Categories []domain.Category
+	Category   string
+	Subject    string
+	Body       string
 	FormError  string
 }
 
@@ -34,20 +37,25 @@ templ playerNewPage(layout httpx.Layout, state PlayerNewState) {
 						<span class="block text-sm font-medium text-gray-700 mb-1">Category</span>
 						<select name="category" required class="block w-full rounded border border-gray-300 px-3 py-2 text-gray-900 bg-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
 							for _, category := range state.Categories {
-								<option value={ category.Key }>{ category.Display }</option>
+								if category.Key == state.Category {
+									<option value={ category.Key } selected>{ category.Display }</option>
+								} else {
+									<option value={ category.Key }>{ category.Display }</option>
+								}
 							}
 						</select>
 					</label>
 					<label class="block">
 						<div class="flex items-baseline justify-between mb-1">
 							<span class="text-sm font-medium text-gray-700">Subject</span>
-							<span class="text-xs text-gray-400 tabular-nums"><span data-count="subject">0</span> / { fmt.Sprint(domain.MaxSubjectLen) }</span>
+							<span class="text-xs text-gray-400 tabular-nums"><span data-count="subject">{ fmt.Sprint(len(state.Subject)) }</span> / { fmt.Sprint(domain.MaxSubjectLen) }</span>
 						</div>
 						<input
 							name="subject"
 							type="text"
 							required
 							maxlength={ fmt.Sprint(domain.MaxSubjectLen) }
+							value={ state.Subject }
 							placeholder="A short summary of the issue"
 							oninput="this.form.querySelector('[data-count=subject]').textContent = this.value.length"
 							class="block w-full rounded border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -59,7 +67,7 @@ templ playerNewPage(layout httpx.Layout, state PlayerNewState) {
 					<label class="block">
 						<div class="flex items-baseline justify-between mb-1">
 							<span class="text-sm font-medium text-gray-700">Message</span>
-							<span class="text-xs text-gray-400 tabular-nums"><span data-count="body">0</span> / { fmt.Sprint(domain.MaxBodyLen) }</span>
+							<span class="text-xs text-gray-400 tabular-nums"><span data-count="body">{ fmt.Sprint(len(state.Body)) }</span> / { fmt.Sprint(domain.MaxBodyLen) }</span>
 						</div>
 						<textarea
 							name="body"
@@ -69,7 +77,7 @@ templ playerNewPage(layout httpx.Layout, state PlayerNewState) {
 							placeholder="Describe the issue with as much detail as you can. Include character names, times, and steps to reproduce when relevant."
 							oninput="this.form.querySelector('[data-count=body]').textContent = this.value.length"
 							class="block w-full rounded border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-y"
-						></textarea>
+						>{ state.Body }</textarea>
 						if state.Errors["body"] != "" {
 							<p class="text-sm text-red-600 mt-1">{ state.Errors["body"] }</p>
 						}

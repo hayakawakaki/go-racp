@@ -2,6 +2,8 @@ package transport
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -14,6 +16,8 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/tickets/domain"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
+
+var errUnauthenticated = errors.New("transport: unauthenticated request")
 
 const (
 	maxOpenFormBytes    = 8 << 10
@@ -92,18 +96,32 @@ func (h *Handler) layout() httpx.Layout {
 	return httpx.Layout{GeneralConfig: h.general}
 }
 
-func (h *Handler) currentUser(r *http.Request) (*accountdomain.User, accountdomain.Role, bool) {
+func (h *Handler) currentUser(r *http.Request) (*accountdomain.User, accountdomain.Role, error) {
 	session, ok := middleware.SessionFromContext(r.Context())
 	if !ok {
-		return nil, accountdomain.Role{}, false
+		return nil, accountdomain.Role{}, errUnauthenticated
 	}
 	user, err := h.users.GetByID(r.Context(), session.UserID)
 	if err != nil {
-		h.logger.Error("tickets: load user", "err", err, "userID", session.UserID)
-		return nil, accountdomain.Role{}, false
+		return nil, accountdomain.Role{}, fmt.Errorf("transport.Handler.currentUser: %w", err)
 	}
 
-	return user, h.roles.Resolve(user.GroupID), true
+	return user, h.roles.Resolve(user.GroupID), nil
+}
+
+func (h *Handler) resolveUser(w http.ResponseWriter, r *http.Request) (*accountdomain.User, accountdomain.Role, bool) {
+	user, role, err := h.currentUser(r)
+	if err == nil {
+		return user, role, true
+	}
+	if errors.Is(err, errUnauthenticated) {
+		httpx.Redirect(w, r, "/login")
+		return nil, accountdomain.Role{}, false
+	}
+	h.logger.Error("tickets: load user", "err", err)
+	http.Error(w, "internal server error", http.StatusInternalServerError)
+
+	return nil, accountdomain.Role{}, false
 }
 
 func (h *Handler) categoryAllowed(role accountdomain.Role, categoryKey string) bool {
@@ -134,9 +152,8 @@ func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
 }
 
 func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
-	_, role, ok := h.currentUser(r)
+	_, role, ok := h.resolveUser(w, r)
 	if !ok {
-		httpx.Redirect(w, r, "/login")
 		return
 	}
 	if h.isStaff(role) {
@@ -147,9 +164,8 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) newForm(w http.ResponseWriter, r *http.Request) {
-	_, role, ok := h.currentUser(r)
+	_, role, ok := h.resolveUser(w, r)
 	if !ok {
-		httpx.Redirect(w, r, "/login")
 		return
 	}
 	if h.isStaff(role) {
@@ -160,9 +176,8 @@ func (h *Handler) newForm(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
-	_, role, ok := h.currentUser(r)
+	_, role, ok := h.resolveUser(w, r)
 	if !ok {
-		httpx.Redirect(w, r, "/login")
 		return
 	}
 	if h.isStaff(role) {
@@ -173,9 +188,8 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) detail(w http.ResponseWriter, r *http.Request) {
-	_, role, ok := h.currentUser(r)
+	_, role, ok := h.resolveUser(w, r)
 	if !ok {
-		httpx.Redirect(w, r, "/login")
 		return
 	}
 	if h.isStaff(role) {
@@ -186,9 +200,8 @@ func (h *Handler) detail(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) reply(w http.ResponseWriter, r *http.Request) {
-	_, role, ok := h.currentUser(r)
+	_, role, ok := h.resolveUser(w, r)
 	if !ok {
-		httpx.Redirect(w, r, "/login")
 		return
 	}
 	if h.isStaff(role) {

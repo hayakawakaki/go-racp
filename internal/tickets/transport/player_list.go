@@ -9,9 +9,8 @@ import (
 )
 
 func (h *Handler) playerList(w http.ResponseWriter, r *http.Request) {
-	user, _, ok := h.currentUser(r)
+	user, _, ok := h.resolveUser(w, r)
 	if !ok {
-		httpx.Redirect(w, r, "/login")
 		return
 	}
 

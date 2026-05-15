@@ -171,6 +171,9 @@ func validateTicketsConfig(
 	tickets TicketsConfig,
 	roles RolesConfig,
 ) {
+	if len(categories) == 0 {
+		panic(fmt.Errorf("TicketCategories must define at least one category"))
+	}
 	if limits.MaxOpenPerPlayer < 1 {
 		panic(fmt.Errorf("TicketLimits.MaxOpenPerPlayer must be >= 1, got %d", limits.MaxOpenPerPlayer))
 	}
@@ -178,19 +181,23 @@ func validateTicketsConfig(
 		panic(fmt.Errorf("Tickets.StaffPollInterval must be > 0, got %v", tickets.StaffPollInterval))
 	}
 	for key, category := range categories {
-		if category.Display == "" {
-			panic(fmt.Errorf("TicketCategories.%s.Display is required", key))
+		validateTicketCategory(key, category, roles)
+	}
+}
+
+func validateTicketCategory(key string, category TicketCategoryConfig, roles RolesConfig) {
+	if category.Display == "" {
+		panic(fmt.Errorf("TicketCategories.%s.Display is required", key))
+	}
+	if len(category.Roles) == 0 {
+		panic(fmt.Errorf("TicketCategories.%s.Roles must list at least one role (or [\"*\"])", key))
+	}
+	for _, role := range category.Roles {
+		if role == "*" || role == adminRoleName {
+			continue
 		}
-		if len(category.Roles) == 0 {
-			panic(fmt.Errorf("TicketCategories.%s.Roles must list at least one role (or [\"*\"])", key))
-		}
-		for _, role := range category.Roles {
-			if role == "*" || role == adminRoleName {
-				continue
-			}
-			if _, ok := roles[role]; !ok {
-				panic(fmt.Errorf("TicketCategories.%s.Roles references unknown role %q (declare it in UserRoles)", key, role))
-			}
+		if _, ok := roles[role]; !ok {
+			panic(fmt.Errorf("TicketCategories.%s.Roles references unknown role %q (declare it in UserRoles)", key, role))
 		}
 	}
 }

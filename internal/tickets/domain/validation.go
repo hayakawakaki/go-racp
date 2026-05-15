@@ -1,6 +1,9 @@
 package domain
 
-import "strings"
+import (
+	"strings"
+	"unicode/utf8"
+)
 
 const (
 	MaxSubjectLen = 150
@@ -13,7 +16,7 @@ func ValidateSubject(raw string) (string, error) {
 	if trimmed == "" {
 		return "", ErrSubjectEmpty
 	}
-	if len(trimmed) > MaxSubjectLen {
+	if utf8.RuneCountInString(trimmed) > MaxSubjectLen {
 		return "", ErrSubjectTooLong
 	}
 
@@ -25,7 +28,7 @@ func ValidateBody(raw string) (string, error) {
 	if trimmed == "" {
 		return "", ErrBodyEmpty
 	}
-	if len(trimmed) > MaxBodyLen {
+	if utf8.RuneCountInString(trimmed) > MaxBodyLen {
 		return "", ErrBodyTooLong
 	}
 

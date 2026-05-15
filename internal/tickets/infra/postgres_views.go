@@ -40,7 +40,8 @@ func (r *ViewRepository) Upsert(ctx context.Context, accountID int, ticketID int
 	_, err := r.Pool.Exec(ctx,
 		`INSERT INTO cp_ticket_views (account_id, ticket_id, last_viewed)
 		 VALUES ($1, $2, $3)
-		 ON CONFLICT (account_id, ticket_id) DO UPDATE SET last_viewed = EXCLUDED.last_viewed`,
+		 ON CONFLICT (account_id, ticket_id) DO UPDATE
+		 SET last_viewed = GREATEST(cp_ticket_views.last_viewed, EXCLUDED.last_viewed)`,
 		accountID, ticketID, at,
 	)
 	if err != nil {
