@@ -21,7 +21,7 @@ func TestBuildCategoryResolver_SortsKeysAlphabetically(t *testing.T) {
 	for i, c := range got {
 		gotKeys[i] = c.Key
 	}
-	want := []string{"Announcement", "Patch", "Banana"}
+	want := []string{"Announcement", "Banana", "Patch"}
 	if !slices.Equal(gotKeys, want) {
 		t.Errorf("keys = %v, want %v", gotKeys, want)
 	}
