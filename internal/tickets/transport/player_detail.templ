@@ -22,7 +22,7 @@ templ playerDetailPage(layout httpx.Layout, state PlayerDetailState) {
 					@Header(state.Detail.Ticket, false, state.Categories)
 				</div>
 				<div class="px-6 pb-5">
-					@Thread(state.Detail.Messages, false)
+					@Thread(state.Detail.Messages, false, state.Detail.OtherSeenAt)
 				</div>
 				<div class="px-6 pb-6">
 					@Composer(state.Detail.Ticket, state.Detail.Ticket.CanPlayerReply(), false, "")

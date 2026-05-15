@@ -96,6 +96,9 @@ func (f fakeViews) Get(context.Context, int, int64) (time.Time, error)          
 func (f fakeViews) Upsert(context.Context, int, int64, time.Time) error             { return nil }
 func (f fakeViews) UnreadCountForPlayer(context.Context, int) (int, error)          { return 0, nil }
 func (f fakeViews) UnreadCountForStaff(context.Context, int, []string) (int, error) { return 0, nil }
+func (f fakeViews) OtherSeenAt(context.Context, int64, int, bool) (time.Time, error) {
+	return time.Time{}, nil
+}
 
 type fakeUsers struct {
 	user *accountdomain.User

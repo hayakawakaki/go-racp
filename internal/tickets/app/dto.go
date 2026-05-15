@@ -20,6 +20,7 @@ type TicketListItem struct {
 }
 
 type TicketDetailDTO struct {
-	Messages []domain.Message
-	Ticket   domain.Ticket
+	OtherSeenAt time.Time
+	Messages    []domain.Message
+	Ticket      domain.Ticket
 }

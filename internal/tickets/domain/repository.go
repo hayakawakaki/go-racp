@@ -44,4 +44,5 @@ type ViewRepository interface {
 	Upsert(ctx context.Context, accountID int, ticketID int64, at time.Time) error
 	UnreadCountForPlayer(ctx context.Context, accountID int) (int, error)
 	UnreadCountForStaff(ctx context.Context, accountID int, categoryKeys []string) (int, error)
+	OtherSeenAt(ctx context.Context, ticketID int64, ownerID int, viewerIsStaff bool) (time.Time, error)
 }

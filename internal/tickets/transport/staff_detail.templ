@@ -23,7 +23,7 @@ templ staffDetailPage(layout httpx.Layout, state StaffDetailState) {
 					@Header(state.Detail.Ticket, true, state.Categories)
 				</div>
 				<div class="px-6 pb-5">
-					@Thread(state.Detail.Messages, true)
+					@Thread(state.Detail.Messages, true, state.Detail.OtherSeenAt)
 				</div>
 				<div class="px-6 pb-6">
 					@Composer(state.Detail.Ticket, !state.Detail.Ticket.IsTerminal(), true, "")

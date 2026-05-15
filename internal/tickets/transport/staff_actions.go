@@ -121,7 +121,7 @@ func (h *Handler) respondStaffMutateSuccess(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	httpx.RenderHTML(w, r, h.logger, Thread(refreshed.Messages, true))
+	httpx.RenderHTML(w, r, h.logger, Thread(refreshed.Messages, true, refreshed.OtherSeenAt))
 }
 
 func (h *Handler) respondActionError(w http.ResponseWriter, err error) {

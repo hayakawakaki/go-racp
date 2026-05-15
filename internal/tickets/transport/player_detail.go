@@ -86,5 +86,5 @@ func (h *Handler) playerReply(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
-	httpx.RenderHTML(w, r, h.logger, PlayerReplyResponse(detail.Ticket, detail.Messages))
+	httpx.RenderHTML(w, r, h.logger, PlayerReplyResponse(detail.Ticket, detail.Messages, detail.OtherSeenAt))
 }

@@ -66,6 +66,32 @@ func (r *ViewRepository) UnreadCountForPlayer(ctx context.Context, accountID int
 	return count, nil
 }
 
+func (r *ViewRepository) OtherSeenAt(ctx context.Context, ticketID int64, ownerID int, viewerIsStaff bool) (time.Time, error) {
+	var query string
+	var args []any
+	if viewerIsStaff {
+		query = `SELECT last_viewed FROM cp_ticket_views WHERE ticket_id = $1 AND account_id = $2`
+		args = []any{ticketID, ownerID}
+	} else {
+		query = `SELECT MAX(last_viewed) FROM cp_ticket_views WHERE ticket_id = $1 AND account_id <> $2`
+		args = []any{ticketID, ownerID}
+	}
+
+	var seen *time.Time
+	err := r.Pool.QueryRow(ctx, query, args...).Scan(&seen)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return time.Time{}, nil
+	}
+	if err != nil {
+		return time.Time{}, fmt.Errorf("infra.ViewRepository.OtherSeenAt: %w", err)
+	}
+	if seen == nil {
+		return time.Time{}, nil
+	}
+
+	return *seen, nil
+}
+
 func (r *ViewRepository) UnreadCountForStaff(ctx context.Context, accountID int, categoryKeys []string) (int, error) {
 	if len(categoryKeys) == 0 {
 		return 0, nil

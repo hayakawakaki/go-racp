@@ -250,8 +250,12 @@ func (s *Service) GetTicketForPlayer(ctx context.Context, accountID int, ticketI
 	if err != nil {
 		return TicketDetailDTO{}, fmt.Errorf("app.Service.GetTicketForPlayer: %w", err)
 	}
+	otherSeen, err := s.views.OtherSeenAt(ctx, ticketID, ticket.AccountID, false)
+	if err != nil {
+		s.logger.Error("tickets.GetTicketForPlayer: other-seen", "err", err)
+	}
 
-	return TicketDetailDTO{Ticket: ticket, Messages: messages}, nil
+	return TicketDetailDTO{Ticket: ticket, Messages: messages, OtherSeenAt: otherSeen}, nil
 }
 
 func (s *Service) GetTicketForStaff(ctx context.Context, ticketID int64) (TicketDetailDTO, error) {
@@ -263,8 +267,12 @@ func (s *Service) GetTicketForStaff(ctx context.Context, ticketID int64) (Ticket
 	if err != nil {
 		return TicketDetailDTO{}, fmt.Errorf("app.Service.GetTicketForStaff: %w", err)
 	}
+	otherSeen, err := s.views.OtherSeenAt(ctx, ticketID, ticket.AccountID, true)
+	if err != nil {
+		s.logger.Error("tickets.GetTicketForStaff: other-seen", "err", err)
+	}
 
-	return TicketDetailDTO{Ticket: ticket, Messages: messages}, nil
+	return TicketDetailDTO{Ticket: ticket, Messages: messages, OtherSeenAt: otherSeen}, nil
 }
 
 func (s *Service) ListForPlayer(ctx context.Context, accountID, offset, limit int) ([]TicketListItem, int, error) {
