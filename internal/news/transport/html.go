@@ -29,6 +29,7 @@ func (h *Handler) htmlList(w http.ResponseWriter, r *http.Request) {
 		Items:            items,
 		Categories:       h.svc.Categories().All(),
 		SelectedCategory: categoryKey,
+		CanManage:        h.canManage(r),
 	}
 	httpx.RenderHTML(w, r, h.logger, newsListPage(h.layout(), state))
 }
@@ -51,10 +52,29 @@ func (h *Handler) htmlDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	state := NewsDetailState{
-		Item:     item,
-		BodyHTML: h.renderer.Render(item.Body),
+		Item:      item,
+		BodyHTML:  h.renderer.Render(item.Body),
+		CanManage: h.canManage(r),
 	}
 	httpx.RenderHTML(w, r, h.logger, newsDetailPage(h.layout(), state))
+}
+
+func (h *Handler) htmlCreateForm(w http.ResponseWriter, r *http.Request) {
+	state := h.newCreateFormState("", "", "")
+	httpx.RenderHTML(w, r, h.logger, newsFormPage(h.layout(), state))
+}
+
+func (h *Handler) htmlPreview(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, maxHTMLFormBytes)
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "request too large or malformed", http.StatusBadRequest)
+		return
+	}
+	rendered := h.renderer.Render(r.FormValue("body"))
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if _, err := w.Write([]byte(rendered)); err != nil { //nolint:gosec // rendered is already sanitized via goldmark + bluemonday in the renderer.
+		h.logger.Error("news: preview write", "err", err)
+	}
 }
 
 func (h *Handler) htmlCreate(w http.ResponseWriter, r *http.Request) {
@@ -68,13 +88,40 @@ func (h *Handler) htmlCreate(w http.ResponseWriter, r *http.Request) {
 	category := r.FormValue("category")
 
 	id, err := h.svc.Create(r.Context(), title, body, category)
-	if status, msg, handled := h.classifyMutationErr(err); handled {
-		http.Error(w, msg, status)
+	if err == nil {
+		w.Header().Set("Location", "/news/"+strconv.FormatInt(id, 10))
+		w.WriteHeader(http.StatusSeeOther)
+		return
+	}
+	if field, msg := fieldFromErr(err); field != "" {
+		state := h.newCreateFormState(title, body, category)
+		state.Errors = map[string]string{field: msg}
+		httpx.RenderHTML(w, r, h.logger, newsFormPage(h.layout(), state))
+		return
+	}
+	h.logger.Error("news: create", "err", err)
+	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+}
+
+func (h *Handler) htmlEditForm(w http.ResponseWriter, r *http.Request) {
+	id, ok := parseID(r)
+	if !ok {
+		httpx.Render404(w, r, h.logger, h.layout())
+		return
+	}
+	item, err := h.svc.GetByID(r.Context(), id)
+	if errors.Is(err, domain.ErrNotFound) {
+		httpx.Render404(w, r, h.logger, h.layout())
+		return
+	}
+	if err != nil {
+		h.logger.Error("news: edit form", "err", err, "id", id)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Location", "/news/"+strconv.FormatInt(id, 10))
-	w.WriteHeader(http.StatusSeeOther)
+	state := h.newEditFormState(id, item.Title, item.Body, item.Category)
+	httpx.RenderHTML(w, r, h.logger, newsFormPage(h.layout(), state))
 }
 
 func (h *Handler) htmlUpdate(w http.ResponseWriter, r *http.Request) {
@@ -93,17 +140,23 @@ func (h *Handler) htmlUpdate(w http.ResponseWriter, r *http.Request) {
 	category := r.FormValue("category")
 
 	err := h.svc.Update(r.Context(), id, title, body, category)
+	if err == nil {
+		w.Header().Set("Location", "/news/"+strconv.FormatInt(id, 10))
+		w.WriteHeader(http.StatusSeeOther)
+		return
+	}
 	if errors.Is(err, domain.ErrNotFound) {
 		httpx.Render404(w, r, h.logger, h.layout())
 		return
 	}
-	if status, msg, handled := h.classifyMutationErr(err); handled {
-		http.Error(w, msg, status)
+	if field, msg := fieldFromErr(err); field != "" {
+		state := h.newEditFormState(id, title, body, category)
+		state.Errors = map[string]string{field: msg}
+		httpx.RenderHTML(w, r, h.logger, newsFormPage(h.layout(), state))
 		return
 	}
-
-	w.Header().Set("Location", "/news/"+strconv.FormatInt(id, 10))
-	w.WriteHeader(http.StatusSeeOther)
+	h.logger.Error("news: update", "err", err, "id", id)
+	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 }
 
 func (h *Handler) htmlDelete(w http.ResponseWriter, r *http.Request) {
@@ -127,20 +180,52 @@ func (h *Handler) htmlDelete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusSeeOther)
 }
 
-func (h *Handler) classifyMutationErr(err error) (status int, msg string, handled bool) {
-	switch {
-	case err == nil:
-		return 0, "", false
-	case errors.Is(err, domain.ErrTitleEmpty),
-		errors.Is(err, domain.ErrTitleTooLong),
-		errors.Is(err, domain.ErrBodyEmpty),
-		errors.Is(err, domain.ErrBodyTooLong),
-		errors.Is(err, domain.ErrInvalidCategory):
-		return http.StatusBadRequest, err.Error(), true
-	default:
-		h.logger.Error("news: mutation", "err", err)
-		return http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError), true
+func (h *Handler) newCreateFormState(title, body, category string) NewsFormState {
+	categories := h.svc.Categories().All()
+	if category == "" && len(categories) > 0 {
+		category = categories[0].Key
 	}
+
+	return NewsFormState{
+		Action:         "/news",
+		PageTitle:      "New news post",
+		Submit:         "Create",
+		Title:          title,
+		Body:           body,
+		Category:       category,
+		Categories:     categories,
+		InitialPreview: h.renderer.Render(body),
+	}
+}
+
+func (h *Handler) newEditFormState(id int64, title, body, category string) NewsFormState {
+	return NewsFormState{
+		Action:         fmt.Sprintf("/news/%d/edit", id),
+		PageTitle:      "Edit: " + title,
+		Submit:         "Save",
+		Title:          title,
+		Body:           body,
+		Category:       category,
+		Categories:     h.svc.Categories().All(),
+		InitialPreview: h.renderer.Render(body),
+	}
+}
+
+func fieldFromErr(err error) (field, message string) {
+	switch {
+	case errors.Is(err, domain.ErrTitleEmpty):
+		return "title", "Title is required"
+	case errors.Is(err, domain.ErrTitleTooLong):
+		return "title", "Title is too long"
+	case errors.Is(err, domain.ErrBodyEmpty):
+		return "body", "Body is required"
+	case errors.Is(err, domain.ErrBodyTooLong):
+		return "body", "Body is too long"
+	case errors.Is(err, domain.ErrInvalidCategory):
+		return "category", "Invalid category"
+	}
+
+	return "", ""
 }
 
 func (h *Handler) fetchList(r *http.Request, category string) ([]newsapp.NewsItem, error) {

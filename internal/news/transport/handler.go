@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"net/http"
 
+	accountdomain "github.com/hayakawakaki/go-racp/internal/account/domain"
+	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 	newsapp "github.com/hayakawakaki/go-racp/internal/news/app"
 	"github.com/hayakawakaki/go-racp/internal/news/domain"
@@ -23,24 +25,42 @@ type newsService interface {
 	ListByCategory(ctx context.Context, category string) ([]newsapp.NewsItem, error)
 }
 
+type userLookup interface {
+	GetByID(ctx context.Context, id int) (*accountdomain.User, error)
+}
+
 type HandlerConfig struct {
-	Logger  *slog.Logger
-	General config.GeneralConfig
+	Logger      *slog.Logger
+	Users       userLookup
+	Roles       accountdomain.RoleResolver
+	General     config.GeneralConfig
+	ManageRoles []string
 }
 
 type Handler struct {
-	svc      newsService
-	logger   *slog.Logger
-	renderer *newsinfra.Renderer
-	general  config.GeneralConfig
+	svc         newsService
+	logger      *slog.Logger
+	renderer    *newsinfra.Renderer
+	users       userLookup
+	roles       accountdomain.RoleResolver
+	manageRoles map[string]struct{}
+	general     config.GeneralConfig
 }
 
 func NewHandler(service newsService, renderer *newsinfra.Renderer, cfg HandlerConfig) *Handler {
+	manageRoles := make(map[string]struct{}, len(cfg.ManageRoles))
+	for _, name := range cfg.ManageRoles {
+		manageRoles[name] = struct{}{}
+	}
+
 	return &Handler{
-		svc:      service,
-		renderer: renderer,
-		logger:   cfg.Logger,
-		general:  cfg.General,
+		svc:         service,
+		renderer:    renderer,
+		logger:      cfg.Logger,
+		users:       cfg.Users,
+		roles:       cfg.Roles,
+		manageRoles: manageRoles,
+		general:     cfg.General,
 	}
 }
 
@@ -48,10 +68,34 @@ func (h *Handler) layout() httpx.Layout {
 	return httpx.Layout{GeneralConfig: h.general}
 }
 
+func (h *Handler) canManage(r *http.Request) bool {
+	session, ok := middleware.SessionFromContext(r.Context())
+	if !ok {
+		return false
+	}
+	if h.users == nil {
+		return false
+	}
+	user, err := h.users.GetByID(r.Context(), session.UserID)
+	if err != nil {
+		return false
+	}
+	role := h.roles.Resolve(user.GroupID)
+	if role == accountdomain.RoleAdmin {
+		return true
+	}
+	_, ok = h.manageRoles[role.Name]
+
+	return ok
+}
+
 func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
 	reg.Public(mux, "GET /news", http.HandlerFunc(h.htmlList))
+	reg.Wrap(mux, "News.Manage", "GET /news/create", http.HandlerFunc(h.htmlCreateForm))
+	reg.Wrap(mux, "News.Manage", "GET /news/{id}/edit", http.HandlerFunc(h.htmlEditForm))
 	reg.Public(mux, "GET /news/{id}", http.HandlerFunc(h.htmlDetail))
 	reg.Wrap(mux, "News.Manage", "POST /news", http.HandlerFunc(h.htmlCreate))
+	reg.Wrap(mux, "News.Manage", "POST /news/preview", http.HandlerFunc(h.htmlPreview))
 	reg.Wrap(mux, "News.Manage", "POST /news/{id}/edit", http.HandlerFunc(h.htmlUpdate))
 	reg.Wrap(mux, "News.Manage", "POST /news/{id}/delete", http.HandlerFunc(h.htmlDelete))
 

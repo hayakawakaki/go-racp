@@ -3,6 +3,7 @@ package news
 import (
 	"net/http"
 
+	accountinfra "github.com/hayakawakaki/go-racp/internal/account/infra"
 	platinfra "github.com/hayakawakaki/go-racp/internal/infra"
 	newsapp "github.com/hayakawakaki/go-racp/internal/news/app"
 	"github.com/hayakawakaki/go-racp/internal/news/domain"
@@ -18,16 +19,34 @@ func init() {
 }
 
 func mount(reg *routes.Registry, mux *http.ServeMux, in *platinfra.Infra) {
+	access := config.ProcessAccessConfig()
 	categories := buildCategoryResolver(in.Config.App.NewsCategories)
 	repo := newsinfra.NewRepository(in.DB)
 	service := newsapp.NewService(repo, categories, in.Logger)
 	renderer := newsinfra.NewRenderer()
+	userRepo := accountinfra.NewRepository(in.MainDB)
 
 	handler := newstransport.NewHandler(service, renderer, newstransport.HandlerConfig{
-		Logger:  in.Logger,
-		General: in.Config.App.General,
+		Logger:      in.Logger,
+		Users:       userRepo,
+		Roles:       in.Roles,
+		ManageRoles: manageRoles(access),
+		General:     in.Config.App.General,
 	})
 	handler.RegisterRoutes(reg, mux)
+}
+
+func manageRoles(access config.AccessConfig) []string {
+	news, ok := access["News"]
+	if !ok {
+		return nil
+	}
+	list, ok := news["Manage"]
+	if !ok {
+		return nil
+	}
+
+	return list
 }
 
 func buildCategoryResolver(cfg config.NewsCategoriesConfig) domain.CategoryResolver {

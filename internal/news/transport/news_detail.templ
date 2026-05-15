@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"fmt"
 	"html/template"
 
 	"github.com/hayakawakaki/go-racp/internal/httpx"
@@ -8,15 +9,19 @@ import (
 )
 
 type NewsDetailState struct {
-	BodyHTML template.HTML
-	Item     newsapp.NewsItem
+	BodyHTML  template.HTML
+	Item      newsapp.NewsItem
+	CanManage bool
 }
 
 templ newsDetailPage(layout httpx.Layout, state NewsDetailState) {
 	@httpx.Base(layout, state.Item.Title) {
 		<article class="w-full max-w-3xl self-start p-6">
-			<div class="mb-4">
+			<div class="mb-4 flex items-center justify-between gap-3">
 				<a href="/news" class="text-sm text-blue-600 hover:underline">&larr; News</a>
+				if state.CanManage {
+					<a href={ templ.URL(fmt.Sprintf("/news/%d/edit", state.Item.ID)) } class="rounded bg-gray-200 hover:bg-gray-300 text-gray-900 text-sm font-medium px-3 py-1.5 transition">Edit</a>
+				}
 			</div>
 			<header class="mb-6">
 				<div class="flex items-center gap-3 mb-2">
