@@ -57,15 +57,21 @@ jobs:
         run: |
           mysql -h 127.0.0.1 -P 3306 -uroot -ptestpassword main < docker/mariadb/init/ra-main.sql
           mysql -h 127.0.0.1 -P 3306 -uroot -ptestpassword log < docker/mariadb/init/ra-log.sql
+      - name: Create CP's test database
+        env:
+          PGPASSWORD: testpassword
+        run: psql -h 127.0.0.1 -U postgres -c "CREATE DATABASE cp_test;"
       - name: Apply CP migrations
         env:
-          DB_MAIN_URL: root:testpassword@tcp(127.0.0.1:3306)/main
-        run: go tool goose -dir migrations mysql "$DB_MAIN_URL" up
+          DB_CP_URL: postgres://postgres:testpassword@127.0.0.1:5432/cp?sslmode=disable
+          DB_CP_TEST_URL: postgres://postgres:testpassword@127.0.0.1:5432/cp_test?sslmode=disable
+        run: sh ./scripts/migrate.sh
       - name: Run integration tests
         env:
           APP_URL: http://localhost:8080
           DB_MAIN_URL: root:testpassword@tcp(127.0.0.1:3306)/main
           DB_LOG_URL: root:testpassword@tcp(127.0.0.1:3306)/log
           DB_CP_URL: postgres://postgres:testpassword@127.0.0.1:5432/cp?sslmode=disable
+          DB_CP_TEST_URL: postgres://postgres:testpassword@127.0.0.1:5432/cp_test?sslmode=disable
           SMTP_HOST: localhost
         run: go test -tags=integration ./...
