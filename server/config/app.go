@@ -46,17 +46,36 @@ type CooldownConfig struct {
 	PasswordChange       time.Duration `yaml:"PasswordChange"`
 	EmailChangeRequest   time.Duration `yaml:"EmailChangeRequest"`
 	EmailChange          time.Duration `yaml:"EmailChange"`
+	TicketOpen           time.Duration `yaml:"TicketOpen"`
+}
+
+type TicketLimitsConfig struct {
+	MaxOpenPerPlayer int `yaml:"MaxOpenPerPlayer"`
+}
+
+type TicketCategoryConfig struct {
+	Display string   `yaml:"Display"`
+	Roles   []string `yaml:"Roles"`
+}
+
+type TicketCategoriesConfig map[string]TicketCategoryConfig
+
+type TicketsConfig struct {
+	StaffPollInterval time.Duration `yaml:"StaffPollInterval"`
 }
 
 type RolesConfig map[string]int
 
 // AppConfig holds operator-tunable application settings loaded from config.yml.
 type AppConfig struct {
-	General   GeneralConfig  `yaml:"GeneralConfig"`
-	UserRoles RolesConfig    `yaml:"UserRoles"`
-	Mailer    MailerConfig   `yaml:"MailerConfig"`
-	Cooldown  CooldownConfig `yaml:"Cooldown"`
-	TTL       TTLConfig      `yaml:"TTL"`
+	General          GeneralConfig          `yaml:"GeneralConfig"`
+	UserRoles        RolesConfig            `yaml:"UserRoles"`
+	TicketCategories TicketCategoriesConfig `yaml:"TicketCategories"`
+	Mailer           MailerConfig           `yaml:"MailerConfig"`
+	Cooldown         CooldownConfig         `yaml:"Cooldown"`
+	TTL              TTLConfig              `yaml:"TTL"`
+	Tickets          TicketsConfig          `yaml:"Tickets"`
+	TicketLimits     TicketLimitsConfig     `yaml:"TicketLimits"`
 }
 
 // appConfigDefaults apply default config in case of missing config file
@@ -76,8 +95,14 @@ func appConfigDefaults() *AppConfig {
 			PasswordChange:       7 * 24 * time.Hour,
 			EmailChangeRequest:   60 * time.Second,
 			EmailChange:          14 * 24 * time.Hour,
+			TicketOpen:           5 * time.Minute,
 		},
-		UserRoles: RolesConfig{"Moderator": 20, "Enforcer": 10, "Event": 2},
+		UserRoles:    RolesConfig{"Moderator": 20, "Enforcer": 10, "Event": 2},
+		TicketLimits: TicketLimitsConfig{MaxOpenPerPlayer: 5},
+		TicketCategories: TicketCategoriesConfig{
+			"Other": {Display: "Other", Roles: []string{"*"}},
+		},
+		Tickets: TicketsConfig{StaffPollInterval: 30 * time.Second},
 	}
 }
 
@@ -117,6 +142,7 @@ func validateAppConfig(cfg *AppConfig) {
 		"Cooldown.PasswordChange":       cfg.Cooldown.PasswordChange,
 		"Cooldown.EmailChangeRequest":   cfg.Cooldown.EmailChangeRequest,
 		"Cooldown.EmailChange":          cfg.Cooldown.EmailChange,
+		"Cooldown.TicketOpen":           cfg.Cooldown.TicketOpen,
 	}
 	for name, value := range durations {
 		if value <= 0 {
@@ -136,6 +162,37 @@ func validateAppConfig(cfg *AppConfig) {
 	cfg.General.location = loc
 
 	validateRolesConfig(cfg.UserRoles)
+	validateTicketsConfig(cfg.TicketCategories, cfg.TicketLimits, cfg.Tickets, cfg.UserRoles)
+}
+
+func validateTicketsConfig(
+	categories TicketCategoriesConfig,
+	limits TicketLimitsConfig,
+	tickets TicketsConfig,
+	roles RolesConfig,
+) {
+	if limits.MaxOpenPerPlayer < 1 {
+		panic(fmt.Errorf("TicketLimits.MaxOpenPerPlayer must be >= 1, got %d", limits.MaxOpenPerPlayer))
+	}
+	if tickets.StaffPollInterval <= 0 {
+		panic(fmt.Errorf("Tickets.StaffPollInterval must be > 0, got %v", tickets.StaffPollInterval))
+	}
+	for key, category := range categories {
+		if category.Display == "" {
+			panic(fmt.Errorf("TicketCategories.%s.Display is required", key))
+		}
+		if len(category.Roles) == 0 {
+			panic(fmt.Errorf("TicketCategories.%s.Roles must list at least one role (or [\"*\"])", key))
+		}
+		for _, role := range category.Roles {
+			if role == "*" || role == adminRoleName {
+				continue
+			}
+			if _, ok := roles[role]; !ok {
+				panic(fmt.Errorf("TicketCategories.%s.Roles references unknown role %q (declare it in UserRoles)", key, role))
+			}
+		}
+	}
 }
 
 var reservedRoleNames = map[string]struct{}{

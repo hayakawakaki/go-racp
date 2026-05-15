@@ -17,6 +17,7 @@ Cooldown:
   PasswordChange: "168h"
   EmailChangeRequest: "60s"
   EmailChange: "336h"
+  TicketOpen: "30m"
 
 # Mail Stuffs
 MailerConfig:
@@ -28,3 +29,25 @@ UserRoles:
   Enforcer: 10
   Event: 2
   #Vip: 5
+
+
+# Ticketing related config
+TicketLimits:
+  MaxOpenPerPlayer: 5
+
+TicketCategories:
+  BugReport:
+    Display: "Bug Report"
+    Roles: ["Moderator", "Enforcer"]
+  AccountHelp:
+    Display: "Account Help"
+    Roles: ["Moderator"]
+  Donation:
+    Display: "Donation"
+    Roles: ["Moderator"]
+  Other:
+    Display: "Other"
+    Roles: ["*"]
+
+Tickets:
+  StaffPollInterval: "30s"
