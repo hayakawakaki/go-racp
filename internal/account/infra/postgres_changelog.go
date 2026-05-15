@@ -2,27 +2,29 @@ package infra
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/hayakawakaki/go-racp/internal/account/domain"
 )
 
 type ChangeLogRepository struct {
-	Client *sql.DB
+	Pool *pgxpool.Pool
 }
 
-func NewChangeLogRepository(client *sql.DB) *ChangeLogRepository {
-	return &ChangeLogRepository{Client: client}
+func NewChangeLogRepository(pool *pgxpool.Pool) *ChangeLogRepository {
+	return &ChangeLogRepository{Pool: pool}
 }
 
 func (r *ChangeLogRepository) Record(ctx context.Context, accountID int, changeType domain.ChangeType, at time.Time) error {
-	_, err := r.Client.ExecContext(ctx,
+	_, err := r.Pool.Exec(ctx,
 		`INSERT INTO cp_account_record (account_id, change_type, changed_at)
-		 VALUES (?, ?, ?)
-		 ON DUPLICATE KEY UPDATE changed_at = VALUES(changed_at)`,
+		 VALUES ($1, $2, $3)
+		 ON CONFLICT (account_id, change_type) DO UPDATE SET changed_at = EXCLUDED.changed_at`,
 		accountID, changeType, at,
 	)
 	if err != nil {
@@ -34,11 +36,11 @@ func (r *ChangeLogRepository) Record(ctx context.Context, accountID int, changeT
 
 func (r *ChangeLogRepository) MostRecent(ctx context.Context, accountID int, changeType domain.ChangeType) (time.Time, error) {
 	var changedAt time.Time
-	err := r.Client.QueryRowContext(ctx,
-		`SELECT changed_at FROM cp_account_record WHERE account_id = ? AND change_type = ?`,
+	err := r.Pool.QueryRow(ctx,
+		`SELECT changed_at FROM cp_account_record WHERE account_id = $1 AND change_type = $2`,
 		accountID, changeType,
 	).Scan(&changedAt)
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return time.Time{}, nil
 	}
 	if err != nil {

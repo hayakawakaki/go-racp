@@ -83,7 +83,7 @@ func Start() error {
 		Roles:        domain.NewRoleResolver(cfg.App.UserRoles),
 	}
 
-	sessSvc := app.NewSessionService(accountinfra.NewSessionRepository(mainDB), cfg.App.TTL.Session)
+	sessSvc := app.NewSessionService(accountinfra.NewSessionRepository(cpPool), cfg.App.TTL.Session)
 	secure := cfg.Env.Mode != "development"
 	withSession := middleware.WithSession(sessSvc, logger, secure)
 

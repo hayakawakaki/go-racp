@@ -2,26 +2,28 @@ package infra
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/hayakawakaki/go-racp/internal/account/domain"
 )
 
 type SessionRepository struct {
-	Client *sql.DB
+	Pool *pgxpool.Pool
 }
 
-func NewSessionRepository(client *sql.DB) *SessionRepository {
-	return &SessionRepository{Client: client}
+func NewSessionRepository(pool *pgxpool.Pool) *SessionRepository {
+	return &SessionRepository{Pool: pool}
 }
 
 func (r *SessionRepository) Create(ctx context.Context, s *domain.Session) error {
-	_, err := r.Client.ExecContext(ctx,
+	_, err := r.Pool.Exec(ctx,
 		`INSERT INTO cp_sessions (token_hash, user_id, expires_at, last_seen_at, created_at)
-		 VALUES (?, ?, ?, ?, ?)`,
+		 VALUES ($1, $2, $3, $4, $5)`,
 		s.TokenHash[:], s.UserID, s.ExpiresAt, s.LastSeenAt, s.CreatedAt,
 	)
 	if err != nil {
@@ -36,11 +38,11 @@ func (r *SessionRepository) GetByTokenHash(ctx context.Context, hash [32]byte) (
 		s   domain.Session
 		raw []byte
 	)
-	err := r.Client.QueryRowContext(ctx,
+	err := r.Pool.QueryRow(ctx,
 		`SELECT token_hash, user_id, expires_at, last_seen_at, created_at
-		 FROM cp_sessions WHERE token_hash = ?`, hash[:],
+		 FROM cp_sessions WHERE token_hash = $1`, hash[:],
 	).Scan(&raw, &s.UserID, &s.ExpiresAt, &s.LastSeenAt, &s.CreatedAt)
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, domain.ErrSessionNotFound
 	}
 	if err != nil {
@@ -56,18 +58,14 @@ func (r *SessionRepository) GetByTokenHash(ctx context.Context, hash [32]byte) (
 }
 
 func (r *SessionRepository) Refresh(ctx context.Context, hash [32]byte, lastSeen, expiresAt time.Time) error {
-	res, err := r.Client.ExecContext(ctx,
-		`UPDATE cp_sessions SET last_seen_at = ?, expires_at = ? WHERE token_hash = ?`,
+	tag, err := r.Pool.Exec(ctx,
+		`UPDATE cp_sessions SET last_seen_at = $1, expires_at = $2 WHERE token_hash = $3`,
 		lastSeen, expiresAt, hash[:],
 	)
 	if err != nil {
 		return fmt.Errorf("infra.SessionRepository.Refresh: %w", err)
 	}
-	rows, err := res.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("infra.SessionRepository.Refresh: %w", err)
-	}
-	if rows == 0 {
+	if tag.RowsAffected() == 0 {
 		return domain.ErrSessionNotFound
 	}
 
@@ -75,17 +73,13 @@ func (r *SessionRepository) Refresh(ctx context.Context, hash [32]byte, lastSeen
 }
 
 func (r *SessionRepository) Delete(ctx context.Context, hash [32]byte) error {
-	res, err := r.Client.ExecContext(ctx,
-		`DELETE FROM cp_sessions WHERE token_hash = ?`, hash[:],
+	tag, err := r.Pool.Exec(ctx,
+		`DELETE FROM cp_sessions WHERE token_hash = $1`, hash[:],
 	)
 	if err != nil {
 		return fmt.Errorf("infra.SessionRepository.Delete: %w", err)
 	}
-	rows, err := res.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("infra.SessionRepository.Delete: %w", err)
-	}
-	if rows == 0 {
+	if tag.RowsAffected() == 0 {
 		return domain.ErrSessionNotFound
 	}
 
@@ -93,8 +87,8 @@ func (r *SessionRepository) Delete(ctx context.Context, hash [32]byte) error {
 }
 
 func (r *SessionRepository) DeleteByUserID(ctx context.Context, userID int) error {
-	if _, err := r.Client.ExecContext(ctx,
-		"DELETE FROM cp_sessions WHERE user_id = ?",
+	if _, err := r.Pool.Exec(ctx,
+		`DELETE FROM cp_sessions WHERE user_id = $1`,
 		userID,
 	); err != nil {
 		return fmt.Errorf("infra.SessionRepository.DeleteByUserID: %w", err)
@@ -104,8 +98,8 @@ func (r *SessionRepository) DeleteByUserID(ctx context.Context, userID int) erro
 }
 
 func (r *SessionRepository) DeleteByUserIDExcept(ctx context.Context, userID int, exceptHash [32]byte) error {
-	if _, err := r.Client.ExecContext(ctx,
-		"DELETE FROM cp_sessions WHERE user_id = ? AND token_hash <> ?",
+	if _, err := r.Pool.Exec(ctx,
+		`DELETE FROM cp_sessions WHERE user_id = $1 AND token_hash <> $2`,
 		userID, exceptHash[:],
 	); err != nil {
 		return fmt.Errorf("infra.SessionRepository.DeleteByUserIDExcept: %w", err)

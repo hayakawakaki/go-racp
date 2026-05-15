@@ -13,10 +13,10 @@ import (
 
 var _ domain.ChangeLog = (*ChangeLogRepository)(nil)
 
-func TestMySQLRepository_RecordAndMostRecent(t *testing.T) {
-	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
-	testutil.TruncateMariaDB(t, db, "cp_account_record")
-	repo := NewChangeLogRepository(db)
+func TestChangeLogRepository_RecordAndMostRecent(t *testing.T) {
+	pool := testutil.OpenPostgres(t, "DB_CP_TEST_URL")
+	testutil.TruncatePostgres(t, pool, "cp_account_record")
+	repo := NewChangeLogRepository(pool)
 	ctx := context.Background()
 
 	at := time.Now().UTC().Truncate(time.Second)
@@ -33,10 +33,10 @@ func TestMySQLRepository_RecordAndMostRecent(t *testing.T) {
 	}
 }
 
-func TestMySQLRepository_Record_UpsertsLatestTime(t *testing.T) {
-	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
-	testutil.TruncateMariaDB(t, db, "cp_account_record")
-	repo := NewChangeLogRepository(db)
+func TestChangeLogRepository_Record_UpsertsLatestTime(t *testing.T) {
+	pool := testutil.OpenPostgres(t, "DB_CP_TEST_URL")
+	testutil.TruncatePostgres(t, pool, "cp_account_record")
+	repo := NewChangeLogRepository(pool)
 	ctx := context.Background()
 
 	first := time.Now().UTC().Truncate(time.Second).Add(-time.Hour)
@@ -57,10 +57,10 @@ func TestMySQLRepository_Record_UpsertsLatestTime(t *testing.T) {
 	}
 }
 
-func TestMySQLRepository_MostRecent_NoRowsReturnsZeroTime(t *testing.T) {
-	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
-	testutil.TruncateMariaDB(t, db, "cp_account_record")
-	repo := NewChangeLogRepository(db)
+func TestChangeLogRepository_MostRecent_NoRowsReturnsZeroTime(t *testing.T) {
+	pool := testutil.OpenPostgres(t, "DB_CP_TEST_URL")
+	testutil.TruncatePostgres(t, pool, "cp_account_record")
+	repo := NewChangeLogRepository(pool)
 
 	got, err := repo.MostRecent(context.Background(), 999, domain.ChangeTypePassword)
 	if err != nil {
@@ -71,10 +71,10 @@ func TestMySQLRepository_MostRecent_NoRowsReturnsZeroTime(t *testing.T) {
 	}
 }
 
-func TestMySQLRepository_MostRecent_FiltersByChangeType(t *testing.T) {
-	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
-	testutil.TruncateMariaDB(t, db, "cp_account_record")
-	repo := NewChangeLogRepository(db)
+func TestChangeLogRepository_MostRecent_FiltersByChangeType(t *testing.T) {
+	pool := testutil.OpenPostgres(t, "DB_CP_TEST_URL")
+	testutil.TruncatePostgres(t, pool, "cp_account_record")
+	repo := NewChangeLogRepository(pool)
 	ctx := context.Background()
 
 	now := time.Now().UTC().Truncate(time.Second)
