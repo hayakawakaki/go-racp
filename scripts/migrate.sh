@@ -1,5 +1,8 @@
 #!/bin/sh
 set -e
-: "${DB_MAIN_URL:?DB_MAIN_URL is required}"
+: "${DB_CP_URL:?DB_CP_URL is required}"
 GOOSE="${GOOSE:-go tool goose}"
-exec $GOOSE -dir migrations mysql "$DB_MAIN_URL" up
+$GOOSE -dir migrations postgres "$DB_CP_URL" up
+if [ -n "$DB_CP_TEST_URL" ]; then
+    $GOOSE -dir migrations postgres "$DB_CP_TEST_URL" up
+fi
