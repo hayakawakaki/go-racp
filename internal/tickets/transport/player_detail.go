@@ -1,13 +1,17 @@
 package transport
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 	"github.com/hayakawakaki/go-racp/internal/tickets/domain"
 )
+
+const markViewedTimeout = 5 * time.Second
 
 func (h *Handler) playerDetail(w http.ResponseWriter, r *http.Request) {
 	user, _, ok := h.currentUser(r)
@@ -33,18 +37,15 @@ func (h *Handler) playerDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go h.deferMarkViewed(r, user.ID, ticketID)
+	go h.deferMarkViewed(context.WithoutCancel(r.Context()), user.ID, ticketID)
 
 	httpx.RenderHTML(w, r, h.logger, playerDetailPage(h.layout(), PlayerDetailState{Detail: detail}))
 }
 
-func (h *Handler) deferMarkViewed(r *http.Request, accountID int, ticketID int64) {
-	select {
-	case <-r.Context().Done():
-		return
-	default:
-	}
-	h.svc.MarkViewed(r.Context(), accountID, ticketID)
+func (h *Handler) deferMarkViewed(parent context.Context, accountID int, ticketID int64) {
+	ctx, cancel := context.WithTimeout(parent, markViewedTimeout)
+	defer cancel()
+	h.svc.MarkViewed(ctx, accountID, ticketID)
 }
 
 func (h *Handler) playerReply(w http.ResponseWriter, r *http.Request) {

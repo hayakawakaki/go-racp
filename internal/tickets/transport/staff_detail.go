@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strconv"
@@ -36,7 +37,7 @@ func (h *Handler) staffDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go h.deferMarkViewed(r, user.ID, ticketID)
+	go h.deferMarkViewed(context.WithoutCancel(r.Context()), user.ID, ticketID)
 
 	httpx.RenderHTML(w, r, h.logger, staffDetailPage(h.layout(), StaffDetailState{
 		Detail:     detail,

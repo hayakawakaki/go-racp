@@ -53,30 +53,38 @@ type userLookup interface {
 }
 
 type HandlerConfig struct {
+	General      config.GeneralConfig
+	Roles        accountdomain.RoleResolver
 	Logger       *slog.Logger
 	Users        userLookup
-	Roles        accountdomain.RoleResolver
-	General      config.GeneralConfig
+	ManageRoles  []string
 	PollInterval time.Duration
 }
 
 type Handler struct {
-	svc     ticketService
-	users   userLookup
-	logger  *slog.Logger
-	roles   accountdomain.RoleResolver
-	general config.GeneralConfig
-	poll    time.Duration
+	svc         ticketService
+	users       userLookup
+	logger      *slog.Logger
+	manageRoles map[string]struct{}
+	roles       accountdomain.RoleResolver
+	general     config.GeneralConfig
+	poll        time.Duration
 }
 
 func NewHandler(service ticketService, cfg HandlerConfig) *Handler {
+	manageRoles := make(map[string]struct{}, len(cfg.ManageRoles))
+	for _, name := range cfg.ManageRoles {
+		manageRoles[name] = struct{}{}
+	}
+
 	return &Handler{
-		svc:     service,
-		users:   cfg.Users,
-		logger:  cfg.Logger,
-		general: cfg.General,
-		roles:   cfg.Roles,
-		poll:    cfg.PollInterval,
+		svc:         service,
+		users:       cfg.Users,
+		logger:      cfg.Logger,
+		general:     cfg.General,
+		roles:       cfg.Roles,
+		poll:        cfg.PollInterval,
+		manageRoles: manageRoles,
 	}
 }
 
@@ -102,8 +110,13 @@ func (h *Handler) categoryAllowed(role accountdomain.Role, categoryKey string) b
 	return h.svc.Categories().Permits(categoryKey, role.Name, role == accountdomain.RoleAdmin)
 }
 
-func isStaff(role accountdomain.Role) bool {
-	return role != accountdomain.RolePlayer && role.Name != ""
+func (h *Handler) isStaff(role accountdomain.Role) bool {
+	if role == accountdomain.RoleAdmin {
+		return true
+	}
+	_, ok := h.manageRoles[role.Name]
+
+	return ok
 }
 
 func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
@@ -126,7 +139,7 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
 		httpx.Redirect(w, r, "/login")
 		return
 	}
-	if isStaff(role) {
+	if h.isStaff(role) {
 		h.staffList(w, r)
 		return
 	}
@@ -139,7 +152,7 @@ func (h *Handler) newForm(w http.ResponseWriter, r *http.Request) {
 		httpx.Redirect(w, r, "/login")
 		return
 	}
-	if isStaff(role) {
+	if h.isStaff(role) {
 		httpx.Redirect(w, r, "/tickets")
 		return
 	}
@@ -152,7 +165,7 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 		httpx.Redirect(w, r, "/login")
 		return
 	}
-	if isStaff(role) {
+	if h.isStaff(role) {
 		httpx.Redirect(w, r, "/tickets")
 		return
 	}
@@ -165,7 +178,7 @@ func (h *Handler) detail(w http.ResponseWriter, r *http.Request) {
 		httpx.Redirect(w, r, "/login")
 		return
 	}
-	if isStaff(role) {
+	if h.isStaff(role) {
 		h.staffDetail(w, r)
 		return
 	}
@@ -178,7 +191,7 @@ func (h *Handler) reply(w http.ResponseWriter, r *http.Request) {
 		httpx.Redirect(w, r, "/login")
 		return
 	}
-	if isStaff(role) {
+	if h.isStaff(role) {
 		h.staffReply(w, r)
 		return
 	}
