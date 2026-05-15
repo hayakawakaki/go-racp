@@ -15,6 +15,19 @@ type ActionRoles map[string]RoleList
 
 type AccessConfig map[string]ActionRoles
 
+func (c AccessConfig) ManageRoles(group string) []string {
+	actions, ok := c[group]
+	if !ok {
+		return nil
+	}
+	list, ok := actions["Manage"]
+	if !ok {
+		return nil
+	}
+
+	return list
+}
+
 // ProcessAccessConfig loads and validates access.yml from the project root, returning an empty config when the file is absent and panicking on any parse or schema error.
 func ProcessAccessConfig() AccessConfig {
 	cfgPath, err := GetTargetFilePath("access.yml")

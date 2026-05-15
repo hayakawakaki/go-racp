@@ -1,11 +1,11 @@
 package transport
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 	"time"
 
+	"github.com/hayakawakaki/go-racp/internal/httpx"
 	"github.com/hayakawakaki/go-racp/internal/news/domain"
 )
 
@@ -20,10 +20,10 @@ type newsJSON struct {
 }
 
 func (h *Handler) jsonList(w http.ResponseWriter, r *http.Request) {
-	items, err := h.fetchList(r, r.URL.Query().Get("category"))
+	items, err := h.fetchList(r, r.URL.Query().Get(fieldCategory))
 	if err != nil {
 		h.logger.Error("news: api list", "err", err)
-		writeJSON(w, http.StatusInternalServerError, map[string]string{jsonErrorKey: "internal error"})
+		_ = httpx.WriteJSON(w, http.StatusInternalServerError, map[string]string{jsonErrorKey: "internal error"})
 		return
 	}
 
@@ -37,37 +37,31 @@ func (h *Handler) jsonList(w http.ResponseWriter, r *http.Request) {
 			CreatedAt: item.CreatedAt.UTC(),
 		})
 	}
-	writeJSON(w, http.StatusOK, out)
+	_ = httpx.WriteJSON(w, http.StatusOK, out)
 }
 
 func (h *Handler) jsonGet(w http.ResponseWriter, r *http.Request) {
 	id, ok := parseID(r)
 	if !ok {
-		writeJSON(w, http.StatusNotFound, map[string]string{jsonErrorKey: "news not found"})
+		_ = httpx.WriteJSON(w, http.StatusNotFound, map[string]string{jsonErrorKey: "news not found"})
 		return
 	}
 	item, err := h.svc.GetByID(r.Context(), id)
 	if errors.Is(err, domain.ErrNotFound) {
-		writeJSON(w, http.StatusNotFound, map[string]string{jsonErrorKey: "news not found"})
+		_ = httpx.WriteJSON(w, http.StatusNotFound, map[string]string{jsonErrorKey: "news not found"})
 		return
 	}
 	if err != nil {
 		h.logger.Error("news: api get", "err", err, "id", id)
-		writeJSON(w, http.StatusInternalServerError, map[string]string{jsonErrorKey: "internal error"})
+		_ = httpx.WriteJSON(w, http.StatusInternalServerError, map[string]string{jsonErrorKey: "internal error"})
 		return
 	}
 
-	writeJSON(w, http.StatusOK, newsJSON{
+	_ = httpx.WriteJSON(w, http.StatusOK, newsJSON{
 		ID:        item.ID,
 		Title:     item.Title,
 		Body:      item.Body,
 		Category:  item.Category,
 		CreatedAt: item.CreatedAt.UTC(),
 	})
-}
-
-func writeJSON(w http.ResponseWriter, status int, payload any) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(payload)
 }

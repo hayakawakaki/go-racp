@@ -31,23 +31,10 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *platinfra.Infra) {
 		Logger:      in.Logger,
 		Users:       userRepo,
 		Roles:       in.Roles,
-		ManageRoles: manageRoles(access),
+		ManageRoles: access.ManageRoles("News"),
 		General:     in.Config.App.General,
 	})
 	handler.RegisterRoutes(reg, mux)
-}
-
-func manageRoles(access config.AccessConfig) []string {
-	news, ok := access["News"]
-	if !ok {
-		return nil
-	}
-	list, ok := news["Manage"]
-	if !ok {
-		return nil
-	}
-
-	return list
 }
 
 func buildCategoryResolver(cfg config.NewsCategoriesConfig) domain.CategoryResolver {
