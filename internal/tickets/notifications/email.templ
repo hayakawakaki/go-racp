@@ -1,0 +1,28 @@
+package notifications
+
+import "fmt"
+
+type EmailData struct {
+	ServerName string
+	Subject    string
+	EventLabel string
+	URL        string
+	TicketNo   int64
+}
+
+templ Email(data EmailData) {
+	<!DOCTYPE html>
+	<html>
+		<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #111;">
+			<h2>{ data.ServerName } - Ticket #{ fmt.Sprint(data.TicketNo) }</h2>
+			<p>{ data.EventLabel }</p>
+			<p><strong>Subject:</strong> { data.Subject }</p>
+			<p>
+				<a href={ templ.URL(data.URL) } style="display:inline-block; background:#2563eb; color:#fff; padding:10px 16px; border-radius:6px; text-decoration:none;">
+					View ticket
+				</a>
+			</p>
+			<p style="color:#777; font-size:12px;">You're receiving this because you opened a support ticket.</p>
+		</body>
+	</html>
+}

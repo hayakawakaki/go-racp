@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 )
 
+const adminRoleName = "Admin"
+
 // GetTargetFilePath walks up from the current working directory to find target by name, stopping at the directory containing go.mod.
 func GetTargetFilePath(target string) (string, error) {
 	dir, err := os.Getwd()

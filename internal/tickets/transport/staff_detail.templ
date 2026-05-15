@@ -1,0 +1,35 @@
+package transport
+
+import (
+	"github.com/hayakawakaki/go-racp/internal/httpx"
+	ticketsapp "github.com/hayakawakaki/go-racp/internal/tickets/app"
+	"github.com/hayakawakaki/go-racp/internal/tickets/domain"
+)
+
+type StaffDetailState struct {
+	Detail     ticketsapp.TicketDetailDTO
+	Categories []domain.Category
+}
+
+templ staffDetailPage(layout httpx.Layout, state StaffDetailState) {
+	@httpx.Base(layout, "Staff ticket") {
+		<div class="w-full max-w-4xl self-start">
+			<div class="mb-4 flex items-center justify-between">
+				<a href="/tickets" class="text-sm text-blue-600 hover:underline">← Back to queue</a>
+				<span class="text-xs text-gray-500">Opened by <span class="font-medium text-gray-800">{ state.Detail.Ticket.AuthorUsername }</span></span>
+			</div>
+			<div class="bg-white border border-gray-200 rounded-lg shadow-sm">
+				<div class="px-6 pt-5">
+					@Header(state.Detail.Ticket, true, state.Categories)
+				</div>
+				<div class="px-6 pb-5">
+					@Thread(state.Detail.Messages, true, state.Detail.OtherSeenAt)
+				</div>
+				<div class="px-6 pb-6">
+					@Composer(state.Detail.Ticket, !state.Detail.Ticket.IsTerminal(), true, "")
+					@StaffNoteComposer(state.Detail.Ticket)
+				</div>
+			</div>
+		</div>
+	}
+}

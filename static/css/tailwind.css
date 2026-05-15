@@ -1,2 +1,4 @@
 @import "tailwindcss";
 @source "../../internal/**/*.templ";
+
+[x-cloak] { display: none !important; }

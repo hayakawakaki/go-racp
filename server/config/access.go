@@ -58,7 +58,7 @@ func parseAccessConfig(data []byte) (AccessConfig, error) {
 }
 
 func validateAccessConfig(cfg AccessConfig) {
-	if _, hasAdmin := cfg["Admin"]; hasAdmin {
+	if _, hasAdmin := cfg[adminRoleName]; hasAdmin {
 		panic(fmt.Errorf("access.yml: top-level 'Admin' key is forbidden — Admin is hardcoded"))
 	}
 	for groupName, actions := range cfg {
@@ -71,7 +71,7 @@ func validateAccessConfig(cfg AccessConfig) {
 				panic(fmt.Errorf("access.yml: Action '%s' has an empty list — would deny everyone; use a non-empty list or remove the entry", fullName))
 			}
 			for _, role := range list {
-				if role == "Admin" {
+				if role == adminRoleName {
 					panic(fmt.Errorf("access.yml: Action '%s' lists 'Admin' — Admin is implicit, remove it from the list", fullName))
 				}
 				if role == "" {

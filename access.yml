@@ -14,3 +14,9 @@ Account:
   View:           ["*"]
   ChangePassword: ["*"]
   ChangeEmail:    ["*"]
+
+Tickets:
+  View:   ["*"]
+  Open:   ["*"]
+  Reply:  ["*"]
+  Manage: ["Moderator", "Enforcer"]
