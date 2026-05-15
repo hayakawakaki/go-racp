@@ -44,7 +44,7 @@ templ playerListPage(layout httpx.Layout, state PlayerListState) {
 										<div class="mt-1 flex items-center gap-2 text-xs text-gray-500">
 											<span class="font-mono">#{ fmt.Sprint(item.ID) }</span>
 											<span class="text-gray-300">·</span>
-											<span>{ item.Category }</span>
+											<span>{ item.CategoryDisplay }</span>
 											<span class="text-gray-300">·</span>
 											@statusBadge(item.Status)
 										</div>

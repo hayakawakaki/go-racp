@@ -97,7 +97,7 @@ func validateAccessCrossConfig(categories config.TicketCategoriesConfig, access 
 				continue
 			}
 			if _, ok := allowed[role]; !ok {
-				panic(fmt.Errorf("TicketCategories.%s lists role %q but Tickets.StaffAccess does not — that role can never reach the category", key, role))
+				panic(fmt.Errorf("TicketCategories.%s lists role %q but Tickets.Manage does not; that role can never reach the category", key, role))
 			}
 		}
 	}

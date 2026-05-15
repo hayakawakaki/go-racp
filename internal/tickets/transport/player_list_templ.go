@@ -183,9 +183,9 @@ func playerListPage(layout httpx.Layout, state PlayerListState) templ.Component 
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var12 string
-					templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(item.Category)
+					templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(item.CategoryDisplay)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/player_list.templ`, Line: 47, Col: 32}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/player_list.templ`, Line: 47, Col: 39}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 					if templ_7745c5c3_Err != nil {

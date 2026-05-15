@@ -38,7 +38,10 @@ func (h *Handler) playerDetail(w http.ResponseWriter, r *http.Request) {
 
 	go h.deferMarkViewed(context.WithoutCancel(r.Context()), user.ID, ticketID)
 
-	httpx.RenderHTML(w, r, h.logger, playerDetailPage(h.layout(), PlayerDetailState{Detail: detail}))
+	httpx.RenderHTML(w, r, h.logger, playerDetailPage(h.layout(), PlayerDetailState{
+		Detail:     detail,
+		Categories: h.svc.Categories().All(),
+	}))
 }
 
 func (h *Handler) deferMarkViewed(parent context.Context, accountID int, ticketID int64) {
@@ -83,5 +86,5 @@ func (h *Handler) playerReply(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
-	httpx.RenderHTML(w, r, h.logger, Thread(detail.Messages, false))
+	httpx.RenderHTML(w, r, h.logger, PlayerReplyResponse(detail.Ticket, detail.Messages))
 }

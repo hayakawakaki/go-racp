@@ -64,6 +64,14 @@ func (s *Service) Now() time.Time { return s.now() }
 
 func (s *Service) Categories() domain.CategoryResolver { return s.categories }
 
+func (s *Service) categoryDisplay(key string) string {
+	if category, ok := s.categories.Get(key); ok {
+		return category.Display
+	}
+
+	return key
+}
+
 func (s *Service) OpenTicket(ctx context.Context, accountID int, category, subject, body string) (int64, error) {
 	if err := s.checkOpenGate(ctx, accountID, category); err != nil {
 		return 0, err
@@ -291,15 +299,16 @@ func (s *Service) toListItems(ctx context.Context, viewerID int, tickets []domai
 			s.logger.Error("tickets.toListItems: view lookup", "err", err, "ticket", ticket.ID)
 		}
 		out = append(out, TicketListItem{
-			ID:             ticket.ID,
-			AuthorUsername: ticket.AuthorUsername,
-			Category:       ticket.Category,
-			Subject:        ticket.Subject,
-			Status:         ticket.Status,
-			LastActor:      ticket.LastActor,
-			MessageCount:   ticket.MessageCount,
-			LastActivity:   ticket.LastActivity,
-			Unread:         ticket.IsUnreadFor(lastViewed),
+			ID:              ticket.ID,
+			AuthorUsername:  ticket.AuthorUsername,
+			Category:        ticket.Category,
+			CategoryDisplay: s.categoryDisplay(ticket.Category),
+			Subject:         ticket.Subject,
+			Status:          ticket.Status,
+			LastActor:       ticket.LastActor,
+			MessageCount:    ticket.MessageCount,
+			LastActivity:    ticket.LastActivity,
+			Unread:          ticket.IsUnreadFor(lastViewed),
 		})
 	}
 

@@ -47,51 +47,68 @@ templ threadMessage(message domain.Message) {
 
 templ Composer(ticket domain.Ticket, canReply, isStaff bool, errorMsg string) {
 	<div id="ticket-composer">
-		if !canReply {
-			<div class="rounded-md border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-500 italic">
-				if ticket.IsTerminal() {
-					This ticket is { string(ticket.Status) }. No further replies can be added.
-				} else if isStaff {
-					Waiting for the next action.
-				} else {
-					Waiting on staff response.
-				}
-			</div>
-		} else {
-			<form
-				hx-post={ composerPostURL(ticket, isStaff) }
-				hx-target="#ticket-thread"
-				hx-swap="outerHTML"
-				class="rounded-md border border-gray-200 bg-white shadow-sm"
-			>
-				<div class="px-4 pt-3 pb-2 border-b border-gray-100">
-					<span class="text-xs font-medium uppercase tracking-wide text-gray-500">
-						if isStaff {
-							Staff reply
-						} else {
-							Your reply
-						}
-					</span>
-				</div>
-				<textarea
-					name="body"
-					rows="4"
-					required
-					maxlength={ fmt.Sprint(domain.MaxBodyLen) }
-					placeholder="Write your message…"
-					oninput="this.form.querySelector('[data-count]').textContent = this.value.length"
-					class="block w-full px-4 py-3 text-sm leading-relaxed text-gray-900 placeholder-gray-400 focus:outline-none resize-y"
-				></textarea>
-				if errorMsg != "" {
-					<p class="px-4 pb-2 text-sm text-red-600">{ errorMsg }</p>
-				}
-				<div class="flex items-center justify-between gap-2 px-4 py-2 bg-gray-50 border-t border-gray-100 rounded-b-md">
-					<span class="text-xs text-gray-400 tabular-nums"><span data-count>0</span> / { fmt.Sprint(domain.MaxBodyLen) }</span>
-					<button type="submit" class="rounded bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-1.5 transition">Send</button>
-				</div>
-			</form>
-		}
+		@composerContent(ticket, canReply, isStaff, errorMsg)
 	</div>
+}
+
+templ ComposerOOB(ticket domain.Ticket, canReply, isStaff bool, errorMsg string) {
+	<div id="ticket-composer" hx-swap-oob="true">
+		@composerContent(ticket, canReply, isStaff, errorMsg)
+	</div>
+}
+
+templ composerContent(ticket domain.Ticket, canReply, isStaff bool, errorMsg string) {
+	if !canReply {
+		<div class="rounded-md border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-600">
+			if ticket.IsTerminal() {
+				<p class="font-medium text-gray-700">This ticket is { string(ticket.Status) }.</p>
+				<p class="text-gray-500 italic mt-0.5">No further replies can be added. Open a new ticket if you need more help.</p>
+			} else if isStaff {
+				<p class="italic">Waiting for the player to respond.</p>
+			} else {
+				<p class="font-medium text-gray-700">Your message has been sent.</p>
+				<p class="text-gray-500 italic mt-0.5">Please wait for a staff to reply.</p>
+			}
+		</div>
+	} else {
+		<form
+			hx-post={ composerPostURL(ticket, isStaff) }
+			hx-target="#ticket-thread"
+			hx-swap="outerHTML"
+			class="rounded-md border border-gray-200 bg-white shadow-sm"
+		>
+			<div class="px-4 pt-3 pb-2 border-b border-gray-100">
+				<span class="text-xs font-medium uppercase tracking-wide text-gray-500">
+					if isStaff {
+						Staff reply
+					} else {
+						Your reply
+					}
+				</span>
+			</div>
+			<textarea
+				name="body"
+				rows="4"
+				required
+				maxlength={ fmt.Sprint(domain.MaxBodyLen) }
+				placeholder="Write your message…"
+				oninput="this.form.querySelector('[data-count]').textContent = this.value.length"
+				class="block w-full px-4 py-3 text-sm leading-relaxed text-gray-900 placeholder-gray-400 focus:outline-none resize-y"
+			></textarea>
+			if errorMsg != "" {
+				<p class="px-4 pb-2 text-sm text-red-600">{ errorMsg }</p>
+			}
+			<div class="flex items-center justify-between gap-2 px-4 py-2 bg-gray-50 border-t border-gray-100 rounded-b-md">
+				<span class="text-xs text-gray-400 tabular-nums"><span data-count>0</span> / { fmt.Sprint(domain.MaxBodyLen) }</span>
+				<button type="submit" class="rounded bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-1.5 transition">Send</button>
+			</div>
+		</form>
+	}
+}
+
+templ PlayerReplyResponse(ticket domain.Ticket, messages []domain.Message) {
+	@Thread(messages, false)
+	@ComposerOOB(ticket, ticket.CanPlayerReply(), false, "")
 }
 
 templ StaffNoteComposer(ticket domain.Ticket) {
@@ -134,7 +151,7 @@ templ Header(ticket domain.Ticket, isStaff bool, categories []domain.Category) {
 				<h1 class="mt-1 text-2xl font-semibold text-gray-900 break-words">{ ticket.Subject }</h1>
 				<div class="mt-2 flex flex-wrap items-center gap-2">
 					@statusBadge(ticket.Status)
-					<span class="inline-flex items-center rounded-full bg-gray-100 text-gray-700 text-xs font-medium px-2.5 py-0.5">{ ticket.Category }</span>
+					<span class="inline-flex items-center rounded-full bg-gray-100 text-gray-700 text-xs font-medium px-2.5 py-0.5">{ categoryDisplay(ticket.Category, categories) }</span>
 					<span class="text-xs text-gray-500">{ fmt.Sprint(ticket.MessageCount) } messages</span>
 				</div>
 			</div>
@@ -143,6 +160,16 @@ templ Header(ticket domain.Ticket, isStaff bool, categories []domain.Category) {
 			@staffHeaderActions(ticket, categories)
 		}
 	</div>
+}
+
+func categoryDisplay(key string, categories []domain.Category) string {
+	for _, category := range categories {
+		if category.Key == key {
+			return category.Display
+		}
+	}
+
+	return key
 }
 
 templ statusBadge(status domain.Status) {

@@ -14,7 +14,7 @@ templ Email(data EmailData) {
 	<!DOCTYPE html>
 	<html>
 		<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #111;">
-			<h2>{ data.ServerName } — Ticket #{ fmt.Sprint(data.TicketNo) }</h2>
+			<h2>{ data.ServerName } - Ticket #{ fmt.Sprint(data.TicketNo) }</h2>
 			<p>{ data.EventLabel }</p>
 			<p><strong>Subject:</strong> { data.Subject }</p>
 			<p>

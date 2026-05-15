@@ -11,10 +11,12 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 	ticketsapp "github.com/hayakawakaki/go-racp/internal/tickets/app"
+	"github.com/hayakawakaki/go-racp/internal/tickets/domain"
 )
 
 type PlayerDetailState struct {
-	Detail ticketsapp.TicketDetailDTO
+	Detail     ticketsapp.TicketDetailDTO
+	Categories []domain.Category
 }
 
 func playerDetailPage(layout httpx.Layout, state PlayerDetailState) templ.Component {
@@ -54,7 +56,7 @@ func playerDetailPage(layout httpx.Layout, state PlayerDetailState) templ.Compon
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = Header(state.Detail.Ticket, false, nil).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = Header(state.Detail.Ticket, false, state.Categories).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
