@@ -27,9 +27,9 @@ func newSession(userID int, base time.Time, suffix byte) *domain.Session {
 }
 
 func TestSessionRepository_CreateAndGet(t *testing.T) {
-	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
-	testutil.TruncateMariaDB(t, db, "cp_sessions")
-	repo := NewSessionRepository(db)
+	pool := testutil.OpenPostgres(t, "DB_CP_TEST_URL")
+	testutil.TruncatePostgres(t, pool, "cp_sessions")
+	repo := NewSessionRepository(pool)
 	ctx := context.Background()
 
 	base := time.Now().UTC().Truncate(time.Second)
@@ -57,9 +57,9 @@ func TestSessionRepository_CreateAndGet(t *testing.T) {
 }
 
 func TestSessionRepository_GetByTokenHash_NotFound(t *testing.T) {
-	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
-	testutil.TruncateMariaDB(t, db, "cp_sessions")
-	repo := NewSessionRepository(db)
+	pool := testutil.OpenPostgres(t, "DB_CP_TEST_URL")
+	testutil.TruncatePostgres(t, pool, "cp_sessions")
+	repo := NewSessionRepository(pool)
 
 	_, err := repo.GetByTokenHash(context.Background(), sha256.Sum256([]byte("nope")))
 	if !errors.Is(err, domain.ErrSessionNotFound) {
@@ -68,9 +68,9 @@ func TestSessionRepository_GetByTokenHash_NotFound(t *testing.T) {
 }
 
 func TestSessionRepository_Refresh_PreservesUserAndCreated(t *testing.T) {
-	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
-	testutil.TruncateMariaDB(t, db, "cp_sessions")
-	repo := NewSessionRepository(db)
+	pool := testutil.OpenPostgres(t, "DB_CP_TEST_URL")
+	testutil.TruncatePostgres(t, pool, "cp_sessions")
+	repo := NewSessionRepository(pool)
 	ctx := context.Background()
 
 	base := time.Now().UTC().Truncate(time.Second)
@@ -104,9 +104,9 @@ func TestSessionRepository_Refresh_PreservesUserAndCreated(t *testing.T) {
 }
 
 func TestSessionRepository_Refresh_NotFound(t *testing.T) {
-	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
-	testutil.TruncateMariaDB(t, db, "cp_sessions")
-	repo := NewSessionRepository(db)
+	pool := testutil.OpenPostgres(t, "DB_CP_TEST_URL")
+	testutil.TruncatePostgres(t, pool, "cp_sessions")
+	repo := NewSessionRepository(pool)
 
 	now := time.Now().UTC().Truncate(time.Second)
 	err := repo.Refresh(context.Background(), sha256.Sum256([]byte("nope")), now, now.Add(time.Hour))
@@ -116,9 +116,9 @@ func TestSessionRepository_Refresh_NotFound(t *testing.T) {
 }
 
 func TestSessionRepository_DeleteByUserID(t *testing.T) {
-	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
-	testutil.TruncateMariaDB(t, db, "cp_sessions")
-	repo := NewSessionRepository(db)
+	pool := testutil.OpenPostgres(t, "DB_CP_TEST_URL")
+	testutil.TruncatePostgres(t, pool, "cp_sessions")
+	repo := NewSessionRepository(pool)
 	ctx := context.Background()
 
 	base := time.Now().UTC().Truncate(time.Second)
@@ -146,9 +146,9 @@ func TestSessionRepository_DeleteByUserID(t *testing.T) {
 }
 
 func TestSessionRepository_DeleteByUserID_NoRowsReturnsNil(t *testing.T) {
-	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
-	testutil.TruncateMariaDB(t, db, "cp_sessions")
-	repo := NewSessionRepository(db)
+	pool := testutil.OpenPostgres(t, "DB_CP_TEST_URL")
+	testutil.TruncatePostgres(t, pool, "cp_sessions")
+	repo := NewSessionRepository(pool)
 
 	if err := repo.DeleteByUserID(context.Background(), 999); err != nil {
 		t.Errorf("DeleteByUserID on empty set: got %v, want nil", err)
@@ -156,9 +156,9 @@ func TestSessionRepository_DeleteByUserID_NoRowsReturnsNil(t *testing.T) {
 }
 
 func TestSessionRepository_DeleteByUserIDExcept(t *testing.T) {
-	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
-	testutil.TruncateMariaDB(t, db, "cp_sessions")
-	repo := NewSessionRepository(db)
+	pool := testutil.OpenPostgres(t, "DB_CP_TEST_URL")
+	testutil.TruncatePostgres(t, pool, "cp_sessions")
+	repo := NewSessionRepository(pool)
 	ctx := context.Background()
 
 	base := time.Now().UTC().Truncate(time.Second)
@@ -186,9 +186,9 @@ func TestSessionRepository_DeleteByUserIDExcept(t *testing.T) {
 }
 
 func TestSessionRepository_Delete(t *testing.T) {
-	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
-	testutil.TruncateMariaDB(t, db, "cp_sessions")
-	repo := NewSessionRepository(db)
+	pool := testutil.OpenPostgres(t, "DB_CP_TEST_URL")
+	testutil.TruncatePostgres(t, pool, "cp_sessions")
+	repo := NewSessionRepository(pool)
 	ctx := context.Background()
 
 	base := time.Now().UTC().Truncate(time.Second)

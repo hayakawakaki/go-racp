@@ -1,13 +1,13 @@
 -- +goose Up
 CREATE TABLE cp_sessions (
-    token_hash    BINARY(32)        NOT NULL PRIMARY KEY,
-    user_id       INT(11) UNSIGNED  NOT NULL,
-    expires_at    DATETIME          NOT NULL,
-    last_seen_at  DATETIME          NOT NULL,
-    created_at    DATETIME          NOT NULL,
-    KEY idx_cp_sessions_user    (user_id),
-    KEY idx_cp_sessions_expires (expires_at)
-) ENGINE=InnoDB;
+    token_hash    BYTEA       NOT NULL PRIMARY KEY CHECK (octet_length(token_hash) = 32),
+    user_id       INTEGER     NOT NULL,
+    expires_at    TIMESTAMPTZ NOT NULL,
+    last_seen_at  TIMESTAMPTZ NOT NULL,
+    created_at    TIMESTAMPTZ NOT NULL
+);
+CREATE INDEX idx_cp_sessions_user    ON cp_sessions (user_id);
+CREATE INDEX idx_cp_sessions_expires ON cp_sessions (expires_at);
 
 -- +goose Down
 DROP TABLE IF EXISTS cp_sessions;

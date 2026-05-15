@@ -48,8 +48,8 @@ func requireVerified(in *platinfra.Infra, h http.Handler) http.Handler {
 
 func buildServices(in *platinfra.Infra) (*app.Service, *app.SessionService, *infra.Repository) {
 	userRepo := infra.NewRepository(in.MainDB)
-	sessRepo := infra.NewSessionRepository(in.MainDB)
-	changeLog := infra.NewChangeLogRepository(in.MainDB)
+	sessRepo := infra.NewSessionRepository(in.DB)
+	changeLog := infra.NewChangeLogRepository(in.DB)
 	sessSvc := app.NewSessionService(sessRepo, in.Config.App.TTL.Session)
 
 	svc := app.NewService(userRepo,

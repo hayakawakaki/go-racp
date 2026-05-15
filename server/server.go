@@ -69,7 +69,7 @@ func Start() error {
 		}
 	}()
 
-	actionTokenRepo := actiontoken.NewMySQLRepository(mainDB)
+	actionTokenRepo := actiontoken.NewPostgresRepository(cpPool)
 	tokenMgr := actiontoken.NewManager(actionTokenRepo)
 
 	in := &infra.Infra{
@@ -83,7 +83,7 @@ func Start() error {
 		Roles:        domain.NewRoleResolver(cfg.App.UserRoles),
 	}
 
-	sessSvc := app.NewSessionService(accountinfra.NewSessionRepository(mainDB), cfg.App.TTL.Session)
+	sessSvc := app.NewSessionService(accountinfra.NewSessionRepository(cpPool), cfg.App.TTL.Session)
 	secure := cfg.Env.Mode != "development"
 	withSession := middleware.WithSession(sessSvc, logger, secure)
 
