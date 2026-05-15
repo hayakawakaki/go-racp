@@ -8,7 +8,7 @@ import (
 	"github.com/a-h/templ"
 )
 
-// RenderHTML renders comp to w with Content-Type "text/html; charset=utf-8"; if rendering fails it logs the error with the request path and responds with HTTP 500.
+// RenderHTML renders comp to w with Content-Type "text/html; charset=utf-8". If rendering fails it logs the error with the request path and responds with HTTP 500.
 func RenderHTML(w http.ResponseWriter, r *http.Request, logger *slog.Logger, comp templ.Component) {
 	var buf bytes.Buffer
 	if err := comp.Render(r.Context(), &buf); err != nil {
@@ -21,6 +21,7 @@ func RenderHTML(w http.ResponseWriter, r *http.Request, logger *slog.Logger, com
 	_, _ = buf.WriteTo(w)
 }
 
+// Render404 writes the 404 page with HTTP 404, falling back to a 500 plain-text error if template rendering fails.
 func Render404(w http.ResponseWriter, r *http.Request, logger *slog.Logger, layout Layout) {
 	var buf bytes.Buffer
 	if err := Page404(layout).Render(r.Context(), &buf); err != nil {

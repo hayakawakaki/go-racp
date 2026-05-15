@@ -559,7 +559,7 @@ func TestService_Authenticate(t *testing.T) {
 		t.Parallel()
 		svc := NewService(newFakeUserRepo())
 
-		// Shape passes; repo lookup fails. The Authenticate error must reach
+		// Shape passes, repo lookup fails. The Authenticate error must reach
 		// the caller as ErrInvalidCredentials without app-layer wrapping.
 		_, err := svc.Authenticate(context.Background(), validLogin)
 		if !errors.Is(err, domain.ErrInvalidCredentials) {

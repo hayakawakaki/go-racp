@@ -50,6 +50,7 @@ func (s *SessionService) Create(ctx context.Context, userID int) (string, *domai
 	return base64.RawURLEncoding.EncodeToString(raw[:]), sess, nil
 }
 
+// Validate looks up the session, slides its expiry forward by the configured TTL, and deletes the row when it has already expired.
 func (s *SessionService) Validate(ctx context.Context, rawToken string) (*domain.Session, error) {
 	hash, ok := decodeTokenToHash(rawToken)
 	if !ok {

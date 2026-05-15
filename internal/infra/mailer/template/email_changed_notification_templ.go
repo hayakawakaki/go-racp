@@ -74,7 +74,7 @@ func EmailChangedNotification(data EmailChangedNotificationData) templ.Component
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</strong>.</p><p>If you didn't make this change, contact your server administrator immediately — someone else may have accessed your account.</p></body></html>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</strong>.</p><p>If you didn't make this change, contact your server administrator immediately. Someone else may have accessed your account.</p></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

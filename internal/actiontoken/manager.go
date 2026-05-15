@@ -18,6 +18,7 @@ func NewManager(repo Repository) *Manager {
 	return &Manager{repo: repo, now: time.Now}
 }
 
+// Issue invalidates any prior unconsumed tokens for the account and action, then mints a fresh single-use token.
 func (m *Manager) Issue(ctx context.Context, action Action, accountID int, payload []byte, ttl time.Duration) (string, error) {
 	if err := m.repo.DeleteUnconsumed(ctx, accountID, action); err != nil {
 		return "", fmt.Errorf("actiontoken.Manager.Issue: %w", err)
@@ -45,6 +46,7 @@ func (m *Manager) Issue(ctx context.Context, action Action, accountID int, paylo
 	return base64.RawURLEncoding.EncodeToString(raw[:]), nil
 }
 
+// Consume validates the token and atomically marks it used so it cannot be replayed.
 func (m *Manager) Consume(ctx context.Context, action Action, rawToken string) (*ActionToken, error) {
 	now := m.now()
 	token, err := m.lookup(ctx, action, rawToken, now)
@@ -61,6 +63,7 @@ func (m *Manager) Consume(ctx context.Context, action Action, rawToken string) (
 	return token, nil
 }
 
+// Peek validates the token and returns it without marking it consumed.
 func (m *Manager) Peek(ctx context.Context, action Action, rawToken string) (*ActionToken, error) {
 	return m.lookup(ctx, action, rawToken, m.now())
 }

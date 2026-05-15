@@ -7,6 +7,7 @@ func IsHTMX(r *http.Request) bool {
 	return r.Header.Get("HX-Request") == "true"
 }
 
+// Redirect issues an HX-Redirect response for htmx requests and a standard 303 redirect otherwise.
 func Redirect(w http.ResponseWriter, r *http.Request, target string) {
 	if IsHTMX(r) {
 		w.Header().Set("HX-Redirect", target)

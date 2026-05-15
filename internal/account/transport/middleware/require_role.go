@@ -103,6 +103,7 @@ func RequireRole(
 	return requireRoleCore(sessSvc, users, resolver, logger, secure, false, httpx.Layout{}, allowed)
 }
 
+// RequireRoleHidden behaves like RequireRole but renders a 404 in place of 401/403 so the route's existence is not disclosed to unauthorized callers.
 func RequireRoleHidden(
 	sessSvc SessionValidator,
 	users UserLookup,

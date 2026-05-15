@@ -290,7 +290,9 @@ func (s *Service) ResendVerification(ctx context.Context, accountID int) error {
 	return s.IssueVerification(ctx, accountID, user.Email, user.Username)
 }
 
-//nolint:cyclop // sequential validation + repo + change-log + token + mail steps; splitting would obscure the flow
+// RequestPasswordReset returns nil silently when the email is unknown or a cooldown is active to avoid leaking account existence.
+//
+//nolint:cyclop // sequential validation + repo + change-log + token + mail steps, splitting would obscure the flow
 func (s *Service) RequestPasswordReset(ctx context.Context, email string) error {
 	normalizedEmail, err := domain.ValidateEmail(email)
 	if err != nil {
@@ -342,6 +344,7 @@ func (s *Service) RequestPasswordReset(ctx context.Context, email string) error 
 	return nil
 }
 
+// ConsumePasswordReset rotates the password and invalidates every existing session for the account.
 func (s *Service) ConsumePasswordReset(ctx context.Context, rawToken, newPassword string) error {
 	if err := domain.ValidatePassword(newPassword); err != nil {
 		return &domain.ValidationError{Fields: domain.FieldErrors{fieldPassword: err.Error()}}
@@ -504,6 +507,7 @@ func (s *Service) Delete(ctx context.Context, id int) error {
 	return nil
 }
 
+// PeekPasswordReset inspects a password-reset token without consuming it.
 func (s *Service) PeekPasswordReset(ctx context.Context, rawToken string) (*actiontoken.ActionToken, error) {
 	token, err := s.TokenManager.Peek(ctx, actiontoken.PasswordReset, rawToken)
 	if err != nil {
@@ -513,6 +517,7 @@ func (s *Service) PeekPasswordReset(ctx context.Context, rawToken string) (*acti
 	return token, nil
 }
 
+// PeekVerification inspects an email-verification token without consuming it.
 func (s *Service) PeekVerification(ctx context.Context, rawToken string) (*actiontoken.ActionToken, error) {
 	token, err := s.TokenManager.Peek(ctx, actiontoken.EmailVerification, rawToken)
 	if err != nil {
@@ -522,6 +527,7 @@ func (s *Service) PeekVerification(ctx context.Context, rawToken string) (*actio
 	return token, nil
 }
 
+// PeekEmailChange inspects an email-change token without consuming it, exposing the new address from the payload.
 func (s *Service) PeekEmailChange(ctx context.Context, rawToken string) (*actiontoken.ActionToken, error) {
 	token, err := s.TokenManager.Peek(ctx, actiontoken.EmailChange, rawToken)
 	if err != nil {
@@ -560,6 +566,8 @@ func (s *Service) GetAccount(ctx context.Context, userID int) (*AccountDTO, erro
 	}, nil
 }
 
+// UpdatePassword rotates the password and invalidates every other session belonging to the account, keeping the caller's current session alive.
+//
 //nolint:cyclop // sequential validation, splitting would break the flow
 func (s *Service) UpdatePassword(ctx context.Context, userID int, currentRawToken, currentPassword, newPassword, confirmPassword string) error {
 	if err := domain.ValidatePassword(newPassword); err != nil {
@@ -601,6 +609,8 @@ func (s *Service) UpdatePassword(ctx context.Context, userID int, currentRawToke
 	return nil
 }
 
+// RequestEmailChange issues a confirmation token and sends it to the proposed new address, not the current one, so the change only completes if the new mailbox is reachable.
+//
 //nolint:cyclop // sequential validation, splitting would break the flow
 func (s *Service) RequestEmailChange(ctx context.Context, userID int, currentPassword, newEmail string) error {
 	normalizedNewEmail, err := domain.ValidateEmail(newEmail)

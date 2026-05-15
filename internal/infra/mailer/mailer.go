@@ -51,6 +51,7 @@ func (m *SMTPMailer) Send(ctx context.Context, to, subject, body string) error {
 	return nil
 }
 
+// SendAsync dispatches a message in a background goroutine with a bounded timeout and logs any error.
 func (m *SMTPMailer) SendAsync(to, subject, body string) {
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)

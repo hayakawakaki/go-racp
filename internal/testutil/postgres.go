@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// OpenPostgres opens a pgx pool from the DSN in envVar, pings it, and registers cleanup. The test is skipped when the variable is empty.
 func OpenPostgres(t *testing.T, envVar string) *pgxpool.Pool {
 	t.Helper()
 
@@ -34,6 +35,7 @@ func OpenPostgres(t *testing.T, envVar string) *pgxpool.Pool {
 	return pool
 }
 
+// TruncatePostgres truncates table with RESTART IDENTITY CASCADE after validating the identifier. The test fails on an invalid name or SQL error.
 func TruncatePostgres(t *testing.T, pool *pgxpool.Pool, table string) {
 	t.Helper()
 

@@ -15,6 +15,7 @@ type ActionRoles map[string]RoleList
 
 type AccessConfig map[string]ActionRoles
 
+// ProcessAccessConfig loads and validates access.yml from the project root, returning an empty config when the file is absent and panicking on any parse or schema error.
 func ProcessAccessConfig() AccessConfig {
 	cfgPath, err := GetTargetFilePath("access.yml")
 	if err != nil {
@@ -59,7 +60,7 @@ func parseAccessConfig(data []byte) (AccessConfig, error) {
 
 func validateAccessConfig(cfg AccessConfig) {
 	if _, hasAdmin := cfg[adminRoleName]; hasAdmin {
-		panic(fmt.Errorf("access.yml: top-level 'Admin' key is forbidden — Admin is hardcoded"))
+		panic(fmt.Errorf("access.yml: top-level 'Admin' key is forbidden, Admin is hardcoded"))
 	}
 	for groupName, actions := range cfg {
 		for actionName, list := range actions {
@@ -68,11 +69,11 @@ func validateAccessConfig(cfg AccessConfig) {
 				continue
 			}
 			if len(list) == 0 {
-				panic(fmt.Errorf("access.yml: Action '%s' has an empty list — would deny everyone; use a non-empty list or remove the entry", fullName))
+				panic(fmt.Errorf("access.yml: Action '%s' has an empty list, would deny everyone. Use a non-empty list or remove the entry", fullName))
 			}
 			for _, role := range list {
 				if role == adminRoleName {
-					panic(fmt.Errorf("access.yml: Action '%s' lists 'Admin' — Admin is implicit, remove it from the list", fullName))
+					panic(fmt.Errorf("access.yml: Action '%s' lists 'Admin'. Admin is implicit, remove it from the list", fullName))
 				}
 				if role == "" {
 					panic(fmt.Errorf("access.yml: Action '%s' has an empty role name", fullName))

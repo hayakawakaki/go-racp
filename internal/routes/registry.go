@@ -56,6 +56,7 @@ func (r *Registry) Public(mux *http.ServeMux, pattern string, handler http.Handl
 	mux.Handle(pattern, handler)
 }
 
+// Wrap mounts handler under pattern with role gating derived from tag ("Group.Action"). Admin tags are hardcoded, other tags consult access.yml and pass through ungated (recorded for audit) when no entry is configured.
 func (r *Registry) Wrap(mux *http.ServeMux, tag, pattern string, handler http.Handler) {
 	group, action := parseTag(tag)
 	r.registered[tag] = struct{}{}
@@ -88,7 +89,7 @@ func (r *Registry) lookup(group, action string) ([]domain.Role, bool) {
 	for _, name := range list {
 		role, ok := r.resolver.GetRole(name)
 		if !ok {
-			panic(fmt.Errorf("routes: access.yml entry %q.%q references unknown role %q — add it under UserRoles in config.yml", group, action, name))
+			panic(fmt.Errorf("routes: access.yml entry %q.%q references unknown role %q. Add it under UserRoles in config.yml", group, action, name))
 		}
 		roles = append(roles, role)
 	}
@@ -99,12 +100,13 @@ func (r *Registry) lookup(group, action string) ([]domain.Role, bool) {
 func parseTag(tag string) (group, action string) {
 	parts := strings.Split(tag, ".")
 	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-		panic(fmt.Errorf("routes: invalid tag %q — expected exactly Group.Action with non-empty segments", tag))
+		panic(fmt.Errorf("routes: invalid tag %q, expected exactly Group.Action with non-empty segments", tag))
 	}
 
 	return parts[0], parts[1]
 }
 
+// Finalize panics if access.yml references tags no plugin registered, and logs a warning for every route that was mounted without an access.yml entry.
 func (r *Registry) Finalize() {
 	var deadEntries []string
 	for groupName, actions := range r.cfg {

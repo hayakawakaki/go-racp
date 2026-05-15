@@ -13,7 +13,7 @@ func (h *Handler) showChangePassword(w http.ResponseWriter, r *http.Request) {
 	h.renderChangePassword(w, r, ChangePasswordState{}, true)
 }
 
-//nolint:cyclop // sequential session/form/cookie/service branches; splitting would obscure the flow
+//nolint:cyclop // sequential session/form/cookie/service branches, splitting would obscure the flow
 func (h *Handler) doChangePassword(w http.ResponseWriter, r *http.Request) {
 	sess, ok := middleware.SessionFromContext(r.Context())
 	if !ok || sess == nil {

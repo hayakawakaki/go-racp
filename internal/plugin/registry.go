@@ -41,7 +41,7 @@ func Register(p Plugin) {
 }
 
 // MountAll mounts all registered plugins onto the provided HTTP ServeMux using the given Infra.
-// Plugins are mounted in registration order; each mount is logged via in.Logger.Info. MountAll panics if called more than once.
+// Plugins are mounted in registration order, and each mount is logged via in.Logger.Info. MountAll panics if called more than once.
 func MountAll(reg *routes.Registry, mux *http.ServeMux, in *infra.Infra) {
 	if reg == nil {
 		panic("plugin: MountAll requires non-nil routes registry")
@@ -65,6 +65,7 @@ func MountAll(reg *routes.Registry, mux *http.ServeMux, in *infra.Infra) {
 	}
 }
 
+// Middlewares returns registered plugins that supply a Middleware, in registration order.
 func Middlewares() []Plugin {
 	out := make([]Plugin, 0, len(registry))
 	for _, p := range registry {

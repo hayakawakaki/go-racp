@@ -19,6 +19,7 @@ const (
 	pingTimeout         = 5 * time.Second
 )
 
+// Connect opens the control-panel Postgres pool, retrying on failure and terminating the process if all attempts are exhausted.
 func Connect(env *config.EnvConfig) *pgxpool.Pool {
 	fmt.Println("connecting to Postgres CP DB...")
 

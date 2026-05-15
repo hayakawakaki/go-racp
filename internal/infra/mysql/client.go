@@ -17,6 +17,7 @@ const (
 	connMaxRetryAttempt = 5
 )
 
+// Connect opens the rAthena main and log MySQL pools, retrying on failure and terminating the process if all attempts are exhausted.
 func Connect(env *config.EnvConfig) (mainDB, logsDB *sql.DB) {
 	fmt.Println("connecting to MySQL...")
 

@@ -13,6 +13,7 @@ type Pinger interface {
 	PingContext(ctx context.Context) error
 }
 
+// New returns a handler that reports 503 unless all three databases respond to a ping within pingTimeout.
 func New(mainDB, logDB, cpDB Pinger, logger *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), pingTimeout)

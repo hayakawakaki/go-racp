@@ -14,7 +14,7 @@ func (h *Handler) showChangeEmail(w http.ResponseWriter, r *http.Request) {
 	h.renderChangeEmail(w, r, ChangeEmailState{}, true)
 }
 
-//nolint:cyclop // sequential session/form/service/validation branches; splitting would obscure the flow
+//nolint:cyclop // sequential session/form/service/validation branches, splitting would obscure the flow
 func (h *Handler) doChangeEmail(w http.ResponseWriter, r *http.Request) {
 	sess, ok := middleware.SessionFromContext(r.Context())
 	if !ok || sess == nil {

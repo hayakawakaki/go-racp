@@ -76,6 +76,7 @@ func (s *Service) categoryDisplay(key string) string {
 	return key
 }
 
+// OpenTicket creates a new ticket after enforcing per-player open limits and cooldown.
 func (s *Service) OpenTicket(ctx context.Context, accountID int, category, subject, body string) (int64, error) {
 	if err := s.checkOpenGate(ctx, accountID, category); err != nil {
 		return 0, err
@@ -146,6 +147,7 @@ func (s *Service) PlayerReply(ctx context.Context, accountID int, ticketID int64
 	return nil
 }
 
+// StaffReply appends a public staff reply and emails the ticket owner.
 func (s *Service) StaffReply(ctx context.Context, staffID int, ticketID int64, body string) error {
 	ticket, err := s.tickets.Get(ctx, ticketID)
 	if err != nil {
@@ -217,10 +219,12 @@ func (s *Service) StaffEditSubject(ctx context.Context, staffID int, ticketID in
 	return nil
 }
 
+// StaffResolve marks the ticket resolved and emails the owner.
 func (s *Service) StaffResolve(ctx context.Context, staffID int, ticketID int64) error {
 	return s.setTerminal(ctx, staffID, ticketID, domain.StatusResolved)
 }
 
+// StaffClose marks the ticket closed and emails the owner.
 func (s *Service) StaffClose(ctx context.Context, staffID int, ticketID int64) error {
 	return s.setTerminal(ctx, staffID, ticketID, domain.StatusClosed)
 }

@@ -31,6 +31,7 @@ type EnvConfig struct {
 	SMTPPort int    `env:"SMTP_PORT" default:"587"`
 }
 
+// ProcessEnv loads the project .env file when present and populates an EnvConfig from environment variables, terminating the process via log.Fatal on a missing required value or type mismatch.
 func ProcessEnv() *EnvConfig {
 	// Try to find and load the env file
 	// Don't catch error for docker declared env variables
