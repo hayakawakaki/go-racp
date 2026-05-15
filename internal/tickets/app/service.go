@@ -47,6 +47,10 @@ func NewService(
 	logger *slog.Logger,
 	config Config,
 ) *Service {
+	if logger == nil {
+		logger = slog.Default()
+	}
+
 	return &Service{
 		tickets:    tickets,
 		messages:   messages,

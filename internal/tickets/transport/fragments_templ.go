@@ -160,9 +160,9 @@ func threadMessage(message domain.Message, isStaff bool, otherSeenAt time.Time, 
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var9 string
-			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(messageAuthorLabel(message))
+			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(messageAuthorLabel(message, isStaff))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 37, Col: 82}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 37, Col: 91}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 			if templ_7745c5c3_Err != nil {
@@ -427,7 +427,7 @@ func composerContent(ticket domain.Ticket, canReply, isStaff bool, errorMsg stri
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "\" hx-target=\"#ticket-thread\" hx-swap=\"outerHTML\" class=\"rounded-md border border-gray-200 bg-white shadow-sm\"><div class=\"px-4 pt-3 pb-2 border-b border-gray-100\"><span class=\"text-xs font-medium uppercase tracking-wide text-gray-500\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "\" hx-target=\"#ticket-thread\" hx-swap=\"outerHTML\" hx-disabled-elt=\"find button\" hx-sync=\"this:drop\" class=\"rounded-md border border-gray-200 bg-white shadow-sm\"><div class=\"px-4 pt-3 pb-2 border-b border-gray-100\"><span class=\"text-xs font-medium uppercase tracking-wide text-gray-500\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -449,7 +449,7 @@ func composerContent(ticket domain.Ticket, canReply, isStaff bool, errorMsg stri
 			var templ_7745c5c3_Var18 string
 			templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(domain.MaxBodyLen))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 146, Col: 45}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 148, Col: 45}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 			if templ_7745c5c3_Err != nil {
@@ -467,7 +467,7 @@ func composerContent(ticket domain.Ticket, canReply, isStaff bool, errorMsg stri
 				var templ_7745c5c3_Var19 string
 				templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(errorMsg)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 152, Col: 56}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 154, Col: 56}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 				if templ_7745c5c3_Err != nil {
@@ -485,7 +485,7 @@ func composerContent(ticket domain.Ticket, canReply, isStaff bool, errorMsg stri
 			var templ_7745c5c3_Var20 string
 			templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(domain.MaxBodyLen))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 155, Col: 112}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 157, Col: 112}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 			if templ_7745c5c3_Err != nil {
@@ -562,20 +562,20 @@ func StaffNoteComposer(ticket domain.Ticket) templ.Component {
 			var templ_7745c5c3_Var23 string
 			templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/tickets/%d/note", ticket.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 170, Col: 55}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 172, Col: 55}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "\" hx-target=\"#ticket-thread\" hx-swap=\"outerHTML\" class=\"mt-3 rounded-md border border-amber-200 bg-amber-50 shadow-sm\"><div class=\"px-4 pt-3 pb-2 border-b border-amber-200 flex items-center justify-between\"><span class=\"text-xs font-medium uppercase tracking-wide text-amber-800\">Internal note · staff only</span></div><textarea name=\"body\" rows=\"3\" required maxlength=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "\" hx-target=\"#ticket-thread\" hx-swap=\"outerHTML\" hx-disabled-elt=\"find button\" hx-sync=\"this:drop\" class=\"mt-3 rounded-md border border-amber-200 bg-amber-50 shadow-sm\"><div class=\"px-4 pt-3 pb-2 border-b border-amber-200 flex items-center justify-between\"><span class=\"text-xs font-medium uppercase tracking-wide text-amber-800\">Internal note · staff only</span></div><textarea name=\"body\" rows=\"3\" required maxlength=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var24 string
 			templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(domain.MaxBodyLen))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 182, Col: 45}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 186, Col: 45}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 			if templ_7745c5c3_Err != nil {
@@ -588,7 +588,7 @@ func StaffNoteComposer(ticket domain.Ticket) templ.Component {
 			var templ_7745c5c3_Var25 string
 			templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(domain.MaxBodyLen))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 188, Col: 113}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 192, Col: 113}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 			if templ_7745c5c3_Err != nil {
@@ -631,7 +631,7 @@ func Header(ticket domain.Ticket, isStaff bool, categories []domain.Category) te
 		var templ_7745c5c3_Var27 string
 		templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(ticket.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 200, Col: 53}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 204, Col: 53}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 		if templ_7745c5c3_Err != nil {
@@ -644,7 +644,7 @@ func Header(ticket domain.Ticket, isStaff bool, categories []domain.Category) te
 		var templ_7745c5c3_Var28 string
 		templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(ticket.CreatedAt.Format("Jan 2, 2006"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 202, Col: 58}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 206, Col: 58}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 		if templ_7745c5c3_Err != nil {
@@ -657,7 +657,7 @@ func Header(ticket domain.Ticket, isStaff bool, categories []domain.Category) te
 		var templ_7745c5c3_Var29 string
 		templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(ticket.Subject)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 204, Col: 86}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 208, Col: 86}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
 		if templ_7745c5c3_Err != nil {
@@ -678,7 +678,7 @@ func Header(ticket domain.Ticket, isStaff bool, categories []domain.Category) te
 		var templ_7745c5c3_Var30 string
 		templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(categoryDisplay(ticket.Category, categories))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 207, Col: 163}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 211, Col: 163}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
 		if templ_7745c5c3_Err != nil {
@@ -691,7 +691,7 @@ func Header(ticket domain.Ticket, isStaff bool, categories []domain.Category) te
 		var templ_7745c5c3_Var31 string
 		templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(ticket.MessageCount))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 208, Col: 74}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 212, Col: 74}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
 		if templ_7745c5c3_Err != nil {
@@ -795,13 +795,13 @@ func staffHeaderActions(ticket domain.Ticket, categories []domain.Category) temp
 		var templ_7745c5c3_Var34 string
 		templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/tickets/%d/category", ticket.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 250, Col: 64}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 254, Col: 64}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 55, "\" hx-target=\"#ticket-header\" hx-swap=\"outerHTML\" class=\"flex items-center gap-2\"><label class=\"text-xs uppercase tracking-wide text-gray-500\">Recategorize</label> <select name=\"category\" class=\"rounded border border-gray-300 text-sm px-2 py-1 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 55, "\" hx-target=\"#ticket-header\" hx-swap=\"outerHTML\" hx-disabled-elt=\"find button\" hx-sync=\"this:drop\" class=\"flex items-center gap-2\"><label class=\"text-xs uppercase tracking-wide text-gray-500\">Recategorize</label> <select name=\"category\" class=\"rounded border border-gray-300 text-sm px-2 py-1 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -814,7 +814,7 @@ func staffHeaderActions(ticket domain.Ticket, categories []domain.Category) temp
 				var templ_7745c5c3_Var35 string
 				templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(category.Key)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 255, Col: 34}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 259, Col: 34}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var35))
 				if templ_7745c5c3_Err != nil {
@@ -827,7 +827,7 @@ func staffHeaderActions(ticket domain.Ticket, categories []domain.Category) temp
 				var templ_7745c5c3_Var36 string
 				templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(category.Display)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 255, Col: 64}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 259, Col: 64}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 				if templ_7745c5c3_Err != nil {
@@ -845,7 +845,7 @@ func staffHeaderActions(ticket domain.Ticket, categories []domain.Category) temp
 				var templ_7745c5c3_Var37 string
 				templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(category.Key)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 257, Col: 34}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 261, Col: 34}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
 				if templ_7745c5c3_Err != nil {
@@ -858,7 +858,7 @@ func staffHeaderActions(ticket domain.Ticket, categories []domain.Category) temp
 				var templ_7745c5c3_Var38 string
 				templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(category.Display)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 257, Col: 55}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 261, Col: 55}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 				if templ_7745c5c3_Err != nil {
@@ -877,26 +877,26 @@ func staffHeaderActions(ticket domain.Ticket, categories []domain.Category) temp
 		var templ_7745c5c3_Var39 string
 		templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/tickets/%d/resolve", ticket.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 264, Col: 65}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 268, Col: 65}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var39))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 63, "\" hx-target=\"body\" hx-swap=\"outerHTML\" class=\"rounded bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-3 py-1.5 transition\">Mark resolved</button> <button hx-post=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 63, "\" hx-target=\"body\" hx-swap=\"outerHTML\" hx-disabled-elt=\"this\" hx-sync=\"this:drop\" class=\"rounded bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-3 py-1.5 transition\">Mark resolved</button> <button hx-post=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var40 string
 		templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/tickets/%d/close", ticket.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 265, Col: 63}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/fragments.templ`, Line: 269, Col: 63}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var40))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 64, "\" hx-target=\"body\" hx-swap=\"outerHTML\" class=\"rounded border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-xs font-medium px-3 py-1.5 transition\">Close</button></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 64, "\" hx-target=\"body\" hx-swap=\"outerHTML\" hx-disabled-elt=\"this\" hx-sync=\"this:drop\" class=\"rounded border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-xs font-medium px-3 py-1.5 transition\">Close</button></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -926,9 +926,16 @@ func messageAvatarClass(message domain.Message) string {
 	return "bg-gray-200 text-gray-700"
 }
 
-func messageAuthorLabel(message domain.Message) string {
+func messageAuthorLabel(message domain.Message, isStaff bool) string {
 	if message.AuthorRole == domain.ActorStaff {
+		if isStaff {
+			return "You"
+		}
+
 		return "Staff"
+	}
+	if isStaff {
+		return "Player"
 	}
 
 	return "You"

@@ -80,7 +80,7 @@ func playerNewPage(layout httpx.Layout, state PlayerNewState) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<form method=\"POST\" action=\"/tickets/new\" class=\"px-6 py-5 space-y-4\"><label class=\"block\"><span class=\"block text-sm font-medium text-gray-700 mb-1\">Category</span> <select name=\"category\" required class=\"block w-full rounded border border-gray-300 px-3 py-2 text-gray-900 bg-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<form method=\"POST\" action=\"/tickets/new\" x-data=\"{ submitting: false }\" @submit=\"submitting = true\" class=\"px-6 py-5 space-y-4\"><label class=\"block\"><span class=\"block text-sm font-medium text-gray-700 mb-1\">Category</span> <select name=\"category\" required class=\"block w-full rounded border border-gray-300 px-3 py-2 text-gray-900 bg-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -299,7 +299,7 @@ func playerNewPage(layout httpx.Layout, state PlayerNewState) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "<p class=\"text-xs text-gray-400 mt-1\">Plain text. For images, paste a link from an image host.</p></label><div class=\"flex items-center justify-end gap-2 pt-2 border-t border-gray-100\"><a href=\"/tickets\" class=\"text-sm text-gray-600 hover:text-gray-900 px-3 py-2\">Cancel</a> <button type=\"submit\" class=\"rounded bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 transition\">Open ticket</button></div></form></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "<p class=\"text-xs text-gray-400 mt-1\">Plain text. For images, paste a link from an image host.</p></label><div class=\"flex items-center justify-end gap-2 pt-2 border-t border-gray-100\"><a href=\"/tickets\" class=\"text-sm text-gray-600 hover:text-gray-900 px-3 py-2\">Cancel</a> <button type=\"submit\" :disabled=\"submitting\" x-text=\"submitting ? 'Opening…' : 'Open ticket'\" class=\"rounded bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-2 transition\">Open ticket</button></div></form></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
