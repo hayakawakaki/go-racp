@@ -7,6 +7,7 @@ type Category struct {
 
 type CategoryResolver struct {
 	byKey map[string]Category
+	all   []Category
 }
 
 func NewCategoryResolver(categories []Category) CategoryResolver {
@@ -15,7 +16,7 @@ func NewCategoryResolver(categories []Category) CategoryResolver {
 		byKey[category.Key] = category
 	}
 
-	return CategoryResolver{byKey: byKey}
+	return CategoryResolver{byKey: byKey, all: categories}
 }
 
 func (r CategoryResolver) Get(key string) (Category, bool) {
@@ -31,12 +32,7 @@ func (r CategoryResolver) Has(key string) bool {
 }
 
 func (r CategoryResolver) All() []Category {
-	out := make([]Category, 0, len(r.byKey))
-	for _, category := range r.byKey {
-		out = append(out, category)
-	}
-
-	return out
+	return r.all
 }
 
 func (r CategoryResolver) Display(key string) string {

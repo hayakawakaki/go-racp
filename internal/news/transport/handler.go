@@ -77,7 +77,7 @@ func (h *Handler) canManage(r *http.Request) bool {
 		return false
 	}
 	user, err := h.users.GetByID(r.Context(), session.UserID)
-	if err != nil {
+	if err != nil || user == nil {
 		return false
 	}
 	role := h.roles.Resolve(user.GroupID)

@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/goccy/go-yaml"
@@ -181,7 +182,7 @@ func validateNewsConfig(categories NewsCategoriesConfig) {
 		panic(fmt.Errorf("NewsCategories must define at least one category"))
 	}
 	for key, category := range categories {
-		if category.Display == "" {
+		if strings.TrimSpace(category.Display) == "" {
 			panic(fmt.Errorf("NewsCategories.%s.Display is required", key))
 		}
 	}

@@ -32,10 +32,11 @@ func ValidateTitle(s string) error {
 }
 
 func ValidateBody(s string) error {
-	if strings.TrimSpace(s) == "" {
+	trimmed := strings.TrimSpace(s)
+	if trimmed == "" {
 		return ErrBodyEmpty
 	}
-	if len(s) > MaxBodyLen {
+	if len(trimmed) > MaxBodyLen {
 		return ErrBodyTooLong
 	}
 

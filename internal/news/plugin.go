@@ -2,6 +2,7 @@ package news
 
 import (
 	"net/http"
+	"sort"
 
 	accountinfra "github.com/hayakawakaki/go-racp/internal/account/infra"
 	platinfra "github.com/hayakawakaki/go-racp/internal/infra"
@@ -23,7 +24,7 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *platinfra.Infra) {
 	categories := buildCategoryResolver(in.Config.App.NewsCategories)
 	repo := newsinfra.NewRepository(in.DB)
 	service := newsapp.NewService(repo, categories, in.Logger)
-	renderer := newsinfra.NewRenderer()
+	renderer := newsinfra.NewRenderer(in.Logger)
 	userRepo := accountinfra.NewRepository(in.MainDB)
 
 	handler := newstransport.NewHandler(service, renderer, newstransport.HandlerConfig{
@@ -50,9 +51,15 @@ func manageRoles(access config.AccessConfig) []string {
 }
 
 func buildCategoryResolver(cfg config.NewsCategoriesConfig) domain.CategoryResolver {
+	keys := make([]string, 0, len(cfg))
+	for key := range cfg {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
 	list := make([]domain.Category, 0, len(cfg))
-	for key, c := range cfg {
-		list = append(list, domain.Category{Key: key, Display: c.Display})
+	for _, key := range keys {
+		list = append(list, domain.Category{Key: key, Display: cfg[key].Display})
 	}
 
 	return domain.NewCategoryResolver(list)
