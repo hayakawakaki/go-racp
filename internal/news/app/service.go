@@ -17,6 +17,9 @@ type Service struct {
 }
 
 func NewService(repo domain.Repository, categories domain.CategoryResolver, logger *slog.Logger) *Service {
+	if repo == nil {
+		panic("news.NewService: repo must not be nil")
+	}
 	if logger == nil {
 		logger = slog.Default()
 	}
