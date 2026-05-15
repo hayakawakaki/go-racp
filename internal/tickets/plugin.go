@@ -4,9 +4,14 @@ import (
 	"fmt"
 	"net/http"
 
+	accountinfra "github.com/hayakawakaki/go-racp/internal/account/infra"
 	platinfra "github.com/hayakawakaki/go-racp/internal/infra"
 	"github.com/hayakawakaki/go-racp/internal/plugin"
 	"github.com/hayakawakaki/go-racp/internal/routes"
+	ticketsapp "github.com/hayakawakaki/go-racp/internal/tickets/app"
+	"github.com/hayakawakaki/go-racp/internal/tickets/domain"
+	ticketsinfra "github.com/hayakawakaki/go-racp/internal/tickets/infra"
+	ticketstransport "github.com/hayakawakaki/go-racp/internal/tickets/transport"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 
@@ -19,8 +24,42 @@ func init() {
 
 func mount(reg *routes.Registry, mux *http.ServeMux, in *platinfra.Infra) {
 	validateAccessCrossConfig(in.Config.App.TicketCategories, config.ProcessAccessConfig())
-	_ = reg
-	_ = mux
+
+	categories := buildCategoryResolver(in.Config.App.TicketCategories)
+	userRepo := accountinfra.NewRepository(in.MainDB)
+
+	ticketRepo := ticketsinfra.NewRepository(in.DB)
+	messageRepo := ticketsinfra.NewMessageRepository(in.DB)
+	viewRepo := ticketsinfra.NewViewRepository(in.DB)
+
+	service := ticketsapp.NewService(
+		ticketRepo, messageRepo, viewRepo, categories, userRepo, in.Mailer,
+		in.Logger,
+		ticketsapp.Config{
+			AppURL:             in.Config.Env.AppURL,
+			ServerName:         in.Config.App.General.ServerName,
+			MaxOpenPerPlayer:   in.Config.App.TicketLimits.MaxOpenPerPlayer,
+			TicketOpenCooldown: in.Config.App.Cooldown.TicketOpen,
+		},
+	)
+
+	handler := ticketstransport.NewHandler(service, ticketstransport.HandlerConfig{
+		Logger:       in.Logger,
+		Users:        userRepo,
+		Roles:        in.Roles,
+		General:      in.Config.App.General,
+		PollInterval: in.Config.App.Tickets.StaffPollInterval,
+	})
+	handler.RegisterRoutes(reg, mux)
+}
+
+func buildCategoryResolver(cfg config.TicketCategoriesConfig) domain.CategoryResolver {
+	list := make([]domain.Category, 0, len(cfg))
+	for key, cat := range cfg {
+		list = append(list, domain.Category{Key: key, Display: cat.Display, Roles: cat.Roles})
+	}
+
+	return domain.NewCategoryResolver(list)
 }
 
 func validateAccessCrossConfig(categories config.TicketCategoriesConfig, access config.AccessConfig) {

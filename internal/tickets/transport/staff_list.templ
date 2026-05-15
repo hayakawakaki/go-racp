@@ -1,0 +1,130 @@
+package transport
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/hayakawakaki/go-racp/internal/httpx"
+	ticketsapp "github.com/hayakawakaki/go-racp/internal/tickets/app"
+	"github.com/hayakawakaki/go-racp/internal/tickets/domain"
+)
+
+type StaffListState struct {
+	Items        []ticketsapp.TicketListItem
+	PollInterval time.Duration
+	Tab          domain.StaffTab
+	Page         int
+	Total        int
+}
+
+templ staffListPage(layout httpx.Layout, state StaffListState) {
+	@httpx.Base(layout, "Support tickets — staff") {
+		<div class="w-full max-w-6xl self-start">
+			<div class="flex items-baseline justify-between mb-5">
+				<div>
+					<h1 class="text-2xl font-semibold text-gray-900">Support tickets</h1>
+					<p class="text-sm text-gray-500 mt-0.5">Player tickets you have access to.</p>
+				</div>
+				<span class="text-xs text-gray-400">Auto-refresh every { state.PollInterval.String() }</span>
+			</div>
+			<div class="border-b border-gray-200">
+				<nav class="flex gap-1">
+					@tabLink(state.Tab, domain.TabOpenNoResponse, "Awaiting response", "")
+					@tabLink(state.Tab, domain.TabActive, "Active", "active")
+					@tabLink(state.Tab, domain.TabTerminal, "Closed / resolved", "terminal")
+				</nav>
+			</div>
+			@staffListBody(state)
+		</div>
+	}
+}
+
+templ staffListBody(state StaffListState) {
+	<div
+		id="staff-tickets-body"
+		hx-get={ fmt.Sprintf("/admin/tickets?tab=%s&page=%d", tabQuery(state.Tab), state.Page) }
+		hx-trigger={ fmt.Sprintf("every %s", state.PollInterval) }
+		hx-swap="outerHTML"
+		class="mt-4"
+	>
+		if len(state.Items) == 0 {
+			<div class="bg-white border border-gray-200 rounded-lg shadow-sm p-10 text-center">
+				<p class="text-gray-700 font-medium">Nothing here</p>
+				<p class="text-sm text-gray-500 mt-1">{ emptyTabHint(state.Tab) }</p>
+			</div>
+		} else {
+			<div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+				<table class="w-full text-sm">
+					<thead class="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+						<tr>
+							<th class="text-left font-medium px-4 py-2.5 w-10"></th>
+							<th class="text-left font-medium px-4 py-2.5">Player</th>
+							<th class="text-left font-medium px-4 py-2.5">Subject</th>
+							<th class="text-left font-medium px-4 py-2.5">Category</th>
+							<th class="text-left font-medium px-4 py-2.5">Status</th>
+							<th class="text-right font-medium px-4 py-2.5">Activity</th>
+						</tr>
+					</thead>
+					<tbody class="divide-y divide-gray-100">
+						for _, item := range state.Items {
+							<tr class="hover:bg-blue-50/40 transition">
+								<td class="px-4 py-3 align-middle">
+									<span class={ "block w-2 h-2 rounded-full", unreadDotClass(item.Unread) } title={ unreadTitle(item.Unread) }></span>
+								</td>
+								<td class="px-4 py-3 text-gray-700 align-middle">{ item.AuthorUsername }</td>
+								<td class="px-4 py-3 align-middle">
+									<a href={ templ.URL(fmt.Sprintf("/admin/tickets/%d", item.ID)) } class={ "text-gray-900 hover:text-blue-700 hover:underline", unreadTextClass(item.Unread) }>
+										{ item.Subject }
+									</a>
+									<div class="text-xs text-gray-400 font-mono mt-0.5">#{ fmt.Sprint(item.ID) } · { fmt.Sprint(item.MessageCount) } msg</div>
+								</td>
+								<td class="px-4 py-3 align-middle">
+									<span class="inline-flex items-center rounded-full bg-gray-100 text-gray-700 text-xs font-medium px-2.5 py-0.5">{ item.Category }</span>
+								</td>
+								<td class="px-4 py-3 align-middle">
+									@statusBadge(item.Status)
+								</td>
+								<td class="px-4 py-3 align-middle text-right text-xs text-gray-500 tabular-nums whitespace-nowrap">
+									{ item.LastActivity.Format("Jan 2 · 15:04") }
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+			if state.Total > len(state.Items) {
+				<p class="mt-3 text-xs text-gray-500 text-center">Showing { fmt.Sprint(len(state.Items)) } of { fmt.Sprint(state.Total) }</p>
+			}
+		}
+	</div>
+}
+
+templ tabLink(current, target domain.StaffTab, label, queryValue string) {
+	if current == target {
+		<span class="px-3 py-2 text-sm font-medium text-blue-700 border-b-2 border-blue-600 -mb-px">{ label }</span>
+	} else {
+		<a href={ templ.URL(fmt.Sprintf("/admin/tickets?tab=%s", queryValue)) } class="px-3 py-2 text-sm font-medium text-gray-500 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300 -mb-px transition">{ label }</a>
+	}
+}
+
+func tabQuery(tab domain.StaffTab) string {
+	switch tab {
+	case domain.TabActive:
+		return "active"
+	case domain.TabTerminal:
+		return "terminal"
+	}
+
+	return ""
+}
+
+func emptyTabHint(tab domain.StaffTab) string {
+	switch tab {
+	case domain.TabActive:
+		return "No tickets currently being worked on."
+	case domain.TabTerminal:
+		return "No closed or resolved tickets yet."
+	}
+
+	return "No new tickets waiting for a first reply."
+}
