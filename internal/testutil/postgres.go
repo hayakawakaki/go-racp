@@ -1,0 +1,48 @@
+package testutil
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"testing"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+)
+
+func OpenPostgres(t *testing.T, envVar string) *pgxpool.Pool {
+	t.Helper()
+
+	dsn := os.Getenv(envVar)
+	if dsn == "" {
+		t.Skipf("%s not set; skipping integration test", envVar)
+	}
+
+	ctx := context.Background()
+
+	pool, err := pgxpool.New(ctx, dsn)
+	if err != nil {
+		t.Fatalf("pgxpool.New: %v", err)
+	}
+
+	if err := pool.Ping(ctx); err != nil {
+		pool.Close()
+		t.Fatalf("pool.Ping: %v", err)
+	}
+
+	t.Cleanup(func() { pool.Close() })
+
+	return pool
+}
+
+func TruncatePostgres(t *testing.T, pool *pgxpool.Pool, table string) {
+	t.Helper()
+
+	if !validIdentifier.MatchString(table) {
+		t.Fatalf("invalid table identifier: %q", table)
+	}
+
+	if _, err := pool.Exec(context.Background(),
+		fmt.Sprintf(`TRUNCATE TABLE %q RESTART IDENTITY CASCADE`, table)); err != nil {
+		t.Fatalf("TRUNCATE %s: %v", table, err)
+	}
+}

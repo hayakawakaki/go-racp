@@ -13,7 +13,7 @@ type Pinger interface {
 	PingContext(ctx context.Context) error
 }
 
-func New(mainDB, logDB Pinger, logger *slog.Logger) http.HandlerFunc {
+func New(mainDB, logDB, cpDB Pinger, logger *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), pingTimeout)
 		defer cancel()
@@ -27,6 +27,12 @@ func New(mainDB, logDB Pinger, logger *slog.Logger) http.HandlerFunc {
 		if err := logDB.PingContext(ctx); err != nil {
 			logger.Error("healthz: log db ping", "err", err)
 			http.Error(w, "log db unavailable", http.StatusServiceUnavailable)
+			return
+		}
+
+		if err := cpDB.PingContext(ctx); err != nil {
+			logger.Error("healthz: cp db ping", "err", err)
+			http.Error(w, "cp db unavailable", http.StatusServiceUnavailable)
 			return
 		}
 

@@ -25,19 +25,21 @@ func TestHandler(t *testing.T) {
 	tests := []struct {
 		main       error
 		log        error
+		cp         error
 		wantBody   string
 		name       string
 		wantStatus int
 	}{
-		{name: "both ok", main: nil, log: nil, wantStatus: http.StatusOK, wantBody: "ok"},
-		{name: "main fails", main: errors.New("boom"), log: nil, wantStatus: http.StatusServiceUnavailable, wantBody: "main db unavailable"},
-		{name: "log fails", main: nil, log: errors.New("boom"), wantStatus: http.StatusServiceUnavailable, wantBody: "log db unavailable"},
-		{name: "both fail returns main first", main: errors.New("main boom"), log: errors.New("log boom"), wantStatus: http.StatusServiceUnavailable, wantBody: "main db unavailable"},
+		{name: "all ok", main: nil, log: nil, cp: nil, wantStatus: http.StatusOK, wantBody: "ok"},
+		{name: "main fails", main: errors.New("boom"), log: nil, cp: nil, wantStatus: http.StatusServiceUnavailable, wantBody: "main db unavailable"},
+		{name: "log fails", main: nil, log: errors.New("boom"), cp: nil, wantStatus: http.StatusServiceUnavailable, wantBody: "log db unavailable"},
+		{name: "cp fails", main: nil, log: nil, cp: errors.New("boom"), wantStatus: http.StatusServiceUnavailable, wantBody: "cp db unavailable"},
+		{name: "main+log fail returns main first", main: errors.New("main boom"), log: errors.New("log boom"), cp: nil, wantStatus: http.StatusServiceUnavailable, wantBody: "main db unavailable"},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			h := New(fakePinger{err: tc.main}, fakePinger{err: tc.log}, logger)
+			h := New(fakePinger{err: tc.main}, fakePinger{err: tc.log}, fakePinger{err: tc.cp}, logger)
 			req := httptest.NewRequest(http.MethodGet, "/healthz", http.NoBody)
 			rec := httptest.NewRecorder()
 			h.ServeHTTP(rec, req)
@@ -56,7 +58,7 @@ func TestHandler(t *testing.T) {
 func TestHandlerPingTimeout(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	blocker := blockingPinger{}
-	h := New(blocker, fakePinger{}, logger)
+	h := New(blocker, fakePinger{}, fakePinger{}, logger)
 
 	req := httptest.NewRequest(http.MethodGet, "/healthz", http.NoBody)
 	rec := httptest.NewRecorder()
