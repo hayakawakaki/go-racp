@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -146,5 +147,35 @@ func TestLoadAccessConfig_ReadsFile(t *testing.T) {
 	}
 	if got := cfg["News"]["Edit"]; !reflect.DeepEqual(got, RoleList{"Moderator"}) {
 		t.Errorf("News.Edit = %#v, want [\"Moderator\"]", got)
+	}
+}
+
+func TestAccessConfig_ManageRoles(t *testing.T) {
+	t.Parallel()
+
+	cfg := AccessConfig{
+		"Tickets": ActionRoles{"Manage": RoleList{"Moderator", "Enforcer"}},
+		"News":    ActionRoles{"Manage": RoleList{"Moderator"}},
+		"Empty":   ActionRoles{},
+	}
+
+	tests := []struct {
+		name  string
+		group string
+		want  []string
+	}{
+		{"tickets returns its manage roles", "Tickets", []string{"Moderator", "Enforcer"}},
+		{"news returns its manage roles", "News", []string{"Moderator"}},
+		{"missing group returns nil", "Bogus", nil},
+		{"group without Manage action returns nil", "Empty", nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got := cfg.ManageRoles(tt.group)
+			if !slices.Equal(got, tt.want) {
+				t.Errorf("ManageRoles(%q) = %v, want %v", tt.group, got, tt.want)
+			}
+		})
 	}
 }
