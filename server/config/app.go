@@ -60,6 +60,12 @@ type TicketCategoryConfig struct {
 
 type TicketCategoriesConfig map[string]TicketCategoryConfig
 
+type NewsCategoryConfig struct {
+	Display string `yaml:"Display"`
+}
+
+type NewsCategoriesConfig map[string]NewsCategoryConfig
+
 type TicketsConfig struct {
 	StaffPollInterval time.Duration `yaml:"StaffPollInterval"`
 }
@@ -71,6 +77,7 @@ type AppConfig struct {
 	General          GeneralConfig          `yaml:"GeneralConfig"`
 	UserRoles        RolesConfig            `yaml:"UserRoles"`
 	TicketCategories TicketCategoriesConfig `yaml:"TicketCategories"`
+	NewsCategories   NewsCategoriesConfig   `yaml:"NewsCategories"`
 	Mailer           MailerConfig           `yaml:"MailerConfig"`
 	Cooldown         CooldownConfig         `yaml:"Cooldown"`
 	TTL              TTLConfig              `yaml:"TTL"`
@@ -101,6 +108,9 @@ func appConfigDefaults() *AppConfig {
 		TicketLimits: TicketLimitsConfig{MaxOpenPerPlayer: 5},
 		TicketCategories: TicketCategoriesConfig{
 			"Other": {Display: "Other", Roles: []string{"*"}},
+		},
+		NewsCategories: NewsCategoriesConfig{
+			"Announcement": {Display: "Announcement"},
 		},
 		Tickets: TicketsConfig{StaffPollInterval: 30 * time.Second},
 	}
@@ -163,6 +173,18 @@ func validateAppConfig(cfg *AppConfig) {
 
 	validateRolesConfig(cfg.UserRoles)
 	validateTicketsConfig(cfg.TicketCategories, cfg.TicketLimits, cfg.Tickets, cfg.UserRoles)
+	validateNewsConfig(cfg.NewsCategories)
+}
+
+func validateNewsConfig(categories NewsCategoriesConfig) {
+	if len(categories) == 0 {
+		panic(fmt.Errorf("NewsCategories must define at least one category"))
+	}
+	for key, category := range categories {
+		if category.Display == "" {
+			panic(fmt.Errorf("NewsCategories.%s.Display is required", key))
+		}
+	}
 }
 
 func validateTicketsConfig(

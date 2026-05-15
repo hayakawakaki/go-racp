@@ -1,0 +1,55 @@
+package transport
+
+import (
+	"fmt"
+
+	"github.com/hayakawakaki/go-racp/internal/httpx"
+	newsapp "github.com/hayakawakaki/go-racp/internal/news/app"
+	"github.com/hayakawakaki/go-racp/internal/news/domain"
+)
+
+type NewsListState struct {
+	Items            []newsapp.NewsItem
+	Categories       []domain.Category
+	SelectedCategory string
+}
+
+templ newsListPage(layout httpx.Layout, state NewsListState) {
+	@httpx.Base(layout, "News") {
+		<div class="w-full max-w-3xl self-start p-6">
+			<div class="flex items-center justify-between mb-6">
+				<h1 class="text-2xl font-semibold text-gray-900">News</h1>
+				<form method="get" action="/news" class="flex items-center gap-2">
+					<label for="category" class="text-sm text-gray-600">Category</label>
+					<select id="category" name="category" onchange="this.form.submit()" class="text-sm border border-gray-300 rounded px-2 py-1">
+						<option value="" selected?={ state.SelectedCategory == "" }>All</option>
+						for _, c := range state.Categories {
+							<option value={ c.Key } selected?={ c.Key == state.SelectedCategory }>{ c.Display }</option>
+						}
+					</select>
+				</form>
+			</div>
+			if len(state.Items) == 0 {
+				<div class="bg-white border border-gray-200 rounded-lg shadow-sm p-10 text-center">
+					<p class="text-gray-700 font-medium">No news yet</p>
+				</div>
+			} else {
+				<ul class="space-y-3">
+					for _, item := range state.Items {
+						<li class="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
+							<a href={ templ.URL(fmt.Sprintf("/news/%d", item.ID)) } class="block">
+								<div class="flex items-center justify-between gap-3">
+									<h2 class="text-lg font-medium text-gray-900 truncate">{ item.Title }</h2>
+									@categoryChip(item.CategoryDisplay)
+								</div>
+								<div class="mt-1">
+									@postedAt(item.CreatedAt)
+								</div>
+							</a>
+						</li>
+					}
+				</ul>
+			}
+		</div>
+	}
+}

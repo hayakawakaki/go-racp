@@ -20,3 +20,6 @@ Tickets:
   Open:   ["*"]
   Reply:  ["*"]
   Manage: ["Moderator", "Enforcer"]
+
+News:
+  Manage: ["Moderator"]
