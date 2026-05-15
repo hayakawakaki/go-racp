@@ -102,19 +102,85 @@ func (h *Handler) categoryAllowed(role accountdomain.Role, categoryKey string) b
 	return h.svc.Categories().Permits(categoryKey, role.Name, role == accountdomain.RoleAdmin)
 }
 
-func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
-	reg.Wrap(mux, "Tickets.View", "GET /tickets", http.HandlerFunc(h.playerList))
-	reg.Wrap(mux, "Tickets.Open", "GET /tickets/new", http.HandlerFunc(h.playerNewForm))
-	reg.Wrap(mux, "Tickets.Open", "POST /tickets/new", http.HandlerFunc(h.playerCreate))
-	reg.Wrap(mux, "Tickets.View", "GET /tickets/{id}", http.HandlerFunc(h.playerDetail))
-	reg.Wrap(mux, "Tickets.Reply", "POST /tickets/{id}/reply", http.HandlerFunc(h.playerReply))
+func isStaff(role accountdomain.Role) bool {
+	return role != accountdomain.RolePlayer && role.Name != ""
+}
 
-	reg.Wrap(mux, "Tickets.StaffAccess", "GET /admin/tickets", http.HandlerFunc(h.staffList))
-	reg.Wrap(mux, "Tickets.StaffAccess", "GET /admin/tickets/{id}", http.HandlerFunc(h.staffDetail))
-	reg.Wrap(mux, "Tickets.StaffAccess", "POST /admin/tickets/{id}/reply", http.HandlerFunc(h.staffReply))
-	reg.Wrap(mux, "Tickets.StaffAccess", "POST /admin/tickets/{id}/note", http.HandlerFunc(h.staffNote))
-	reg.Wrap(mux, "Tickets.StaffAccess", "POST /admin/tickets/{id}/resolve", http.HandlerFunc(h.staffResolve))
-	reg.Wrap(mux, "Tickets.StaffAccess", "POST /admin/tickets/{id}/close", http.HandlerFunc(h.staffClose))
-	reg.Wrap(mux, "Tickets.StaffAccess", "POST /admin/tickets/{id}/category", http.HandlerFunc(h.staffRecategorize))
-	reg.Wrap(mux, "Tickets.StaffAccess", "POST /admin/tickets/{id}/subject", http.HandlerFunc(h.staffEditSubject))
+func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
+	reg.Wrap(mux, "Tickets.View", "GET /tickets", http.HandlerFunc(h.list))
+	reg.Wrap(mux, "Tickets.Open", "GET /tickets/new", http.HandlerFunc(h.newForm))
+	reg.Wrap(mux, "Tickets.Open", "POST /tickets/new", http.HandlerFunc(h.create))
+	reg.Wrap(mux, "Tickets.View", "GET /tickets/{id}", http.HandlerFunc(h.detail))
+	reg.Wrap(mux, "Tickets.Reply", "POST /tickets/{id}/reply", http.HandlerFunc(h.reply))
+
+	reg.Wrap(mux, "Tickets.Manage", "POST /tickets/{id}/note", http.HandlerFunc(h.staffNote))
+	reg.Wrap(mux, "Tickets.Manage", "POST /tickets/{id}/resolve", http.HandlerFunc(h.staffResolve))
+	reg.Wrap(mux, "Tickets.Manage", "POST /tickets/{id}/close", http.HandlerFunc(h.staffClose))
+	reg.Wrap(mux, "Tickets.Manage", "POST /tickets/{id}/category", http.HandlerFunc(h.staffRecategorize))
+	reg.Wrap(mux, "Tickets.Manage", "POST /tickets/{id}/subject", http.HandlerFunc(h.staffEditSubject))
+}
+
+func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
+	_, role, ok := h.currentUser(r)
+	if !ok {
+		httpx.Redirect(w, r, "/login")
+		return
+	}
+	if isStaff(role) {
+		h.staffList(w, r)
+		return
+	}
+	h.playerList(w, r)
+}
+
+func (h *Handler) newForm(w http.ResponseWriter, r *http.Request) {
+	_, role, ok := h.currentUser(r)
+	if !ok {
+		httpx.Redirect(w, r, "/login")
+		return
+	}
+	if isStaff(role) {
+		httpx.Redirect(w, r, "/tickets")
+		return
+	}
+	h.playerNewForm(w, r)
+}
+
+func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
+	_, role, ok := h.currentUser(r)
+	if !ok {
+		httpx.Redirect(w, r, "/login")
+		return
+	}
+	if isStaff(role) {
+		httpx.Redirect(w, r, "/tickets")
+		return
+	}
+	h.playerCreate(w, r)
+}
+
+func (h *Handler) detail(w http.ResponseWriter, r *http.Request) {
+	_, role, ok := h.currentUser(r)
+	if !ok {
+		httpx.Redirect(w, r, "/login")
+		return
+	}
+	if isStaff(role) {
+		h.staffDetail(w, r)
+		return
+	}
+	h.playerDetail(w, r)
+}
+
+func (h *Handler) reply(w http.ResponseWriter, r *http.Request) {
+	_, role, ok := h.currentUser(r)
+	if !ok {
+		httpx.Redirect(w, r, "/login")
+		return
+	}
+	if isStaff(role) {
+		h.staffReply(w, r)
+		return
+	}
+	h.playerReply(w, r)
 }

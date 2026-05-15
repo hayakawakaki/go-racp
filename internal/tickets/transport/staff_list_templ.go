@@ -135,9 +135,9 @@ func staffListBody(state StaffListState) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var5 string
-		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/admin/tickets?tab=%s&page=%d", tabQuery(state.Tab), state.Page))
+		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/tickets?tab=%s&page=%d", tabQuery(state.Tab), state.Page))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/staff_list.templ`, Line: 45, Col: 88}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/staff_list.templ`, Line: 45, Col: 82}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
@@ -246,9 +246,9 @@ func staffListBody(state StaffListState) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var13 templ.SafeURL
-				templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/admin/tickets/%d", item.ID)))
+				templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/tickets/%d", item.ID)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/staff_list.templ`, Line: 76, Col: 71}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/staff_list.templ`, Line: 76, Col: 65}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 				if templ_7745c5c3_Err != nil {
@@ -435,9 +435,9 @@ func tabLink(current, target domain.StaffTab, label, queryValue string) templ.Co
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var24 templ.SafeURL
-			templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/admin/tickets?tab=%s", queryValue)))
+			templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/tickets?tab=%s", queryValue)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/staff_list.templ`, Line: 106, Col: 71}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/staff_list.templ`, Line: 106, Col: 65}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 			if templ_7745c5c3_Err != nil {
@@ -450,7 +450,7 @@ func tabLink(current, target domain.StaffTab, label, queryValue string) templ.Co
 			var templ_7745c5c3_Var25 string
 			templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/staff_list.templ`, Line: 106, Col: 223}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/tickets/transport/staff_list.templ`, Line: 106, Col: 217}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 			if templ_7745c5c3_Err != nil {

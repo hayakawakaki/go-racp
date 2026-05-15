@@ -4,7 +4,7 @@ import "strings"
 
 const (
 	MaxSubjectLen = 150
-	MaxBodyLen    = 5000
+	MaxBodyLen    = 1000
 	PageSize      = 20
 )
 

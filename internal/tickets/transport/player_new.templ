@@ -39,13 +39,17 @@ templ playerNewPage(layout httpx.Layout, state PlayerNewState) {
 						</select>
 					</label>
 					<label class="block">
-						<span class="block text-sm font-medium text-gray-700 mb-1">Subject</span>
+						<div class="flex items-baseline justify-between mb-1">
+							<span class="text-sm font-medium text-gray-700">Subject</span>
+							<span class="text-xs text-gray-400 tabular-nums"><span data-count="subject">0</span> / { fmt.Sprint(domain.MaxSubjectLen) }</span>
+						</div>
 						<input
 							name="subject"
 							type="text"
 							required
 							maxlength={ fmt.Sprint(domain.MaxSubjectLen) }
 							placeholder="A short summary of the issue"
+							oninput="this.form.querySelector('[data-count=subject]').textContent = this.value.length"
 							class="block w-full rounded border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
 						/>
 						if state.Errors["subject"] != "" {
@@ -53,19 +57,23 @@ templ playerNewPage(layout httpx.Layout, state PlayerNewState) {
 						}
 					</label>
 					<label class="block">
-						<span class="block text-sm font-medium text-gray-700 mb-1">Message</span>
+						<div class="flex items-baseline justify-between mb-1">
+							<span class="text-sm font-medium text-gray-700">Message</span>
+							<span class="text-xs text-gray-400 tabular-nums"><span data-count="body">0</span> / { fmt.Sprint(domain.MaxBodyLen) }</span>
+						</div>
 						<textarea
 							name="body"
 							rows="7"
 							required
 							maxlength={ fmt.Sprint(domain.MaxBodyLen) }
 							placeholder="Describe the issue with as much detail as you can. Include character names, times, and steps to reproduce when relevant."
+							oninput="this.form.querySelector('[data-count=body]').textContent = this.value.length"
 							class="block w-full rounded border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-y"
 						></textarea>
 						if state.Errors["body"] != "" {
 							<p class="text-sm text-red-600 mt-1">{ state.Errors["body"] }</p>
 						}
-						<p class="text-xs text-gray-400 mt-1">Plain text only · up to { fmt.Sprint(domain.MaxBodyLen) } characters</p>
+						<p class="text-xs text-gray-400 mt-1">Plain text. For images, paste a link from an image host.</p>
 					</label>
 					<div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
 						<a href="/tickets" class="text-sm text-gray-600 hover:text-gray-900 px-3 py-2">Cancel</a>

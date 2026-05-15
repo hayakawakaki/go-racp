@@ -52,7 +52,7 @@ func staffDetailPage(layout httpx.Layout, state StaffDetailState) templ.Componen
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"w-full max-w-4xl self-start\"><div class=\"mb-4 flex items-center justify-between\"><a href=\"/admin/tickets\" class=\"text-sm text-blue-600 hover:underline\">← Back to staff queue</a> <span class=\"text-xs text-gray-500\">Opened by <span class=\"font-medium text-gray-800\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"w-full max-w-4xl self-start\"><div class=\"mb-4 flex items-center justify-between\"><a href=\"/tickets\" class=\"text-sm text-blue-600 hover:underline\">← Back to queue</a> <span class=\"text-xs text-gray-500\">Opened by <span class=\"font-medium text-gray-800\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

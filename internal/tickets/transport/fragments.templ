@@ -64,7 +64,7 @@ templ Composer(ticket domain.Ticket, canReply, isStaff bool, errorMsg string) {
 				hx-swap="outerHTML"
 				class="rounded-md border border-gray-200 bg-white shadow-sm"
 			>
-				<div class="px-4 pt-3 pb-2 border-b border-gray-100 flex items-center justify-between">
+				<div class="px-4 pt-3 pb-2 border-b border-gray-100">
 					<span class="text-xs font-medium uppercase tracking-wide text-gray-500">
 						if isStaff {
 							Staff reply
@@ -72,7 +72,6 @@ templ Composer(ticket domain.Ticket, canReply, isStaff bool, errorMsg string) {
 							Your reply
 						}
 					</span>
-					<span class="text-[11px] text-gray-400">Plain text · { fmt.Sprint(domain.MaxBodyLen) } chars max</span>
 				</div>
 				<textarea
 					name="body"
@@ -80,12 +79,14 @@ templ Composer(ticket domain.Ticket, canReply, isStaff bool, errorMsg string) {
 					required
 					maxlength={ fmt.Sprint(domain.MaxBodyLen) }
 					placeholder="Write your message…"
+					oninput="this.form.querySelector('[data-count]').textContent = this.value.length"
 					class="block w-full px-4 py-3 text-sm leading-relaxed text-gray-900 placeholder-gray-400 focus:outline-none resize-y"
 				></textarea>
 				if errorMsg != "" {
 					<p class="px-4 pb-2 text-sm text-red-600">{ errorMsg }</p>
 				}
-				<div class="flex items-center justify-end gap-2 px-4 py-2 bg-gray-50 border-t border-gray-100 rounded-b-md">
+				<div class="flex items-center justify-between gap-2 px-4 py-2 bg-gray-50 border-t border-gray-100 rounded-b-md">
+					<span class="text-xs text-gray-400 tabular-nums"><span data-count>0</span> / { fmt.Sprint(domain.MaxBodyLen) }</span>
 					<button type="submit" class="rounded bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-1.5 transition">Send</button>
 				</div>
 			</form>
@@ -96,7 +97,7 @@ templ Composer(ticket domain.Ticket, canReply, isStaff bool, errorMsg string) {
 templ StaffNoteComposer(ticket domain.Ticket) {
 	if !ticket.IsTerminal() {
 		<form
-			hx-post={ fmt.Sprintf("/admin/tickets/%d/note", ticket.ID) }
+			hx-post={ fmt.Sprintf("/tickets/%d/note", ticket.ID) }
 			hx-target="#ticket-thread"
 			hx-swap="outerHTML"
 			class="mt-3 rounded-md border border-amber-200 bg-amber-50 shadow-sm"
@@ -110,9 +111,11 @@ templ StaffNoteComposer(ticket domain.Ticket) {
 				required
 				maxlength={ fmt.Sprint(domain.MaxBodyLen) }
 				placeholder="Notes only visible to other staff…"
+				oninput="this.form.querySelector('[data-count]').textContent = this.value.length"
 				class="block w-full px-4 py-3 text-sm leading-relaxed text-amber-900 placeholder-amber-400 bg-amber-50 focus:outline-none resize-y"
 			></textarea>
-			<div class="flex items-center justify-end gap-2 px-4 py-2 bg-amber-100 border-t border-amber-200 rounded-b-md">
+			<div class="flex items-center justify-between gap-2 px-4 py-2 bg-amber-100 border-t border-amber-200 rounded-b-md">
+				<span class="text-xs text-amber-700 tabular-nums"><span data-count>0</span> / { fmt.Sprint(domain.MaxBodyLen) }</span>
 				<button type="submit" class="rounded border border-amber-700 bg-white hover:bg-amber-700 hover:text-white text-amber-800 text-sm font-medium px-4 py-1.5 transition">Add note</button>
 			</div>
 		</form>
@@ -164,7 +167,7 @@ templ statusBadge(status domain.Status) {
 
 templ staffHeaderActions(ticket domain.Ticket, categories []domain.Category) {
 	<div class="mt-4 flex flex-wrap items-center gap-2">
-		<form hx-post={ fmt.Sprintf("/admin/tickets/%d/category", ticket.ID) } hx-target="#ticket-header" hx-swap="outerHTML" class="flex items-center gap-2">
+		<form hx-post={ fmt.Sprintf("/tickets/%d/category", ticket.ID) } hx-target="#ticket-header" hx-swap="outerHTML" class="flex items-center gap-2">
 			<label class="text-xs uppercase tracking-wide text-gray-500">Recategorize</label>
 			<select name="category" class="rounded border border-gray-300 text-sm px-2 py-1 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
 				for _, category := range categories {
@@ -178,8 +181,8 @@ templ staffHeaderActions(ticket domain.Ticket, categories []domain.Category) {
 			<button type="submit" class="rounded border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-xs font-medium px-2.5 py-1 transition">Apply</button>
 		</form>
 		<span class="text-gray-300">|</span>
-		<button hx-post={ fmt.Sprintf("/admin/tickets/%d/resolve", ticket.ID) } hx-target="body" hx-swap="outerHTML" class="rounded bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-3 py-1.5 transition">Mark resolved</button>
-		<button hx-post={ fmt.Sprintf("/admin/tickets/%d/close", ticket.ID) } hx-target="body" hx-swap="outerHTML" class="rounded border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-xs font-medium px-3 py-1.5 transition">Close</button>
+		<button hx-post={ fmt.Sprintf("/tickets/%d/resolve", ticket.ID) } hx-target="body" hx-swap="outerHTML" class="rounded bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-3 py-1.5 transition">Mark resolved</button>
+		<button hx-post={ fmt.Sprintf("/tickets/%d/close", ticket.ID) } hx-target="body" hx-swap="outerHTML" class="rounded border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-xs font-medium px-3 py-1.5 transition">Close</button>
 	</div>
 }
 
@@ -221,10 +224,6 @@ func authorInitial(message domain.Message) string {
 	return "P"
 }
 
-func composerPostURL(ticket domain.Ticket, isStaff bool) string {
-	if isStaff {
-		return fmt.Sprintf("/admin/tickets/%d/reply", ticket.ID)
-	}
-
+func composerPostURL(ticket domain.Ticket, _ bool) string {
 	return fmt.Sprintf("/tickets/%d/reply", ticket.ID)
 }

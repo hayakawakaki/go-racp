@@ -67,7 +67,7 @@ func validateAccessCrossConfig(categories config.TicketCategoriesConfig, access 
 	if !ok {
 		return
 	}
-	list, ok := staffAccess["StaffAccess"]
+	list, ok := staffAccess["Manage"]
 	if !ok {
 		return
 	}

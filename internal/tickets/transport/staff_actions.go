@@ -115,9 +115,9 @@ func (h *Handler) respondStaffMutateSuccess(w http.ResponseWriter, r *http.Reque
 	}
 
 	if !h.categoryAllowed(role, refreshed.Ticket.Category) {
-		w.Header().Set("HX-Redirect", "/admin/tickets")
+		w.Header().Set("HX-Redirect", "/tickets")
 		if !httpx.IsHTMX(r) {
-			httpx.Redirect(w, r, "/admin/tickets")
+			httpx.Redirect(w, r, "/tickets")
 		}
 		return
 	}

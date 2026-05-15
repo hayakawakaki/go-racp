@@ -16,7 +16,7 @@ Account:
   ChangeEmail:    ["*"]
 
 Tickets:
-  View:        ["*"]
-  Open:        ["*"]
-  Reply:       ["*"]
-  StaffAccess: ["Moderator", "Enforcer"]
+  View:   ["*"]
+  Open:   ["*"]
+  Reply:  ["*"]
+  Manage: ["Moderator", "Enforcer"]

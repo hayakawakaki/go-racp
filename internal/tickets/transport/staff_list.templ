@@ -42,7 +42,7 @@ templ staffListPage(layout httpx.Layout, state StaffListState) {
 templ staffListBody(state StaffListState) {
 	<div
 		id="staff-tickets-body"
-		hx-get={ fmt.Sprintf("/admin/tickets?tab=%s&page=%d", tabQuery(state.Tab), state.Page) }
+		hx-get={ fmt.Sprintf("/tickets?tab=%s&page=%d", tabQuery(state.Tab), state.Page) }
 		hx-trigger={ fmt.Sprintf("every %s", state.PollInterval) }
 		hx-swap="outerHTML"
 		class="mt-4"
@@ -73,7 +73,7 @@ templ staffListBody(state StaffListState) {
 								</td>
 								<td class="px-4 py-3 text-gray-700 align-middle">{ item.AuthorUsername }</td>
 								<td class="px-4 py-3 align-middle">
-									<a href={ templ.URL(fmt.Sprintf("/admin/tickets/%d", item.ID)) } class={ "text-gray-900 hover:text-blue-700 hover:underline", unreadTextClass(item.Unread) }>
+									<a href={ templ.URL(fmt.Sprintf("/tickets/%d", item.ID)) } class={ "text-gray-900 hover:text-blue-700 hover:underline", unreadTextClass(item.Unread) }>
 										{ item.Subject }
 									</a>
 									<div class="text-xs text-gray-400 font-mono mt-0.5">#{ fmt.Sprint(item.ID) } · { fmt.Sprint(item.MessageCount) } msg</div>
@@ -103,7 +103,7 @@ templ tabLink(current, target domain.StaffTab, label, queryValue string) {
 	if current == target {
 		<span class="px-3 py-2 text-sm font-medium text-blue-700 border-b-2 border-blue-600 -mb-px">{ label }</span>
 	} else {
-		<a href={ templ.URL(fmt.Sprintf("/admin/tickets?tab=%s", queryValue)) } class="px-3 py-2 text-sm font-medium text-gray-500 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300 -mb-px transition">{ label }</a>
+		<a href={ templ.URL(fmt.Sprintf("/tickets?tab=%s", queryValue)) } class="px-3 py-2 text-sm font-medium text-gray-500 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300 -mb-px transition">{ label }</a>
 	}
 }
 
