@@ -69,7 +69,7 @@ func Start() error {
 		}
 	}()
 
-	actionTokenRepo := actiontoken.NewMySQLRepository(mainDB)
+	actionTokenRepo := actiontoken.NewPostgresRepository(cpPool)
 	tokenMgr := actiontoken.NewManager(actionTokenRepo)
 
 	in := &infra.Infra{

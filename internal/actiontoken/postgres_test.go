@@ -12,7 +12,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/testutil"
 )
 
-var _ Repository = (*MySQLRepository)(nil)
+var _ Repository = (*PostgresRepository)(nil)
 
 func newPersistedToken(accountID int, action Action, now time.Time, suffix byte) *ActionToken {
 	return &ActionToken{
@@ -24,10 +24,10 @@ func newPersistedToken(accountID int, action Action, now time.Time, suffix byte)
 	}
 }
 
-func TestMySQLRepository_InsertAndGetByHash(t *testing.T) {
-	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
-	testutil.TruncateMariaDB(t, db, "cp_action_tokens")
-	repo := NewMySQLRepository(db)
+func TestPostgresRepository_InsertAndGetByHash(t *testing.T) {
+	pool := testutil.OpenPostgres(t, "DB_CP_TEST_URL")
+	testutil.TruncatePostgres(t, pool, "cp_action_tokens")
+	repo := NewPostgresRepository(pool)
 	ctx := context.Background()
 
 	now := time.Now().UTC().Truncate(time.Second)
@@ -64,10 +64,10 @@ func TestMySQLRepository_InsertAndGetByHash(t *testing.T) {
 	}
 }
 
-func TestMySQLRepository_GetByHash_NotFound(t *testing.T) {
-	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
-	testutil.TruncateMariaDB(t, db, "cp_action_tokens")
-	repo := NewMySQLRepository(db)
+func TestPostgresRepository_GetByHash_NotFound(t *testing.T) {
+	pool := testutil.OpenPostgres(t, "DB_CP_TEST_URL")
+	testutil.TruncatePostgres(t, pool, "cp_action_tokens")
+	repo := NewPostgresRepository(pool)
 
 	_, err := repo.GetByHash(context.Background(), sha256.Sum256([]byte("nope")))
 	if !errors.Is(err, ErrTokenInvalid) {
@@ -75,10 +75,10 @@ func TestMySQLRepository_GetByHash_NotFound(t *testing.T) {
 	}
 }
 
-func TestMySQLRepository_DeleteUnconsumed(t *testing.T) {
-	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
-	testutil.TruncateMariaDB(t, db, "cp_action_tokens")
-	repo := NewMySQLRepository(db)
+func TestPostgresRepository_DeleteUnconsumed(t *testing.T) {
+	pool := testutil.OpenPostgres(t, "DB_CP_TEST_URL")
+	testutil.TruncatePostgres(t, pool, "cp_action_tokens")
+	repo := NewPostgresRepository(pool)
 	ctx := context.Background()
 
 	now := time.Now().UTC().Truncate(time.Second)
@@ -109,20 +109,20 @@ func TestMySQLRepository_DeleteUnconsumed(t *testing.T) {
 	}
 }
 
-func TestMySQLRepository_DeleteUnconsumed_NoRows(t *testing.T) {
-	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
-	testutil.TruncateMariaDB(t, db, "cp_action_tokens")
-	repo := NewMySQLRepository(db)
+func TestPostgresRepository_DeleteUnconsumed_NoRows(t *testing.T) {
+	pool := testutil.OpenPostgres(t, "DB_CP_TEST_URL")
+	testutil.TruncatePostgres(t, pool, "cp_action_tokens")
+	repo := NewPostgresRepository(pool)
 
 	if err := repo.DeleteUnconsumed(context.Background(), 999, EmailVerification); err != nil {
 		t.Errorf("DeleteUnconsumed against empty set: got %v, want nil", err)
 	}
 }
 
-func TestMySQLRepository_MarkConsumed_Happy(t *testing.T) {
-	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
-	testutil.TruncateMariaDB(t, db, "cp_action_tokens")
-	repo := NewMySQLRepository(db)
+func TestPostgresRepository_MarkConsumed_Happy(t *testing.T) {
+	pool := testutil.OpenPostgres(t, "DB_CP_TEST_URL")
+	testutil.TruncatePostgres(t, pool, "cp_action_tokens")
+	repo := NewPostgresRepository(pool)
 	ctx := context.Background()
 
 	now := time.Now().UTC().Truncate(time.Second)
@@ -148,10 +148,10 @@ func TestMySQLRepository_MarkConsumed_Happy(t *testing.T) {
 	}
 }
 
-func TestMySQLRepository_MarkConsumed_AlreadyConsumed(t *testing.T) {
-	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
-	testutil.TruncateMariaDB(t, db, "cp_action_tokens")
-	repo := NewMySQLRepository(db)
+func TestPostgresRepository_MarkConsumed_AlreadyConsumed(t *testing.T) {
+	pool := testutil.OpenPostgres(t, "DB_CP_TEST_URL")
+	testutil.TruncatePostgres(t, pool, "cp_action_tokens")
+	repo := NewPostgresRepository(pool)
 	ctx := context.Background()
 
 	now := time.Now().UTC().Truncate(time.Second)
@@ -169,10 +169,10 @@ func TestMySQLRepository_MarkConsumed_AlreadyConsumed(t *testing.T) {
 	}
 }
 
-func TestMySQLRepository_MarkConsumed_UnknownHash(t *testing.T) {
-	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
-	testutil.TruncateMariaDB(t, db, "cp_action_tokens")
-	repo := NewMySQLRepository(db)
+func TestPostgresRepository_MarkConsumed_UnknownHash(t *testing.T) {
+	pool := testutil.OpenPostgres(t, "DB_CP_TEST_URL")
+	testutil.TruncatePostgres(t, pool, "cp_action_tokens")
+	repo := NewPostgresRepository(pool)
 
 	err := repo.MarkConsumed(context.Background(), sha256.Sum256([]byte("ghost")), time.Now())
 	if !errors.Is(err, ErrTokenAlreadyUsed) {
@@ -180,10 +180,10 @@ func TestMySQLRepository_MarkConsumed_UnknownHash(t *testing.T) {
 	}
 }
 
-func TestMySQLRepository_MostRecentIssuedAt_NoRows(t *testing.T) {
-	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
-	testutil.TruncateMariaDB(t, db, "cp_action_tokens")
-	repo := NewMySQLRepository(db)
+func TestPostgresRepository_MostRecentIssuedAt_NoRows(t *testing.T) {
+	pool := testutil.OpenPostgres(t, "DB_CP_TEST_URL")
+	testutil.TruncatePostgres(t, pool, "cp_action_tokens")
+	repo := NewPostgresRepository(pool)
 
 	got, err := repo.MostRecentIssuedAt(context.Background(), 999, EmailVerification)
 	if err != nil {
@@ -194,10 +194,10 @@ func TestMySQLRepository_MostRecentIssuedAt_NoRows(t *testing.T) {
 	}
 }
 
-func TestMySQLRepository_MostRecentIssuedAt_ReturnsLatest(t *testing.T) {
-	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
-	testutil.TruncateMariaDB(t, db, "cp_action_tokens")
-	repo := NewMySQLRepository(db)
+func TestPostgresRepository_MostRecentIssuedAt_ReturnsLatest(t *testing.T) {
+	pool := testutil.OpenPostgres(t, "DB_CP_TEST_URL")
+	testutil.TruncatePostgres(t, pool, "cp_action_tokens")
+	repo := NewPostgresRepository(pool)
 	ctx := context.Background()
 
 	base := time.Now().UTC().Truncate(time.Second)
@@ -219,10 +219,10 @@ func TestMySQLRepository_MostRecentIssuedAt_ReturnsLatest(t *testing.T) {
 	}
 }
 
-func TestMySQLRepository_MostRecentIssuedAt_FiltersByAction(t *testing.T) {
-	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
-	testutil.TruncateMariaDB(t, db, "cp_action_tokens")
-	repo := NewMySQLRepository(db)
+func TestPostgresRepository_MostRecentIssuedAt_FiltersByAction(t *testing.T) {
+	pool := testutil.OpenPostgres(t, "DB_CP_TEST_URL")
+	testutil.TruncatePostgres(t, pool, "cp_action_tokens")
+	repo := NewPostgresRepository(pool)
 	ctx := context.Background()
 
 	base := time.Now().UTC().Truncate(time.Second)
