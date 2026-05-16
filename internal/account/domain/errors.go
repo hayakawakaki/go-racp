@@ -14,6 +14,9 @@ var (
 	ErrSessionExpired  = errors.New("session expired")
 
 	ErrAccountUnverified       = errors.New("auth: account not verified")
+	ErrAccountPermaBanned      = errors.New("auth: account permanently banned")
+	ErrAccountTempBanned       = errors.New("auth: account temporarily restricted")
+	ErrAccountDeleted          = errors.New("auth: account no longer exists")
 	ErrEmailTaken              = errors.New("auth: email already in use")
 	ErrPasswordRecentlyChanged = errors.New("auth: password was recently changed")
 	ErrEmailRecentlyChanged    = errors.New("auth: email was recently changed")

@@ -40,7 +40,7 @@ const (
 type accountService interface {
 	Now() time.Time
 	Create(ctx context.Context, cmd accountapp.CreateCommand) (*accountapp.GetDTO, error)
-	Authenticate(ctx context.Context, cmd accountapp.LoginCommand) (*accountapp.GetDTO, error)
+	Authenticate(ctx context.Context, cmd accountapp.LoginCommand) (*accountapp.GetDTO, accountapp.Tier, error)
 	GetAccount(ctx context.Context, userID int) (*accountapp.AccountDTO, error)
 	IssueVerification(ctx context.Context, accountID int, email, username string) error
 	ConsumeVerification(ctx context.Context, rawToken string) error
@@ -198,7 +198,15 @@ func (h *Handler) showLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RenderHTML(w, r, h.logger, loginPage(h.layout(), LoginFormState{}))
+	state := LoginFormState{}
+	switch r.URL.Query().Get("notice") {
+	case "banned":
+		state.Notice = "You were signed out. This account is permanently banned."
+	case "deleted":
+		state.Notice = "You were signed out. This account no longer exists."
+	}
+
+	httpx.RenderHTML(w, r, h.logger, loginPage(h.layout(), state))
 }
 
 func (h *Handler) doLogin(w http.ResponseWriter, r *http.Request) {
@@ -213,7 +221,7 @@ func (h *Handler) doLogin(w http.ResponseWriter, r *http.Request) {
 		Password: r.PostFormValue(fieldPassword),
 	}
 
-	user, err := h.svc.Authenticate(r.Context(), cmd)
+	user, tier, err := h.svc.Authenticate(r.Context(), cmd)
 	if err != nil {
 		state := LoginFormState{Username: cmd.Username}
 		if errors.Is(err, domain.ErrInvalidCredentials) {
@@ -223,6 +231,14 @@ func (h *Handler) doLogin(w http.ResponseWriter, r *http.Request) {
 			state.Error = genericErrorMessage
 		}
 		h.renderLogin(w, r, state)
+		return
+	}
+
+	if tier == accountapp.TierPermaBanned {
+		h.renderLogin(w, r, LoginFormState{
+			Username: cmd.Username,
+			Error:    "This account is permanently banned.",
+		})
 		return
 	}
 
@@ -236,6 +252,11 @@ func (h *Handler) doLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	setSessionCookie(w, token, h.sessSvc.TTL(), h.secure)
+
+	if tier == accountapp.TierUnverified {
+		httpx.Redirect(w, r, "/verify-account")
+		return
+	}
 
 	httpx.Redirect(w, r, "/")
 }

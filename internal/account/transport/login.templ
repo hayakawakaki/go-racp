@@ -5,12 +5,16 @@ import "github.com/hayakawakaki/go-racp/internal/httpx"
 type LoginFormState struct {
 	Username string
 	Error    string
+	Notice   string
 }
 
 templ loginPage(layout httpx.Layout, state LoginFormState) {
 	@httpx.Base(layout, "Sign in") {
 		<div class="w-full max-w-md bg-white rounded-lg shadow-md p-8">
 			<h1 class="text-2xl font-semibold mb-6 text-center text-gray-900">Sign in</h1>
+			if state.Notice != "" {
+				<p class="text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded px-3 py-2 mb-4">{ state.Notice }</p>
+			}
 			@loginForm(state)
 		</div>
 	}

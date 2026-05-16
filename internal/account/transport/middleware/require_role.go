@@ -46,7 +46,7 @@ func handleSessionError(w http.ResponseWriter, r *http.Request, err error, logge
 	http.Error(w, "internal server error", http.StatusInternalServerError)
 }
 
-//nolint:cyclop // sequential gating, splitting would obscure the flow
+//nolint:cyclop // splitting would obscure the flow
 func requireRoleCore(
 	sessSvc SessionValidator,
 	users UserLookup,
@@ -54,7 +54,7 @@ func requireRoleCore(
 	logger *slog.Logger,
 	secure, hidden bool,
 	layout httpx.Layout,
-	fullAccess bool,
+	unrestricted bool,
 	allowed []domain.Role,
 ) func(http.Handler) http.Handler {
 	allowSet := make(map[domain.Role]struct{}, len(allowed))
@@ -100,7 +100,7 @@ func requireRoleCore(
 				rejectUnverified(w, r, logger, hidden, layout)
 				return
 			case app.TierTempBanned:
-				if fullAccess {
+				if unrestricted {
 					rejectTempBanned(w, r, logger, hidden, layout)
 					return
 				}
@@ -126,10 +126,10 @@ func RequireRole(
 	resolver domain.RoleResolver,
 	logger *slog.Logger,
 	secure bool,
-	fullAccess bool,
+	unrestricted bool,
 	allowed ...domain.Role,
 ) func(http.Handler) http.Handler {
-	return requireRoleCore(sessSvc, users, resolver, logger, secure, false, httpx.Layout{}, fullAccess, allowed)
+	return requireRoleCore(sessSvc, users, resolver, logger, secure, false, httpx.Layout{}, unrestricted, allowed)
 }
 
 // RequireRoleHidden behaves like RequireRole but renders a 404 in place of 401/403 so the route's existence is not disclosed to unauthorized callers.
@@ -140,10 +140,10 @@ func RequireRoleHidden(
 	logger *slog.Logger,
 	secure bool,
 	layout httpx.Layout,
-	fullAccess bool,
+	unrestricted bool,
 	allowed ...domain.Role,
 ) func(http.Handler) http.Handler {
-	return requireRoleCore(sessSvc, users, resolver, logger, secure, true, layout, fullAccess, allowed)
+	return requireRoleCore(sessSvc, users, resolver, logger, secure, true, layout, unrestricted, allowed)
 }
 
 func rejectBanned(w http.ResponseWriter, r *http.Request, logger *slog.Logger, secure, hidden bool, layout httpx.Layout, notice string, snap *AccountSnapshot, sessRaw string, sessSvc SessionValidator) {

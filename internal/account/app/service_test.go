@@ -546,7 +546,7 @@ func TestService_Authenticate(t *testing.T) {
 		})
 		svc := NewService(repo)
 
-		dto, err := svc.Authenticate(context.Background(), validLogin)
+		dto, _, err := svc.Authenticate(context.Background(), validLogin)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -561,7 +561,7 @@ func TestService_Authenticate(t *testing.T) {
 
 		// Shape passes, repo lookup fails. The Authenticate error must reach
 		// the caller as ErrInvalidCredentials without app-layer wrapping.
-		_, err := svc.Authenticate(context.Background(), validLogin)
+		_, _, err := svc.Authenticate(context.Background(), validLogin)
 		if !errors.Is(err, domain.ErrInvalidCredentials) {
 			t.Errorf("got %v, want ErrInvalidCredentials", err)
 		}
@@ -578,7 +578,7 @@ func TestService_Authenticate(t *testing.T) {
 		}
 		svc := NewService(repo)
 
-		_, err := svc.Authenticate(context.Background(), validLogin)
+		_, _, err := svc.Authenticate(context.Background(), validLogin)
 		if err == nil || !strings.Contains(err.Error(), "app.Service.Authenticate") {
 			t.Errorf("not wrapped: %v", err)
 		}

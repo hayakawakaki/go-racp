@@ -240,8 +240,8 @@ func TestDoRegister_GenericError(t *testing.T) {
 func TestDoLogin_Happy_SetsCookie(t *testing.T) {
 	t.Parallel()
 	auth := &stubAccountService{
-		authNFn: func(context.Context, accountapp.LoginCommand) (*accountapp.GetDTO, error) {
-			return &accountapp.GetDTO{ID: 99, Username: "testuser"}, nil
+		authNFn: func(context.Context, accountapp.LoginCommand) (*accountapp.GetDTO, accountapp.Tier, error) {
+			return &accountapp.GetDTO{ID: 99, Username: "testuser"}, accountapp.TierActive, nil
 		},
 	}
 	sess := &stubSessionService{
@@ -285,8 +285,8 @@ func TestDoLogin_Happy_SetsCookie(t *testing.T) {
 func TestDoLogin_InvalidCredentials(t *testing.T) {
 	t.Parallel()
 	auth := &stubAccountService{
-		authNFn: func(context.Context, accountapp.LoginCommand) (*accountapp.GetDTO, error) {
-			return nil, domain.ErrInvalidCredentials
+		authNFn: func(context.Context, accountapp.LoginCommand) (*accountapp.GetDTO, accountapp.Tier, error) {
+			return nil, accountapp.TierActive, domain.ErrInvalidCredentials
 		},
 	}
 	h := newAuthHandler(auth, &stubSessionService{})

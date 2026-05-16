@@ -59,6 +59,10 @@ func (h *Handler) doResetPassword(w http.ResponseWriter, r *http.Request) {
 			state.Kind = ResetResultAlreadyUsed
 		case errors.Is(err, actiontoken.ErrTokenInvalid):
 			state.Kind = ResetResultInvalid
+		case errors.Is(err, domain.ErrAccountPermaBanned),
+			errors.Is(err, domain.ErrAccountTempBanned),
+			errors.Is(err, domain.ErrAccountDeleted):
+			state.Kind = ResetResultAccountRestricted
 		default:
 			h.logger.Error("reset_password consume", "err", err)
 			state.Kind = ResetResultInvalid

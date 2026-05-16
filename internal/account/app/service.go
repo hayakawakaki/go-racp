@@ -345,6 +345,8 @@ func (s *Service) RequestPasswordReset(ctx context.Context, email string) error 
 }
 
 // ConsumePasswordReset rotates the password and invalidates every existing session for the account.
+//
+//nolint:cyclop // splitting would obscure the flow
 func (s *Service) ConsumePasswordReset(ctx context.Context, rawToken, newPassword string) error {
 	if err := domain.ValidatePassword(newPassword); err != nil {
 		return &domain.ValidationError{Fields: domain.FieldErrors{fieldPassword: err.Error()}}
@@ -356,6 +358,21 @@ func (s *Service) ConsumePasswordReset(ctx context.Context, rawToken, newPasswor
 	token, err := s.TokenManager.Consume(ctx, actiontoken.PasswordReset, rawToken)
 	if err != nil {
 		return fmt.Errorf("app.Service.ConsumePasswordReset: %w", err)
+	}
+
+	user, err := s.Repo.GetByID(ctx, token.AccountID)
+	if errors.Is(err, domain.ErrUserNotFound) {
+		return fmt.Errorf("app.Service.ConsumePasswordReset: %w", domain.ErrAccountDeleted)
+	}
+	if err != nil {
+		return fmt.Errorf("app.Service.ConsumePasswordReset: %w", err)
+	}
+	switch ClassifyTier(user.State, user.UnbanTime, s.now()) {
+	case TierPermaBanned:
+		return fmt.Errorf("app.Service.ConsumePasswordReset: %w", domain.ErrAccountPermaBanned)
+	case TierTempBanned:
+		return fmt.Errorf("app.Service.ConsumePasswordReset: %w", domain.ErrAccountTempBanned)
+	case TierActive, TierUnverified, TierDeleted:
 	}
 
 	if err := s.Repo.UpdatePassword(ctx, token.AccountID, newPassword); err != nil {
@@ -537,20 +554,22 @@ func (s *Service) PeekEmailChange(ctx context.Context, rawToken string) (*action
 	return token, nil
 }
 
-func (s *Service) Authenticate(ctx context.Context, cmd LoginCommand) (*GetDTO, error) {
+func (s *Service) Authenticate(ctx context.Context, cmd LoginCommand) (*GetDTO, Tier, error) {
 	user, err := s.Repo.Authenticate(ctx, cmd.Username, cmd.Password)
 	if errors.Is(err, domain.ErrInvalidCredentials) {
-		return nil, domain.ErrInvalidCredentials
+		return nil, TierActive, domain.ErrInvalidCredentials
 	}
 	if err != nil {
-		return nil, fmt.Errorf("app.Service.Authenticate: %w", err)
+		return nil, TierActive, fmt.Errorf("app.Service.Authenticate: %w", err)
 	}
+
+	tier := ClassifyTier(user.State, user.UnbanTime, s.now())
 
 	return &GetDTO{
 		ID:       user.ID,
 		Username: user.Username,
 		Email:    user.Email,
-	}, nil
+	}, tier, nil
 }
 
 func (s *Service) GetAccount(ctx context.Context, userID int) (*AccountDTO, error) {
@@ -558,11 +577,14 @@ func (s *Service) GetAccount(ctx context.Context, userID int) (*AccountDTO, erro
 	if err != nil {
 		return nil, fmt.Errorf("app.Service.GetAccount: %w", err)
 	}
+	tier := ClassifyTier(user.State, user.UnbanTime, s.now())
 
 	return &AccountDTO{
-		Username: user.Username,
-		Email:    user.Email,
-		Verified: user.State != 1,
+		Username:        user.Username,
+		Email:           user.Email,
+		Verified:        user.State != 1,
+		Restricted:      tier == TierTempBanned,
+		RestrictedUntil: user.UnbanTime,
 	}, nil
 }
 
@@ -676,6 +698,7 @@ func (s *Service) RequestEmailChange(ctx context.Context, userID int, currentPas
 	return nil
 }
 
+//nolint:cyclop // splitting would obscure the flow
 func (s *Service) ConsumeEmailChange(ctx context.Context, rawToken string) (*domain.User, error) {
 	token, err := s.TokenManager.Consume(ctx, actiontoken.EmailChange, rawToken)
 	if err != nil {
@@ -685,6 +708,21 @@ func (s *Service) ConsumeEmailChange(ctx context.Context, rawToken string) (*dom
 	newEmail := string(token.Payload)
 	if _, validateErr := domain.ValidateEmail(newEmail); validateErr != nil {
 		return nil, actiontoken.ErrTokenInvalid
+	}
+
+	owner, err := s.Repo.GetByID(ctx, token.AccountID)
+	if errors.Is(err, domain.ErrUserNotFound) {
+		return nil, fmt.Errorf("app.Service.ConsumeEmailChange: %w", domain.ErrAccountDeleted)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("app.Service.ConsumeEmailChange: %w", err)
+	}
+	switch ClassifyTier(owner.State, owner.UnbanTime, s.now()) {
+	case TierPermaBanned:
+		return nil, fmt.Errorf("app.Service.ConsumeEmailChange: %w", domain.ErrAccountPermaBanned)
+	case TierTempBanned:
+		return nil, fmt.Errorf("app.Service.ConsumeEmailChange: %w", domain.ErrAccountTempBanned)
+	case TierActive, TierUnverified, TierDeleted:
 	}
 
 	s.emailUniqueMu.Lock()

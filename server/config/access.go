@@ -21,8 +21,8 @@ type ActionRoles map[string]Entry
 
 type AccessConfig map[string]ActionRoles
 
-func (e Entry) RequiresFullAccess() bool {
-	return slices.Contains(e.Requires, "FullAccess")
+func (e Entry) RequiresUnrestricted() bool {
+	return slices.Contains(e.Requires, "Unrestricted")
 }
 
 func (e *Entry) UnmarshalYAML(unmarshal func(any) error) error {
@@ -34,11 +34,11 @@ func (e *Entry) UnmarshalYAML(unmarshal func(any) error) error {
 	}
 
 	var asStruct struct {
-		Roles    RoleList `yaml:"roles"`
-		Requires []string `yaml:"requires"`
+		Roles    RoleList `yaml:"Roles"`
+		Requires []string `yaml:"Requires"`
 	}
 	if err := unmarshal(&asStruct); err != nil {
-		return fmt.Errorf("access.yml entry: expected list of roles or { roles, requires }: %w", err)
+		return fmt.Errorf("access.yml entry: expected list of roles or { Roles, Requires }: %w", err)
 	}
 	e.Roles = asStruct.Roles
 	e.Requires = asStruct.Requires
@@ -101,9 +101,9 @@ func parseAccessConfig(data []byte) (AccessConfig, error) {
 	return cfg, nil
 }
 
-//nolint:cyclop // sequential per-entry validation, splitting would scatter the error messages
+//nolint:cyclop // splitting would obscure the flow
 func validateAccessConfig(cfg AccessConfig) {
-	knownTags := map[string]struct{}{"FullAccess": {}}
+	knownTags := map[string]struct{}{"Unrestricted": {}}
 
 	if _, hasAdmin := cfg[adminRoleName]; hasAdmin {
 		panic(fmt.Errorf("access.yml: top-level 'Admin' key is forbidden, Admin is hardcoded"))
@@ -127,7 +127,7 @@ func validateAccessConfig(cfg AccessConfig) {
 			}
 			for _, tag := range entry.Requires {
 				if _, ok := knownTags[tag]; !ok {
-					panic(fmt.Errorf("access.yml: Action '%s' has unknown requires tag '%s'. Known tags: [FullAccess]", fullName, tag))
+					panic(fmt.Errorf("access.yml: Action '%s' has unknown requires tag '%s'. Known tags: [Unrestricted]", fullName, tag))
 				}
 			}
 		}

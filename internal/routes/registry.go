@@ -73,12 +73,12 @@ func (r *Registry) Wrap(mux *http.ServeMux, tag, pattern string, handler http.Ha
 		return
 	}
 
-	mux.Handle(pattern, middleware.RequireRole(r.sessSvc, r.users, r.resolver, r.logger, r.secure, entry.fullAccess, entry.roles...)(handler))
+	mux.Handle(pattern, middleware.RequireRole(r.sessSvc, r.users, r.resolver, r.logger, r.secure, entry.unrestricted, entry.roles...)(handler))
 }
 
 type resolvedEntry struct {
-	roles      []domain.Role
-	fullAccess bool
+	roles        []domain.Role
+	unrestricted bool
 }
 
 func (r *Registry) lookup(group, action string) (resolvedEntry, bool) {
@@ -99,7 +99,7 @@ func (r *Registry) lookup(group, action string) (resolvedEntry, bool) {
 		roles = append(roles, role)
 	}
 
-	return resolvedEntry{roles: roles, fullAccess: cfgEntry.RequiresFullAccess()}, true
+	return resolvedEntry{roles: roles, unrestricted: cfgEntry.RequiresUnrestricted()}, true
 }
 
 func parseTag(tag string) (group, action string) {
