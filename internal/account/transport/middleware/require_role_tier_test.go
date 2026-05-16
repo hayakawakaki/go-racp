@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hayakawakaki/go-racp/internal/account/app"
 	"github.com/hayakawakaki/go-racp/internal/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 )
@@ -41,7 +40,6 @@ func TestRequireRole_TierMatrix(t *testing.T) {
 		destroyed  bool
 		cookieGone bool
 		snapshot   bool
-		snapTier   app.Tier
 	}
 
 	tests := []struct {
@@ -157,7 +155,6 @@ func TestRequireRole_TierMatrix(t *testing.T) {
 				status:   http.StatusOK,
 				called:   true,
 				snapshot: true,
-				snapTier: app.TierTempBanned,
 			},
 		},
 		{
@@ -181,7 +178,6 @@ func TestRequireRole_TierMatrix(t *testing.T) {
 				status:   http.StatusOK,
 				called:   true,
 				snapshot: true,
-				snapTier: app.TierActive,
 			},
 		},
 		{
@@ -259,9 +255,6 @@ func TestRequireRole_TierMatrix(t *testing.T) {
 			if tt.want.snapshot {
 				if !snapPresent {
 					t.Fatalf("expected snapshot in context")
-				}
-				if gotSnap.Tier != tt.want.snapTier {
-					t.Errorf("snapshot.Tier = %v, want %v", gotSnap.Tier, tt.want.snapTier)
 				}
 				if gotSnap.UserID != 42 {
 					t.Errorf("snapshot.UserID = %d, want 42", gotSnap.UserID)

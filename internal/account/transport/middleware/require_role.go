@@ -79,8 +79,8 @@ func requireRoleCore(
 
 			user, err := users.GetByID(r.Context(), sess.UserID)
 			if errors.Is(err, domain.ErrUserNotFound) {
-				snap := &AccountSnapshot{UserID: sess.UserID, Tier: app.TierDeleted}
-				rejectBanned(w, r, logger, secure, hidden, layout, NoticeDeleted, snap, cookie.Value, sessSvc)
+				snap := &AccountSnapshot{UserID: sess.UserID}
+				rejectBanned(w, r, logger, secure, hidden, layout, NoticeDeleted, app.TierDeleted, snap, cookie.Value, sessSvc)
 				return
 			}
 			if err != nil {
@@ -90,18 +90,24 @@ func requireRoleCore(
 			}
 
 			tier := app.ClassifyTier(user.State, user.UnbanTime, time.Now())
-			snap := &AccountSnapshot{UserID: user.ID, Tier: tier, UnbanTime: user.UnbanTime}
+			snap := &AccountSnapshot{
+				UserID:    user.ID,
+				Username:  user.Username,
+				GroupID:   user.GroupID,
+				State:     user.State,
+				UnbanTime: user.UnbanTime,
+			}
 
 			switch tier {
 			case app.TierPermaBanned:
-				rejectBanned(w, r, logger, secure, hidden, layout, NoticeBanned, snap, cookie.Value, sessSvc)
+				rejectBanned(w, r, logger, secure, hidden, layout, NoticeBanned, tier, snap, cookie.Value, sessSvc)
 				return
 			case app.TierUnverified:
 				rejectRedirect(w, r, logger, hidden, layout, "/verify-account")
 				return
 			case app.TierTempBanned:
 				if !policy.AllowTempBannedLogin {
-					rejectBanned(w, r, logger, secure, hidden, layout, NoticeBanned, snap, cookie.Value, sessSvc)
+					rejectBanned(w, r, logger, secure, hidden, layout, NoticeBanned, tier, snap, cookie.Value, sessSvc)
 					return
 				}
 				if policy.Unrestricted {
@@ -149,14 +155,14 @@ func RequireRoleHidden(
 	return requireRoleCore(sessSvc, users, resolver, logger, secure, true, layout, policy, allowed)
 }
 
-func rejectBanned(w http.ResponseWriter, r *http.Request, logger *slog.Logger, secure, hidden bool, layout httpx.Layout, notice string, snap *AccountSnapshot, sessRaw string, sessSvc SessionValidator) {
+func rejectBanned(w http.ResponseWriter, r *http.Request, logger *slog.Logger, secure, hidden bool, layout httpx.Layout, notice string, tier app.Tier, snap *AccountSnapshot, sessRaw string, sessSvc SessionValidator) {
 	if err := sessSvc.Destroy(r.Context(), sessRaw); err != nil {
 		logger.Error("require_role: session destroy after ban kick", "err", err)
 	}
 	ClearSessionCookie(w, secure)
 	logger.Info("session terminated by ban gate",
 		"account_id", snap.UserID,
-		"tier", snap.Tier.String(),
+		"tier", tier.String(),
 		"unban_time", snap.UnbanTime,
 	)
 	rejectRedirect(w, r, logger, hidden, layout, "/login?notice="+notice)

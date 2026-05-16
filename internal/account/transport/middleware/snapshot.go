@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/hayakawakaki/go-racp/internal/account/app"
 	"github.com/hayakawakaki/go-racp/internal/account/domain"
 )
 
@@ -29,8 +28,10 @@ const accountSnapshotKey snapshotKey = 0
 
 type AccountSnapshot struct {
 	UnbanTime time.Time
+	Username  string
 	UserID    int
-	Tier      app.Tier
+	GroupID   int
+	State     int
 }
 
 func ContextWithSnapshot(ctx context.Context, snap *AccountSnapshot) context.Context {

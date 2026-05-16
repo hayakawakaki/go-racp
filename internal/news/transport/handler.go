@@ -69,22 +69,29 @@ func (h *Handler) layout() httpx.Layout {
 }
 
 func (h *Handler) canManage(r *http.Request) bool {
-	session, ok := middleware.SessionFromContext(r.Context())
-	if !ok {
-		return false
+	var groupID int
+	if snap, ok := middleware.SnapshotFromContext(r.Context()); ok {
+		groupID = snap.GroupID
+	} else {
+		session, ok := middleware.SessionFromContext(r.Context())
+		if !ok {
+			return false
+		}
+		if h.users == nil {
+			return false
+		}
+		user, err := h.users.GetByID(r.Context(), session.UserID)
+		if err != nil || user == nil {
+			return false
+		}
+		groupID = user.GroupID
 	}
-	if h.users == nil {
-		return false
-	}
-	user, err := h.users.GetByID(r.Context(), session.UserID)
-	if err != nil || user == nil {
-		return false
-	}
-	role := h.roles.Resolve(user.GroupID)
+
+	role := h.roles.Resolve(groupID)
 	if role == accountdomain.RoleAdmin {
 		return true
 	}
-	_, ok = h.manageRoles[role.Name]
+	_, ok := h.manageRoles[role.Name]
 
 	return ok
 }
