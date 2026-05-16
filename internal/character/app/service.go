@@ -26,7 +26,13 @@ type Service struct {
 type Option func(*Service)
 
 func WithNow(fn func() time.Time) Option {
-	return func(s *Service) { s.now = fn }
+	return func(s *Service) {
+		if fn == nil {
+			s.now = time.Now
+			return
+		}
+		s.now = fn
+	}
 }
 
 func WithCooldowns(look, location time.Duration) Option {
