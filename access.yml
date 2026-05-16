@@ -33,3 +33,10 @@ News:
   Manage:
     Roles: ["Moderator"]
     Requires: ["Unrestricted"]
+
+Character:
+  View:
+    Roles: ["*"]
+  Reset:
+    Roles: ["*"]
+    Requires: ["Unrestricted"]

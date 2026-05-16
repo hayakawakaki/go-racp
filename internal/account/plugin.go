@@ -6,6 +6,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/account/app"
 	"github.com/hayakawakaki/go-racp/internal/account/infra"
 	"github.com/hayakawakaki/go-racp/internal/account/transport"
+	"github.com/hayakawakaki/go-racp/internal/character"
 	platinfra "github.com/hayakawakaki/go-racp/internal/infra"
 	"github.com/hayakawakaki/go-racp/internal/plugin"
 	"github.com/hayakawakaki/go-racp/internal/routes"
@@ -22,9 +23,12 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *platinfra.Infra) {
 	svc, sessSvc, userRepo := buildServices(in)
 	secure := in.Config.Env.Mode != "development"
 
+	charSvc := character.BuildService(in)
+
 	h := transport.NewHandler(svc, sessSvc, transport.HandlerConfig{
 		Logger:               in.Logger,
 		Users:                userRepo,
+		Characters:           charSvc,
 		Secure:               secure,
 		General:              in.Config.App.General,
 		AllowTempBannedLogin: in.Config.App.Auth.AllowTempBannedLogin,

@@ -13,6 +13,7 @@ import (
 	authdomain "github.com/hayakawakaki/go-racp/internal/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
 	actiontokendomain "github.com/hayakawakaki/go-racp/internal/actiontoken/domain"
+	characterapp "github.com/hayakawakaki/go-racp/internal/character/app"
 )
 
 const stubSessionTTL = 24 * time.Hour
@@ -22,9 +23,10 @@ func newTestHandler(svc accountService, sess sessionService, logBuffer io.Writer
 		logBuffer = io.Discard
 	}
 	return &Handler{
-		svc:     svc,
-		sessSvc: sess,
-		logger:  slog.New(slog.NewTextHandler(logBuffer, nil)),
+		svc:        svc,
+		sessSvc:    sess,
+		logger:     slog.New(slog.NewTextHandler(logBuffer, nil)),
+		characters: &stubCharacterLister{},
 	}
 }
 
@@ -244,4 +246,15 @@ func (s *stubUserLookup) GetByID(ctx context.Context, id int) (*authdomain.User,
 		return s.getByIDFn(ctx, id)
 	}
 	return &authdomain.User{ID: id}, nil
+}
+
+type stubCharacterLister struct {
+	listFn func(context.Context, int) ([]characterapp.CharacterDTO, error)
+}
+
+func (s *stubCharacterLister) List(ctx context.Context, accountID int) ([]characterapp.CharacterDTO, error) {
+	if s.listFn != nil {
+		return s.listFn(ctx, accountID)
+	}
+	return nil, nil
 }

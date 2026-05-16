@@ -42,12 +42,20 @@ type TTLConfig struct {
 // PasswordChange and EmailChange are post-success lockouts (caps on how often the
 // underlying credential can actually be mutated).
 type CooldownConfig struct {
-	VerificationResend   time.Duration `yaml:"VerificationResend"`
-	PasswordResetRequest time.Duration `yaml:"PasswordResetRequest"`
-	PasswordChange       time.Duration `yaml:"PasswordChange"`
-	EmailChangeRequest   time.Duration `yaml:"EmailChangeRequest"`
-	EmailChange          time.Duration `yaml:"EmailChange"`
-	TicketOpen           time.Duration `yaml:"TicketOpen"`
+	VerificationResend     time.Duration `yaml:"VerificationResend"`
+	PasswordResetRequest   time.Duration `yaml:"PasswordResetRequest"`
+	PasswordChange         time.Duration `yaml:"PasswordChange"`
+	EmailChangeRequest     time.Duration `yaml:"EmailChangeRequest"`
+	EmailChange            time.Duration `yaml:"EmailChange"`
+	TicketOpen             time.Duration `yaml:"TicketOpen"`
+	CharacterLookReset     time.Duration `yaml:"CharacterLookReset"`
+	CharacterLocationReset time.Duration `yaml:"CharacterLocationReset"`
+}
+
+type DefaultLocationConfig struct {
+	Map string `yaml:"Map"`
+	X   int    `yaml:"X"`
+	Y   int    `yaml:"Y"`
 }
 
 type TicketLimitsConfig struct {
@@ -79,11 +87,12 @@ type AuthConfig struct {
 
 // AppConfig holds operator-tunable application settings loaded from config.yml.
 type AppConfig struct {
-	General          GeneralConfig          `yaml:"GeneralConfig"`
 	UserRoles        RolesConfig            `yaml:"UserRoles"`
 	TicketCategories TicketCategoriesConfig `yaml:"TicketCategories"`
 	NewsCategories   NewsCategoriesConfig   `yaml:"NewsCategories"`
+	General          GeneralConfig          `yaml:"GeneralConfig"`
 	Mailer           MailerConfig           `yaml:"MailerConfig"`
+	DefaultLocation  DefaultLocationConfig  `yaml:"DefaultLocation"`
 	Cooldown         CooldownConfig         `yaml:"Cooldown"`
 	TTL              TTLConfig              `yaml:"TTL"`
 	Tickets          TicketsConfig          `yaml:"Tickets"`
@@ -103,12 +112,14 @@ func appConfigDefaults() *AppConfig {
 			EmailChange:   24 * time.Hour,
 		},
 		Cooldown: CooldownConfig{
-			VerificationResend:   60 * time.Second,
-			PasswordResetRequest: 30 * time.Minute,
-			PasswordChange:       7 * 24 * time.Hour,
-			EmailChangeRequest:   60 * time.Second,
-			EmailChange:          14 * 24 * time.Hour,
-			TicketOpen:           5 * time.Minute,
+			VerificationResend:     60 * time.Second,
+			PasswordResetRequest:   30 * time.Minute,
+			PasswordChange:         7 * 24 * time.Hour,
+			EmailChangeRequest:     60 * time.Second,
+			EmailChange:            14 * 24 * time.Hour,
+			TicketOpen:             5 * time.Minute,
+			CharacterLookReset:     24 * time.Hour,
+			CharacterLocationReset: 1 * time.Hour,
 		},
 		UserRoles:    RolesConfig{"Moderator": 20, "Enforcer": 10, "Event": 2},
 		TicketLimits: TicketLimitsConfig{MaxOpenPerPlayer: 5},
@@ -118,8 +129,9 @@ func appConfigDefaults() *AppConfig {
 		NewsCategories: NewsCategoriesConfig{
 			"Announcement": {Display: "Announcement"},
 		},
-		Tickets: TicketsConfig{StaffPollInterval: 30 * time.Second},
-		Auth:    AuthConfig{AllowTempBannedLogin: true},
+		Tickets:         TicketsConfig{StaffPollInterval: 30 * time.Second},
+		Auth:            AuthConfig{AllowTempBannedLogin: true},
+		DefaultLocation: DefaultLocationConfig{Map: "prontera", X: 156, Y: 191},
 	}
 }
 
@@ -150,16 +162,18 @@ func ProcessAppConfig() *AppConfig {
 
 func validateAppConfig(cfg *AppConfig) {
 	durations := map[string]time.Duration{
-		"TTL.Session":                   cfg.TTL.Session,
-		"TTL.Verification":              cfg.TTL.Verification,
-		"TTL.PasswordReset":             cfg.TTL.PasswordReset,
-		"TTL.EmailChange":               cfg.TTL.EmailChange,
-		"Cooldown.VerificationResend":   cfg.Cooldown.VerificationResend,
-		"Cooldown.PasswordResetRequest": cfg.Cooldown.PasswordResetRequest,
-		"Cooldown.PasswordChange":       cfg.Cooldown.PasswordChange,
-		"Cooldown.EmailChangeRequest":   cfg.Cooldown.EmailChangeRequest,
-		"Cooldown.EmailChange":          cfg.Cooldown.EmailChange,
-		"Cooldown.TicketOpen":           cfg.Cooldown.TicketOpen,
+		"TTL.Session":                     cfg.TTL.Session,
+		"TTL.Verification":                cfg.TTL.Verification,
+		"TTL.PasswordReset":               cfg.TTL.PasswordReset,
+		"TTL.EmailChange":                 cfg.TTL.EmailChange,
+		"Cooldown.VerificationResend":     cfg.Cooldown.VerificationResend,
+		"Cooldown.PasswordResetRequest":   cfg.Cooldown.PasswordResetRequest,
+		"Cooldown.PasswordChange":         cfg.Cooldown.PasswordChange,
+		"Cooldown.EmailChangeRequest":     cfg.Cooldown.EmailChangeRequest,
+		"Cooldown.EmailChange":            cfg.Cooldown.EmailChange,
+		"Cooldown.TicketOpen":             cfg.Cooldown.TicketOpen,
+		"Cooldown.CharacterLookReset":     cfg.Cooldown.CharacterLookReset,
+		"Cooldown.CharacterLocationReset": cfg.Cooldown.CharacterLocationReset,
 	}
 	for name, value := range durations {
 		if value <= 0 {
@@ -177,6 +191,13 @@ func validateAppConfig(cfg *AppConfig) {
 		panic(fmt.Errorf("GeneralConfig.Timezone %q is not a valid IANA timezone: %w", cfg.General.Timezone, err))
 	}
 	cfg.General.location = loc
+
+	if cfg.DefaultLocation.Map == "" {
+		panic(fmt.Errorf("DefaultLocation.Map is required"))
+	}
+	if cfg.DefaultLocation.X <= 0 || cfg.DefaultLocation.Y <= 0 {
+		panic(fmt.Errorf("DefaultLocation.X and DefaultLocation.Y must be > 0"))
+	}
 
 	validateRolesConfig(cfg.UserRoles)
 	validateTicketsConfig(cfg.TicketCategories, cfg.TicketLimits, cfg.Tickets, cfg.UserRoles)

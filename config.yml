@@ -22,6 +22,14 @@ Cooldown:
   EmailChangeRequest: "60s"
   EmailChange: "336h"
   TicketOpen: "30m"
+  CharacterLookReset: "24h"
+  CharacterLocationReset: "1h"
+
+# Default save location used by /characters/{id}/location
+DefaultLocation:
+  Map: "prontera"
+  X: 156
+  Y: 191
 
 # Mail Stuffs
 MailerConfig:
