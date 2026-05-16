@@ -52,6 +52,7 @@ TicketCategories:
 Tickets:
   StaffPollInterval: "30s"
 
+# News related config
 NewsCategories:
   Announcement:
     Display: "Announcement"
