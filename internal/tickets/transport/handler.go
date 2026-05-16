@@ -97,6 +97,17 @@ func (h *Handler) layout() httpx.Layout {
 }
 
 func (h *Handler) currentUser(r *http.Request) (*accountdomain.User, accountdomain.Role, error) {
+	if snap, ok := middleware.SnapshotFromContext(r.Context()); ok {
+		user := &accountdomain.User{
+			ID:        snap.UserID,
+			Username:  snap.Username,
+			GroupID:   snap.GroupID,
+			State:     snap.State,
+			UnbanTime: snap.UnbanTime,
+		}
+		return user, h.roles.Resolve(user.GroupID), nil
+	}
+
 	session, ok := middleware.SessionFromContext(r.Context())
 	if !ok {
 		return nil, accountdomain.Role{}, errUnauthenticated
