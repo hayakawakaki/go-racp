@@ -8,8 +8,9 @@ import (
 )
 
 type stubSessionService struct {
-	validateFn func(context.Context, string) (*domain.Session, error)
-	destroyFn  func(context.Context, string) error
+	validateFn   func(context.Context, string) (*domain.Session, error)
+	destroyFn    func(context.Context, string) error
+	destroyCalls []string
 }
 
 func (s *stubSessionService) Validate(ctx context.Context, rawToken string) (*domain.Session, error) {
@@ -20,6 +21,7 @@ func (s *stubSessionService) Validate(ctx context.Context, rawToken string) (*do
 }
 
 func (s *stubSessionService) Destroy(ctx context.Context, rawToken string) error {
+	s.destroyCalls = append(s.destroyCalls, rawToken)
 	if s.destroyFn != nil {
 		return s.destroyFn(ctx, rawToken)
 	}
