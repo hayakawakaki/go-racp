@@ -24,7 +24,7 @@ templ newsListPage(layout httpx.Layout, state NewsListState) {
 					<form method="get" action="/news" class="flex items-center gap-2">
 						<label for="category" class="text-sm text-gray-600">Category</label>
 						<select id="category" name="category" onchange="this.form.submit()" class="text-sm border border-gray-300 rounded px-2 py-1">
-							<option value="" selected?={ state.SelectedCategory == "" }>All</option>
+							<option value={ categoryAll } selected?={ state.SelectedCategory == categoryAll }>All</option>
 							for _, c := range state.Categories {
 								<option value={ c.Key } selected?={ c.Key == state.SelectedCategory }>{ c.Display }</option>
 							}

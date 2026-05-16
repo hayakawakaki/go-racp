@@ -16,24 +16,29 @@ const (
 	fieldTitle       = "title"
 	fieldBody        = "body"
 	fieldCategory    = "category"
+	categoryAll      = "All"
 )
 
 func (h *Handler) htmlList(w http.ResponseWriter, r *http.Request) {
 	categoryKey := r.URL.Query().Get(fieldCategory)
+	if categoryKey == categoryAll || !h.svc.Categories().Has(categoryKey) {
+		categoryKey = ""
+	}
 	items, err := h.fetchList(r, categoryKey)
 	if err != nil {
 		h.logger.Error("news: list", "err", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	if categoryKey != "" && !h.svc.Categories().Has(categoryKey) {
-		categoryKey = ""
-	}
 
+	selected := categoryKey
+	if selected == "" {
+		selected = categoryAll
+	}
 	state := NewsListState{
 		Items:            items,
 		Categories:       h.svc.Categories().All(),
-		SelectedCategory: categoryKey,
+		SelectedCategory: selected,
 		CanManage:        h.canManage(r),
 	}
 	httpx.RenderHTML(w, r, h.logger, newsListPage(h.layout(), state))
