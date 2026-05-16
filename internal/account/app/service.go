@@ -275,7 +275,7 @@ func (s *Service) ResendVerification(ctx context.Context, accountID int) error {
 	if err != nil {
 		return fmt.Errorf("app.Service.ResendVerification: %w", err)
 	}
-	if user.State != 1 {
+	if ClassifyTier(user.State, user.UnbanTime, s.now()) != TierUnverified {
 		return nil
 	}
 
