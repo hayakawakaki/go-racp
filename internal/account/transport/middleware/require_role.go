@@ -54,8 +54,7 @@ func requireRoleCore(
 	logger *slog.Logger,
 	secure, hidden bool,
 	layout httpx.Layout,
-	allowTempBannedLogin bool,
-	unrestricted bool,
+	policy AuthPolicy,
 	allowed []domain.Role,
 ) func(http.Handler) http.Handler {
 	allowSet := make(map[domain.Role]struct{}, len(allowed))
@@ -81,7 +80,7 @@ func requireRoleCore(
 			user, err := users.GetByID(r.Context(), sess.UserID)
 			if errors.Is(err, domain.ErrUserNotFound) {
 				snap := &AccountSnapshot{UserID: sess.UserID, Tier: app.TierDeleted}
-				rejectBanned(w, r, logger, secure, hidden, layout, "deleted", snap, cookie.Value, sessSvc)
+				rejectBanned(w, r, logger, secure, hidden, layout, NoticeDeleted, snap, cookie.Value, sessSvc)
 				return
 			}
 			if err != nil {
@@ -95,21 +94,20 @@ func requireRoleCore(
 
 			switch tier {
 			case app.TierPermaBanned:
-				rejectBanned(w, r, logger, secure, hidden, layout, "banned", snap, cookie.Value, sessSvc)
+				rejectBanned(w, r, logger, secure, hidden, layout, NoticeBanned, snap, cookie.Value, sessSvc)
 				return
 			case app.TierUnverified:
-				rejectUnverified(w, r, logger, hidden, layout)
+				rejectRedirect(w, r, logger, hidden, layout, "/verify-account")
 				return
 			case app.TierTempBanned:
-				if !allowTempBannedLogin {
-					rejectBanned(w, r, logger, secure, hidden, layout, "banned", snap, cookie.Value, sessSvc)
+				if !policy.AllowTempBannedLogin {
+					rejectBanned(w, r, logger, secure, hidden, layout, NoticeBanned, snap, cookie.Value, sessSvc)
 					return
 				}
-				if unrestricted {
-					rejectTempBanned(w, r, logger, hidden, layout)
+				if policy.Unrestricted {
+					rejectRedirect(w, r, logger, hidden, layout, "/account?notice="+NoticeBanBlocked)
 					return
 				}
-			case app.TierActive, app.TierDeleted:
 			}
 
 			role := resolver.Resolve(user.GroupID)
@@ -131,11 +129,10 @@ func RequireRole(
 	resolver domain.RoleResolver,
 	logger *slog.Logger,
 	secure bool,
-	allowTempBannedLogin bool,
-	unrestricted bool,
+	policy AuthPolicy,
 	allowed ...domain.Role,
 ) func(http.Handler) http.Handler {
-	return requireRoleCore(sessSvc, users, resolver, logger, secure, false, httpx.Layout{}, allowTempBannedLogin, unrestricted, allowed)
+	return requireRoleCore(sessSvc, users, resolver, logger, secure, false, httpx.Layout{}, policy, allowed)
 }
 
 // RequireRoleHidden behaves like RequireRole but renders a 404 in place of 401/403 so the route's existence is not disclosed to unauthorized callers.
@@ -146,11 +143,10 @@ func RequireRoleHidden(
 	logger *slog.Logger,
 	secure bool,
 	layout httpx.Layout,
-	allowTempBannedLogin bool,
-	unrestricted bool,
+	policy AuthPolicy,
 	allowed ...domain.Role,
 ) func(http.Handler) http.Handler {
-	return requireRoleCore(sessSvc, users, resolver, logger, secure, true, layout, allowTempBannedLogin, unrestricted, allowed)
+	return requireRoleCore(sessSvc, users, resolver, logger, secure, true, layout, policy, allowed)
 }
 
 func rejectBanned(w http.ResponseWriter, r *http.Request, logger *slog.Logger, secure, hidden bool, layout httpx.Layout, notice string, snap *AccountSnapshot, sessRaw string, sessSvc SessionValidator) {
@@ -163,25 +159,13 @@ func rejectBanned(w http.ResponseWriter, r *http.Request, logger *slog.Logger, s
 		"tier", snap.Tier.String(),
 		"unban_time", snap.UnbanTime,
 	)
-	if hidden {
-		httpx.Render404(w, r, logger, layout)
-		return
-	}
-	httpx.Redirect(w, r, "/login?notice="+notice)
+	rejectRedirect(w, r, logger, hidden, layout, "/login?notice="+notice)
 }
 
-func rejectTempBanned(w http.ResponseWriter, r *http.Request, logger *slog.Logger, hidden bool, layout httpx.Layout) {
+func rejectRedirect(w http.ResponseWriter, r *http.Request, logger *slog.Logger, hidden bool, layout httpx.Layout, target string) {
 	if hidden {
 		httpx.Render404(w, r, logger, layout)
 		return
 	}
-	httpx.Redirect(w, r, "/account?notice=ban_blocked")
-}
-
-func rejectUnverified(w http.ResponseWriter, r *http.Request, logger *slog.Logger, hidden bool, layout httpx.Layout) {
-	if hidden {
-		httpx.Render404(w, r, logger, layout)
-		return
-	}
-	httpx.Redirect(w, r, "/verify-account")
+	httpx.Redirect(w, r, target)
 }

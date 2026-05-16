@@ -12,6 +12,8 @@ import (
 
 type RoleList []string
 
+const RequireUnrestricted = "Unrestricted"
+
 type Entry struct {
 	Roles    RoleList
 	Requires []string
@@ -22,7 +24,7 @@ type ActionRoles map[string]Entry
 type AccessConfig map[string]ActionRoles
 
 func (e Entry) RequiresUnrestricted() bool {
-	return slices.Contains(e.Requires, "Unrestricted")
+	return slices.Contains(e.Requires, RequireUnrestricted)
 }
 
 func (e *Entry) UnmarshalYAML(unmarshal func(any) error) error {
@@ -103,7 +105,7 @@ func parseAccessConfig(data []byte) (AccessConfig, error) {
 
 //nolint:cyclop // splitting would obscure the flow
 func validateAccessConfig(cfg AccessConfig) {
-	knownTags := map[string]struct{}{"Unrestricted": {}}
+	knownTags := map[string]struct{}{RequireUnrestricted: {}}
 
 	if _, hasAdmin := cfg[adminRoleName]; hasAdmin {
 		panic(fmt.Errorf("access.yml: top-level 'Admin' key is forbidden, Admin is hardcoded"))
@@ -127,7 +129,7 @@ func validateAccessConfig(cfg AccessConfig) {
 			}
 			for _, tag := range entry.Requires {
 				if _, ok := knownTags[tag]; !ok {
-					panic(fmt.Errorf("access.yml: Action '%s' has unknown requires tag '%s'. Known tags: [Unrestricted]", fullName, tag))
+					panic(fmt.Errorf("access.yml: Action '%s' has unknown requires tag '%s'. Known tags: [%s]", fullName, tag, RequireUnrestricted))
 				}
 			}
 		}

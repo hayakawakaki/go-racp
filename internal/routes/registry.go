@@ -65,18 +65,21 @@ func (r *Registry) Wrap(mux *http.ServeMux, tag, pattern string, handler http.Ha
 	r.registered[tag] = struct{}{}
 
 	if group == adminGroup {
-		mux.Handle(pattern, middleware.RequireRoleHidden(r.sessSvc, r.users, r.resolver, r.logger, r.secure, r.hiddenLayout, r.allowTempBannedLogin, true)(handler))
+		policy := middleware.AuthPolicy{AllowTempBannedLogin: r.allowTempBannedLogin, Unrestricted: true}
+		mux.Handle(pattern, middleware.RequireRoleHidden(r.sessSvc, r.users, r.resolver, r.logger, r.secure, r.hiddenLayout, policy)(handler))
 		return
 	}
 
 	entry, configured := r.lookup(group, action)
 	if !configured {
 		r.ungated = append(r.ungated, ungatedRoute{tag: tag, pattern: pattern})
-		mux.Handle(pattern, middleware.RequireRole(r.sessSvc, r.users, r.resolver, r.logger, r.secure, r.allowTempBannedLogin, false, domain.RoleAuthenticated)(handler))
+		policy := middleware.AuthPolicy{AllowTempBannedLogin: r.allowTempBannedLogin}
+		mux.Handle(pattern, middleware.RequireRole(r.sessSvc, r.users, r.resolver, r.logger, r.secure, policy, domain.RoleAuthenticated)(handler))
 		return
 	}
 
-	mux.Handle(pattern, middleware.RequireRole(r.sessSvc, r.users, r.resolver, r.logger, r.secure, r.allowTempBannedLogin, entry.unrestricted, entry.roles...)(handler))
+	policy := middleware.AuthPolicy{AllowTempBannedLogin: r.allowTempBannedLogin, Unrestricted: entry.unrestricted}
+	mux.Handle(pattern, middleware.RequireRole(r.sessSvc, r.users, r.resolver, r.logger, r.secure, policy, entry.roles...)(handler))
 }
 
 type resolvedEntry struct {

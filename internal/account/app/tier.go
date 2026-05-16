@@ -2,6 +2,12 @@ package app
 
 import "time"
 
+const (
+	StateActive      = 0
+	StateUnverified  = 1
+	StatePermaBanned = 5
+)
+
 type Tier int
 
 const (
@@ -31,11 +37,11 @@ func (t Tier) String() string {
 
 func ClassifyTier(state int, unbanTime, now time.Time) Tier {
 	switch state {
-	case 1:
+	case StateUnverified:
 		return TierUnverified
-	case 5:
+	case StatePermaBanned:
 		return TierPermaBanned
-	case 0:
+	case StateActive:
 		if !unbanTime.IsZero() && unbanTime.After(now) {
 			return TierTempBanned
 		}

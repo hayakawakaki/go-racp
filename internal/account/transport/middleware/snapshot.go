@@ -8,6 +8,17 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/account/domain"
 )
 
+const (
+	NoticeBanned     = "banned"
+	NoticeDeleted    = "deleted"
+	NoticeBanBlocked = "ban_blocked"
+)
+
+type AuthPolicy struct {
+	AllowTempBannedLogin bool
+	Unrestricted         bool
+}
+
 type UserLookup interface {
 	GetByID(ctx context.Context, id int) (*domain.User, error)
 }

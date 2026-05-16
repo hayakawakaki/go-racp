@@ -3,7 +3,6 @@ package transport
 import (
 	"net/http"
 
-	"github.com/hayakawakaki/go-racp/internal/account/app"
 	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 )
@@ -44,10 +43,8 @@ func (h *Handler) showAccount(w http.ResponseWriter, r *http.Request) {
 		state.Notice = notice
 	}
 
-	if noticeParam == "ban_blocked" {
-		if snap, hasSnap := middleware.SnapshotFromContext(r.Context()); hasSnap && snap.Tier == app.TierTempBanned {
-			state.BanBlocked = "Account changes are disabled while restricted."
-		}
+	if noticeParam == middleware.NoticeBanBlocked && account.Restricted {
+		state.BanBlocked = "Account changes are disabled while restricted."
 	}
 
 	httpx.RenderHTML(w, r, h.logger, accountPage(h.layout(), state))

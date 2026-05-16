@@ -195,6 +195,11 @@ func (h *Handler) renderRegister(w http.ResponseWriter, r *http.Request, state R
 	httpx.RenderHTML(w, r, h.logger, registerPage(h.layout(), state))
 }
 
+var loginNoticeText = map[string]string{
+	middleware.NoticeBanned:  "You were signed out. This account is permanently banned.",
+	middleware.NoticeDeleted: "You were signed out. This account no longer exists.",
+}
+
 func (h *Handler) showLogin(w http.ResponseWriter, r *http.Request) {
 	if h.hasActiveSession(r) {
 		httpx.Redirect(w, r, "/")
@@ -202,11 +207,8 @@ func (h *Handler) showLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	state := LoginFormState{}
-	switch r.URL.Query().Get("notice") {
-	case "banned":
-		state.Notice = "You were signed out. This account is permanently banned."
-	case "deleted":
-		state.Notice = "You were signed out. This account no longer exists."
+	if notice, ok := loginNoticeText[r.URL.Query().Get("notice")]; ok {
+		state.Notice = notice
 	}
 
 	httpx.RenderHTML(w, r, h.logger, loginPage(h.layout(), state))

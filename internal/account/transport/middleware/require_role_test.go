@@ -32,10 +32,11 @@ func newTestRoleMiddleware(sess *stubSessionService, users *stubUserLookup, hidd
 	buf := &bytes.Buffer{}
 	logger := slog.New(slog.NewTextHandler(buf, nil))
 	resolver := newTestRoleResolver()
+	policy := AuthPolicy{AllowTempBannedLogin: true}
 	if hidden {
-		return RequireRoleHidden(sess, users, resolver, logger, false, httpx.Layout{}, true, false, allowed...), buf
+		return RequireRoleHidden(sess, users, resolver, logger, false, httpx.Layout{}, policy, allowed...), buf
 	}
-	return RequireRole(sess, users, resolver, logger, false, true, false, allowed...), buf
+	return RequireRole(sess, users, resolver, logger, false, policy, allowed...), buf
 }
 
 func userWithGroup(groupID int) func(context.Context, int) (*domain.User, error) {
