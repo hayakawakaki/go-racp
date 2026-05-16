@@ -1,6 +1,6 @@
 //go:build integration
 
-package actiontoken
+package infra
 
 import (
 	"context"
@@ -9,13 +9,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hayakawakaki/go-racp/internal/actiontoken/domain"
 	"github.com/hayakawakaki/go-racp/internal/testutil"
 )
 
-var _ Repository = (*PostgresRepository)(nil)
+var _ domain.Repository = (*PostgresRepository)(nil)
 
-func newPersistedToken(accountID int, action Action, now time.Time, suffix byte) *ActionToken {
-	return &ActionToken{
+func newPersistedToken(accountID int, action domain.Action, now time.Time, suffix byte) *domain.ActionToken {
+	return &domain.ActionToken{
 		TokenHash: sha256.Sum256([]byte{suffix}),
 		AccountID: accountID,
 		Action:    action,
@@ -31,7 +32,7 @@ func TestPostgresRepository_InsertAndGetByHash(t *testing.T) {
 	ctx := context.Background()
 
 	now := time.Now().UTC().Truncate(time.Second)
-	token := newPersistedToken(101, EmailVerification, now, 0x01)
+	token := newPersistedToken(101, domain.EmailVerification, now, 0x01)
 	token.Payload = []byte("payload-bytes")
 	if err := repo.Insert(ctx, token); err != nil {
 		t.Fatalf("Insert: %v", err)
@@ -70,7 +71,7 @@ func TestPostgresRepository_GetByHash_NotFound(t *testing.T) {
 	repo := NewPostgresRepository(pool)
 
 	_, err := repo.GetByHash(context.Background(), sha256.Sum256([]byte("nope")))
-	if !errors.Is(err, ErrTokenInvalid) {
+	if !errors.Is(err, domain.ErrTokenInvalid) {
 		t.Errorf("got %v, want ErrTokenInvalid", err)
 	}
 }
@@ -82,10 +83,10 @@ func TestPostgresRepository_DeleteUnconsumed(t *testing.T) {
 	ctx := context.Background()
 
 	now := time.Now().UTC().Truncate(time.Second)
-	tokenA := newPersistedToken(200, EmailVerification, now, 0xa1)
-	tokenB := newPersistedToken(200, EmailVerification, now, 0xa2)
-	tokenC := newPersistedToken(201, EmailVerification, now, 0xa3)
-	for _, token := range []*ActionToken{tokenA, tokenB, tokenC} {
+	tokenA := newPersistedToken(200, domain.EmailVerification, now, 0xa1)
+	tokenB := newPersistedToken(200, domain.EmailVerification, now, 0xa2)
+	tokenC := newPersistedToken(201, domain.EmailVerification, now, 0xa3)
+	for _, token := range []*domain.ActionToken{tokenA, tokenB, tokenC} {
 		if err := repo.Insert(ctx, token); err != nil {
 			t.Fatalf("Insert: %v", err)
 		}
@@ -94,11 +95,11 @@ func TestPostgresRepository_DeleteUnconsumed(t *testing.T) {
 		t.Fatalf("MarkConsumed: %v", err)
 	}
 
-	if err := repo.DeleteUnconsumed(ctx, 200, EmailVerification); err != nil {
+	if err := repo.DeleteUnconsumed(ctx, 200, domain.EmailVerification); err != nil {
 		t.Fatalf("DeleteUnconsumed: %v", err)
 	}
 
-	if _, err := repo.GetByHash(ctx, tokenA.TokenHash); !errors.Is(err, ErrTokenInvalid) {
+	if _, err := repo.GetByHash(ctx, tokenA.TokenHash); !errors.Is(err, domain.ErrTokenInvalid) {
 		t.Errorf("tokenA: got %v, want ErrTokenInvalid (deleted)", err)
 	}
 	if _, err := repo.GetByHash(ctx, tokenB.TokenHash); err != nil {
@@ -114,7 +115,7 @@ func TestPostgresRepository_DeleteUnconsumed_NoRows(t *testing.T) {
 	testutil.TruncatePostgres(t, pool, "cp_action_tokens")
 	repo := NewPostgresRepository(pool)
 
-	if err := repo.DeleteUnconsumed(context.Background(), 999, EmailVerification); err != nil {
+	if err := repo.DeleteUnconsumed(context.Background(), 999, domain.EmailVerification); err != nil {
 		t.Errorf("DeleteUnconsumed against empty set: got %v, want nil", err)
 	}
 }
@@ -126,7 +127,7 @@ func TestPostgresRepository_MarkConsumed_Happy(t *testing.T) {
 	ctx := context.Background()
 
 	now := time.Now().UTC().Truncate(time.Second)
-	token := newPersistedToken(301, EmailVerification, now, 0xb1)
+	token := newPersistedToken(301, domain.EmailVerification, now, 0xb1)
 	if err := repo.Insert(ctx, token); err != nil {
 		t.Fatalf("Insert: %v", err)
 	}
@@ -155,7 +156,7 @@ func TestPostgresRepository_MarkConsumed_AlreadyConsumed(t *testing.T) {
 	ctx := context.Background()
 
 	now := time.Now().UTC().Truncate(time.Second)
-	token := newPersistedToken(302, EmailVerification, now, 0xb2)
+	token := newPersistedToken(302, domain.EmailVerification, now, 0xb2)
 	if err := repo.Insert(ctx, token); err != nil {
 		t.Fatalf("Insert: %v", err)
 	}
@@ -164,7 +165,7 @@ func TestPostgresRepository_MarkConsumed_AlreadyConsumed(t *testing.T) {
 	}
 
 	err := repo.MarkConsumed(ctx, token.TokenHash, now.Add(time.Hour))
-	if !errors.Is(err, ErrTokenAlreadyUsed) {
+	if !errors.Is(err, domain.ErrTokenAlreadyUsed) {
 		t.Errorf("second MarkConsumed: got %v, want ErrTokenAlreadyUsed", err)
 	}
 }
@@ -175,7 +176,7 @@ func TestPostgresRepository_MarkConsumed_UnknownHash(t *testing.T) {
 	repo := NewPostgresRepository(pool)
 
 	err := repo.MarkConsumed(context.Background(), sha256.Sum256([]byte("ghost")), time.Now())
-	if !errors.Is(err, ErrTokenAlreadyUsed) {
+	if !errors.Is(err, domain.ErrTokenAlreadyUsed) {
 		t.Errorf("got %v, want ErrTokenAlreadyUsed (unknown hash treated as 0 rows)", err)
 	}
 }
@@ -185,7 +186,7 @@ func TestPostgresRepository_MostRecentIssuedAt_NoRows(t *testing.T) {
 	testutil.TruncatePostgres(t, pool, "cp_action_tokens")
 	repo := NewPostgresRepository(pool)
 
-	got, err := repo.MostRecentIssuedAt(context.Background(), 999, EmailVerification)
+	got, err := repo.MostRecentIssuedAt(context.Background(), 999, domain.EmailVerification)
 	if err != nil {
 		t.Fatalf("MostRecentIssuedAt: %v", err)
 	}
@@ -201,16 +202,16 @@ func TestPostgresRepository_MostRecentIssuedAt_ReturnsLatest(t *testing.T) {
 	ctx := context.Background()
 
 	base := time.Now().UTC().Truncate(time.Second)
-	earlier := newPersistedToken(401, EmailVerification, base.Add(-2*time.Hour), 0xc1)
-	latest := newPersistedToken(401, EmailVerification, base, 0xc2)
-	otherAccount := newPersistedToken(402, EmailVerification, base.Add(time.Hour), 0xc3)
-	for _, token := range []*ActionToken{earlier, latest, otherAccount} {
+	earlier := newPersistedToken(401, domain.EmailVerification, base.Add(-2*time.Hour), 0xc1)
+	latest := newPersistedToken(401, domain.EmailVerification, base, 0xc2)
+	otherAccount := newPersistedToken(402, domain.EmailVerification, base.Add(time.Hour), 0xc3)
+	for _, token := range []*domain.ActionToken{earlier, latest, otherAccount} {
 		if err := repo.Insert(ctx, token); err != nil {
 			t.Fatalf("Insert: %v", err)
 		}
 	}
 
-	got, err := repo.MostRecentIssuedAt(ctx, 401, EmailVerification)
+	got, err := repo.MostRecentIssuedAt(ctx, 401, domain.EmailVerification)
 	if err != nil {
 		t.Fatalf("MostRecentIssuedAt: %v", err)
 	}
@@ -226,15 +227,15 @@ func TestPostgresRepository_MostRecentIssuedAt_FiltersByAction(t *testing.T) {
 	ctx := context.Background()
 
 	base := time.Now().UTC().Truncate(time.Second)
-	verify := newPersistedToken(501, EmailVerification, base, 0xd1)
-	other := newPersistedToken(501, PasswordReset, base.Add(time.Hour), 0xd2)
-	for _, token := range []*ActionToken{verify, other} {
+	verify := newPersistedToken(501, domain.EmailVerification, base, 0xd1)
+	other := newPersistedToken(501, domain.PasswordReset, base.Add(time.Hour), 0xd2)
+	for _, token := range []*domain.ActionToken{verify, other} {
 		if err := repo.Insert(ctx, token); err != nil {
 			t.Fatalf("Insert: %v", err)
 		}
 	}
 
-	got, err := repo.MostRecentIssuedAt(ctx, 501, EmailVerification)
+	got, err := repo.MostRecentIssuedAt(ctx, 501, domain.EmailVerification)
 	if err != nil {
 		t.Fatalf("MostRecentIssuedAt: %v", err)
 	}

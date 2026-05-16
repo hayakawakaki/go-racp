@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	authdomain "github.com/hayakawakaki/go-racp/internal/account/domain"
-	"github.com/hayakawakaki/go-racp/internal/actiontoken"
+	actiontokendomain "github.com/hayakawakaki/go-racp/internal/actiontoken/domain"
 )
 
 func TestDoVerifyEmailChange_NoToken_RendersInvalid(t *testing.T) {
@@ -45,9 +45,9 @@ func TestDoVerifyEmailChange_TokenErrors_RenderMatchingResult(t *testing.T) {
 		name       string
 		wantText   string
 	}{
-		{name: "expired", consumeErr: actiontoken.ErrTokenExpired, wantText: "Link expired"},
-		{name: "already used", consumeErr: actiontoken.ErrTokenAlreadyUsed, wantText: "Link already used"},
-		{name: "invalid", consumeErr: actiontoken.ErrTokenInvalid, wantText: "Invalid link"},
+		{name: "expired", consumeErr: actiontokendomain.ErrTokenExpired, wantText: "Link expired"},
+		{name: "already used", consumeErr: actiontokendomain.ErrTokenAlreadyUsed, wantText: "Link already used"},
+		{name: "invalid", consumeErr: actiontokendomain.ErrTokenInvalid, wantText: "Invalid link"},
 		{name: "email taken", consumeErr: authdomain.ErrEmailTaken, wantText: "Email no longer available"},
 	}
 	for _, tt := range tests {

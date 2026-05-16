@@ -10,7 +10,7 @@ import (
 	accountapp "github.com/hayakawakaki/go-racp/internal/account/app"
 	"github.com/hayakawakaki/go-racp/internal/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
-	"github.com/hayakawakaki/go-racp/internal/actiontoken"
+	actiontokendomain "github.com/hayakawakaki/go-racp/internal/actiontoken/domain"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 	"github.com/hayakawakaki/go-racp/internal/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
@@ -47,9 +47,9 @@ type accountService interface {
 	ResendVerification(ctx context.Context, accountID int) error
 	RequestPasswordReset(ctx context.Context, email string) error
 	ConsumePasswordReset(ctx context.Context, rawToken, newPassword string) error
-	PeekPasswordReset(ctx context.Context, rawToken string) (*actiontoken.ActionToken, error)
-	PeekVerification(ctx context.Context, rawToken string) (*actiontoken.ActionToken, error)
-	PeekEmailChange(ctx context.Context, rawToken string) (*actiontoken.ActionToken, error)
+	PeekPasswordReset(ctx context.Context, rawToken string) (*actiontokendomain.ActionToken, error)
+	PeekVerification(ctx context.Context, rawToken string) (*actiontokendomain.ActionToken, error)
+	PeekEmailChange(ctx context.Context, rawToken string) (*actiontokendomain.ActionToken, error)
 	UpdatePassword(ctx context.Context, userID int, currentRawToken, currentPassword, newPassword, confirmPassword string) error
 	RequestEmailChange(ctx context.Context, userID int, currentPassword, newEmail string) error
 	ConsumeEmailChange(ctx context.Context, rawToken string) (*domain.User, error)

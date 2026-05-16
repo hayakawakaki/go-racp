@@ -8,7 +8,7 @@ import (
 	accountapp "github.com/hayakawakaki/go-racp/internal/account/app"
 	"github.com/hayakawakaki/go-racp/internal/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
-	"github.com/hayakawakaki/go-racp/internal/actiontoken"
+	actiontokendomain "github.com/hayakawakaki/go-racp/internal/actiontoken/domain"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 )
 
@@ -84,7 +84,7 @@ func (h *Handler) doVerify(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err := h.svc.ConsumeVerification(r.Context(), token)
-	if (err == nil || errors.Is(err, actiontoken.ErrTokenAlreadyUsed)) && h.hasActiveSession(r) {
+	if (err == nil || errors.Is(err, actiontokendomain.ErrTokenAlreadyUsed)) && h.hasActiveSession(r) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
@@ -93,10 +93,10 @@ func (h *Handler) doVerify(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err == nil:
 		state.Kind = VerifyResultSuccess
-	case errors.Is(err, actiontoken.ErrTokenExpired):
+	case errors.Is(err, actiontokendomain.ErrTokenExpired):
 		state.Kind = VerifyResultExpired
 	default:
-		if !errors.Is(err, actiontoken.ErrTokenInvalid) && !errors.Is(err, actiontoken.ErrTokenAlreadyUsed) {
+		if !errors.Is(err, actiontokendomain.ErrTokenInvalid) && !errors.Is(err, actiontokendomain.ErrTokenAlreadyUsed) {
 			h.logger.Error("verify consume", "err", err)
 		}
 		state.Kind = VerifyResultInvalid

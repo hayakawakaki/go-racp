@@ -16,7 +16,8 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/account/domain"
 	accountinfra "github.com/hayakawakaki/go-racp/internal/account/infra"
 	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
-	"github.com/hayakawakaki/go-racp/internal/actiontoken"
+	actiontokenapp "github.com/hayakawakaki/go-racp/internal/actiontoken/app"
+	actiontokeninfra "github.com/hayakawakaki/go-racp/internal/actiontoken/infra"
 	"github.com/hayakawakaki/go-racp/internal/health"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 	"github.com/hayakawakaki/go-racp/internal/infra"
@@ -69,8 +70,8 @@ func Start() error {
 		}
 	}()
 
-	actionTokenRepo := actiontoken.NewPostgresRepository(cpPool)
-	tokenMgr := actiontoken.NewManager(actionTokenRepo)
+	actionTokenRepo := actiontokeninfra.NewPostgresRepository(cpPool)
+	tokenMgr := actiontokenapp.NewManager(actionTokenRepo)
 
 	in := &infra.Infra{
 		MainDB:       mainDB,

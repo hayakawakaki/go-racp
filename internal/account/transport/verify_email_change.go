@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	authdomain "github.com/hayakawakaki/go-racp/internal/account/domain"
-	"github.com/hayakawakaki/go-racp/internal/actiontoken"
+	actiontokendomain "github.com/hayakawakaki/go-racp/internal/actiontoken/domain"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 )
 
@@ -22,11 +22,11 @@ func (h *Handler) showVerifyEmailChange(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		state := EmailChangeResultState{Kind: EmailChangeResultInvalid}
 		switch {
-		case errors.Is(err, actiontoken.ErrTokenExpired):
+		case errors.Is(err, actiontokendomain.ErrTokenExpired):
 			state.Kind = EmailChangeResultExpired
-		case errors.Is(err, actiontoken.ErrTokenAlreadyUsed):
+		case errors.Is(err, actiontokendomain.ErrTokenAlreadyUsed):
 			state.Kind = EmailChangeResultAlready
-		case errors.Is(err, actiontoken.ErrTokenInvalid):
+		case errors.Is(err, actiontokendomain.ErrTokenInvalid):
 			state.Kind = EmailChangeResultInvalid
 		default:
 			h.logger.Error("verify email change peek", "err", err)
@@ -60,11 +60,11 @@ func (h *Handler) doVerifyEmailChange(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		state := EmailChangeResultState{Kind: EmailChangeResultInvalid}
 		switch {
-		case errors.Is(err, actiontoken.ErrTokenExpired):
+		case errors.Is(err, actiontokendomain.ErrTokenExpired):
 			state.Kind = EmailChangeResultExpired
-		case errors.Is(err, actiontoken.ErrTokenAlreadyUsed):
+		case errors.Is(err, actiontokendomain.ErrTokenAlreadyUsed):
 			state.Kind = EmailChangeResultAlready
-		case errors.Is(err, actiontoken.ErrTokenInvalid):
+		case errors.Is(err, actiontokendomain.ErrTokenInvalid):
 			state.Kind = EmailChangeResultInvalid
 		case errors.Is(err, authdomain.ErrEmailTaken):
 			state.Kind = EmailChangeResultTaken

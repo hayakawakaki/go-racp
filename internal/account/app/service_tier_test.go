@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/hayakawakaki/go-racp/internal/account/domain"
-	"github.com/hayakawakaki/go-racp/internal/actiontoken"
+	actiontokendomain "github.com/hayakawakaki/go-racp/internal/actiontoken/domain"
 )
 
 func TestService_Authenticate_ReturnsTier(t *testing.T) {
@@ -149,8 +149,8 @@ func seedResetToken(t *testing.T, fx *resetFixture, accountID int, marker byte) 
 	raw[0] = marker
 	hash := sha256.Sum256(raw[:])
 	now := time.Now()
-	fx.tokenRepo.byHash[hash] = &actiontoken.ActionToken{
-		TokenHash: hash, AccountID: accountID, Action: actiontoken.PasswordReset,
+	fx.tokenRepo.byHash[hash] = &actiontokendomain.ActionToken{
+		TokenHash: hash, AccountID: accountID, Action: actiontokendomain.PasswordReset,
 		ExpiresAt: now.Add(time.Hour), CreatedAt: now.Add(-time.Minute),
 	}
 
@@ -220,7 +220,7 @@ func TestService_ConsumePasswordReset_TierRejections(t *testing.T) {
 
 			var consumed bool
 			for _, stored := range fx.tokenRepo.byHash {
-				if stored.AccountID == accountID && stored.Action == actiontoken.PasswordReset {
+				if stored.AccountID == accountID && stored.Action == actiontokendomain.PasswordReset {
 					consumed = stored.ConsumedAt.Valid
 				}
 			}
@@ -241,8 +241,8 @@ func seedEmailChangeToken(t *testing.T, fx *emailChangeFixture, accountID int, m
 	raw[0] = marker
 	hash := sha256.Sum256(raw[:])
 	now := time.Now()
-	fx.tokenRepo.byHash[hash] = &actiontoken.ActionToken{
-		TokenHash: hash, AccountID: accountID, Action: actiontoken.EmailChange,
+	fx.tokenRepo.byHash[hash] = &actiontokendomain.ActionToken{
+		TokenHash: hash, AccountID: accountID, Action: actiontokendomain.EmailChange,
 		Payload:   []byte(newEmail),
 		ExpiresAt: now.Add(time.Hour), CreatedAt: now.Add(-time.Minute),
 	}
@@ -313,7 +313,7 @@ func TestService_ConsumeEmailChange_TierRejections(t *testing.T) {
 
 			var consumed bool
 			for _, stored := range fx.tokenRepo.byHash {
-				if stored.AccountID == accountID && stored.Action == actiontoken.EmailChange {
+				if stored.AccountID == accountID && stored.Action == actiontokendomain.EmailChange {
 					consumed = stored.ConsumedAt.Valid
 				}
 			}

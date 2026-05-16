@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"github.com/hayakawakaki/go-racp/internal/account/domain"
-	"github.com/hayakawakaki/go-racp/internal/actiontoken"
+	actiontokendomain "github.com/hayakawakaki/go-racp/internal/actiontoken/domain"
 )
 
 func newResetHandler(reset *stubAccountService) *Handler {
@@ -37,8 +37,8 @@ func TestShowResetPassword_NoToken_ReturnsNotFound(t *testing.T) {
 func TestShowResetPassword_PeekExpired_RendersExpired(t *testing.T) {
 	t.Parallel()
 	h := newResetHandler(&stubAccountService{
-		peekResetFn: func(context.Context, string) (*actiontoken.ActionToken, error) {
-			return nil, actiontoken.ErrTokenExpired
+		peekResetFn: func(context.Context, string) (*actiontokendomain.ActionToken, error) {
+			return nil, actiontokendomain.ErrTokenExpired
 		},
 	})
 
@@ -58,14 +58,14 @@ func TestShowResetPassword_PeekInvalidOrAlreadyUsed_ReturnsNotFound(t *testing.T
 		peekErr error
 		name    string
 	}{
-		{name: "already used", peekErr: actiontoken.ErrTokenAlreadyUsed},
-		{name: "invalid", peekErr: actiontoken.ErrTokenInvalid},
+		{name: "already used", peekErr: actiontokendomain.ErrTokenAlreadyUsed},
+		{name: "invalid", peekErr: actiontokendomain.ErrTokenInvalid},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			h := newResetHandler(&stubAccountService{
-				peekResetFn: func(context.Context, string) (*actiontoken.ActionToken, error) {
+				peekResetFn: func(context.Context, string) (*actiontokendomain.ActionToken, error) {
 					return nil, tt.peekErr
 				},
 			})
@@ -84,7 +84,7 @@ func TestShowResetPassword_PeekInvalidOrAlreadyUsed_ReturnsNotFound(t *testing.T
 func TestShowResetPassword_PeekGenericError_ReturnsNotFound(t *testing.T) {
 	t.Parallel()
 	h := newResetHandler(&stubAccountService{
-		peekResetFn: func(context.Context, string) (*actiontoken.ActionToken, error) {
+		peekResetFn: func(context.Context, string) (*actiontokendomain.ActionToken, error) {
 			return nil, errors.New("db unreachable")
 		},
 	})
@@ -101,8 +101,8 @@ func TestShowResetPassword_PeekGenericError_ReturnsNotFound(t *testing.T) {
 func TestShowResetPassword_ValidToken_RendersFormWithHiddenToken(t *testing.T) {
 	t.Parallel()
 	h := newResetHandler(&stubAccountService{
-		peekResetFn: func(context.Context, string) (*actiontoken.ActionToken, error) {
-			return &actiontoken.ActionToken{AccountID: 1}, nil
+		peekResetFn: func(context.Context, string) (*actiontokendomain.ActionToken, error) {
+			return &actiontokendomain.ActionToken{AccountID: 1}, nil
 		},
 	})
 
@@ -175,9 +175,9 @@ func TestDoResetPassword_TokenErrors_RendersMatchingResult(t *testing.T) {
 		name       string
 		wantText   string
 	}{
-		{name: "expired", consumeErr: actiontoken.ErrTokenExpired, wantText: "Link expired"},
-		{name: "already used", consumeErr: actiontoken.ErrTokenAlreadyUsed, wantText: "Link already used"},
-		{name: "invalid", consumeErr: actiontoken.ErrTokenInvalid, wantText: "Invalid link"},
+		{name: "expired", consumeErr: actiontokendomain.ErrTokenExpired, wantText: "Link expired"},
+		{name: "already used", consumeErr: actiontokendomain.ErrTokenAlreadyUsed, wantText: "Link already used"},
+		{name: "invalid", consumeErr: actiontokendomain.ErrTokenInvalid, wantText: "Invalid link"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

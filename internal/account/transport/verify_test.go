@@ -13,7 +13,7 @@ import (
 
 	"github.com/hayakawakaki/go-racp/internal/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
-	"github.com/hayakawakaki/go-racp/internal/actiontoken"
+	actiontokendomain "github.com/hayakawakaki/go-racp/internal/actiontoken/domain"
 )
 
 func newVerifyHandler(users *stubUserLookup, sess *stubSessionService, verify *stubAccountService, logBuffer io.Writer) *Handler {
@@ -284,7 +284,7 @@ func TestDoVerify_AlreadyUsed_ActiveSession_RedirectsHome(t *testing.T) {
 		},
 	}
 	verify := &stubAccountService{
-		consumeVerificationFn: func(context.Context, string) error { return actiontoken.ErrTokenAlreadyUsed },
+		consumeVerificationFn: func(context.Context, string) error { return actiontokendomain.ErrTokenAlreadyUsed },
 	}
 	h := newVerifyHandler(&stubUserLookup{}, sess, verify, nil)
 
@@ -303,7 +303,7 @@ func TestDoVerify_AlreadyUsed_ActiveSession_RedirectsHome(t *testing.T) {
 func TestDoVerify_AlreadyUsed_NoSession_RendersInvalid(t *testing.T) {
 	t.Parallel()
 	verify := &stubAccountService{
-		consumeVerificationFn: func(context.Context, string) error { return actiontoken.ErrTokenAlreadyUsed },
+		consumeVerificationFn: func(context.Context, string) error { return actiontokendomain.ErrTokenAlreadyUsed },
 	}
 	h := newVerifyHandler(&stubUserLookup{}, &stubSessionService{}, verify, nil)
 
@@ -322,7 +322,7 @@ func TestDoVerify_AlreadyUsed_NoSession_RendersInvalid(t *testing.T) {
 func TestDoVerify_Expired_RendersExpired(t *testing.T) {
 	t.Parallel()
 	verify := &stubAccountService{
-		consumeVerificationFn: func(context.Context, string) error { return actiontoken.ErrTokenExpired },
+		consumeVerificationFn: func(context.Context, string) error { return actiontokendomain.ErrTokenExpired },
 	}
 	h := newVerifyHandler(&stubUserLookup{}, &stubSessionService{}, verify, nil)
 
@@ -338,7 +338,7 @@ func TestDoVerify_Expired_RendersExpired(t *testing.T) {
 func TestDoVerify_Invalid_RendersInvalid(t *testing.T) {
 	t.Parallel()
 	verify := &stubAccountService{
-		consumeVerificationFn: func(context.Context, string) error { return actiontoken.ErrTokenInvalid },
+		consumeVerificationFn: func(context.Context, string) error { return actiontokendomain.ErrTokenInvalid },
 	}
 	h := newVerifyHandler(&stubUserLookup{}, &stubSessionService{}, verify, nil)
 
@@ -381,9 +381,9 @@ func TestDoVerify_KnownErrorsNotLogged(t *testing.T) {
 		err  error
 		name string
 	}{
-		{name: "invalid", err: actiontoken.ErrTokenInvalid},
-		{name: "already used", err: actiontoken.ErrTokenAlreadyUsed},
-		{name: "expired", err: actiontoken.ErrTokenExpired},
+		{name: "invalid", err: actiontokendomain.ErrTokenInvalid},
+		{name: "already used", err: actiontokendomain.ErrTokenAlreadyUsed},
+		{name: "expired", err: actiontokendomain.ErrTokenExpired},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

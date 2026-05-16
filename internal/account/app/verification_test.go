@@ -13,29 +13,30 @@ import (
 	"time"
 
 	"github.com/hayakawakaki/go-racp/internal/account/domain"
-	"github.com/hayakawakaki/go-racp/internal/actiontoken"
+	actiontokenapp "github.com/hayakawakaki/go-racp/internal/actiontoken/app"
+	actiontokendomain "github.com/hayakawakaki/go-racp/internal/actiontoken/domain"
 )
 
 type fakeActionTokenRepo struct {
-	byHash                 map[[32]byte]*actiontoken.ActionToken
-	insertHook             func(*actiontoken.ActionToken) error
-	getByHashHook          func([32]byte) (*actiontoken.ActionToken, error)
-	deleteUnconsumedHook   func(int, actiontoken.Action) error
+	byHash                 map[[32]byte]*actiontokendomain.ActionToken
+	insertHook             func(*actiontokendomain.ActionToken) error
+	getByHashHook          func([32]byte) (*actiontokendomain.ActionToken, error)
+	deleteUnconsumedHook   func(int, actiontokendomain.Action) error
 	markConsumedHook       func([32]byte, time.Time) error
-	mostRecentIssuedAtHook func(int, actiontoken.Action) (time.Time, error)
-	insertCalls            []actiontoken.ActionToken
+	mostRecentIssuedAtHook func(int, actiontokendomain.Action) (time.Time, error)
+	insertCalls            []actiontokendomain.ActionToken
 	deleteCalls            []struct {
 		AccountID int
-		Action    actiontoken.Action
+		Action    actiontokendomain.Action
 	}
 	mu sync.Mutex
 }
 
 func newFakeActionTokenRepo() *fakeActionTokenRepo {
-	return &fakeActionTokenRepo{byHash: map[[32]byte]*actiontoken.ActionToken{}}
+	return &fakeActionTokenRepo{byHash: map[[32]byte]*actiontokendomain.ActionToken{}}
 }
 
-func (f *fakeActionTokenRepo) Insert(_ context.Context, token *actiontoken.ActionToken) error {
+func (f *fakeActionTokenRepo) Insert(_ context.Context, token *actiontokendomain.ActionToken) error {
 	if f.insertHook != nil {
 		return f.insertHook(token)
 	}
@@ -47,7 +48,7 @@ func (f *fakeActionTokenRepo) Insert(_ context.Context, token *actiontoken.Actio
 	return nil
 }
 
-func (f *fakeActionTokenRepo) GetByHash(_ context.Context, hash [32]byte) (*actiontoken.ActionToken, error) {
+func (f *fakeActionTokenRepo) GetByHash(_ context.Context, hash [32]byte) (*actiontokendomain.ActionToken, error) {
 	if f.getByHashHook != nil {
 		return f.getByHashHook(hash)
 	}
@@ -55,17 +56,17 @@ func (f *fakeActionTokenRepo) GetByHash(_ context.Context, hash [32]byte) (*acti
 	defer f.mu.Unlock()
 	token, ok := f.byHash[hash]
 	if !ok {
-		return nil, actiontoken.ErrTokenInvalid
+		return nil, actiontokendomain.ErrTokenInvalid
 	}
 	cp := *token
 	return &cp, nil
 }
 
-func (f *fakeActionTokenRepo) DeleteUnconsumed(_ context.Context, accountID int, action actiontoken.Action) error {
+func (f *fakeActionTokenRepo) DeleteUnconsumed(_ context.Context, accountID int, action actiontokendomain.Action) error {
 	f.mu.Lock()
 	f.deleteCalls = append(f.deleteCalls, struct {
 		AccountID int
-		Action    actiontoken.Action
+		Action    actiontokendomain.Action
 	}{accountID, action})
 	f.mu.Unlock()
 	if f.deleteUnconsumedHook != nil {
@@ -89,17 +90,17 @@ func (f *fakeActionTokenRepo) MarkConsumed(_ context.Context, hash [32]byte, at 
 	defer f.mu.Unlock()
 	token, ok := f.byHash[hash]
 	if !ok {
-		return actiontoken.ErrTokenInvalid
+		return actiontokendomain.ErrTokenInvalid
 	}
 	if token.ConsumedAt.Valid {
-		return actiontoken.ErrTokenAlreadyUsed
+		return actiontokendomain.ErrTokenAlreadyUsed
 	}
 	token.ConsumedAt.Time = at
 	token.ConsumedAt.Valid = true
 	return nil
 }
 
-func (f *fakeActionTokenRepo) MostRecentIssuedAt(_ context.Context, accountID int, action actiontoken.Action) (time.Time, error) {
+func (f *fakeActionTokenRepo) MostRecentIssuedAt(_ context.Context, accountID int, action actiontokendomain.Action) (time.Time, error) {
 	if f.mostRecentIssuedAtHook != nil {
 		return f.mostRecentIssuedAtHook(accountID, action)
 	}
@@ -231,7 +232,7 @@ func newServiceWithVerification(t *testing.T) (*Service, *fakeUserRepo, *fakeAct
 	userRepo := newFakeUserRepo()
 	tokenRepo := newFakeActionTokenRepo()
 	mailer := &fakeMailer{}
-	manager := actiontoken.NewManager(tokenRepo)
+	manager := actiontokenapp.NewManager(tokenRepo)
 	svc := NewService(userRepo, WithVerification(manager, mailer, newVerificationConfig()))
 	return svc, userRepo, tokenRepo, mailer
 }
@@ -252,7 +253,7 @@ func newServiceWithReset(t *testing.T) *resetFixture {
 	changeLog := newFakeChangeLog()
 	mailer := &fakeMailer{}
 	invalidator := &fakeSessionInvalidator{}
-	manager := actiontoken.NewManager(tokenRepo)
+	manager := actiontokenapp.NewManager(tokenRepo)
 	svc := NewService(userRepo,
 		WithPasswordReset(manager, mailer, newPasswordResetConfig()),
 		WithChangeLog(changeLog),
@@ -304,7 +305,7 @@ func TestWithVerification_PanicsOnInvalidConfig(t *testing.T) {
 					t.Fatalf("expected panic for cfg=%+v", tt.cfg)
 				}
 			}()
-			WithVerification(actiontoken.NewManager(newFakeActionTokenRepo()), &fakeMailer{}, tt.cfg)
+			WithVerification(actiontokenapp.NewManager(newFakeActionTokenRepo()), &fakeMailer{}, tt.cfg)
 		})
 	}
 }
@@ -328,7 +329,7 @@ func TestWithPasswordReset_PanicsOnInvalidConfig(t *testing.T) {
 					t.Fatalf("expected panic for cfg=%+v", tt.cfg)
 				}
 			}()
-			WithPasswordReset(actiontoken.NewManager(newFakeActionTokenRepo()), &fakeMailer{}, tt.cfg)
+			WithPasswordReset(actiontokenapp.NewManager(newFakeActionTokenRepo()), &fakeMailer{}, tt.cfg)
 		})
 	}
 }
@@ -345,7 +346,7 @@ func TestNewService_PanicsOnMissingRepo(t *testing.T) {
 
 func TestNewService_PasswordResetRequiresChangeLogAndInvalidator(t *testing.T) {
 	t.Parallel()
-	manager := actiontoken.NewManager(newFakeActionTokenRepo())
+	manager := actiontokenapp.NewManager(newFakeActionTokenRepo())
 
 	t.Run("missing change log panics", func(t *testing.T) {
 		t.Parallel()
@@ -395,7 +396,7 @@ func TestService_Create_WithVerificationDeps_IssuesToken(t *testing.T) {
 	if tokenRepo.insertCalls[0].AccountID != dto.ID {
 		t.Errorf("token AccountID = %d, want %d", tokenRepo.insertCalls[0].AccountID, dto.ID)
 	}
-	if tokenRepo.insertCalls[0].Action != actiontoken.EmailVerification {
+	if tokenRepo.insertCalls[0].Action != actiontokendomain.EmailVerification {
 		t.Errorf("token Action = %v, want EmailVerification", tokenRepo.insertCalls[0].Action)
 	}
 	sent := mailer.Sent()
@@ -433,7 +434,7 @@ func TestService_Create_WithoutVerificationDeps_NoTokenIssued(t *testing.T) {
 func TestService_Create_VerificationIssueError_Wraps(t *testing.T) {
 	t.Parallel()
 	svc, _, tokenRepo, _ := newServiceWithVerification(t)
-	tokenRepo.insertHook = func(*actiontoken.ActionToken) error { return errors.New("token insert boom") }
+	tokenRepo.insertHook = func(*actiontokendomain.ActionToken) error { return errors.New("token insert boom") }
 
 	_, err := svc.Create(context.Background(), CreateCommand{
 		Username:        "testuser",
@@ -513,7 +514,7 @@ func TestService_IssueVerification_TrimsTrailingSlashInAppURL(t *testing.T) {
 		ResendCooldown: 60 * time.Second,
 	}
 	svc := NewService(newFakeUserRepo(),
-		WithVerification(actiontoken.NewManager(tokenRepo), mailer, cfg))
+		WithVerification(actiontokenapp.NewManager(tokenRepo), mailer, cfg))
 
 	if err := svc.IssueVerification(context.Background(), 1, "u@x", "u"); err != nil {
 		t.Fatalf("IssueVerification: %v", err)
@@ -527,7 +528,7 @@ func TestService_IssueVerification_TrimsTrailingSlashInAppURL(t *testing.T) {
 func TestService_IssueVerification_TokenError_Wraps(t *testing.T) {
 	t.Parallel()
 	svc, _, tokenRepo, _ := newServiceWithVerification(t)
-	tokenRepo.deleteUnconsumedHook = func(int, actiontoken.Action) error { return errors.New("delete boom") }
+	tokenRepo.deleteUnconsumedHook = func(int, actiontokendomain.Action) error { return errors.New("delete boom") }
 
 	err := svc.IssueVerification(context.Background(), 1, "u@x", "u")
 	if err == nil || !strings.Contains(err.Error(), "app.Service.IssueVerification") {
@@ -571,7 +572,7 @@ func TestService_ConsumeVerification_PropagatesTokenErrors(t *testing.T) {
 			setup: func() string {
 				return "***not-base64***"
 			},
-			wantErr: actiontoken.ErrTokenInvalid,
+			wantErr: actiontokendomain.ErrTokenInvalid,
 		},
 		{
 			name: "unknown token",
@@ -579,7 +580,7 @@ func TestService_ConsumeVerification_PropagatesTokenErrors(t *testing.T) {
 				raw := make([]byte, 32)
 				return base64.RawURLEncoding.EncodeToString(raw)
 			},
-			wantErr: actiontoken.ErrTokenInvalid,
+			wantErr: actiontokendomain.ErrTokenInvalid,
 		},
 		{
 			name: "wrong action",
@@ -587,13 +588,13 @@ func TestService_ConsumeVerification_PropagatesTokenErrors(t *testing.T) {
 				var raw [32]byte
 				raw[0] = 0xa1
 				hash := sha256.Sum256(raw[:])
-				tokenRepo.byHash[hash] = &actiontoken.ActionToken{
-					TokenHash: hash, AccountID: 1, Action: actiontoken.PasswordReset,
+				tokenRepo.byHash[hash] = &actiontokendomain.ActionToken{
+					TokenHash: hash, AccountID: 1, Action: actiontokendomain.PasswordReset,
 					ExpiresAt: now.Add(time.Hour), CreatedAt: now,
 				}
 				return base64.RawURLEncoding.EncodeToString(raw[:])
 			},
-			wantErr: actiontoken.ErrTokenInvalid,
+			wantErr: actiontokendomain.ErrTokenInvalid,
 		},
 		{
 			name: "expired",
@@ -601,13 +602,13 @@ func TestService_ConsumeVerification_PropagatesTokenErrors(t *testing.T) {
 				var raw [32]byte
 				raw[0] = 0xa2
 				hash := sha256.Sum256(raw[:])
-				tokenRepo.byHash[hash] = &actiontoken.ActionToken{
-					TokenHash: hash, AccountID: 1, Action: actiontoken.EmailVerification,
+				tokenRepo.byHash[hash] = &actiontokendomain.ActionToken{
+					TokenHash: hash, AccountID: 1, Action: actiontokendomain.EmailVerification,
 					ExpiresAt: now.Add(-time.Second), CreatedAt: now.Add(-time.Hour),
 				}
 				return base64.RawURLEncoding.EncodeToString(raw[:])
 			},
-			wantErr: actiontoken.ErrTokenExpired,
+			wantErr: actiontokendomain.ErrTokenExpired,
 		},
 		{
 			name: "already consumed",
@@ -615,15 +616,15 @@ func TestService_ConsumeVerification_PropagatesTokenErrors(t *testing.T) {
 				var raw [32]byte
 				raw[0] = 0xa3
 				hash := sha256.Sum256(raw[:])
-				tokenRepo.byHash[hash] = &actiontoken.ActionToken{
-					TokenHash: hash, AccountID: 1, Action: actiontoken.EmailVerification,
+				tokenRepo.byHash[hash] = &actiontokendomain.ActionToken{
+					TokenHash: hash, AccountID: 1, Action: actiontokendomain.EmailVerification,
 					ExpiresAt:  now.Add(time.Hour),
 					CreatedAt:  now,
 					ConsumedAt: sql.NullTime{Time: now, Valid: true},
 				}
 				return base64.RawURLEncoding.EncodeToString(raw[:])
 			},
-			wantErr: actiontoken.ErrTokenAlreadyUsed,
+			wantErr: actiontokendomain.ErrTokenAlreadyUsed,
 		},
 	}
 	for _, tt := range tests {
@@ -643,8 +644,8 @@ func TestService_ConsumeVerification_MarkVerifiedError_Wraps(t *testing.T) {
 	var raw [32]byte
 	raw[0] = 0xb1
 	hash := sha256.Sum256(raw[:])
-	tokenRepo.byHash[hash] = &actiontoken.ActionToken{
-		TokenHash: hash, AccountID: 99, Action: actiontoken.EmailVerification,
+	tokenRepo.byHash[hash] = &actiontokendomain.ActionToken{
+		TokenHash: hash, AccountID: 99, Action: actiontokendomain.EmailVerification,
 		ExpiresAt: time.Now().Add(time.Hour), CreatedAt: time.Now(),
 	}
 	userRepo.markVerifiedHook = func(int) error { return errors.New("mark verified boom") }
@@ -681,7 +682,7 @@ func TestService_ResendVerification_ThrottledSilent(t *testing.T) {
 	user, _ := userRepo.Create(context.Background(), &domain.User{
 		Username: "u", Email: "u@x", State: 1,
 	})
-	tokenRepo.mostRecentIssuedAtHook = func(int, actiontoken.Action) (time.Time, error) {
+	tokenRepo.mostRecentIssuedAtHook = func(int, actiontokendomain.Action) (time.Time, error) {
 		return fixed.Add(-30 * time.Second), nil
 	}
 
@@ -704,7 +705,7 @@ func TestService_ResendVerification_CooldownElapsed_Issues(t *testing.T) {
 	user, _ := userRepo.Create(context.Background(), &domain.User{
 		Username: "u", Email: "u@x", State: 1,
 	})
-	tokenRepo.mostRecentIssuedAtHook = func(int, actiontoken.Action) (time.Time, error) {
+	tokenRepo.mostRecentIssuedAtHook = func(int, actiontokendomain.Action) (time.Time, error) {
 		return fixed.Add(-2 * time.Minute), nil
 	}
 
@@ -784,7 +785,7 @@ func TestService_RequestPasswordReset_TokenCooldownSilent(t *testing.T) {
 	user, _ := fx.userRepo.Create(context.Background(), &domain.User{
 		Username: "u", Email: "u@example.com",
 	})
-	fx.tokenRepo.mostRecentIssuedAtHook = func(int, actiontoken.Action) (time.Time, error) {
+	fx.tokenRepo.mostRecentIssuedAtHook = func(int, actiontokendomain.Action) (time.Time, error) {
 		return fixed.Add(-30 * time.Second), nil
 	}
 
@@ -815,7 +816,7 @@ func TestService_RequestPasswordReset_Success(t *testing.T) {
 	if len(fx.tokenRepo.insertCalls) != 1 {
 		t.Errorf("expected 1 token insert, got %d", len(fx.tokenRepo.insertCalls))
 	}
-	if fx.tokenRepo.insertCalls[0].Action != actiontoken.PasswordReset {
+	if fx.tokenRepo.insertCalls[0].Action != actiontokendomain.PasswordReset {
 		t.Errorf("token Action = %v, want PasswordReset", fx.tokenRepo.insertCalls[0].Action)
 	}
 	body := fx.mailer.Sent()[0].Body
@@ -849,8 +850,8 @@ func TestService_ConsumePasswordReset_HappyPath(t *testing.T) {
 	var raw [32]byte
 	raw[0] = 0xc1
 	hash := sha256.Sum256(raw[:])
-	fx.tokenRepo.byHash[hash] = &actiontoken.ActionToken{
-		TokenHash: hash, AccountID: user.ID, Action: actiontoken.PasswordReset,
+	fx.tokenRepo.byHash[hash] = &actiontokendomain.ActionToken{
+		TokenHash: hash, AccountID: user.ID, Action: actiontokendomain.PasswordReset,
 		ExpiresAt: now.Add(time.Hour), CreatedAt: now.Add(-time.Minute),
 	}
 	rawToken := base64.RawURLEncoding.EncodeToString(raw[:])
@@ -881,7 +882,7 @@ func TestService_ConsumePasswordReset_TokenError_Wraps(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "app.Service.ConsumePasswordReset") {
 		t.Errorf("not wrapped: %v", err)
 	}
-	if !errors.Is(err, actiontoken.ErrTokenInvalid) {
+	if !errors.Is(err, actiontokendomain.ErrTokenInvalid) {
 		t.Errorf("expected ErrTokenInvalid in chain, got %v", err)
 	}
 }
@@ -895,8 +896,8 @@ func TestService_ConsumePasswordReset_InvalidatorError_Wraps(t *testing.T) {
 	var raw [32]byte
 	raw[0] = 0xc2
 	hash := sha256.Sum256(raw[:])
-	fx.tokenRepo.byHash[hash] = &actiontoken.ActionToken{
-		TokenHash: hash, AccountID: user.ID, Action: actiontoken.PasswordReset,
+	fx.tokenRepo.byHash[hash] = &actiontokendomain.ActionToken{
+		TokenHash: hash, AccountID: user.ID, Action: actiontokendomain.PasswordReset,
 		ExpiresAt: time.Now().Add(time.Hour), CreatedAt: time.Now(),
 	}
 	fx.invalidator.invalidateAllHook = func(int) error { return errors.New("invalidate boom") }
@@ -914,8 +915,8 @@ func TestService_PeekPasswordReset_HappyPath(t *testing.T) {
 	var raw [32]byte
 	raw[0] = 0xc3
 	hash := sha256.Sum256(raw[:])
-	fx.tokenRepo.byHash[hash] = &actiontoken.ActionToken{
-		TokenHash: hash, AccountID: 7, Action: actiontoken.PasswordReset,
+	fx.tokenRepo.byHash[hash] = &actiontokendomain.ActionToken{
+		TokenHash: hash, AccountID: 7, Action: actiontokendomain.PasswordReset,
 		ExpiresAt: time.Now().Add(time.Hour), CreatedAt: time.Now(),
 	}
 

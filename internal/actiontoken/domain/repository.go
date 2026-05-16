@@ -1,4 +1,4 @@
-package actiontoken
+package domain
 
 import (
 	"context"

@@ -9,7 +9,8 @@ import (
 	"time"
 
 	"github.com/hayakawakaki/go-racp/internal/account/domain"
-	"github.com/hayakawakaki/go-racp/internal/actiontoken"
+	actiontokenapp "github.com/hayakawakaki/go-racp/internal/actiontoken/app"
+	actiontokendomain "github.com/hayakawakaki/go-racp/internal/actiontoken/domain"
 	mailtemplate "github.com/hayakawakaki/go-racp/internal/infra/mailer/template"
 )
 
@@ -54,7 +55,7 @@ type EmailChangeConfig struct {
 }
 
 type Service struct {
-	TokenManager       *actiontoken.Manager
+	TokenManager       *actiontokenapp.Manager
 	now                func() time.Time
 	location           *time.Location
 	Repo               domain.Repository
@@ -76,7 +77,7 @@ func (s *Service) Now() time.Time {
 
 type Option func(*Service)
 
-func WithVerification(manager *actiontoken.Manager, mail Mailer, cfg VerificationConfig) Option {
+func WithVerification(manager *actiontokenapp.Manager, mail Mailer, cfg VerificationConfig) Option {
 	if cfg.TokenTTL <= 0 {
 		panic("account: VerificationConfig.TokenTTL must be > 0")
 	}
@@ -91,7 +92,7 @@ func WithVerification(manager *actiontoken.Manager, mail Mailer, cfg Verificatio
 	}
 }
 
-func WithPasswordReset(manager *actiontoken.Manager, mail Mailer, cfg PasswordResetConfig) Option {
+func WithPasswordReset(manager *actiontokenapp.Manager, mail Mailer, cfg PasswordResetConfig) Option {
 	if cfg.TokenTTL <= 0 {
 		panic("account: PasswordResetConfig.TokenTTL must be > 0")
 	}
@@ -109,7 +110,7 @@ func WithPasswordReset(manager *actiontoken.Manager, mail Mailer, cfg PasswordRe
 	}
 }
 
-func WithEmailChange(manager *actiontoken.Manager, mail Mailer, cfg EmailChangeConfig) Option {
+func WithEmailChange(manager *actiontokenapp.Manager, mail Mailer, cfg EmailChangeConfig) Option {
 	if cfg.TokenTTL <= 0 {
 		panic("account: EmailChangeConfig.TokenTTL must be > 0")
 	}
@@ -236,7 +237,7 @@ func (s *Service) Create(ctx context.Context, cmd CreateCommand) (*GetDTO, error
 }
 
 func (s *Service) IssueVerification(ctx context.Context, accountID int, email, username string) error {
-	raw, err := s.TokenManager.Issue(ctx, actiontoken.EmailVerification, accountID, nil, s.verifyCfg.TokenTTL)
+	raw, err := s.TokenManager.Issue(ctx, actiontokendomain.EmailVerification, accountID, nil, s.verifyCfg.TokenTTL)
 	if err != nil {
 		return fmt.Errorf("app.Service.IssueVerification: %w", err)
 	}
@@ -258,7 +259,7 @@ func (s *Service) IssueVerification(ctx context.Context, accountID int, email, u
 }
 
 func (s *Service) ConsumeVerification(ctx context.Context, rawToken string) error {
-	token, err := s.TokenManager.Consume(ctx, actiontoken.EmailVerification, rawToken)
+	token, err := s.TokenManager.Consume(ctx, actiontokendomain.EmailVerification, rawToken)
 	if err != nil {
 		return fmt.Errorf("app.Service.ConsumeVerification: %w", err)
 	}
@@ -279,7 +280,7 @@ func (s *Service) ResendVerification(ctx context.Context, accountID int) error {
 		return nil
 	}
 
-	last, err := s.TokenManager.MostRecentIssuedAt(ctx, accountID, actiontoken.EmailVerification)
+	last, err := s.TokenManager.MostRecentIssuedAt(ctx, accountID, actiontokendomain.EmailVerification)
 	if err != nil {
 		return fmt.Errorf("app.Service.ResendVerification: %w", err)
 	}
@@ -315,7 +316,7 @@ func (s *Service) RequestPasswordReset(ctx context.Context, email string) error 
 		return nil
 	}
 
-	last, err := s.TokenManager.MostRecentIssuedAt(ctx, user.ID, actiontoken.PasswordReset)
+	last, err := s.TokenManager.MostRecentIssuedAt(ctx, user.ID, actiontokendomain.PasswordReset)
 	if err != nil {
 		return fmt.Errorf("app.Service.RequestPasswordReset: %w", err)
 	}
@@ -323,7 +324,7 @@ func (s *Service) RequestPasswordReset(ctx context.Context, email string) error 
 		return nil
 	}
 
-	raw, err := s.TokenManager.Issue(ctx, actiontoken.PasswordReset, user.ID, nil, s.resetCfg.TokenTTL)
+	raw, err := s.TokenManager.Issue(ctx, actiontokendomain.PasswordReset, user.ID, nil, s.resetCfg.TokenTTL)
 	if err != nil {
 		return fmt.Errorf("app.Service.RequestPasswordReset: %w", err)
 	}
@@ -353,7 +354,7 @@ func (s *Service) ConsumePasswordReset(ctx context.Context, rawToken, newPasswor
 		return &domain.ValidationError{Fields: domain.FieldErrors{fieldPassword: err.Error()}}
 	}
 
-	token, err := s.TokenManager.Consume(ctx, actiontoken.PasswordReset, rawToken)
+	token, err := s.TokenManager.Consume(ctx, actiontokendomain.PasswordReset, rawToken)
 	if err != nil {
 		return fmt.Errorf("app.Service.ConsumePasswordReset: %w", err)
 	}
@@ -512,8 +513,8 @@ func (s *Service) Delete(ctx context.Context, id int) error {
 }
 
 // PeekPasswordReset inspects a password-reset token without consuming it.
-func (s *Service) PeekPasswordReset(ctx context.Context, rawToken string) (*actiontoken.ActionToken, error) {
-	token, err := s.TokenManager.Peek(ctx, actiontoken.PasswordReset, rawToken)
+func (s *Service) PeekPasswordReset(ctx context.Context, rawToken string) (*actiontokendomain.ActionToken, error) {
+	token, err := s.TokenManager.Peek(ctx, actiontokendomain.PasswordReset, rawToken)
 	if err != nil {
 		return nil, fmt.Errorf("app.Service.PeekPasswordReset: %w", err)
 	}
@@ -522,8 +523,8 @@ func (s *Service) PeekPasswordReset(ctx context.Context, rawToken string) (*acti
 }
 
 // PeekVerification inspects an email-verification token without consuming it.
-func (s *Service) PeekVerification(ctx context.Context, rawToken string) (*actiontoken.ActionToken, error) {
-	token, err := s.TokenManager.Peek(ctx, actiontoken.EmailVerification, rawToken)
+func (s *Service) PeekVerification(ctx context.Context, rawToken string) (*actiontokendomain.ActionToken, error) {
+	token, err := s.TokenManager.Peek(ctx, actiontokendomain.EmailVerification, rawToken)
 	if err != nil {
 		return nil, fmt.Errorf("app.Service.PeekVerification: %w", err)
 	}
@@ -532,8 +533,8 @@ func (s *Service) PeekVerification(ctx context.Context, rawToken string) (*actio
 }
 
 // PeekEmailChange inspects an email-change token without consuming it, exposing the new address from the payload.
-func (s *Service) PeekEmailChange(ctx context.Context, rawToken string) (*actiontoken.ActionToken, error) {
-	token, err := s.TokenManager.Peek(ctx, actiontoken.EmailChange, rawToken)
+func (s *Service) PeekEmailChange(ctx context.Context, rawToken string) (*actiontokendomain.ActionToken, error) {
+	token, err := s.TokenManager.Peek(ctx, actiontokendomain.EmailChange, rawToken)
 	if err != nil {
 		return nil, fmt.Errorf("app.Service.PeekEmailChange: %w", err)
 	}
@@ -672,7 +673,7 @@ func (s *Service) RequestEmailChange(ctx context.Context, userID int, currentPas
 		return domain.ErrEmailRecentlyChanged
 	}
 
-	last, err := s.TokenManager.MostRecentIssuedAt(ctx, userID, actiontoken.EmailChange)
+	last, err := s.TokenManager.MostRecentIssuedAt(ctx, userID, actiontokendomain.EmailChange)
 	if err != nil {
 		return fmt.Errorf("app.Service.RequestEmailChange: %w", err)
 	}
@@ -680,7 +681,7 @@ func (s *Service) RequestEmailChange(ctx context.Context, userID int, currentPas
 		return ErrEmailChangeCooldown
 	}
 
-	raw, err := s.TokenManager.Issue(ctx, actiontoken.EmailChange, userID, []byte(normalizedNewEmail), s.emailCfg.TokenTTL)
+	raw, err := s.TokenManager.Issue(ctx, actiontokendomain.EmailChange, userID, []byte(normalizedNewEmail), s.emailCfg.TokenTTL)
 	if err != nil {
 		return fmt.Errorf("app.Service.RequestEmailChange: %w", err)
 	}
@@ -704,14 +705,14 @@ func (s *Service) RequestEmailChange(ctx context.Context, userID int, currentPas
 
 //nolint:cyclop // splitting would obscure the flow
 func (s *Service) ConsumeEmailChange(ctx context.Context, rawToken string) (*domain.User, error) {
-	token, err := s.TokenManager.Consume(ctx, actiontoken.EmailChange, rawToken)
+	token, err := s.TokenManager.Consume(ctx, actiontokendomain.EmailChange, rawToken)
 	if err != nil {
 		return nil, fmt.Errorf("app.Service.ConsumeEmailChange: %w", err)
 	}
 
 	newEmail := string(token.Payload)
 	if _, validateErr := domain.ValidateEmail(newEmail); validateErr != nil {
-		return nil, actiontoken.ErrTokenInvalid
+		return nil, actiontokendomain.ErrTokenInvalid
 	}
 
 	if assertErr := s.assertUnrestricted(ctx, token.AccountID); assertErr != nil {

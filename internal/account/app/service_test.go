@@ -9,7 +9,8 @@ import (
 	"time"
 
 	"github.com/hayakawakaki/go-racp/internal/account/domain"
-	"github.com/hayakawakaki/go-racp/internal/actiontoken"
+	actiontokenapp "github.com/hayakawakaki/go-racp/internal/actiontoken/app"
+	actiontokendomain "github.com/hayakawakaki/go-racp/internal/actiontoken/domain"
 )
 
 // fakeUserRepo implements domain.Repository in memory. Hooks override
@@ -614,7 +615,7 @@ func newEmailChangeFixture(t *testing.T) *emailChangeFixture {
 	changeLog := newFakeChangeLog()
 	mailer := &fakeMailer{}
 	invalidator := &fakeSessionInvalidator{}
-	manager := actiontoken.NewManager(tokenRepo)
+	manager := actiontokenapp.NewManager(tokenRepo)
 	svc := NewService(userRepo,
 		WithEmailChange(manager, mailer, newEmailChangeConfig()),
 		WithChangeLog(changeLog),
@@ -857,7 +858,7 @@ func TestService_RequestEmailChange_TokenCooldown_Blocked(t *testing.T) {
 	user, _ := fx.userRepo.Create(context.Background(), &domain.User{
 		Username: "u", Email: "u@example.com", Password: "Curr1234!",
 	})
-	fx.tokenRepo.mostRecentIssuedAtHook = func(int, actiontoken.Action) (time.Time, error) {
+	fx.tokenRepo.mostRecentIssuedAtHook = func(int, actiontokendomain.Action) (time.Time, error) {
 		return fixed.Add(-30 * time.Second), nil
 	}
 
@@ -889,7 +890,7 @@ func TestService_RequestEmailChange_HappyPath(t *testing.T) {
 		t.Fatalf("expected 1 token insert, got %d", len(fx.tokenRepo.insertCalls))
 	}
 	stored := fx.tokenRepo.insertCalls[0]
-	if stored.Action != actiontoken.EmailChange {
+	if stored.Action != actiontokendomain.EmailChange {
 		t.Errorf("Action = %v, want EmailChange", stored.Action)
 	}
 	if string(stored.Payload) != "new@example.com" {
@@ -904,7 +905,7 @@ func TestService_ConsumeEmailChange_HappyPath(t *testing.T) {
 		Username: "u", Email: "old@example.com",
 	})
 
-	rawToken, err := fx.svc.TokenManager.Issue(context.Background(), actiontoken.EmailChange, user.ID, []byte("new@example.com"), time.Hour)
+	rawToken, err := fx.svc.TokenManager.Issue(context.Background(), actiontokendomain.EmailChange, user.ID, []byte("new@example.com"), time.Hour)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -930,7 +931,7 @@ func TestService_ConsumeEmailChange_InvalidToken(t *testing.T) {
 	fx := newEmailChangeFixture(t)
 
 	_, err := fx.svc.ConsumeEmailChange(context.Background(), "***bad***")
-	if !errors.Is(err, actiontoken.ErrTokenInvalid) {
+	if !errors.Is(err, actiontokendomain.ErrTokenInvalid) {
 		t.Errorf("got %v, want ErrTokenInvalid", err)
 	}
 }
@@ -945,7 +946,7 @@ func TestService_ConsumeEmailChange_TakenByAnother_ReturnsErrEmailTaken(t *testi
 		Username: "other", Email: "new@example.com",
 	})
 
-	rawToken, err := fx.svc.TokenManager.Issue(context.Background(), actiontoken.EmailChange, user.ID, []byte("new@example.com"), time.Hour)
+	rawToken, err := fx.svc.TokenManager.Issue(context.Background(), actiontokendomain.EmailChange, user.ID, []byte("new@example.com"), time.Hour)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -963,13 +964,13 @@ func TestService_ConsumeEmailChange_PayloadFailsValidation(t *testing.T) {
 		Username: "u", Email: "old@example.com",
 	})
 
-	rawToken, err := fx.svc.TokenManager.Issue(context.Background(), actiontoken.EmailChange, user.ID, []byte("not-an-email"), time.Hour)
+	rawToken, err := fx.svc.TokenManager.Issue(context.Background(), actiontokendomain.EmailChange, user.ID, []byte("not-an-email"), time.Hour)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	_, err = fx.svc.ConsumeEmailChange(context.Background(), rawToken)
-	if !errors.Is(err, actiontoken.ErrTokenInvalid) {
+	if !errors.Is(err, actiontokendomain.ErrTokenInvalid) {
 		t.Errorf("got %v, want ErrTokenInvalid for corrupt payload", err)
 	}
 }
