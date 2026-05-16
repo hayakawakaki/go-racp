@@ -11,6 +11,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
 	actiontokendomain "github.com/hayakawakaki/go-racp/internal/actiontoken/domain"
+	characterapp "github.com/hayakawakaki/go-racp/internal/character/app"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 	"github.com/hayakawakaki/go-racp/internal/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
@@ -62,9 +63,14 @@ type sessionService interface {
 	TTL() time.Duration
 }
 
+type characterLister interface {
+	List(ctx context.Context, accountID int) ([]characterapp.CharacterDTO, error)
+}
+
 type HandlerConfig struct {
 	Logger               *slog.Logger
 	Users                userLookup
+	Characters           characterLister
 	General              config.GeneralConfig
 	Secure               bool
 	AllowTempBannedLogin bool
@@ -74,6 +80,7 @@ type Handler struct {
 	svc                  accountService
 	sessSvc              sessionService
 	users                userLookup
+	characters           characterLister
 	logger               *slog.Logger
 	general              config.GeneralConfig
 	secure               bool
@@ -89,6 +96,7 @@ func NewHandler(svc accountService, sessSvc sessionService, cfg HandlerConfig) *
 		svc:                  svc,
 		sessSvc:              sessSvc,
 		users:                cfg.Users,
+		characters:           cfg.Characters,
 		logger:               logger,
 		general:              cfg.General,
 		secure:               cfg.Secure,

@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
+	characterapp "github.com/hayakawakaki/go-racp/internal/character/app"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 )
 
@@ -23,6 +24,10 @@ var accountNoticeText = map[string]string{
 	noticeEmailChanged:        "Email updated.",
 }
 
+var characterNoticeText = map[string]string{
+	"not_found": "Character not found.",
+}
+
 func (h *Handler) showAccount(w http.ResponseWriter, r *http.Request) {
 	sess, ok := middleware.SessionFromContext(r.Context())
 	if !ok || sess == nil {
@@ -37,10 +42,22 @@ func (h *Handler) showAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	state := AccountState{Account: account}
+	var chars []characterapp.CharacterDTO
+	if h.characters != nil {
+		chars, err = h.characters.List(r.Context(), sess.UserID)
+		if err != nil {
+			h.logger.Error("account characters", "err", err)
+			chars = nil
+		}
+	}
+
+	state := AccountState{Account: account, Characters: chars}
 	noticeParam := r.URL.Query().Get("notice")
 	if notice, ok := accountNoticeText[noticeParam]; ok {
 		state.Notice = notice
+	}
+	if charNotice, ok := characterNoticeText[noticeParam]; ok {
+		state.Notice = charNotice
 	}
 
 	if noticeParam == middleware.NoticeBanBlocked && account.Restricted {
