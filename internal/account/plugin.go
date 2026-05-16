@@ -23,10 +23,11 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *platinfra.Infra) {
 	secure := in.Config.Env.Mode != "development"
 
 	h := transport.NewHandler(svc, sessSvc, transport.HandlerConfig{
-		Logger:  in.Logger,
-		Users:   userRepo,
-		Secure:  secure,
-		General: in.Config.App.General,
+		Logger:               in.Logger,
+		Users:                userRepo,
+		Secure:               secure,
+		General:              in.Config.App.General,
+		AllowTempBannedLogin: in.Config.App.Auth.AllowTempBannedLogin,
 	})
 	h.RegisterRoutes(reg, mux)
 }

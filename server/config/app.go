@@ -73,6 +73,10 @@ type TicketsConfig struct {
 
 type RolesConfig map[string]int
 
+type AuthConfig struct {
+	AllowTempBannedLogin bool `yaml:"AllowTempBannedLogin"`
+}
+
 // AppConfig holds operator-tunable application settings loaded from config.yml.
 type AppConfig struct {
 	General          GeneralConfig          `yaml:"GeneralConfig"`
@@ -84,6 +88,7 @@ type AppConfig struct {
 	TTL              TTLConfig              `yaml:"TTL"`
 	Tickets          TicketsConfig          `yaml:"Tickets"`
 	TicketLimits     TicketLimitsConfig     `yaml:"TicketLimits"`
+	Auth             AuthConfig             `yaml:"Auth"`
 }
 
 // appConfigDefaults apply default config in case of missing config file
@@ -114,6 +119,7 @@ func appConfigDefaults() *AppConfig {
 			"Announcement": {Display: "Announcement"},
 		},
 		Tickets: TicketsConfig{StaffPollInterval: 30 * time.Second},
+		Auth:    AuthConfig{AllowTempBannedLogin: true},
 	}
 }
 

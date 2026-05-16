@@ -96,6 +96,7 @@ func Start() error {
 		userRepo,
 		logger,
 		secure,
+		cfg.App.Auth.AllowTempBannedLogin,
 		httpx.Layout{GeneralConfig: cfg.App.General},
 	)
 

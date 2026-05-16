@@ -15,15 +15,16 @@ import (
 const adminGroup = "Admin"
 
 type Registry struct {
-	hiddenLayout httpx.Layout
-	sessSvc      middleware.SessionValidator
-	users        middleware.UserLookup
-	resolver     domain.RoleResolver
-	cfg          config.AccessConfig
-	logger       *slog.Logger
-	registered   map[string]struct{}
-	ungated      []ungatedRoute
-	secure       bool
+	hiddenLayout         httpx.Layout
+	sessSvc              middleware.SessionValidator
+	users                middleware.UserLookup
+	resolver             domain.RoleResolver
+	cfg                  config.AccessConfig
+	logger               *slog.Logger
+	registered           map[string]struct{}
+	ungated              []ungatedRoute
+	secure               bool
+	allowTempBannedLogin bool
 }
 
 type ungatedRoute struct {
@@ -38,17 +39,19 @@ func NewRegistry(
 	users middleware.UserLookup,
 	logger *slog.Logger,
 	secure bool,
+	allowTempBannedLogin bool,
 	hiddenLayout httpx.Layout,
 ) *Registry {
 	return &Registry{
-		cfg:          cfg,
-		resolver:     resolver,
-		sessSvc:      sessSvc,
-		users:        users,
-		logger:       logger,
-		secure:       secure,
-		hiddenLayout: hiddenLayout,
-		registered:   make(map[string]struct{}),
+		cfg:                  cfg,
+		resolver:             resolver,
+		sessSvc:              sessSvc,
+		users:                users,
+		logger:               logger,
+		secure:               secure,
+		allowTempBannedLogin: allowTempBannedLogin,
+		hiddenLayout:         hiddenLayout,
+		registered:           make(map[string]struct{}),
 	}
 }
 
@@ -62,18 +65,18 @@ func (r *Registry) Wrap(mux *http.ServeMux, tag, pattern string, handler http.Ha
 	r.registered[tag] = struct{}{}
 
 	if group == adminGroup {
-		mux.Handle(pattern, middleware.RequireRoleHidden(r.sessSvc, r.users, r.resolver, r.logger, r.secure, r.hiddenLayout, true)(handler))
+		mux.Handle(pattern, middleware.RequireRoleHidden(r.sessSvc, r.users, r.resolver, r.logger, r.secure, r.hiddenLayout, r.allowTempBannedLogin, true)(handler))
 		return
 	}
 
 	entry, configured := r.lookup(group, action)
 	if !configured {
 		r.ungated = append(r.ungated, ungatedRoute{tag: tag, pattern: pattern})
-		mux.Handle(pattern, middleware.RequireRole(r.sessSvc, r.users, r.resolver, r.logger, r.secure, false, domain.RoleAuthenticated)(handler))
+		mux.Handle(pattern, middleware.RequireRole(r.sessSvc, r.users, r.resolver, r.logger, r.secure, r.allowTempBannedLogin, false, domain.RoleAuthenticated)(handler))
 		return
 	}
 
-	mux.Handle(pattern, middleware.RequireRole(r.sessSvc, r.users, r.resolver, r.logger, r.secure, entry.unrestricted, entry.roles...)(handler))
+	mux.Handle(pattern, middleware.RequireRole(r.sessSvc, r.users, r.resolver, r.logger, r.secure, r.allowTempBannedLogin, entry.unrestricted, entry.roles...)(handler))
 }
 
 type resolvedEntry struct {

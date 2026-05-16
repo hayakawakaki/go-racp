@@ -54,6 +54,7 @@ func requireRoleCore(
 	logger *slog.Logger,
 	secure, hidden bool,
 	layout httpx.Layout,
+	allowTempBannedLogin bool,
 	unrestricted bool,
 	allowed []domain.Role,
 ) func(http.Handler) http.Handler {
@@ -100,6 +101,10 @@ func requireRoleCore(
 				rejectUnverified(w, r, logger, hidden, layout)
 				return
 			case app.TierTempBanned:
+				if !allowTempBannedLogin {
+					rejectBanned(w, r, logger, secure, hidden, layout, "banned", snap, cookie.Value, sessSvc)
+					return
+				}
 				if unrestricted {
 					rejectTempBanned(w, r, logger, hidden, layout)
 					return
@@ -126,10 +131,11 @@ func RequireRole(
 	resolver domain.RoleResolver,
 	logger *slog.Logger,
 	secure bool,
+	allowTempBannedLogin bool,
 	unrestricted bool,
 	allowed ...domain.Role,
 ) func(http.Handler) http.Handler {
-	return requireRoleCore(sessSvc, users, resolver, logger, secure, false, httpx.Layout{}, unrestricted, allowed)
+	return requireRoleCore(sessSvc, users, resolver, logger, secure, false, httpx.Layout{}, allowTempBannedLogin, unrestricted, allowed)
 }
 
 // RequireRoleHidden behaves like RequireRole but renders a 404 in place of 401/403 so the route's existence is not disclosed to unauthorized callers.
@@ -140,10 +146,11 @@ func RequireRoleHidden(
 	logger *slog.Logger,
 	secure bool,
 	layout httpx.Layout,
+	allowTempBannedLogin bool,
 	unrestricted bool,
 	allowed ...domain.Role,
 ) func(http.Handler) http.Handler {
-	return requireRoleCore(sessSvc, users, resolver, logger, secure, true, layout, unrestricted, allowed)
+	return requireRoleCore(sessSvc, users, resolver, logger, secure, true, layout, allowTempBannedLogin, unrestricted, allowed)
 }
 
 func rejectBanned(w http.ResponseWriter, r *http.Request, logger *slog.Logger, secure, hidden bool, layout httpx.Layout, notice string, snap *AccountSnapshot, sessRaw string, sessSvc SessionValidator) {

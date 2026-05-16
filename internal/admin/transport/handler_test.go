@@ -115,6 +115,7 @@ func TestHandler_RegisterRoutes_WrapsAdminRouteInRegistry(t *testing.T) {
 		newStubUserLookup(),
 		slog.New(slog.NewTextHandler(io.Discard, nil)),
 		false,
+		true,
 		httpx.Layout{},
 	)
 	mux := http.NewServeMux()
@@ -139,6 +140,7 @@ func TestHandler_RegisterRoutes_RejectsNonGet(t *testing.T) {
 		newStubUserLookup(),
 		slog.New(slog.NewTextHandler(io.Discard, nil)),
 		false,
+		true,
 		httpx.Layout{},
 	)
 	mux := http.NewServeMux()

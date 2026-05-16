@@ -49,7 +49,7 @@ func newRegistry(t *testing.T, cfg config.AccessConfig) (*Registry, *bytes.Buffe
 	buf := &bytes.Buffer{}
 	resolver := domain.NewRoleResolver(config.RolesConfig{"Moderator": 20, "Enforcer": 10, "Event": 2})
 	logger := slog.New(slog.NewTextHandler(buf, nil))
-	return NewRegistry(cfg, resolver, &stubSession{}, &stubUsers{}, logger, false, httpx.Layout{}), buf
+	return NewRegistry(cfg, resolver, &stubSession{}, &stubUsers{}, logger, false, true, httpx.Layout{}), buf
 }
 
 func okHandler() http.Handler {

@@ -63,29 +63,32 @@ type sessionService interface {
 }
 
 type HandlerConfig struct {
-	Logger  *slog.Logger
-	Users   userLookup
-	General config.GeneralConfig
-	Secure  bool
+	Logger               *slog.Logger
+	Users                userLookup
+	General              config.GeneralConfig
+	Secure               bool
+	AllowTempBannedLogin bool
 }
 
 type Handler struct {
-	svc     accountService
-	sessSvc sessionService
-	users   userLookup
-	logger  *slog.Logger
-	general config.GeneralConfig
-	secure  bool
+	svc                  accountService
+	sessSvc              sessionService
+	users                userLookup
+	logger               *slog.Logger
+	general              config.GeneralConfig
+	secure               bool
+	allowTempBannedLogin bool
 }
 
 func NewHandler(svc accountService, sessSvc sessionService, cfg HandlerConfig) *Handler {
 	return &Handler{
-		svc:     svc,
-		sessSvc: sessSvc,
-		users:   cfg.Users,
-		logger:  cfg.Logger,
-		general: cfg.General,
-		secure:  cfg.Secure,
+		svc:                  svc,
+		sessSvc:              sessSvc,
+		users:                cfg.Users,
+		logger:               cfg.Logger,
+		general:              cfg.General,
+		secure:               cfg.Secure,
+		allowTempBannedLogin: cfg.AllowTempBannedLogin,
 	}
 }
 
@@ -238,6 +241,14 @@ func (h *Handler) doLogin(w http.ResponseWriter, r *http.Request) {
 		h.renderLogin(w, r, LoginFormState{
 			Username: cmd.Username,
 			Error:    "This account is permanently banned.",
+		})
+		return
+	}
+
+	if tier == accountapp.TierTempBanned && !h.allowTempBannedLogin {
+		h.renderLogin(w, r, LoginFormState{
+			Username: cmd.Username,
+			Error:    "This account is currently restricted. Please try again later.",
 		})
 		return
 	}
