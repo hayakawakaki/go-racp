@@ -650,7 +650,7 @@ func TestService_GetAccount_UnverifiedFlag(t *testing.T) {
 	t.Parallel()
 	fx := newEmailChangeFixture(t)
 	user, _ := fx.userRepo.Create(context.Background(), &domain.User{
-		Username: "u", Email: "u@example.com", State: 5,
+		Username: "u", Email: "u@example.com", State: 1,
 	})
 
 	got, err := fx.svc.GetAccount(context.Background(), user.ID)
@@ -658,7 +658,7 @@ func TestService_GetAccount_UnverifiedFlag(t *testing.T) {
 		t.Fatalf("GetAccount: %v", err)
 	}
 	if got.Verified {
-		t.Errorf("Verified = true, want false for state=5")
+		t.Errorf("Verified = true, want false for state=1")
 	}
 }
 

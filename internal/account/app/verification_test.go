@@ -539,7 +539,7 @@ func TestService_ConsumeVerification_HappyPath(t *testing.T) {
 	t.Parallel()
 	svc, userRepo, _, mailer := newServiceWithVerification(t)
 	user, _ := userRepo.Create(context.Background(), &domain.User{
-		Username: "u", Email: "u@x", State: 5,
+		Username: "u", Email: "u@x", State: 1,
 	})
 
 	if err := svc.IssueVerification(context.Background(), user.ID, user.Email, user.Username); err != nil {
@@ -679,7 +679,7 @@ func TestService_ResendVerification_ThrottledSilent(t *testing.T) {
 	fixed := time.Date(2026, 5, 11, 12, 0, 0, 0, time.UTC)
 	svc.now = func() time.Time { return fixed }
 	user, _ := userRepo.Create(context.Background(), &domain.User{
-		Username: "u", Email: "u@x", State: 5,
+		Username: "u", Email: "u@x", State: 1,
 	})
 	tokenRepo.mostRecentIssuedAtHook = func(int, actiontoken.Action) (time.Time, error) {
 		return fixed.Add(-30 * time.Second), nil
@@ -702,7 +702,7 @@ func TestService_ResendVerification_CooldownElapsed_Issues(t *testing.T) {
 	fixed := time.Date(2026, 5, 11, 12, 0, 0, 0, time.UTC)
 	svc.now = func() time.Time { return fixed }
 	user, _ := userRepo.Create(context.Background(), &domain.User{
-		Username: "u", Email: "u@x", State: 5,
+		Username: "u", Email: "u@x", State: 1,
 	})
 	tokenRepo.mostRecentIssuedAtHook = func(int, actiontoken.Action) (time.Time, error) {
 		return fixed.Add(-2 * time.Minute), nil
@@ -842,7 +842,7 @@ func TestService_ConsumePasswordReset_HappyPath(t *testing.T) {
 	t.Parallel()
 	fx := newServiceWithReset(t)
 	user, _ := fx.userRepo.Create(context.Background(), &domain.User{
-		Username: "u", Email: "u@example.com", Password: "Old1234!", State: 5,
+		Username: "u", Email: "u@example.com", Password: "Old1234!", State: 1,
 	})
 
 	now := time.Now()

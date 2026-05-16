@@ -45,7 +45,7 @@ func (h *Handler) showVerifyAccount(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	if user.State != 5 {
+	if user.State != 1 {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}

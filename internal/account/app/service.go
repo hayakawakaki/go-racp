@@ -275,7 +275,7 @@ func (s *Service) ResendVerification(ctx context.Context, accountID int) error {
 	if err != nil {
 		return fmt.Errorf("app.Service.ResendVerification: %w", err)
 	}
-	if user.State != 5 {
+	if user.State != 1 {
 		return nil
 	}
 
@@ -562,7 +562,7 @@ func (s *Service) GetAccount(ctx context.Context, userID int) (*AccountDTO, erro
 	return &AccountDTO{
 		Username: user.Username,
 		Email:    user.Email,
-		Verified: user.State != 5,
+		Verified: user.State != 1,
 	}, nil
 }
 

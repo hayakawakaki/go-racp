@@ -152,16 +152,16 @@ func TestRepository_Create_SetsStateFiveAndPersistsIt(t *testing.T) {
 	}
 	cleanupUser(t, repo, created.ID)
 
-	if created.State != 5 {
-		t.Errorf("returned State = %d, want 5 (unverified)", created.State)
+	if created.State != 1 {
+		t.Errorf("returned State = %d, want 1 (unverified)", created.State)
 	}
 
 	got, err := repo.GetByID(ctx, created.ID)
 	if err != nil {
 		t.Fatalf("GetByID: %v", err)
 	}
-	if got.State != 5 {
-		t.Errorf("persisted State = %d, want 5", got.State)
+	if got.State != 1 {
+		t.Errorf("persisted State = %d, want 1", got.State)
 	}
 }
 
@@ -170,7 +170,7 @@ func TestRepository_MarkVerified(t *testing.T) {
 	repo := NewRepository(db)
 	ctx := context.Background()
 
-	t.Run("flips state from 5 to 0", func(t *testing.T) {
+	t.Run("flips state from 1 to 0", func(t *testing.T) {
 		suf := randomizeSuffix(t)
 		user, err := repo.Create(ctx, &domain.User{
 			Username: "racp_test_" + suf,

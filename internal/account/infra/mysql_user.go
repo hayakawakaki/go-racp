@@ -21,7 +21,7 @@ func NewRepository(client *sql.DB) *Repository {
 
 func (r *Repository) Create(ctx context.Context, user *domain.User) (*domain.User, error) {
 	res, err := r.Client.ExecContext(ctx,
-		"INSERT INTO login (userid, email, user_pass, sex, birthdate, state) VALUES (?, ?, ?, ?, ?, 5)",
+		"INSERT INTO login (userid, email, user_pass, sex, birthdate, state) VALUES (?, ?, ?, ?, ?, 1)",
 		user.Username, user.Email, user.Password, user.Gender, user.Birthdate)
 	if err != nil {
 		return nil, fmt.Errorf("infra.Repository.Create: %w", err)
@@ -31,7 +31,7 @@ func (r *Repository) Create(ctx context.Context, user *domain.User) (*domain.Use
 		return nil, fmt.Errorf("infra.Repository.Create: %w", err)
 	}
 	user.ID = int(id)
-	user.State = 5
+	user.State = 1
 
 	return user, nil
 }
@@ -134,7 +134,7 @@ func (r *Repository) MarkVerified(ctx context.Context, accountID int) error {
 	}
 
 	if _, err := r.Client.ExecContext(ctx,
-		"UPDATE login SET state = 0 WHERE account_id = ? AND state = 5",
+		"UPDATE login SET state = 0 WHERE account_id = ? AND state = 1",
 		accountID,
 	); err != nil {
 		return fmt.Errorf("infra.Repository.MarkVerified: %w", err)

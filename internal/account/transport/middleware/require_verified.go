@@ -52,7 +52,7 @@ func RequireVerified(
 				next.ServeHTTP(w, r)
 				return
 			}
-			if user.State == 5 {
+			if user.State == 1 {
 				http.Redirect(w, r, verifyAccountPath, http.StatusSeeOther)
 				return
 			}
