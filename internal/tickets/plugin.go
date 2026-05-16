@@ -48,24 +48,11 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *platinfra.Infra) {
 		Logger:       in.Logger,
 		Users:        userRepo,
 		Roles:        in.Roles,
-		ManageRoles:  manageRoles(access),
+		ManageRoles:  access.ManageRoles("Tickets"),
 		General:      in.Config.App.General,
 		PollInterval: in.Config.App.Tickets.StaffPollInterval,
 	})
 	handler.RegisterRoutes(reg, mux)
-}
-
-func manageRoles(access config.AccessConfig) []string {
-	tickets, ok := access["Tickets"]
-	if !ok {
-		return nil
-	}
-	list, ok := tickets["Manage"]
-	if !ok {
-		return nil
-	}
-
-	return list
 }
 
 func buildCategoryResolver(cfg config.TicketCategoriesConfig) domain.CategoryResolver {

@@ -1,4 +1,9 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 @source "../../internal/**/*.templ";
 
 [x-cloak] { display: none !important; }
+
+.prose table { width: auto; max-width: 100%; table-layout: auto; border-collapse: collapse; }
+.prose tr { vertical-align: middle; }
+.prose th, .prose td { padding: 0.5rem 1rem; border: 1px solid var(--tw-prose-td-borders); text-align: center; }

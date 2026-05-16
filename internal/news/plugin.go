@@ -1,0 +1,53 @@
+package news
+
+import (
+	"net/http"
+	"sort"
+
+	accountinfra "github.com/hayakawakaki/go-racp/internal/account/infra"
+	platinfra "github.com/hayakawakaki/go-racp/internal/infra"
+	newsapp "github.com/hayakawakaki/go-racp/internal/news/app"
+	"github.com/hayakawakaki/go-racp/internal/news/domain"
+	newsinfra "github.com/hayakawakaki/go-racp/internal/news/infra"
+	newstransport "github.com/hayakawakaki/go-racp/internal/news/transport"
+	"github.com/hayakawakaki/go-racp/internal/plugin"
+	"github.com/hayakawakaki/go-racp/internal/routes"
+	"github.com/hayakawakaki/go-racp/server/config"
+)
+
+func init() {
+	plugin.Register(plugin.Plugin{Name: "news", Mount: mount})
+}
+
+func mount(reg *routes.Registry, mux *http.ServeMux, in *platinfra.Infra) {
+	access := config.ProcessAccessConfig()
+	categories := buildCategoryResolver(in.Config.App.NewsCategories)
+	repo := newsinfra.NewRepository(in.DB)
+	service := newsapp.NewService(repo, categories, in.Logger)
+	renderer := newsinfra.NewRenderer(in.Logger)
+	userRepo := accountinfra.NewRepository(in.MainDB)
+
+	handler := newstransport.NewHandler(service, renderer, newstransport.HandlerConfig{
+		Logger:      in.Logger,
+		Users:       userRepo,
+		Roles:       in.Roles,
+		ManageRoles: access.ManageRoles("News"),
+		General:     in.Config.App.General,
+	})
+	handler.RegisterRoutes(reg, mux)
+}
+
+func buildCategoryResolver(cfg config.NewsCategoriesConfig) domain.CategoryResolver {
+	keys := make([]string, 0, len(cfg))
+	for key := range cfg {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	list := make([]domain.Category, 0, len(cfg))
+	for _, key := range keys {
+		list = append(list, domain.Category{Key: key, Display: cfg[key].Display})
+	}
+
+	return domain.NewCategoryResolver(list)
+}
