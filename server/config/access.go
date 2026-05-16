@@ -113,6 +113,11 @@ func validateAccessConfig(cfg AccessConfig) {
 	for groupName, actions := range cfg {
 		for actionName, entry := range actions {
 			fullName := groupName + "." + actionName
+			for _, tag := range entry.Requires {
+				if _, ok := knownTags[tag]; !ok {
+					panic(fmt.Errorf("access.yml: Action '%s' has unknown requires tag '%s'. Known tags: [%s]", fullName, tag, RequireUnrestricted))
+				}
+			}
 			if entry.Roles == nil {
 				continue
 			}
@@ -125,11 +130,6 @@ func validateAccessConfig(cfg AccessConfig) {
 				}
 				if role == "" {
 					panic(fmt.Errorf("access.yml: Action '%s' has an empty role name", fullName))
-				}
-			}
-			for _, tag := range entry.Requires {
-				if _, ok := knownTags[tag]; !ok {
-					panic(fmt.Errorf("access.yml: Action '%s' has unknown requires tag '%s'. Known tags: [%s]", fullName, tag, RequireUnrestricted))
 				}
 			}
 		}

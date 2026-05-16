@@ -93,8 +93,11 @@ func (r *Registry) lookup(group, action string) (resolvedEntry, bool) {
 		return resolvedEntry{}, false
 	}
 	cfgEntry, ok := actions[action]
-	if !ok || len(cfgEntry.Roles) == 0 {
+	if !ok {
 		return resolvedEntry{}, false
+	}
+	if len(cfgEntry.Roles) == 0 {
+		panic(fmt.Errorf("routes: access.yml entry %q.%q must declare at least one role", group, action))
 	}
 	roles := make([]domain.Role, 0, len(cfgEntry.Roles))
 	for _, name := range cfgEntry.Roles {
