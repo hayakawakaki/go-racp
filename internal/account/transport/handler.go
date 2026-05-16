@@ -81,11 +81,15 @@ type Handler struct {
 }
 
 func NewHandler(svc accountService, sessSvc sessionService, cfg HandlerConfig) *Handler {
+	logger := cfg.Logger
+	if logger == nil {
+		logger = slog.Default()
+	}
 	return &Handler{
 		svc:                  svc,
 		sessSvc:              sessSvc,
 		users:                cfg.Users,
-		logger:               cfg.Logger,
+		logger:               logger,
 		general:              cfg.General,
 		secure:               cfg.Secure,
 		allowTempBannedLogin: cfg.AllowTempBannedLogin,
