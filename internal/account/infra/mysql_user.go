@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/hayakawakaki/go-racp/internal/account/domain"
 )
@@ -38,7 +39,7 @@ func (r *Repository) Create(ctx context.Context, user *domain.User) (*domain.Use
 
 func (r *Repository) GetAll(ctx context.Context) ([]domain.User, error) {
 	rows, err := r.Client.QueryContext(ctx,
-		"SELECT account_id, userid, email, birthdate, state, group_id FROM login")
+		"SELECT account_id, userid, email, birthdate, state, group_id, unban_time FROM login")
 	if err != nil {
 		return nil, fmt.Errorf("infra.Repository.GetAll: %w", err)
 	}
@@ -47,9 +48,11 @@ func (r *Repository) GetAll(ctx context.Context) ([]domain.User, error) {
 	var userList []domain.User
 	for rows.Next() {
 		var u domain.User
-		if err := rows.Scan(&u.ID, &u.Username, &u.Email, &u.Birthdate, &u.State, &u.GroupID); err != nil {
+		var unbanSecs uint32
+		if err := rows.Scan(&u.ID, &u.Username, &u.Email, &u.Birthdate, &u.State, &u.GroupID, &unbanSecs); err != nil {
 			return nil, fmt.Errorf("infra.Repository.GetAll: %w", err)
 		}
+		u.UnbanTime = unbanTimeFromSeconds(unbanSecs)
 		userList = append(userList, u)
 	}
 	if err := rows.Err(); err != nil {
@@ -61,61 +64,69 @@ func (r *Repository) GetAll(ctx context.Context) ([]domain.User, error) {
 
 func (r *Repository) GetByID(ctx context.Context, id int) (*domain.User, error) {
 	var u domain.User
+	var unbanSecs uint32
 	err := r.Client.QueryRowContext(ctx,
-		"SELECT account_id, userid, email, birthdate, state, group_id FROM login WHERE account_id = ?", id,
-	).Scan(&u.ID, &u.Username, &u.Email, &u.Birthdate, &u.State, &u.GroupID)
+		"SELECT account_id, userid, email, birthdate, state, group_id, unban_time FROM login WHERE account_id = ?", id,
+	).Scan(&u.ID, &u.Username, &u.Email, &u.Birthdate, &u.State, &u.GroupID, &unbanSecs)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, domain.ErrUserNotFound
 	}
 	if err != nil {
 		return nil, fmt.Errorf("infra.Repository.GetByID: %w", err)
 	}
+	u.UnbanTime = unbanTimeFromSeconds(unbanSecs)
 
 	return &u, nil
 }
 
 func (r *Repository) GetByUsername(ctx context.Context, username string) (*domain.User, error) {
 	var u domain.User
+	var unbanSecs uint32
 	err := r.Client.QueryRowContext(ctx,
-		"SELECT account_id, userid, email, birthdate, state, group_id FROM login WHERE userid = ?", username,
-	).Scan(&u.ID, &u.Username, &u.Email, &u.Birthdate, &u.State, &u.GroupID)
+		"SELECT account_id, userid, email, birthdate, state, group_id, unban_time FROM login WHERE userid = ?", username,
+	).Scan(&u.ID, &u.Username, &u.Email, &u.Birthdate, &u.State, &u.GroupID, &unbanSecs)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, domain.ErrUserNotFound
 	}
 	if err != nil {
 		return nil, fmt.Errorf("infra.Repository.GetByUsername: %w", err)
 	}
+	u.UnbanTime = unbanTimeFromSeconds(unbanSecs)
 
 	return &u, nil
 }
 
 func (r *Repository) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
 	var u domain.User
+	var unbanSecs uint32
 	err := r.Client.QueryRowContext(ctx,
-		"SELECT account_id, userid, email, birthdate, state, group_id FROM login WHERE email = ?", email,
-	).Scan(&u.ID, &u.Username, &u.Email, &u.Birthdate, &u.State, &u.GroupID)
+		"SELECT account_id, userid, email, birthdate, state, group_id, unban_time FROM login WHERE email = ?", email,
+	).Scan(&u.ID, &u.Username, &u.Email, &u.Birthdate, &u.State, &u.GroupID, &unbanSecs)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, domain.ErrUserNotFound
 	}
 	if err != nil {
 		return nil, fmt.Errorf("infra.Repository.GetByEmail: %w", err)
 	}
+	u.UnbanTime = unbanTimeFromSeconds(unbanSecs)
 
 	return &u, nil
 }
 
 func (r *Repository) Authenticate(ctx context.Context, username, password string) (*domain.User, error) {
 	var u domain.User
+	var unbanSecs uint32
 	err := r.Client.QueryRowContext(ctx,
-		"SELECT account_id, userid, email, birthdate, state, group_id FROM login WHERE userid = ? AND user_pass = ?",
+		"SELECT account_id, userid, email, birthdate, state, group_id, unban_time FROM login WHERE userid = ? AND user_pass = ?",
 		username, password,
-	).Scan(&u.ID, &u.Username, &u.Email, &u.Birthdate, &u.State, &u.GroupID)
+	).Scan(&u.ID, &u.Username, &u.Email, &u.Birthdate, &u.State, &u.GroupID, &unbanSecs)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, domain.ErrInvalidCredentials
 	}
 	if err != nil {
 		return nil, fmt.Errorf("infra.Repository.Authenticate: %w", err)
 	}
+	u.UnbanTime = unbanTimeFromSeconds(unbanSecs)
 
 	return &u, nil
 }
@@ -196,4 +207,11 @@ func (r *Repository) Delete(ctx context.Context, id int) error {
 	}
 
 	return nil
+}
+
+func unbanTimeFromSeconds(secs uint32) time.Time {
+	if secs == 0 {
+		return time.Time{}
+	}
+	return time.Unix(int64(secs), 0)
 }

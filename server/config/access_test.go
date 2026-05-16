@@ -39,13 +39,13 @@ Events:
 
 	want := AccessConfig{
 		"News": ActionRoles{
-			"View":   nil,
-			"Create": RoleList{"Moderator"},
-			"Edit":   RoleList{"Moderator", "Enforcer"},
+			"View":   Entry{},
+			"Create": Entry{Roles: RoleList{"Moderator"}},
+			"Edit":   Entry{Roles: RoleList{"Moderator", "Enforcer"}},
 		},
 		"Events": ActionRoles{
-			"View":   RoleList{"*"},
-			"Manage": RoleList{"Event", "Moderator"},
+			"View":   Entry{Roles: RoleList{"*"}},
+			"Manage": Entry{Roles: RoleList{"Event", "Moderator"}},
 		},
 	}
 	if !reflect.DeepEqual(cfg, want) {
@@ -95,22 +95,22 @@ func TestValidateAccessConfig_RejectsInvalid(t *testing.T) {
 		{
 			name:        "admin top-level key",
 			wantContain: "Admin is hardcoded",
-			cfg:         AccessConfig{"Admin": ActionRoles{"Dashboard": nil}},
+			cfg:         AccessConfig{"Admin": ActionRoles{"Dashboard": Entry{}}},
 		},
 		{
 			name:        "empty action list",
-			wantContain: "Action 'News.Edit' has an empty list",
-			cfg:         AccessConfig{"News": ActionRoles{"Edit": RoleList{}}},
+			wantContain: "Action 'News.Edit' has an empty roles list",
+			cfg:         AccessConfig{"News": ActionRoles{"Edit": Entry{Roles: RoleList{}}}},
 		},
 		{
 			name:        "admin inside list",
 			wantContain: "Admin is implicit",
-			cfg:         AccessConfig{"News": ActionRoles{"Edit": RoleList{"Admin"}}},
+			cfg:         AccessConfig{"News": ActionRoles{"Edit": Entry{Roles: RoleList{"Admin"}}}},
 		},
 		{
 			name:        "empty role name",
 			wantContain: "empty role name",
-			cfg:         AccessConfig{"News": ActionRoles{"Edit": RoleList{""}}},
+			cfg:         AccessConfig{"News": ActionRoles{"Edit": Entry{Roles: RoleList{""}}}},
 		},
 	}
 	for _, tt := range tests {
@@ -129,9 +129,9 @@ func TestValidateAccessConfig_AcceptsHappyPath(t *testing.T) {
 	t.Parallel()
 	cfg := AccessConfig{
 		"News": ActionRoles{
-			"View":   nil,
-			"Create": RoleList{"Moderator"},
-			"Edit":   RoleList{"*"},
+			"View":   Entry{},
+			"Create": Entry{Roles: RoleList{"Moderator"}},
+			"Edit":   Entry{Roles: RoleList{"*"}},
 		},
 	}
 	validateAccessConfig(cfg)
@@ -145,7 +145,7 @@ func TestLoadAccessConfig_ReadsFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("loadAccessConfig: %v", err)
 	}
-	if got := cfg["News"]["Edit"]; !reflect.DeepEqual(got, RoleList{"Moderator"}) {
+	if got := cfg["News"]["Edit"]; !reflect.DeepEqual(got, Entry{Roles: RoleList{"Moderator"}}) {
 		t.Errorf("News.Edit = %#v, want [\"Moderator\"]", got)
 	}
 }
@@ -154,8 +154,8 @@ func TestAccessConfig_ManageRoles(t *testing.T) {
 	t.Parallel()
 
 	cfg := AccessConfig{
-		"Tickets": ActionRoles{"Manage": RoleList{"Moderator", "Enforcer"}},
-		"News":    ActionRoles{"Manage": RoleList{"Moderator"}},
+		"Tickets": ActionRoles{"Manage": Entry{Roles: RoleList{"Moderator", "Enforcer"}}},
+		"News":    ActionRoles{"Manage": Entry{Roles: RoleList{"Moderator"}}},
 		"Empty":   ActionRoles{},
 	}
 

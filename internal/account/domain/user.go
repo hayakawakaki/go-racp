@@ -4,6 +4,7 @@ import "time"
 
 type User struct {
 	Birthdate time.Time
+	UnbanTime time.Time
 	Username  string
 	Password  string
 	Email     string

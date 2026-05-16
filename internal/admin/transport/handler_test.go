@@ -27,6 +27,10 @@ func (s *stubSession) Validate(ctx context.Context, token string) (*domain.Sessi
 	return nil, domain.ErrSessionNotFound
 }
 
+func (s *stubSession) Destroy(_ context.Context, _ string) error {
+	return nil
+}
+
 func (s *stubSession) TTL() time.Duration { return time.Hour }
 
 type stubUsers struct {

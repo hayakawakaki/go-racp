@@ -62,31 +62,36 @@ func (r *Registry) Wrap(mux *http.ServeMux, tag, pattern string, handler http.Ha
 	r.registered[tag] = struct{}{}
 
 	if group == adminGroup {
-		mux.Handle(pattern, middleware.RequireRoleHidden(r.sessSvc, r.users, r.resolver, r.logger, r.secure, r.hiddenLayout)(handler))
+		mux.Handle(pattern, middleware.RequireRoleHidden(r.sessSvc, r.users, r.resolver, r.logger, r.secure, r.hiddenLayout, true)(handler))
 		return
 	}
 
-	roles, configured := r.lookup(group, action)
+	entry, configured := r.lookup(group, action)
 	if !configured {
 		r.ungated = append(r.ungated, ungatedRoute{tag: tag, pattern: pattern})
-		mux.Handle(pattern, handler)
+		mux.Handle(pattern, middleware.RequireRole(r.sessSvc, r.users, r.resolver, r.logger, r.secure, false, domain.RoleAuthenticated)(handler))
 		return
 	}
 
-	mux.Handle(pattern, middleware.RequireRole(r.sessSvc, r.users, r.resolver, r.logger, r.secure, roles...)(handler))
+	mux.Handle(pattern, middleware.RequireRole(r.sessSvc, r.users, r.resolver, r.logger, r.secure, entry.fullAccess, entry.roles...)(handler))
 }
 
-func (r *Registry) lookup(group, action string) ([]domain.Role, bool) {
+type resolvedEntry struct {
+	roles      []domain.Role
+	fullAccess bool
+}
+
+func (r *Registry) lookup(group, action string) (resolvedEntry, bool) {
 	actions, ok := r.cfg[group]
 	if !ok {
-		return nil, false
+		return resolvedEntry{}, false
 	}
-	list, ok := actions[action]
-	if !ok || len(list) == 0 {
-		return nil, false
+	cfgEntry, ok := actions[action]
+	if !ok || len(cfgEntry.Roles) == 0 {
+		return resolvedEntry{}, false
 	}
-	roles := make([]domain.Role, 0, len(list))
-	for _, name := range list {
+	roles := make([]domain.Role, 0, len(cfgEntry.Roles))
+	for _, name := range cfgEntry.Roles {
 		role, ok := r.resolver.GetRole(name)
 		if !ok {
 			panic(fmt.Errorf("routes: access.yml entry %q.%q references unknown role %q. Add it under UserRoles in config.yml", group, action, name))
@@ -94,7 +99,7 @@ func (r *Registry) lookup(group, action string) ([]domain.Role, bool) {
 		roles = append(roles, role)
 	}
 
-	return roles, true
+	return resolvedEntry{roles: roles, fullAccess: cfgEntry.RequiresFullAccess()}, true
 }
 
 func parseTag(tag string) (group, action string) {

@@ -17,6 +17,7 @@ const sessionKey ctxKey = 0
 
 type SessionValidator interface {
 	Validate(ctx context.Context, rawToken string) (*domain.Session, error)
+	Destroy(ctx context.Context, rawToken string) error
 }
 
 // SessionFromContext retrieves the *domain.Session value stored in ctx under the package's session key and reports whether it was present and of the expected type.

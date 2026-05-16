@@ -27,6 +27,10 @@ func (s *stubSession) Validate(ctx context.Context, token string) (*domain.Sessi
 	return nil, domain.ErrSessionNotFound
 }
 
+func (s *stubSession) Destroy(_ context.Context, _ string) error {
+	return nil
+}
+
 func (s *stubSession) TTL() time.Duration { return time.Hour }
 
 type stubUsers struct {
@@ -85,7 +89,7 @@ func TestRegistry_Wrap_AdminTagIsHardcoded(t *testing.T) {
 	}
 }
 
-func TestRegistry_Wrap_TaggedWithoutConfigIsPublic(t *testing.T) {
+func TestRegistry_Wrap_TaggedWithoutConfigRequiresAuth(t *testing.T) {
 	t.Parallel()
 	mux := http.NewServeMux()
 	reg, _ := newRegistry(t, config.AccessConfig{})
@@ -95,8 +99,8 @@ func TestRegistry_Wrap_TaggedWithoutConfigIsPublic(t *testing.T) {
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/forum", http.NoBody)
 	mux.ServeHTTP(rr, req)
-	if rr.Code != http.StatusOK {
-		t.Errorf("missing config = public; status = %d, want 200", rr.Code)
+	if rr.Code != http.StatusSeeOther {
+		t.Errorf("ungated tagged route requires auth; status = %d, want 303", rr.Code)
 	}
 }
 
@@ -104,7 +108,7 @@ func TestRegistry_Wrap_TaggedWithConfigGatesRequest(t *testing.T) {
 	t.Parallel()
 	mux := http.NewServeMux()
 	reg, _ := newRegistry(t, config.AccessConfig{
-		"News": config.ActionRoles{"View": config.RoleList{"Moderator"}},
+		"News": config.ActionRoles{"View": config.Entry{Roles: config.RoleList{"Moderator"}}},
 	})
 
 	reg.Wrap(mux, "News.View", "GET /news", okHandler())
@@ -121,7 +125,7 @@ func TestRegistry_Wrap_StarMeansAuthenticated(t *testing.T) {
 	t.Parallel()
 	mux := http.NewServeMux()
 	reg, _ := newRegistry(t, config.AccessConfig{
-		"Account": config.ActionRoles{"View": config.RoleList{"*"}},
+		"Account": config.ActionRoles{"View": config.Entry{Roles: config.RoleList{"*"}}},
 	})
 
 	reg.Wrap(mux, "Account.View", "GET /account", okHandler())
@@ -165,7 +169,7 @@ func TestRegistry_Finalize_PanicsOnDeadConfig(t *testing.T) {
 	t.Parallel()
 	mux := http.NewServeMux()
 	reg, _ := newRegistry(t, config.AccessConfig{
-		"News": config.ActionRoles{"Edit": config.RoleList{"Moderator"}},
+		"News": config.ActionRoles{"Edit": config.Entry{Roles: config.RoleList{"Moderator"}}},
 	})
 	reg.Wrap(mux, "News.View", "GET /news", okHandler())
 

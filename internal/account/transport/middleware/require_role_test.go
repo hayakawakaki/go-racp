@@ -33,9 +33,9 @@ func newTestRoleMiddleware(sess *stubSessionService, users *stubUserLookup, hidd
 	logger := slog.New(slog.NewTextHandler(buf, nil))
 	resolver := newTestRoleResolver()
 	if hidden {
-		return RequireRoleHidden(sess, users, resolver, logger, false, httpx.Layout{}, allowed...), buf
+		return RequireRoleHidden(sess, users, resolver, logger, false, httpx.Layout{}, false, allowed...), buf
 	}
-	return RequireRole(sess, users, resolver, logger, false, allowed...), buf
+	return RequireRole(sess, users, resolver, logger, false, false, allowed...), buf
 }
 
 func userWithGroup(groupID int) func(context.Context, int) (*domain.User, error) {
