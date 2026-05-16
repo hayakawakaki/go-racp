@@ -57,7 +57,7 @@ func encodeForm(v map[string]string) string {
 
 type stubAccountService struct {
 	createFn              func(context.Context, accountapp.CreateCommand) (*accountapp.GetDTO, error)
-	authNFn               func(context.Context, accountapp.LoginCommand) (*accountapp.GetDTO, error)
+	authNFn               func(context.Context, accountapp.LoginCommand) (*accountapp.GetDTO, accountapp.Tier, error)
 	getAccountFn          func(context.Context, int) (*accountapp.AccountDTO, error)
 	issueVerificationFn   func(context.Context, int, string, string) error
 	consumeVerificationFn func(context.Context, string) error
@@ -99,11 +99,11 @@ func (s *stubAccountService) Create(ctx context.Context, cmd accountapp.CreateCo
 	return &accountapp.GetDTO{ID: 1, Username: cmd.Username, Email: cmd.Email}, nil
 }
 
-func (s *stubAccountService) Authenticate(ctx context.Context, cmd accountapp.LoginCommand) (*accountapp.GetDTO, error) {
+func (s *stubAccountService) Authenticate(ctx context.Context, cmd accountapp.LoginCommand) (*accountapp.GetDTO, accountapp.Tier, error) {
 	if s.authNFn != nil {
 		return s.authNFn(ctx, cmd)
 	}
-	return &accountapp.GetDTO{ID: 1, Username: cmd.Username}, nil
+	return &accountapp.GetDTO{ID: 1, Username: cmd.Username}, accountapp.TierActive, nil
 }
 
 func (s *stubAccountService) GetAccount(ctx context.Context, userID int) (*accountapp.AccountDTO, error) {

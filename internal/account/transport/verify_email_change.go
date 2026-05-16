@@ -68,6 +68,10 @@ func (h *Handler) doVerifyEmailChange(w http.ResponseWriter, r *http.Request) {
 			state.Kind = EmailChangeResultInvalid
 		case errors.Is(err, authdomain.ErrEmailTaken):
 			state.Kind = EmailChangeResultTaken
+		case errors.Is(err, authdomain.ErrAccountPermaBanned),
+			errors.Is(err, authdomain.ErrAccountTempBanned),
+			errors.Is(err, authdomain.ErrAccountDeleted):
+			state.Kind = EmailChangeResultAccountRestricted
 		default:
 			h.logger.Error("verify email change", "err", err)
 			state.Kind = EmailChangeResultInvalid

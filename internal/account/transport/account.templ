@@ -6,14 +6,24 @@ import (
 )
 
 type AccountState struct {
-	Account *app.AccountDTO
-	Notice  string
+	Account    *app.AccountDTO
+	Notice     string
+	BanBlocked string
 }
 
 templ accountPage(layout httpx.Layout, state AccountState) {
 	@httpx.Base(layout, "Account") {
 		<div class="w-full max-w-2xl bg-white rounded-lg shadow-md p-8">
 			<h1 class="text-2xl font-semibold mb-6 text-gray-900">Account</h1>
+			if state.Account.Restricted {
+				<div class="bg-amber-50 border border-amber-200 text-amber-800 rounded px-3 py-2 mb-4">
+					<p class="font-medium">Your account is temporarily restricted.</p>
+					<p class="text-sm">Account changes are disabled until { state.Account.RestrictedUntil.In(layout.Location()).Format("2006-01-02 15:04 MST") }. You can still open and reply to support tickets.</p>
+				</div>
+			}
+			if state.BanBlocked != "" {
+				<p class="text-sm text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2 mb-4">{ state.BanBlocked }</p>
+			}
 			if state.Notice != "" {
 				<p class="text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded px-3 py-2 mb-4">{ state.Notice }</p>
 			}

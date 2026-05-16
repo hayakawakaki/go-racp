@@ -15,15 +15,16 @@ import (
 const adminGroup = "Admin"
 
 type Registry struct {
-	hiddenLayout httpx.Layout
-	sessSvc      middleware.SessionValidator
-	users        middleware.UserLookup
-	resolver     domain.RoleResolver
-	cfg          config.AccessConfig
-	logger       *slog.Logger
-	registered   map[string]struct{}
-	ungated      []ungatedRoute
-	secure       bool
+	hiddenLayout         httpx.Layout
+	sessSvc              middleware.SessionValidator
+	users                middleware.UserLookup
+	resolver             domain.RoleResolver
+	cfg                  config.AccessConfig
+	logger               *slog.Logger
+	registered           map[string]struct{}
+	ungated              []ungatedRoute
+	secure               bool
+	allowTempBannedLogin bool
 }
 
 type ungatedRoute struct {
@@ -38,17 +39,19 @@ func NewRegistry(
 	users middleware.UserLookup,
 	logger *slog.Logger,
 	secure bool,
+	allowTempBannedLogin bool,
 	hiddenLayout httpx.Layout,
 ) *Registry {
 	return &Registry{
-		cfg:          cfg,
-		resolver:     resolver,
-		sessSvc:      sessSvc,
-		users:        users,
-		logger:       logger,
-		secure:       secure,
-		hiddenLayout: hiddenLayout,
-		registered:   make(map[string]struct{}),
+		cfg:                  cfg,
+		resolver:             resolver,
+		sessSvc:              sessSvc,
+		users:                users,
+		logger:               logger,
+		secure:               secure,
+		allowTempBannedLogin: allowTempBannedLogin,
+		hiddenLayout:         hiddenLayout,
+		registered:           make(map[string]struct{}),
 	}
 }
 
@@ -62,31 +65,42 @@ func (r *Registry) Wrap(mux *http.ServeMux, tag, pattern string, handler http.Ha
 	r.registered[tag] = struct{}{}
 
 	if group == adminGroup {
-		mux.Handle(pattern, middleware.RequireRoleHidden(r.sessSvc, r.users, r.resolver, r.logger, r.secure, r.hiddenLayout)(handler))
+		policy := middleware.AuthPolicy{AllowTempBannedLogin: r.allowTempBannedLogin, Unrestricted: true}
+		mux.Handle(pattern, middleware.RequireRoleHidden(r.sessSvc, r.users, r.resolver, r.logger, r.secure, r.hiddenLayout, policy)(handler))
 		return
 	}
 
-	roles, configured := r.lookup(group, action)
+	entry, configured := r.lookup(group, action)
 	if !configured {
 		r.ungated = append(r.ungated, ungatedRoute{tag: tag, pattern: pattern})
-		mux.Handle(pattern, handler)
+		policy := middleware.AuthPolicy{AllowTempBannedLogin: r.allowTempBannedLogin}
+		mux.Handle(pattern, middleware.RequireRole(r.sessSvc, r.users, r.resolver, r.logger, r.secure, policy, domain.RoleAuthenticated)(handler))
 		return
 	}
 
-	mux.Handle(pattern, middleware.RequireRole(r.sessSvc, r.users, r.resolver, r.logger, r.secure, roles...)(handler))
+	policy := middleware.AuthPolicy{AllowTempBannedLogin: r.allowTempBannedLogin, Unrestricted: entry.unrestricted}
+	mux.Handle(pattern, middleware.RequireRole(r.sessSvc, r.users, r.resolver, r.logger, r.secure, policy, entry.roles...)(handler))
 }
 
-func (r *Registry) lookup(group, action string) ([]domain.Role, bool) {
+type resolvedEntry struct {
+	roles        []domain.Role
+	unrestricted bool
+}
+
+func (r *Registry) lookup(group, action string) (resolvedEntry, bool) {
 	actions, ok := r.cfg[group]
 	if !ok {
-		return nil, false
+		return resolvedEntry{}, false
 	}
-	list, ok := actions[action]
-	if !ok || len(list) == 0 {
-		return nil, false
+	cfgEntry, ok := actions[action]
+	if !ok {
+		return resolvedEntry{}, false
 	}
-	roles := make([]domain.Role, 0, len(list))
-	for _, name := range list {
+	if len(cfgEntry.Roles) == 0 {
+		panic(fmt.Errorf("routes: access.yml entry %q.%q must declare at least one role", group, action))
+	}
+	roles := make([]domain.Role, 0, len(cfgEntry.Roles))
+	for _, name := range cfgEntry.Roles {
 		role, ok := r.resolver.GetRole(name)
 		if !ok {
 			panic(fmt.Errorf("routes: access.yml entry %q.%q references unknown role %q. Add it under UserRoles in config.yml", group, action, name))
@@ -94,7 +108,7 @@ func (r *Registry) lookup(group, action string) ([]domain.Role, bool) {
 		roles = append(roles, role)
 	}
 
-	return roles, true
+	return resolvedEntry{roles: roles, unrestricted: cfgEntry.RequiresUnrestricted()}, true
 }
 
 func parseTag(tag string) (group, action string) {

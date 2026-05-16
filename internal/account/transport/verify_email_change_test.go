@@ -71,6 +71,42 @@ func TestDoVerifyEmailChange_TokenErrors_RenderMatchingResult(t *testing.T) {
 	}
 }
 
+func TestDoVerifyEmailChange_AccountRestricted_RendersRestrictedResult(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		consumeErr error
+		name       string
+	}{
+		{name: "perma banned", consumeErr: authdomain.ErrAccountPermaBanned},
+		{name: "temp banned", consumeErr: authdomain.ErrAccountTempBanned},
+		{name: "deleted", consumeErr: authdomain.ErrAccountDeleted},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			svc := &stubAccountService{
+				consumeEmailChangeFn: func(context.Context, string) (*authdomain.User, error) {
+					return nil, tt.consumeErr
+				},
+			}
+			h := newTestHandler(svc, &stubSessionService{}, nil)
+
+			rr := httptest.NewRecorder()
+			req := postForm("/verify-email-change", map[string]string{"token": "abc"})
+			h.doVerifyEmailChange(rr, req)
+
+			body := rr.Body.String()
+			if !strings.Contains(body, "Account restricted") {
+				t.Errorf("body missing restricted heading: %s", body)
+			}
+			if !strings.Contains(body, "cannot have its email changed") {
+				t.Errorf("body missing restricted explanation: %s", body)
+			}
+		})
+	}
+}
+
 func TestDoVerifyEmailChange_GenericError_RendersInvalid(t *testing.T) {
 	t.Parallel()
 	svc := &stubAccountService{

@@ -3,23 +3,33 @@
 # Leaving a route blank will allow any user to access it
 #
 # Valid Roles: ["*", "Event", "Moderator", "Enforcer"]
+# Valid Requires:
+#  Unrestricted: Not permanently banned, Not temporarily banned, Email Verified and Exists in Database
 # Declare Custom Roles in config.yml under UserRoles:
-#
-## Example:
-# GroupName:
-#   Action: ["*"]
-#   Delete: ["Moderator"]
+
 
 Account:
-  View:           ["*"]
-  ChangePassword: ["*"]
-  ChangeEmail:    ["*"]
+  View:
+    Roles: ["*"]
+  ChangePassword:
+    Roles: ["*"]
+    Requires: ["Unrestricted"]
+  ChangeEmail:
+    Roles: ["*"]
+    Requires: ["Unrestricted"]
 
 Tickets:
-  View:   ["*"]
-  Open:   ["*"]
-  Reply:  ["*"]
-  Manage: ["Moderator", "Enforcer"]
+  View:
+    Roles: ["*"]
+  Open:
+    Roles: ["*"]
+  Reply:
+    Roles: ["*"]
+  Manage:
+    Roles: ["Moderator", "Enforcer"]
+    Requires: ["Unrestricted"]
 
 News:
-  Manage: ["Moderator"]
+  Manage:
+    Roles: ["Moderator"]
+    Requires: ["Unrestricted"]

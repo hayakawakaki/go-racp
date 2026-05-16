@@ -3,6 +3,10 @@ GeneralConfig:
   ServerName: "GoCP"
   Timezone: "UTC"
 
+# Authentication behavior
+Auth:
+  AllowTempBannedLogin: true
+
 # Session/Token Lifetime
 TTL:
   Session: "24h"
@@ -29,7 +33,6 @@ UserRoles:
   Enforcer: 10
   Event: 2
   #Vip: 5
-
 
 # Ticketing related config
 TicketLimits:

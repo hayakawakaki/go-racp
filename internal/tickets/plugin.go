@@ -69,12 +69,12 @@ func validateAccessCrossConfig(categories config.TicketCategoriesConfig, access 
 	if !ok {
 		return
 	}
-	list, ok := staffAccess["Manage"]
+	entry, ok := staffAccess["Manage"]
 	if !ok {
 		return
 	}
-	allowed := make(map[string]struct{}, len(list))
-	for _, role := range list {
+	allowed := make(map[string]struct{}, len(entry.Roles))
+	for _, role := range entry.Roles {
 		allowed[role] = struct{}{}
 	}
 

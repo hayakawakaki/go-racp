@@ -18,6 +18,7 @@ const (
 	EmailChangeResultInvalid
 	EmailChangeResultAlready
 	EmailChangeResultTaken
+	EmailChangeResultAccountRestricted
 )
 
 type EmailChangeResultState struct {
@@ -71,7 +72,7 @@ func emailChangeResultPage(layout httpx.Layout, state EmailChangeResultState) te
 				var templ_7745c5c3_Var3 string
 				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(state.NewEmail)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/account/transport/email_change_result.templ`, Line: 26, Col: 85}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/account/transport/email_change_result.templ`, Line: 27, Col: 85}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 				if templ_7745c5c3_Err != nil {
@@ -101,13 +102,18 @@ func emailChangeResultPage(layout httpx.Layout, state EmailChangeResultState) te
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
+			case EmailChangeResultAccountRestricted:
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<h1 class=\"text-2xl font-semibold mb-4 text-gray-900\">Account restricted</h1><p class=\"text-gray-700 mb-4\">This account is currently restricted and cannot have its email changed.</p><a href=\"/login\" class=\"inline-block rounded bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 transition\">Log in</a>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
 			default:
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<h1 class=\"text-2xl font-semibold mb-4 text-gray-900\">Unexpected result</h1><p class=\"text-gray-700 mb-4\">Something went wrong. Please try again from your account page or contact support.</p><a href=\"/login\" class=\"inline-block rounded bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 transition\">Log in</a>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<h1 class=\"text-2xl font-semibold mb-4 text-gray-900\">Unexpected result</h1><p class=\"text-gray-700 mb-4\">Something went wrong. Please try again from your account page or contact support.</p><a href=\"/login\" class=\"inline-block rounded bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 transition\">Log in</a>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

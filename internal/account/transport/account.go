@@ -38,8 +38,13 @@ func (h *Handler) showAccount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	state := AccountState{Account: account}
-	if notice, ok := accountNoticeText[r.URL.Query().Get("notice")]; ok {
+	noticeParam := r.URL.Query().Get("notice")
+	if notice, ok := accountNoticeText[noticeParam]; ok {
 		state.Notice = notice
+	}
+
+	if noticeParam == middleware.NoticeBanBlocked && account.Restricted {
+		state.BanBlocked = "Account changes are disabled while restricted."
 	}
 
 	httpx.RenderHTML(w, r, h.logger, accountPage(h.layout(), state))

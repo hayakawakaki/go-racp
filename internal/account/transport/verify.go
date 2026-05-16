@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 
+	accountapp "github.com/hayakawakaki/go-racp/internal/account/app"
 	"github.com/hayakawakaki/go-racp/internal/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/actiontoken"
@@ -45,7 +46,7 @@ func (h *Handler) showVerifyAccount(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	if user.State != 1 {
+	if user.State != accountapp.StateUnverified {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}

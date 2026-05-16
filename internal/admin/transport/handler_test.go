@@ -27,6 +27,10 @@ func (s *stubSession) Validate(ctx context.Context, token string) (*domain.Sessi
 	return nil, domain.ErrSessionNotFound
 }
 
+func (s *stubSession) Destroy(_ context.Context, _ string) error {
+	return nil
+}
+
 func (s *stubSession) TTL() time.Duration { return time.Hour }
 
 type stubUsers struct {
@@ -111,6 +115,7 @@ func TestHandler_RegisterRoutes_WrapsAdminRouteInRegistry(t *testing.T) {
 		newStubUserLookup(),
 		slog.New(slog.NewTextHandler(io.Discard, nil)),
 		false,
+		true,
 		httpx.Layout{},
 	)
 	mux := http.NewServeMux()
@@ -135,6 +140,7 @@ func TestHandler_RegisterRoutes_RejectsNonGet(t *testing.T) {
 		newStubUserLookup(),
 		slog.New(slog.NewTextHandler(io.Discard, nil)),
 		false,
+		true,
 		httpx.Layout{},
 	)
 	mux := http.NewServeMux()

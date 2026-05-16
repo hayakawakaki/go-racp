@@ -1,5 +1,7 @@
 package app
 
+import "time"
+
 type GetDTO struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
@@ -7,7 +9,9 @@ type GetDTO struct {
 }
 
 type AccountDTO struct {
-	Username string
-	Email    string
-	Verified bool
+	RestrictedUntil time.Time
+	Username        string
+	Email           string
+	Verified        bool
+	Restricted      bool
 }

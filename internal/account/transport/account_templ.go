@@ -14,8 +14,9 @@ import (
 )
 
 type AccountState struct {
-	Account *app.AccountDTO
-	Notice  string
+	Account    *app.AccountDTO
+	Notice     string
+	BanBlocked string
 }
 
 func accountPage(layout httpx.Layout, state AccountState) templ.Component {
@@ -55,67 +56,105 @@ func accountPage(layout httpx.Layout, state AccountState) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if state.Notice != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<p class=\"text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded px-3 py-2 mb-4\">")
+			if state.Account.Restricted {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"bg-amber-50 border border-amber-200 text-amber-800 rounded px-3 py-2 mb-4\"><p class=\"font-medium\">Your account is temporarily restricted.</p><p class=\"text-sm\">Account changes are disabled until ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var3 string
-				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(state.Notice)
+				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(state.Account.RestrictedUntil.In(layout.Location()).Format("2006-01-02 15:04 MST"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/account/transport/account.templ`, Line: 18, Col: 108}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/account/transport/account.templ`, Line: 21, Col: 143}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</p>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, ". You can still open and reply to support tickets.</p></div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<dl class=\"space-y-3 mb-6\"><div class=\"flex\"><dt class=\"w-32 text-gray-500\">Username</dt><dd class=\"text-gray-900\">")
+			if state.BanBlocked != "" {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<p class=\"text-sm text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2 mb-4\">")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var4 string
+				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(state.BanBlocked)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/account/transport/account.templ`, Line: 25, Col: 109}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</p>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			if state.Notice != "" {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<p class=\"text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded px-3 py-2 mb-4\">")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var5 string
+				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(state.Notice)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/account/transport/account.templ`, Line: 28, Col: 108}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</p>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<dl class=\"space-y-3 mb-6\"><div class=\"flex\"><dt class=\"w-32 text-gray-500\">Username</dt><dd class=\"text-gray-900\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var4 string
-			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(state.Account.Username)
+			var templ_7745c5c3_Var6 string
+			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(state.Account.Username)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/account/transport/account.templ`, Line: 23, Col: 55}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/account/transport/account.templ`, Line: 33, Col: 55}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</dd></div><div class=\"flex\"><dt class=\"w-32 text-gray-500\">Email</dt><dd class=\"text-gray-900\">")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var5 string
-			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(state.Account.Email)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/account/transport/account.templ`, Line: 27, Col: 52}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</dd></div><div class=\"flex\"><dt class=\"w-32 text-gray-500\">Email</dt><dd class=\"text-gray-900\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</dd></div><div class=\"flex\"><dt class=\"w-32 text-gray-500\">Verified</dt><dd class=\"text-gray-900\">")
+			var templ_7745c5c3_Var7 string
+			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(state.Account.Email)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/account/transport/account.templ`, Line: 37, Col: 52}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</dd></div><div class=\"flex\"><dt class=\"w-32 text-gray-500\">Verified</dt><dd class=\"text-gray-900\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if state.Account.Verified {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<span class=\"text-green-700\">Yes</span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<span class=\"text-green-700\">Yes</span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			} else {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<span class=\"text-amber-700\">No</span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<span class=\"text-amber-700\">No</span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</dd></div></dl><div class=\"flex gap-3\"><button hx-get=\"/account/password\" hx-target=\"#modal\" hx-swap=\"innerHTML\" class=\"rounded bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2\">Change password</button> <button hx-get=\"/account/email\" hx-target=\"#modal\" hx-swap=\"innerHTML\" class=\"rounded border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium px-4 py-2\">Change email</button></div><div id=\"modal\"></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</dd></div></dl><div class=\"flex gap-3\"><button hx-get=\"/account/password\" hx-target=\"#modal\" hx-swap=\"innerHTML\" class=\"rounded bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2\">Change password</button> <button hx-get=\"/account/email\" hx-target=\"#modal\" hx-swap=\"innerHTML\" class=\"rounded border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium px-4 py-2\">Change email</button></div><div id=\"modal\"></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

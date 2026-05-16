@@ -201,6 +201,43 @@ func TestDoResetPassword_TokenErrors_RendersMatchingResult(t *testing.T) {
 	}
 }
 
+func TestDoResetPassword_AccountRestricted_RendersRestrictedResult(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		consumeErr error
+		name       string
+	}{
+		{name: "perma banned", consumeErr: domain.ErrAccountPermaBanned},
+		{name: "temp banned", consumeErr: domain.ErrAccountTempBanned},
+		{name: "deleted", consumeErr: domain.ErrAccountDeleted},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			h := newResetHandler(&stubAccountService{
+				consumeResetFn: func(context.Context, string, string) error { return tt.consumeErr },
+			})
+
+			rr := httptest.NewRecorder()
+			req := postForm("/reset-password", map[string]string{
+				"token":            "abc",
+				"password":         "NewPass1!",
+				"password_confirm": "NewPass1!",
+			})
+			h.doResetPassword(rr, req)
+
+			body := rr.Body.String()
+			if !strings.Contains(body, "Account restricted") {
+				t.Errorf("body missing restricted heading: %s", body)
+			}
+			if !strings.Contains(body, "cannot have its password reset") {
+				t.Errorf("body missing restricted explanation: %s", body)
+			}
+		})
+	}
+}
+
 func TestDoResetPassword_Success_RendersSuccess(t *testing.T) {
 	t.Parallel()
 	h := newResetHandler(&stubAccountService{

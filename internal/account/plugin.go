@@ -6,7 +6,6 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/account/app"
 	"github.com/hayakawakaki/go-racp/internal/account/infra"
 	"github.com/hayakawakaki/go-racp/internal/account/transport"
-	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
 	platinfra "github.com/hayakawakaki/go-racp/internal/infra"
 	"github.com/hayakawakaki/go-racp/internal/plugin"
 	"github.com/hayakawakaki/go-racp/internal/routes"
@@ -14,9 +13,8 @@ import (
 
 func init() {
 	plugin.Register(plugin.Plugin{
-		Name:       "account",
-		Mount:      mount,
-		Middleware: requireVerified,
+		Name:  "account",
+		Mount: mount,
 	})
 }
 
@@ -25,25 +23,13 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *platinfra.Infra) {
 	secure := in.Config.Env.Mode != "development"
 
 	h := transport.NewHandler(svc, sessSvc, transport.HandlerConfig{
-		Logger:  in.Logger,
-		Users:   userRepo,
-		Secure:  secure,
-		General: in.Config.App.General,
+		Logger:               in.Logger,
+		Users:                userRepo,
+		Secure:               secure,
+		General:              in.Config.App.General,
+		AllowTempBannedLogin: in.Config.App.Auth.AllowTempBannedLogin,
 	})
 	h.RegisterRoutes(reg, mux)
-}
-
-func requireVerified(in *platinfra.Infra, h http.Handler) http.Handler {
-	_, sessSvc, userRepo := buildServices(in)
-	allow := []string{
-		"/login", "/logout", "/register",
-		"/verify-account", "/verify", "/verify/resend",
-		"/forgot-password", "/reset-password",
-		"/verify-email-change",
-		"/healthz", "/static",
-	}
-
-	return middleware.RequireVerified(sessSvc, userRepo, in.Logger, allow)(h)
 }
 
 func buildServices(in *platinfra.Infra) (*app.Service, *app.SessionService, *infra.Repository) {
