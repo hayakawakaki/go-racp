@@ -244,22 +244,43 @@ func TestHandler_JSONList_FiltersByCategory(t *testing.T) {
 	}
 }
 
-func TestHandler_JSONList_UnknownCategoryReturnsAll(t *testing.T) {
+func TestHandler_JSONList_UnknownCategoryReturns400(t *testing.T) {
 	t.Parallel()
 	svc := newFakeService()
 	svc.items[1] = newsapp.NewsItem{ID: 1, Title: "A", Category: "Announcement"}
-	svc.items[2] = newsapp.NewsItem{ID: 2, Title: "B", Category: "Patch"}
 	h := newJSONHandler(svc)
 
 	rr := httptest.NewRecorder()
 	h.jsonList(rr, httptest.NewRequest(http.MethodGet, "/api/v1/news?category=Bogus", http.NoBody))
 
-	var got []newsJSON
-	if err := json.Unmarshal(rr.Body.Bytes(), &got); err != nil {
+	if rr.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want 400", rr.Code)
+	}
+
+	var body struct {
+		Error string   `json:"error"`
+		Valid []string `json:"valid"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &body); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if len(got) != 2 {
-		t.Errorf("len(got) = %d, want 2 (unknown category should silently return all)", len(got))
+	if body.Error != "unknown category" {
+		t.Errorf("error = %q, want %q", body.Error, "unknown category")
+	}
+	if len(body.Valid) == 0 {
+		t.Errorf("valid list is empty; want known category keys")
+	}
+}
+
+func TestHandler_JSONList_AllSentinelReturns400(t *testing.T) {
+	t.Parallel()
+	h := newJSONHandler(newFakeService())
+
+	rr := httptest.NewRecorder()
+	h.jsonList(rr, httptest.NewRequest(http.MethodGet, "/api/v1/news?category=All", http.NoBody))
+
+	if rr.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want 400 (All is HTML sugar, not a JSON category)", rr.Code)
 	}
 }
 

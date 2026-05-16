@@ -20,7 +20,16 @@ type newsJSON struct {
 }
 
 func (h *Handler) jsonList(w http.ResponseWriter, r *http.Request) {
-	items, err := h.fetchList(r, r.URL.Query().Get(fieldCategory))
+	category := r.URL.Query().Get(fieldCategory)
+	if category != "" && !h.svc.Categories().Has(category) {
+		_ = httpx.WriteJSON(w, http.StatusBadRequest, map[string]any{
+			jsonErrorKey: "unknown category",
+			"valid":      validCategoryKeys(h.svc.Categories()),
+		})
+		return
+	}
+
+	items, err := h.fetchList(r, category)
 	if err != nil {
 		h.logger.Error("news: api list", "err", err)
 		_ = httpx.WriteJSON(w, http.StatusInternalServerError, map[string]string{jsonErrorKey: "internal error"})
@@ -38,6 +47,16 @@ func (h *Handler) jsonList(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 	_ = httpx.WriteJSON(w, http.StatusOK, out)
+}
+
+func validCategoryKeys(resolver domain.CategoryResolver) []string {
+	cats := resolver.All()
+	out := make([]string, len(cats))
+	for i, c := range cats {
+		out[i] = c.Key
+	}
+
+	return out
 }
 
 func (h *Handler) jsonGet(w http.ResponseWriter, r *http.Request) {
