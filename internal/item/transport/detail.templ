@@ -1,0 +1,74 @@
+package transport
+
+import (
+	"fmt"
+
+	"github.com/hayakawakaki/go-racp/internal/httpx"
+	"github.com/hayakawakaki/go-racp/internal/item/domain"
+)
+
+type DetailState struct {
+	Item        *domain.Item
+	Description string
+	Stats       []labeledRow
+}
+
+type labeledRow struct {
+	Label string
+	Value string
+}
+
+templ detailPage(layout httpx.Layout, state DetailState) {
+	@httpx.Base(layout, state.Item.ClientName) {
+		<div class="w-full max-w-4xl space-y-6">
+			<nav class="text-xs uppercase tracking-[0.18em] text-gray-400">
+				<a href="/items" class="transition hover:text-gray-700">Items</a>
+				<span class="mx-2 text-gray-300">/</span>
+				<span class="text-gray-500">{ state.Item.ClientName }</span>
+			</nav>
+			<section class="rounded-2xl bg-white ring-1 ring-gray-200 px-8 py-7">
+				<div class="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+					<div>
+						<p class="text-xs uppercase tracking-[0.18em] text-gray-400">
+							{ state.Item.Type.Display() }
+							if state.Item.SubType != "" {
+								<span class="mx-2 text-gray-300">·</span>
+								<span>{ state.Item.SubType }</span>
+							}
+						</p>
+						<h1 class="mt-2 text-3xl font-semibold tracking-tight text-gray-900">{ state.Item.ClientName }</h1>
+						<p class="mt-1 text-sm text-gray-500">
+							<span class="font-mono">{ fmt.Sprintf("#%d", state.Item.ID) }</span>
+						</p>
+					</div>
+					<div class="text-right">
+						<p class="text-xs uppercase tracking-[0.18em] text-gray-400">Sprite</p>
+						<p class="mt-2 font-mono text-sm text-gray-700">{ state.Item.Image }</p>
+					</div>
+				</div>
+			</section>
+			<section class="rounded-2xl bg-white ring-1 ring-gray-200 px-8 py-7">
+				<header class="flex items-baseline justify-between border-b border-gray-100 pb-4">
+					<h2 class="text-lg font-semibold tracking-tight text-gray-900">Properties</h2>
+					<span class="text-xs uppercase tracking-[0.18em] text-gray-400">{ fmt.Sprintf("%d fields", len(state.Stats)) }</span>
+				</header>
+				<dl class="mt-2 divide-y divide-gray-100">
+					for _, row := range state.Stats {
+						<div class="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4 py-3 text-sm">
+							<dt class="text-gray-500">{ row.Label }</dt>
+							<dd class="text-right font-mono tabular-nums text-gray-900">{ row.Value }</dd>
+						</div>
+					}
+				</dl>
+			</section>
+			<section class="rounded-2xl bg-white ring-1 ring-gray-200 px-8 py-7">
+				<header class="border-b border-gray-100 pb-4">
+					<h2 class="text-lg font-semibold tracking-tight text-gray-900">Description</h2>
+				</header>
+				<div class="mt-4 text-sm leading-relaxed text-gray-700">
+					@templ.Raw(state.Description)
+				</div>
+			</section>
+		</div>
+	}
+}

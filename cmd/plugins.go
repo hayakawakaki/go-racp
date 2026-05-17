@@ -7,6 +7,7 @@ import (
 	_ "github.com/hayakawakaki/go-racp/internal/admin"
 	_ "github.com/hayakawakaki/go-racp/internal/character"
 	_ "github.com/hayakawakaki/go-racp/internal/home"
+	_ "github.com/hayakawakaki/go-racp/internal/item"
 	_ "github.com/hayakawakaki/go-racp/internal/news"
 	_ "github.com/hayakawakaki/go-racp/internal/tickets"
 )

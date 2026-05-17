@@ -19,3 +19,6 @@ build-errors.log
 
 # Generated css by tailwind
 static/css/app.css
+
+# Operator-supplied data (item_db, iteminfo, etc.)
+/data/

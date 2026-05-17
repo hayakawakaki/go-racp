@@ -11,6 +11,7 @@ require (
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/wneessen/go-mail v0.7.2
 	github.com/yuin/goldmark v1.8.2
+	github.com/yuin/gopher-lua v1.1.2
 )
 
 require (
