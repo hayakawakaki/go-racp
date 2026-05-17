@@ -67,7 +67,7 @@ func (s *Service) Get(_ context.Context, id int) (*domain.Item, error) {
 func (s *Service) List(_ context.Context, query ListQuery) (ItemPage, error) {
 	snap := s.Snapshot()
 	if query.PerPage <= 0 {
-		query.PerPage = 20
+		query.PerPage = DefaultPerPage
 	}
 	if query.Page <= 0 {
 		query.Page = 1
@@ -124,10 +124,10 @@ func matchesQuery(item *domain.Item, needle string, asID int) bool {
 	if asID > 0 && item.ID == asID {
 		return true
 	}
-	if strings.Contains(strings.ToLower(item.AegisName), needle) {
+	if strings.Contains(item.AegisNameLower, needle) {
 		return true
 	}
-	if strings.Contains(strings.ToLower(item.ClientName), needle) {
+	if strings.Contains(item.ClientNameLower, needle) {
 		return true
 	}
 

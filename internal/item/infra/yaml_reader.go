@@ -19,7 +19,6 @@ type YAMLInput struct {
 	Type          string          `yaml:"Type"`
 	SubType       string          `yaml:"SubType"`
 	Gender        string          `yaml:"Gender"`
-	Location      string          `yaml:"Location"`
 	Buy           int             `yaml:"Buy"`
 	Sell          int             `yaml:"Sell"`
 	Weight        int             `yaml:"Weight"`

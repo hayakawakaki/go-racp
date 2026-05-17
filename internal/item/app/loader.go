@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/hayakawakaki/go-racp/internal/item/domain"
@@ -46,8 +47,7 @@ func ParseSources(sources Sources) (*domain.Snapshot, error) {
 	startBuild := time.Now()
 	byID := map[int]*infra.YAMLInput{}
 	for index := range yamlInputs {
-		input := yamlInputs[index]
-		byID[input.ID] = &input
+		byID[yamlInputs[index].ID] = &yamlInputs[index]
 	}
 
 	items := make([]*domain.Item, 0, len(byID))
@@ -187,10 +187,9 @@ func buildItem(input *infra.YAMLInput, luaInfos map[int]infra.LuaInfo) *domain.I
 		Locations:     toLocationSet(input.Locations),
 		Trade:         toItemTrade(input.Trade),
 	}
-	if location, ok := domain.LocationFromString(input.Location); ok {
-		item.Location = location
-	}
 	applyLua(item, luaInfos)
+	item.AegisNameLower = strings.ToLower(item.AegisName)
+	item.ClientNameLower = strings.ToLower(item.ClientName)
 
 	return item
 }

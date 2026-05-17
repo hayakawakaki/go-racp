@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 	"github.com/hayakawakaki/go-racp/internal/item/domain"
@@ -72,11 +73,27 @@ func buildStats(item *domain.Item) []labeledRow {
 			labeledRow{Label: "Refineable", Value: yesNo(item.Refineable)},
 		)
 	}
+	if label := locationLabel(item.Type); label != "" {
+		if locations := item.Locations.Display(); len(locations) > 0 {
+			rows = append(rows, labeledRow{Label: label, Value: strings.Join(locations, ", ")})
+		}
+	}
 	if item.SubType != "" {
 		rows = append(rows, labeledRow{Label: "Subtype", Value: item.SubType})
 	}
 
 	return rows
+}
+
+func locationLabel(itemType domain.ItemType) string {
+	switch itemType {
+	case domain.ItemTypeWeapon, domain.ItemTypeArmor:
+		return "Equip Location"
+	case domain.ItemTypeCard:
+		return "Slot Location"
+	}
+
+	return ""
 }
 
 func yesNo(value bool) string {

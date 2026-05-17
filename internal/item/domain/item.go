@@ -169,6 +169,46 @@ type LocationSet uint32
 func (s LocationSet) Has(location Location) bool { return s&(1<<location) != 0 }
 func (s *LocationSet) Set(location Location)     { *s |= 1 << location }
 
+var locationDisplay = map[Location]string{
+	LocationHeadTop:              "Head Top",
+	LocationHeadMid:              "Head Mid",
+	LocationHeadLow:              "Head Low",
+	LocationArmor:                "Armor",
+	LocationRightHand:            "Weapon",
+	LocationLeftHand:             "Shield",
+	LocationGarment:              "Garment",
+	LocationShoes:                "Shoes",
+	LocationRightAccessory:       "Right Accessory",
+	LocationLeftAccessory:        "Left Accessory",
+	LocationCostumeHeadTop:       "Costume Head Top",
+	LocationCostumeHeadMid:       "Costume Head Mid",
+	LocationCostumeHeadLow:       "Costume Head Low",
+	LocationCostumeGarment:       "Costume Garment",
+	LocationAmmo:                 "Ammo",
+	LocationShadowArmor:          "Shadow Armor",
+	LocationShadowWeapon:         "Shadow Weapon",
+	LocationShadowShield:         "Shadow Shield",
+	LocationShadowShoes:          "Shadow Shoes",
+	LocationShadowRightAccessory: "Shadow Right Accessory",
+	LocationShadowLeftAccessory:  "Shadow Left Accessory",
+	LocationBothHand:             "Both Hands",
+	LocationBothAccessory:        "Both Accessories",
+}
+
+func (s LocationSet) Display() []string {
+	var out []string
+	for location := LocationHeadTop; location <= LocationBothAccessory; location++ {
+		if !s.Has(location) {
+			continue
+		}
+		if name, ok := locationDisplay[location]; ok {
+			out = append(out, name)
+		}
+	}
+
+	return out
+}
+
 type JobMask uint64
 
 type ClassMask uint16
@@ -187,35 +227,36 @@ type ItemTrade struct {
 }
 
 type Item struct {
-	Trade         *ItemTrade
-	AegisName     string
-	Name          string
-	ClientName    string
-	Image         string
-	SubType       string
-	Description   []string
-	Weight        float64
-	Buy           int
-	Sell          int
-	ID            int
-	View          int
-	EquipLevelMin int
-	EquipLevelMax int
-	Slots         int
-	Attack        int
-	MagicAttack   int
-	Defense       int
-	WeaponLevel   int
-	Range         int
-	ArmorLevel    int
-	Jobs          JobMask
-	Classes       ClassMask
-	Locations     LocationSet
-	Type          ItemType
-	Gender        Gender
-	Location      Location
-	Refineable    bool
-	Gradable      bool
+	Trade           *ItemTrade
+	AegisName       string
+	Name            string
+	ClientName      string
+	Image           string
+	SubType         string
+	AegisNameLower  string
+	ClientNameLower string
+	Description     []string
+	Weight          float64
+	Buy             int
+	Sell            int
+	ID              int
+	View            int
+	EquipLevelMin   int
+	EquipLevelMax   int
+	Slots           int
+	Attack          int
+	MagicAttack     int
+	Defense         int
+	WeaponLevel     int
+	Range           int
+	ArmorLevel      int
+	Jobs            JobMask
+	Classes         ClassMask
+	Locations       LocationSet
+	Type            ItemType
+	Gender          Gender
+	Refineable      bool
+	Gradable        bool
 }
 
 func (i *Item) SlotSuffix() string {

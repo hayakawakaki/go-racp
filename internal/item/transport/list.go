@@ -10,12 +10,10 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/item/domain"
 )
 
-const defaultPerPage = 20
-
 func (h *Handler) showList(w http.ResponseWriter, r *http.Request) {
 	query := itemapp.ListQuery{
 		Page:    parsePositiveInt(r.URL.Query().Get("page"), 1),
-		PerPage: defaultPerPage,
+		PerPage: itemapp.DefaultPerPage,
 		Query:   r.URL.Query().Get("q"),
 	}
 	typeName := r.URL.Query().Get("type")

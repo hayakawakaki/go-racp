@@ -82,8 +82,8 @@ func TestService_List_Pagination(t *testing.T) {
 
 func TestService_List_FilterByQuery(t *testing.T) {
 	snap := newFixtureSnapshot(t,
-		&domain.Item{ID: 501, AegisName: "Red_Potion", Name: "Red", ClientName: "Red Potion"},
-		&domain.Item{ID: 502, AegisName: "Blue_Potion", Name: "Blue", ClientName: "Blue Potion"},
+		&domain.Item{ID: 501, AegisName: "Red_Potion", AegisNameLower: "red_potion", Name: "Red", ClientName: "Red Potion", ClientNameLower: "red potion"},
+		&domain.Item{ID: 502, AegisName: "Blue_Potion", AegisNameLower: "blue_potion", Name: "Blue", ClientName: "Blue Potion", ClientNameLower: "blue potion"},
 	)
 	service := NewServiceWithSnapshot(snap, nil)
 
