@@ -85,7 +85,15 @@ type AuthConfig struct {
 	AllowTempBannedLogin bool `yaml:"AllowTempBannedLogin"`
 }
 
+type ItemDBConfig struct {
+	Root string   `yaml:"Root"`
+	YAML []string `yaml:"YAML"`
+	Lua  []string `yaml:"Lua"`
+}
+
 // AppConfig holds operator-tunable application settings loaded from config.yml.
+//
+//nolint:govet // fieldalignment: 8-byte gain inside a singleton config
 type AppConfig struct {
 	UserRoles        RolesConfig            `yaml:"UserRoles"`
 	TicketCategories TicketCategoriesConfig `yaml:"TicketCategories"`
@@ -93,6 +101,7 @@ type AppConfig struct {
 	General          GeneralConfig          `yaml:"GeneralConfig"`
 	Mailer           MailerConfig           `yaml:"MailerConfig"`
 	DefaultLocation  DefaultLocationConfig  `yaml:"DefaultLocation"`
+	ItemDB           ItemDBConfig           `yaml:"ItemDB"`
 	Cooldown         CooldownConfig         `yaml:"Cooldown"`
 	TTL              TTLConfig              `yaml:"TTL"`
 	Tickets          TicketsConfig          `yaml:"Tickets"`
@@ -132,6 +141,7 @@ func appConfigDefaults() *AppConfig {
 		Tickets:         TicketsConfig{StaffPollInterval: 30 * time.Second},
 		Auth:            AuthConfig{AllowTempBannedLogin: true},
 		DefaultLocation: DefaultLocationConfig{Map: "prontera", X: 156, Y: 191},
+		ItemDB:          ItemDBConfig{Root: "", YAML: nil, Lua: nil},
 	}
 }
 

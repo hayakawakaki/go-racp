@@ -1,0 +1,83 @@
+package transport
+
+import (
+	"fmt"
+
+	"github.com/hayakawakaki/go-racp/internal/httpx"
+	"github.com/hayakawakaki/go-racp/internal/item/domain"
+)
+
+type DetailState struct {
+	Item             *domain.Item
+	Stats            []labeledRow
+	DescriptionLines []string
+}
+
+type labeledRow struct {
+	Label string
+	Value string
+}
+
+templ detailPage(layout httpx.Layout, state DetailState) {
+	@httpx.Base(layout, state.Item.ClientName) {
+		<div x-data="{ open: false }" class="w-full max-w-4xl space-y-6">
+			<nav class="text-xs uppercase tracking-[0.18em] text-gray-400">
+				<a href="/items" class="transition hover:text-gray-700">Items</a>
+				<span class="mx-2 text-gray-300">/</span>
+				<span class="text-gray-500">{ state.Item.ClientName }</span>
+			</nav>
+			<section class="rounded-2xl bg-white ring-1 ring-gray-200 px-8 py-7">
+				<div class="flex items-center justify-between gap-4">
+					<div class="flex items-center gap-3">
+						@spriteBox(state.Item.Image, "size-[25px]")
+						<h1 class="text-3xl font-semibold tracking-tight text-gray-900">{ state.Item.ClientName + state.Item.SlotSuffix() }</h1>
+					</div>
+					<button
+						type="button"
+						@click="open = true"
+						class="rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-900 hover:text-gray-900"
+					>
+						View Description
+					</button>
+				</div>
+			</section>
+			<section class="rounded-2xl bg-white ring-1 ring-gray-200 px-8 py-7">
+				<header class="flex items-baseline justify-between border-b border-gray-100 pb-4">
+					<h2 class="text-lg font-semibold tracking-tight text-gray-900">Properties</h2>
+					<span class="text-xs uppercase tracking-[0.18em] text-gray-400">{ fmt.Sprintf("%d fields", len(state.Stats)) }</span>
+				</header>
+				<dl class="mt-2 divide-y divide-gray-100">
+					for _, row := range state.Stats {
+						<div class="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4 py-3 text-sm">
+							<dt class="text-gray-500">{ row.Label }</dt>
+							<dd class="text-right font-mono tabular-nums text-gray-900">{ row.Value }</dd>
+						</div>
+					}
+				</dl>
+			</section>
+			<div
+				x-show="open"
+				x-cloak
+				@keydown.escape.window="open = false"
+				@click.self="open = false"
+				class="fixed inset-0 z-50 overflow-y-auto bg-black/40 p-4"
+			>
+				<div class="flex min-h-full items-center justify-center" @click.self="open = false">
+					<div class="relative my-4">
+						<button
+							type="button"
+							aria-label="Close"
+							@click="open = false"
+							class="absolute -right-2 -top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-500 shadow-sm transition hover:text-gray-900"
+						>
+							<svg class="h-3 w-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+								<path d="M4 4 L12 12 M12 4 L4 12"></path>
+							</svg>
+						</button>
+						@itemCard(state.Item, state.DescriptionLines)
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}

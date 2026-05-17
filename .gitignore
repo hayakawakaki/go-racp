@@ -19,3 +19,10 @@ build-errors.log
 
 # Generated css by tailwind
 static/css/app.css
+
+# data (item_db.yml/lua/etc)
+/data
+
+# item images
+/static/item
+/static/collection

@@ -10,6 +10,28 @@ import (
 
 const adminRoleName = "Admin"
 
+// ProjectRoot walks up from the current working directory and returns the first ancestor containing go.mod.
+func ProjectRoot() (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("get working directory: %w", err)
+	}
+	for {
+		_, statErr := os.Stat(filepath.Join(dir, "go.mod"))
+		if statErr == nil {
+			return dir, nil
+		}
+		if !errors.Is(statErr, fs.ErrNotExist) {
+			return "", fmt.Errorf("stat go.mod: %w", statErr)
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", fmt.Errorf("project root (go.mod): %w", fs.ErrNotExist)
+		}
+		dir = parent
+	}
+}
+
 // GetTargetFilePath walks up from the current working directory to find target by name, stopping at the directory containing go.mod.
 func GetTargetFilePath(target string) (string, error) {
 	dir, err := os.Getwd()

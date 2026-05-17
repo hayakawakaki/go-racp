@@ -1,0 +1,7 @@
+package transport
+
+templ spriteBox(image string, sizeClass string) {
+	<span class={ "relative inline-flex shrink-0 items-center justify-center " + sizeClass }>
+		<img src={ "/static/item/" + image + ".webp" } alt="" class="absolute left-1/2 top-1/2 max-w-none -translate-x-1/2 -translate-y-1/2"/>
+	</span>
+}

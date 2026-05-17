@@ -73,3 +73,11 @@ NewsCategories:
     Display: "Event"
   Patch:
     Display: "Patch Notes"
+
+# Item Database
+# Drop your rAthena item_db YAML and client item info lua/lub files anywhere readable,
+# then list them here. Relative paths join with Root. Absolute paths bypass Root.
+ItemDB:
+  Root: "data/"
+  YAML: ["item_db_equip.yml", "item_db_etc.yml", "item_db_usable.yml"]
+  Lua: ["iteminfo.lub"]

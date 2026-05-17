@@ -1,0 +1,32 @@
+package transport
+
+import (
+	"fmt"
+
+	itemapp "github.com/hayakawakaki/go-racp/internal/item/app"
+)
+
+templ reloadSuccess(status itemapp.ServiceStatus) {
+	<div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-900">
+		<p class="font-medium">Database reloaded.</p>
+		<p class="mt-1 text-emerald-800">
+			<span class="font-mono tabular-nums">{ fmt.Sprintf("%d", status.ItemsLoaded) }</span>
+			items loaded at
+			<span class="font-mono">{ status.LastReload }</span>.
+		</p>
+	</div>
+}
+
+templ reloadFailure(message string) {
+	<div class="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-900">
+		<p class="font-medium">Reload failed.</p>
+		<p class="mt-1 font-mono text-red-800">{ message }</p>
+	</div>
+}
+
+templ reloadConflict() {
+	<div class="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
+		<p class="font-medium">Already reloading.</p>
+		<p class="mt-1 text-amber-800">A reload is in progress. Try again in a moment.</p>
+	</div>
+}

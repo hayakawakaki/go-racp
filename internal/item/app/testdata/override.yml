@@ -1,0 +1,10 @@
+Header:
+  Type: ITEM_DB
+  Version: 1
+Body:
+  - Id: 501
+    AegisName: Pink_Potion
+    Name: Pink Potion
+    Type: Healing
+    Buy: 9999
+    Weight: 100
