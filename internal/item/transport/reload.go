@@ -19,7 +19,7 @@ func (h *Handler) doReload(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		h.logger.Error("item: reload failed", "err", err)
 		w.WriteHeader(http.StatusInternalServerError)
-		httpx.RenderHTML(w, r, h.logger, reloadFailure(err.Error()))
+		httpx.RenderHTML(w, r, h.logger, reloadFailure("Reload failed. Check server logs for details."))
 
 		return
 	}
