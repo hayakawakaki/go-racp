@@ -33,10 +33,14 @@ func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	lines := make([]string, 0, len(item.Description))
+	for _, line := range item.Description {
+		lines = append(lines, renderDescription([]string{line}))
+	}
 	state := DetailState{
-		Item:        item,
-		Description: renderDescription(item.Description),
-		Stats:       buildStats(item),
+		Item:             item,
+		Stats:            buildStats(item),
+		DescriptionLines: lines,
 	}
 	httpx.RenderHTML(w, r, h.logger, detailPage(h.layout(), state))
 }
