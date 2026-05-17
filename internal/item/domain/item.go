@@ -20,6 +20,7 @@ const (
 	ItemTypeCash
 )
 
+//nolint:goconst // duplicate strings across enum maps are intentional
 var itemTypeNames = map[ItemType]string{
 	ItemTypeHealing:      "Healing",
 	ItemTypeUsable:       "Usable",
