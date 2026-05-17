@@ -1,5 +1,7 @@
 package domain
 
+import "strconv"
+
 type ItemType uint8
 
 const (
@@ -214,4 +216,12 @@ type Item struct {
 	Location      Location
 	Refineable    bool
 	Gradable      bool
+}
+
+func (i *Item) SlotSuffix() string {
+	if (i.Type == ItemTypeWeapon || i.Type == ItemTypeArmor) && i.Slots > 0 {
+		return " [" + strconv.Itoa(i.Slots) + "]"
+	}
+
+	return ""
 }

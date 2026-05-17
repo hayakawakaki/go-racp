@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/fs"
 	"log/slog"
-	"net/url"
 	"path/filepath"
 	"sort"
 	"time"
@@ -283,7 +282,7 @@ func applyLua(item *domain.Item, luaInfos map[int]infra.LuaInfo) {
 	} else {
 		item.ClientName = item.Name
 	}
-	item.Image = url.PathEscape(info.Resource)
+	item.Image = info.Resource
 	if len(info.Description) == 0 {
 		item.Description = []string{"No description."}
 	} else {

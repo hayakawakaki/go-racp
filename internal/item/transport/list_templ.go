@@ -291,9 +291,9 @@ func itemRow(item *domain.Item) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var11 string
-		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(item.ClientName)
+		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(item.ClientName + item.SlotSuffix())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/item/transport/list.templ`, Line: 104, Col: 75}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/item/transport/list.templ`, Line: 104, Col: 95}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 		if templ_7745c5c3_Err != nil {
