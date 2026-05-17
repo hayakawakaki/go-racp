@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"io/fs"
 	"log/slog"
+	"net/url"
 	"path/filepath"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/hayakawakaki/go-racp/internal/item/domain"
@@ -23,20 +23,28 @@ type Sources struct {
 }
 
 func ParseSources(sources Sources) (*domain.Snapshot, error) {
+	logger := loggerOrDefault(sources.Logger)
+	overall := time.Now()
+
+	startYAML := time.Now()
 	yamlInputs, err := loadAllYAML(sources)
 	if err != nil {
 		return nil, fmt.Errorf("app.ParseSources: %w", err)
 	}
+	logger.Info("item: yaml parsed", "items", len(yamlInputs), "took", time.Since(startYAML).String())
 
+	startLua := time.Now()
 	luaInfos, err := loadAllLua(sources)
 	if err != nil {
 		return nil, fmt.Errorf("app.ParseSources: %w", err)
 	}
+	logger.Info("item: lua parsed", "entries", len(luaInfos), "took", time.Since(startLua).String())
 
 	if len(yamlInputs) == 0 {
 		return domain.EmptySnapshot(), nil
 	}
 
+	startBuild := time.Now()
 	byID := map[int]*infra.YAMLInput{}
 	for index := range yamlInputs {
 		input := yamlInputs[index]
@@ -60,6 +68,7 @@ func ParseSources(sources Sources) (*domain.Snapshot, error) {
 		snap.ByID[item.ID] = item
 		snap.ByName[item.AegisName] = item
 	}
+	logger.Info("item: snapshot built", "items", len(items), "took", time.Since(startBuild).String(), "total", time.Since(overall).String())
 
 	return snap, nil
 }
@@ -274,7 +283,7 @@ func applyLua(item *domain.Item, luaInfos map[int]infra.LuaInfo) {
 	} else {
 		item.ClientName = item.Name
 	}
-	item.Image = strings.ToLower(info.Resource)
+	item.Image = url.PathEscape(info.Resource)
 	if len(info.Description) == 0 {
 		item.Description = []string{"No description."}
 	} else {

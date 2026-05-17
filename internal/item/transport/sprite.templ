@@ -1,0 +1,10 @@
+package transport
+
+templ spriteBox(image string, sizeClass string) {
+	<span class={ "relative inline-flex shrink-0 items-center justify-center " + sizeClass }>
+		<svg class="size-[60%] text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+			<path d="M6 6 L18 18 M18 6 L6 18"></path>
+		</svg>
+		<img src={ "/static/item/" + image + ".webp" } alt="" class="absolute left-1/2 top-1/2 max-w-none -translate-x-1/2 -translate-y-1/2" onerror="this.remove()"/>
+	</span>
+}

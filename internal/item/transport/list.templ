@@ -97,9 +97,10 @@ templ itemRow(item *domain.Item) {
 	<li>
 		<a
 			href={ templ.SafeURL(fmt.Sprintf("/items/%d", item.ID)) }
-			class="grid grid-cols-[4rem_minmax(0,1fr)_auto] items-baseline gap-x-4 py-4 text-sm transition hover:bg-gray-50"
+			class="grid grid-cols-[4rem_auto_minmax(0,1fr)_auto] items-center gap-x-4 py-3 text-sm transition hover:bg-gray-50"
 		>
 			<span class="font-mono text-xs text-gray-400">{ fmt.Sprintf("%d", item.ID) }</span>
+			@spriteBox(item.Image, "size-[25px]")
 			<span class="font-medium tracking-tight text-gray-900">{ item.ClientName }</span>
 			<span class="text-right text-xs uppercase tracking-[0.14em] text-gray-400">{ item.Type.Display() }</span>
 		</a>

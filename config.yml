@@ -80,4 +80,4 @@ NewsCategories:
 ItemDB:
   Root: "data/"
   YAML: ["item_db_equip.yml", "item_db_etc.yml", "item_db_usable.yml"]
-  Lua: ["iteminfo.lua"]
+  Lua: ["iteminfo.lub"]

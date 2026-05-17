@@ -124,12 +124,15 @@ func TestParseSources_MalformedYAML_ReturnsError(t *testing.T) {
 	}
 }
 
-func TestParseSources_MalformedLua_ReturnsError(t *testing.T) {
-	_, err := ParseSources(Sources{
+func TestParseSources_MalformedLua_SkipsSilently(t *testing.T) {
+	snap, err := ParseSources(Sources{
 		YAML: []string{absPath(t, "testdata/single.yml")},
 		Lua:  []string{absPath(t, "testdata/malformed.lua")},
 	})
-	if err == nil {
-		t.Fatal("err is nil, want a parse error")
+	if err != nil {
+		t.Fatalf("ParseSources err = %v, want nil (regex parser tolerates malformed entries)", err)
+	}
+	if snap == nil || snap.SourceCount == 0 {
+		t.Fatal("snapshot should still contain YAML items even when Lua entries can't be extracted")
 	}
 }
