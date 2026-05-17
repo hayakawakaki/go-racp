@@ -2,6 +2,7 @@ package transport
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 	itemapp "github.com/hayakawakaki/go-racp/internal/item/app"
@@ -44,15 +45,21 @@ templ listPage(layout httpx.Layout, state ListState) {
 						}
 					</div>
 					<form method="get" action="/items" class="flex flex-wrap items-center gap-2">
+						<label for="item-query" class="sr-only">Search by name or ID</label>
 						<input
+							id="item-query"
 							type="text"
 							name="q"
+							autocomplete="off"
 							value={ state.Query }
 							placeholder="Name or ID"
 							class="w-48 rounded-full border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-900 focus:outline-none"
 						/>
+						<label for="item-type" class="sr-only">Filter by item type</label>
 						<select
+							id="item-type"
 							name="type"
+							autocomplete="off"
 							class="rounded-full border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 focus:border-gray-900 focus:outline-none"
 						>
 							<option value="">All types</option>
@@ -136,13 +143,18 @@ templ pagination(state ListState) {
 }
 
 func pageURL(state ListState, page int) string {
-	query := fmt.Sprintf("?page=%d", page)
+	values := url.Values{}
+	values.Set("page", fmt.Sprintf("%d", page))
 	if state.Query != "" {
-		query += "&q=" + state.Query
+		values.Set("q", state.Query)
 	}
 	if state.Type != "" {
-		query += "&type=" + state.Type
+		values.Set("type", state.Type)
+	}
+	base := state.BaseURL
+	if base == "" {
+		base = "/items"
 	}
 
-	return "/items" + query
+	return base + "?" + values.Encode()
 }

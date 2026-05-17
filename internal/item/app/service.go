@@ -141,7 +141,10 @@ func (s *Service) Reload(_ context.Context) error {
 	defer s.reloadMu.Unlock()
 
 	if s.loader == nil {
-		return fmt.Errorf("app.Service.Reload: %w", domain.ErrParseFailed)
+		err := fmt.Errorf("app.Service.Reload: %w", domain.ErrParseFailed)
+		s.recordFailure(err)
+
+		return err
 	}
 	snap, err := s.loader()
 	if err != nil {
