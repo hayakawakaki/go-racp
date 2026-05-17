@@ -115,6 +115,9 @@ func TestReadLua_MixedValidAndInvalidIDs(t *testing.T) {
 	t.Parallel()
 
 	source := `tbl = {
+		[banana] = {
+			identifiedDisplayName = "Non-numeric ID",
+		},
 		[501] = {
 			identifiedDisplayName = "Valid",
 			identifiedResourceName = "valid",
@@ -122,12 +125,18 @@ func TestReadLua_MixedValidAndInvalidIDs(t *testing.T) {
 				"ok"
 			},
 		},
+		[99999999999999999999] = {
+			identifiedDisplayName = "Overflowing ID",
+		},
 	}`
 	path := writeTempFile(t, "partial.lua", []byte(source))
 
 	got, err := ReadLua(path)
 	if err != nil {
 		t.Fatalf("ReadLua: %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("len(got) = %d, want 1 (only 501 should survive)", len(got))
 	}
 	if _, ok := got[501]; !ok {
 		t.Errorf("501 missing")
