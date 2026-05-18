@@ -20,7 +20,6 @@ import (
 const (
 	devCacheSubdir    = "tmp"
 	itemCacheFileName = "item-snapshot.gob"
-	itemParserVersion = 2
 )
 
 func init() {
@@ -69,7 +68,6 @@ func buildSources(in *platinfra.Infra) itemapp.Sources {
 			Logger:   in.Logger,
 			Dir:      dir,
 			Filename: itemCacheFileName,
-			Version:  itemParserVersion,
 		}
 	}
 

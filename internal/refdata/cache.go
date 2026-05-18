@@ -23,7 +23,6 @@ type Cache[T any] struct {
 	Logger   *slog.Logger
 	Dir      string
 	Filename string
-	Version  int
 }
 
 type sourceHash struct {
@@ -33,11 +32,10 @@ type sourceHash struct {
 	Size  int64
 }
 
-//nolint:govet // generic instantiation pays the alignment cost; readability wins here
+//nolint:govet // generic instantiation
 type cacheBlob[T any] struct {
 	Sources []sourceHash
 	Value   T
-	Version int
 }
 
 func (c Cache[T]) path() string {
@@ -48,7 +46,7 @@ func (c Cache[T]) Load(paths []string) (T, bool) {
 	var zero T
 	logger := c.loggerOrDefault()
 
-	//nolint:gosec // G304: c.Dir is set by the caller from a trusted project path.
+	//nolint:gosec // G304: c.Dir is set by the config
 	file, err := os.Open(c.path())
 	if err != nil {
 		if !errors.Is(err, fs.ErrNotExist) {
@@ -67,9 +65,6 @@ func (c Cache[T]) Load(paths []string) (T, bool) {
 		return zero, false
 	}
 	decodeTook := time.Since(decodeStart)
-	if blob.Version != c.Version {
-		return zero, false
-	}
 
 	verifyStart := time.Now()
 	if !verifySources(blob.Sources, paths) {
@@ -105,7 +100,7 @@ func (c Cache[T]) Save(value T, paths []string) error {
 		return fmt.Errorf("refdata.Cache.Save chmod: %w", err)
 	}
 
-	blob := cacheBlob[T]{Version: c.Version, Sources: hashes, Value: value}
+	blob := cacheBlob[T]{Sources: hashes, Value: value}
 	if err := gob.NewEncoder(file).Encode(blob); err != nil {
 		_ = file.Close()
 		_ = os.Remove(tmp)
@@ -200,7 +195,7 @@ func verifySources(cached []sourceHash, paths []string) bool {
 }
 
 func hashFile(path string) (uint64, error) {
-	//nolint:gosec // G304: path comes from operator-controlled config paths.
+	//nolint:gosec // G304: path comes from config
 	file, err := os.Open(path)
 	if err != nil {
 		return 0, fmt.Errorf("open %s: %w", path, err)

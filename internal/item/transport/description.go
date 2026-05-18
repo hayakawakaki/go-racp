@@ -112,5 +112,5 @@ func naviReplace(captures []string) string {
 	yCoord := strings.TrimSpace(captures[4])
 	payload := fmt.Sprintf("/navi %s %s/%s", mapName, xCoord, yCoord)
 
-	return fmt.Sprintf(`<span class="navi-link cursor-pointer underline text-blue-500" data-navi=%q>%s</span>`, payload, label)
+	return fmt.Sprintf(`<span class="navi-link cursor-pointer underline text-blue-400" data-navi=%q>%s</span>`, payload, label)
 }
