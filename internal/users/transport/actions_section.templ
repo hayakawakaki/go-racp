@@ -5,7 +5,7 @@ import "fmt"
 templ actionsSection(state detailState) {
 	<section class="rounded-2xl bg-white ring-1 ring-gray-200 p-5 space-y-4">
 		<h2 class="text-lg font-semibold text-gray-900">Actions</h2>
-		<div class="grid gap-4 md:grid-cols-3">
+		<div class="grid gap-4 md:grid-cols-3 items-stretch">
 			@banForm(state.Detail.User.ID)
 			@unbanForm(state.Detail.User.ID)
 			@setRoleForm(state)
@@ -13,67 +13,116 @@ templ actionsSection(state detailState) {
 	</section>
 }
 
+templ actionCardHeader(dotClass, title string) {
+	<header class="flex items-center gap-2">
+		<span class={ "h-2 w-2 rounded-full", dotClass }></span>
+		<h3 class="font-medium text-gray-900">{ title }</h3>
+	</header>
+}
+
+templ fieldLabel(text string) {
+	<span class="text-[11px] font-medium uppercase tracking-wider text-gray-500">{ text }</span>
+}
+
 templ banForm(targetID int) {
-	<div class="rounded-xl ring-1 ring-gray-200 p-4 space-y-3">
-		<h3 class="font-medium text-gray-900">Ban</h3>
-		<form class="space-y-2" hx-post={ fmt.Sprintf("/admin/users/%d/ban", targetID) } hx-target="#user-detail" hx-swap="outerHTML">
-			<label class="block">
-				<span class="text-xs uppercase tracking-wide text-gray-500">Reason (required)</span>
-				<textarea name="reason" rows="2" class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1 text-sm"></textarea>
+	<div class="rounded-xl ring-1 ring-gray-200 p-4 flex flex-col gap-3">
+		@actionCardHeader("bg-rose-500", "Ban")
+		<form class="flex flex-col gap-3 flex-1" x-data="{ permanent: false }">
+			<label class="block space-y-1">
+				@fieldLabel("Reason (required)")
+				<input
+					type="text"
+					name="reason"
+					placeholder="Cheating, macro, scamming…"
+					class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-rose-500 focus:ring-1 focus:ring-rose-500 focus:outline-none"
+				/>
 			</label>
-			<div class="grid grid-cols-3 gap-2">
-				@banPresetButton("1h", "1h")
-				@banPresetButton("1d", "1 day")
-				@banPresetButton("7d", "7 days")
-				@banPresetButton("30d", "30 days")
-				@banPresetButton("perm", "Permanent")
-			</div>
-			<div class="flex items-end gap-2 pt-2 border-t border-gray-100">
-				<label class="flex-1">
-					<span class="text-xs uppercase tracking-wide text-gray-500">Custom</span>
-					<input type="number" name="value" min="1" class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1 text-sm"/>
-				</label>
-				<select name="unit" class="rounded-md border border-gray-300 px-2 py-1 text-sm">
-					<option value="hours">hours</option>
-					<option value="days">days</option>
-				</select>
-				<button type="submit" class="rounded-md bg-gray-900 px-3 py-1 text-sm text-white">Apply</button>
-			</div>
+			<label class="flex items-center gap-2 text-sm text-gray-700 select-none">
+				<input
+					type="checkbox"
+					name="permanent"
+					value="on"
+					x-model="permanent"
+					class="h-4 w-4 rounded border-gray-300 text-rose-600 focus:ring-rose-500"
+				/>
+				<span>Permanent ban</span>
+			</label>
+			<label class="block space-y-1" :class="permanent && 'opacity-40'">
+				@fieldLabel("Duration in days")
+				<input
+					type="number"
+					name="days"
+					min="1"
+					:disabled="permanent"
+					class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-rose-500 focus:ring-1 focus:ring-rose-500 focus:outline-none disabled:bg-gray-50"
+				/>
+			</label>
+			<button
+				type="button"
+				hx-post={ fmt.Sprintf("/admin/users/%d/ban", targetID) }
+				hx-include="closest form"
+				hx-target="#user-detail"
+				hx-swap="outerHTML"
+				class="mt-auto w-full rounded-md bg-rose-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-rose-700 active:bg-rose-800"
+			>
+				Apply ban
+			</button>
 		</form>
 	</div>
 }
 
-templ banPresetButton(value, label string) {
-	<button
-		type="submit"
-		name="preset"
-		value={ value }
-		class="rounded-md border border-gray-300 px-2 py-1 text-xs hover:border-gray-900"
-	>
-		{ label }
-	</button>
-}
-
 templ unbanForm(targetID int) {
-	<div class="rounded-xl ring-1 ring-gray-200 p-4 space-y-3">
-		<h3 class="font-medium text-gray-900">Unban</h3>
-		<form class="space-y-2" hx-post={ fmt.Sprintf("/admin/users/%d/unban", targetID) } hx-target="#user-detail" hx-swap="outerHTML">
-			<label class="block">
-				<span class="text-xs uppercase tracking-wide text-gray-500">Reason (optional)</span>
-				<input type="text" name="reason" class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1 text-sm"/>
+	<div class="rounded-xl ring-1 ring-gray-200 p-4 flex flex-col gap-3">
+		@actionCardHeader("bg-emerald-500", "Unban")
+		<form
+			class="flex flex-col gap-3 flex-1"
+			hx-post={ fmt.Sprintf("/admin/users/%d/unban", targetID) }
+			hx-target="#user-detail"
+			hx-swap="outerHTML"
+		>
+			<label class="block space-y-1">
+				@fieldLabel("Reason (optional)")
+				<input
+					type="text"
+					name="reason"
+					placeholder="Appeal accepted, false positive…"
+					class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+				/>
 			</label>
-			<button type="submit" class="rounded-md bg-emerald-600 px-3 py-1.5 text-sm text-white">Unban</button>
+			<button
+				type="submit"
+				class="mt-auto w-full rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-700 active:bg-emerald-800"
+			>
+				Lift ban
+			</button>
 		</form>
 	</div>
 }
 
 templ setRoleForm(state detailState) {
-	<div class="rounded-xl ring-1 ring-gray-200 p-4 space-y-3">
-		<h3 class="font-medium text-gray-900">Set role</h3>
-		<form class="space-y-2" hx-post={ fmt.Sprintf("/admin/users/%d/role", state.Detail.User.ID) } hx-target="#user-detail" hx-swap="outerHTML">
-			<label class="block">
-				<span class="text-xs uppercase tracking-wide text-gray-500">Role</span>
-				<select name="group_id" class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1 text-sm">
+	<div class="rounded-xl ring-1 ring-gray-200 p-4 flex flex-col gap-3">
+		@actionCardHeader("bg-slate-500", "Set role")
+		<form
+			class="flex flex-col gap-3 flex-1"
+			hx-post={ fmt.Sprintf("/admin/users/%d/role", state.Detail.User.ID) }
+			hx-target="#user-detail"
+			hx-swap="outerHTML"
+		>
+			<label class="block space-y-1">
+				@fieldLabel("Reason (optional)")
+				<input
+					type="text"
+					name="reason"
+					placeholder="Promotion, demotion…"
+					class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
+				/>
+			</label>
+			<label class="block space-y-1">
+				@fieldLabel("Role")
+				<select
+					name="group_id"
+					class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
+				>
 					for _, opt := range state.AllowedRoles {
 						<option value={ fmt.Sprintf("%d", opt.GroupID) } selected?={ opt.GroupID == state.Detail.User.GroupID }>
 							{ opt.Name }
@@ -81,11 +130,12 @@ templ setRoleForm(state detailState) {
 					}
 				</select>
 			</label>
-			<label class="block">
-				<span class="text-xs uppercase tracking-wide text-gray-500">Reason (optional)</span>
-				<input type="text" name="reason" class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1 text-sm"/>
-			</label>
-			<button type="submit" class="rounded-md bg-gray-900 px-3 py-1.5 text-sm text-white">Apply</button>
+			<button
+				type="submit"
+				class="mt-auto w-full rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-slate-800 active:bg-slate-950"
+			>
+				Apply role
+			</button>
 		</form>
 	</div>
 }

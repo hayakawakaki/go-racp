@@ -73,6 +73,20 @@ func TestUserRepository_List_PaginatesAndFiltersByQuery(t *testing.T) {
 	}
 }
 
+func TestUserRepository_List_ExcludesActor(t *testing.T) {
+	repo := setupUserRepo(t)
+	actorID := insertLogin(t, repo, "actor", "actor@example.com", 0, 99, 0)
+	insertLogin(t, repo, "kaki", "kaki@example.com", 0, 0, 0)
+
+	page, err := repo.List(context.Background(), ListQuery{Page: 1, PerPage: 20, ExcludeID: actorID})
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	if page.Total != 1 || len(page.Users) != 1 || page.Users[0].Username != "kaki" {
+		t.Errorf("page should exclude actor; got %+v", page)
+	}
+}
+
 func TestUserRepository_UpdateBan_TempThenUnban(t *testing.T) {
 	repo := setupUserRepo(t)
 	id := insertLogin(t, repo, "testuser", "test@example.com", 0, 0, 0)

@@ -107,14 +107,13 @@ func (s *Service) Ban(ctx context.Context, cmd BanCommand) (UserDetail, error) {
 	}
 
 	var dur domain.BanDuration
-	switch {
-	case cmd.PresetCode != "":
-		dur, err = domain.ParseBanPreset(cmd.PresetCode)
-	default:
-		dur, err = domain.ParseBanCustom(cmd.CustomValue, cmd.CustomUnit)
-	}
-	if err != nil {
-		return UserDetail{}, fmt.Errorf("app.Service.Ban duration: %w", err)
+	if cmd.Permanent {
+		dur = domain.BanDuration{Permanent: true}
+	} else {
+		dur, err = domain.ParseBanDays(cmd.Days)
+		if err != nil {
+			return UserDetail{}, fmt.Errorf("app.Service.Ban duration: %w", err)
+		}
 	}
 
 	beforeState := target.State

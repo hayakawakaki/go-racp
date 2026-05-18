@@ -146,6 +146,30 @@ func TestHandler_ShowList_RendersUsernames(t *testing.T) {
 	}
 }
 
+func TestHandler_ShowList_ExcludesActor(t *testing.T) {
+	t.Parallel()
+	var seen app.ListQuery
+	svc := &stubService{
+		listFn: func(_ context.Context, q app.ListQuery) (app.UserPage, error) {
+			seen = q
+			return app.UserPage{}, nil
+		},
+	}
+	h := NewHandler(svc, HandlerConfig{
+		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
+		General: config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
+	})
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/admin/users", http.NoBody)
+	req = req.WithContext(middlewareCtxWithActor(req.Context(), 42))
+	h.showList(rr, req)
+
+	if seen.ExcludeID != 42 {
+		t.Errorf("ExcludeID = %d, want 42", seen.ExcludeID)
+	}
+}
+
 func TestHandler_ShowList_HTMXFragment(t *testing.T) {
 	t.Parallel()
 	svc := &stubService{
@@ -226,10 +250,10 @@ func TestHandler_DoBan_SwapsDetail(t *testing.T) {
 	svc := &stubService{
 		banFn: func(_ context.Context, cmd app.BanCommand) (app.UserDetail, error) {
 			called = true
-			if cmd.PresetCode != "1h" || cmd.Reason != "spam" {
+			if !cmd.Permanent || cmd.Reason != "spam" {
 				t.Errorf("unexpected cmd: %+v", cmd)
 			}
-			return app.UserDetail{User: &usersdomain.User{ID: 7, Username: "kaki", State: 0}}, nil
+			return app.UserDetail{User: &usersdomain.User{ID: 7, Username: "kaki", State: 5}}, nil
 		},
 	}
 	h := NewHandler(svc, HandlerConfig{
@@ -238,7 +262,7 @@ func TestHandler_DoBan_SwapsDetail(t *testing.T) {
 	})
 
 	rr := httptest.NewRecorder()
-	body := strings.NewReader("preset=1h&reason=spam")
+	body := strings.NewReader("permanent=on&reason=spam")
 	req := httptest.NewRequest(http.MethodPost, "/admin/users/7/ban", body)
 	req.SetPathValue("id", "7")
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -266,7 +290,7 @@ func TestHandler_DoBan_ValidationError(t *testing.T) {
 	})
 
 	rr := httptest.NewRecorder()
-	body := strings.NewReader("preset=1h")
+	body := strings.NewReader("permanent=on")
 	req := httptest.NewRequest(http.MethodPost, "/admin/users/7/ban", body)
 	req.SetPathValue("id", "7")
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")

@@ -22,6 +22,9 @@ func (h *Handler) showList(w http.ResponseWriter, r *http.Request) {
 		PerPage: 20,
 		Query:   r.URL.Query().Get("q"),
 	}
+	if actorID, ok := actorIDFromContext(r); ok {
+		query.ExcludeID = actorID
+	}
 	page, err := h.svc.List(r.Context(), query)
 	if err != nil {
 		h.logger.Error("users: list failed", "err", err)

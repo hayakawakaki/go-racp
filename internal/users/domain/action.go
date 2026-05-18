@@ -28,37 +28,11 @@ type BanDuration struct {
 	Permanent bool
 }
 
-func ParseBanPreset(preset string) (BanDuration, error) {
-	switch preset {
-	case "1h":
-		return BanDuration{Duration: time.Hour}, nil
-	case "1d":
-		return BanDuration{Duration: 24 * time.Hour}, nil
-	case "7d":
-		return BanDuration{Duration: 7 * 24 * time.Hour}, nil
-	case "30d":
-		return BanDuration{Duration: 30 * 24 * time.Hour}, nil
-	case "perm":
-		return BanDuration{Permanent: true}, nil
-	default:
+func ParseBanDays(days int) (BanDuration, error) {
+	if days <= 0 {
 		return BanDuration{}, ErrInvalidDuration
 	}
-}
-
-func ParseBanCustom(value int, unit string) (BanDuration, error) {
-	if value <= 0 {
-		return BanDuration{}, ErrInvalidDuration
-	}
-	var step time.Duration
-	switch unit {
-	case "hours":
-		step = time.Hour
-	case "days":
-		step = 24 * time.Hour
-	default:
-		return BanDuration{}, ErrInvalidDuration
-	}
-	total := time.Duration(value) * step
+	total := time.Duration(days) * 24 * time.Hour
 	if total > banCeiling {
 		return BanDuration{}, ErrInvalidDuration
 	}

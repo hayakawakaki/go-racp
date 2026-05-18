@@ -159,7 +159,7 @@ func TestService_List_ReturnsPage(t *testing.T) {
 	}
 }
 
-func TestService_Ban_PresetTemp(t *testing.T) {
+func TestService_Ban_CustomTemp(t *testing.T) {
 	t.Parallel()
 	svc, users, _, actions := newTestService(t)
 	users.users[7] = &domain.User{ID: 7, Username: "kaki"}
@@ -167,7 +167,7 @@ func TestService_Ban_PresetTemp(t *testing.T) {
 	detail, err := svc.Ban(context.Background(), BanCommand{
 		ActorUserID:  1,
 		TargetUserID: 7,
-		PresetCode:   "1h",
+		Days:         1,
 		Reason:       "spam",
 	})
 	if err != nil {
@@ -189,7 +189,7 @@ func TestService_Ban_Permanent(t *testing.T) {
 	_, err := svc.Ban(context.Background(), BanCommand{
 		ActorUserID:  1,
 		TargetUserID: 7,
-		PresetCode:   "perm",
+		Permanent:    true,
 		Reason:       "rmt",
 	})
 	if err != nil {
@@ -208,8 +208,7 @@ func TestService_Ban_Custom(t *testing.T) {
 	_, err := svc.Ban(context.Background(), BanCommand{
 		ActorUserID:  1,
 		TargetUserID: 7,
-		CustomValue:  3,
-		CustomUnit:   "days",
+		Days:         3,
 		Reason:       "harassment",
 	})
 	if err != nil {
@@ -228,7 +227,7 @@ func TestService_Ban_RejectsSelf(t *testing.T) {
 	_, err := svc.Ban(context.Background(), BanCommand{
 		ActorUserID:  7,
 		TargetUserID: 7,
-		PresetCode:   "1h",
+		Permanent:    true,
 		Reason:       "x",
 	})
 	if !errors.Is(err, domain.ErrSelfAction) {
@@ -244,7 +243,7 @@ func TestService_Ban_RejectsAdminTarget(t *testing.T) {
 	_, err := svc.Ban(context.Background(), BanCommand{
 		ActorUserID:  1,
 		TargetUserID: 7,
-		PresetCode:   "1h",
+		Permanent:    true,
 		Reason:       "x",
 	})
 	if !errors.Is(err, domain.ErrTargetIsAdmin) {
@@ -260,7 +259,7 @@ func TestService_Ban_RejectsEmptyReason(t *testing.T) {
 	_, err := svc.Ban(context.Background(), BanCommand{
 		ActorUserID:  1,
 		TargetUserID: 7,
-		PresetCode:   "1h",
+		Permanent:    true,
 		Reason:       "   ",
 	})
 	if !errors.Is(err, domain.ErrEmptyReason) {
@@ -367,7 +366,7 @@ func TestService_Ban_AuditFailureDoesNotRollBack(t *testing.T) {
 	detail, err := svc.Ban(context.Background(), BanCommand{
 		ActorUserID:  1,
 		TargetUserID: 7,
-		PresetCode:   "perm",
+		Permanent:    true,
 		Reason:       "rmt",
 	})
 	if err != nil {

@@ -17,11 +17,10 @@ type UserDetail struct {
 
 type BanCommand struct {
 	Reason       string
-	PresetCode   string
-	CustomUnit   string
-	CustomValue  int
+	Days         int
 	ActorUserID  int
 	TargetUserID int
+	Permanent    bool
 }
 
 type UnbanCommand struct {

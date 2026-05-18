@@ -11,4 +11,5 @@ import (
 	_ "github.com/hayakawakaki/go-racp/internal/mob"
 	_ "github.com/hayakawakaki/go-racp/internal/news"
 	_ "github.com/hayakawakaki/go-racp/internal/tickets"
+	_ "github.com/hayakawakaki/go-racp/internal/users"
 )

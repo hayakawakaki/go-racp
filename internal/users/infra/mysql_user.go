@@ -14,9 +14,10 @@ import (
 const DefaultPerPage = 20
 
 type ListQuery struct {
-	Query   string
-	Page    int
-	PerPage int
+	Query     string
+	Page      int
+	PerPage   int
+	ExcludeID int
 }
 
 type UserPage struct {
@@ -68,13 +69,7 @@ func (r *UserRepository) List(ctx context.Context, q ListQuery) (UserPage, error
 		q.Page = 1
 	}
 
-	where := ""
-	args := []any{}
-	if needle := strings.TrimSpace(q.Query); needle != "" {
-		where = "WHERE userid LIKE ? OR email LIKE ?"
-		like := "%" + needle + "%"
-		args = append(args, like, like)
-	}
+	where, args := buildListWhere(q)
 
 	var total int
 	if err := r.Client.QueryRowContext(ctx,
@@ -88,7 +83,7 @@ func (r *UserRepository) List(ctx context.Context, q ListQuery) (UserPage, error
 	queryArgs = append(queryArgs, q.PerPage, offset)
 
 	rows, err := r.Client.QueryContext(ctx,
-		"SELECT account_id, userid, email, group_id, state, unban_time, last_ip, lastlogin FROM login "+where+
+		"SELECT account_id, userid, email, group_id, state, unban_time, last_ip, lastlogin FROM login "+where+ //nolint:gosec // where built from constants
 			" ORDER BY account_id ASC LIMIT ? OFFSET ?", queryArgs...,
 	)
 	if err != nil {
@@ -121,6 +116,24 @@ func (r *UserRepository) List(ctx context.Context, q ListQuery) (UserPage, error
 	totalPages := (total + q.PerPage - 1) / q.PerPage
 
 	return UserPage{Users: users, Total: total, Page: q.Page, PerPage: q.PerPage, TotalPages: totalPages}, nil
+}
+
+func buildListWhere(q ListQuery) (where string, args []any) {
+	clauses := make([]string, 0, 2)
+	if needle := strings.TrimSpace(q.Query); needle != "" {
+		clauses = append(clauses, "(userid LIKE ? OR email LIKE ?)")
+		like := "%" + needle + "%"
+		args = append(args, like, like)
+	}
+	if q.ExcludeID > 0 {
+		clauses = append(clauses, "account_id <> ?")
+		args = append(args, q.ExcludeID)
+	}
+	if len(clauses) == 0 {
+		return "", args
+	}
+
+	return "WHERE " + strings.Join(clauses, " AND "), args
 }
 
 func (r *UserRepository) UpdateBan(ctx context.Context, id, state int, unbanTime uint32) error {

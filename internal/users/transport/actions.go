@@ -48,9 +48,8 @@ func (h *Handler) doBan(w http.ResponseWriter, r *http.Request) {
 	cmd := app.BanCommand{
 		ActorUserID:  actorID,
 		TargetUserID: targetID,
-		PresetCode:   r.FormValue("preset"),
-		CustomValue:  atoiOrZero(r.FormValue("value")),
-		CustomUnit:   r.FormValue("unit"),
+		Permanent:    r.FormValue("permanent") != "",
+		Days:         atoiOrZero(r.FormValue("days")),
 		Reason:       r.FormValue("reason"),
 	}
 
