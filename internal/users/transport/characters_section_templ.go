@@ -11,8 +11,8 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"fmt"
 
+	chardomain "github.com/hayakawakaki/go-racp/internal/character/domain"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
-	"github.com/hayakawakaki/go-racp/internal/users/domain"
 )
 
 func charactersSection(state detailState) templ.Component {
@@ -69,9 +69,9 @@ func charactersSection(state detailState) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var3 string
-				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(domain.JobName(c.Class))
+				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(chardomain.JobName(c.Class))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/users/transport/characters_section.templ`, Line: 33, Col: 55}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/users/transport/characters_section.templ`, Line: 33, Col: 59}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 				if templ_7745c5c3_Err != nil {

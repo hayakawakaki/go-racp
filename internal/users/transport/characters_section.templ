@@ -3,8 +3,8 @@ package transport
 import (
 	"fmt"
 
+	chardomain "github.com/hayakawakaki/go-racp/internal/character/domain"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
-	"github.com/hayakawakaki/go-racp/internal/users/domain"
 )
 
 templ charactersSection(state detailState) {
@@ -30,7 +30,7 @@ templ charactersSection(state detailState) {
 						for _, c := range state.Detail.Characters {
 							<tr class="border-t border-gray-100">
 								<td class="py-2 pr-4 font-medium">{ c.Name }</td>
-								<td class="py-2 pr-4">{ domain.JobName(c.Class) }</td>
+								<td class="py-2 pr-4">{ chardomain.JobName(c.Class) }</td>
 								<td class="py-2 pr-4 font-mono tabular-nums">{ fmt.Sprintf("%d / %d", c.BaseLevel, c.JobLevel) }</td>
 								<td class="py-2 pr-4">
 									if c.Online {
