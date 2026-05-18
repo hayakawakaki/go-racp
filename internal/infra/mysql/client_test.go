@@ -23,7 +23,7 @@ func TestConfigure_ForcesParseTime(t *testing.T) {
 func TestConfigure_PreservesOtherParams(t *testing.T) {
 	t.Parallel()
 
-	cfg, err := configure("user:pass@tcp(127.0.0.1:3306)/main?charset=utf8mb4&loc=Local")
+	cfg, err := configure("user:pass@tcp(127.0.0.1:3306)/main?charset=utf8mb4&loc=Asia%2FTokyo")
 	if err != nil {
 		t.Fatalf("configure: %v", err)
 	}
@@ -31,7 +31,7 @@ func TestConfigure_PreservesOtherParams(t *testing.T) {
 		t.Errorf("ParseTime = false, want true")
 	}
 	got := cfg.FormatDSN()
-	for _, want := range []string{"charset=utf8mb4", "loc=Local"} {
+	for _, want := range []string{"charset=utf8mb4", "loc=Asia%2FTokyo"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("missing %q in DSN: %q", want, got)
 		}
