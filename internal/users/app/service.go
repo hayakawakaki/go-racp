@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"maps"
 	"strconv"
 	"strings"
 	"time"
@@ -54,13 +55,13 @@ func NewService(in Sources) *Service {
 		users:        in.Users,
 		characters:   in.Characters,
 		actions:      in.Actions,
-		allowedRoles: in.AllowedRoles,
+		allowedRoles: maps.Clone(in.AllowedRoles),
 		logger:       logger,
 	}
 }
 
 func (s *Service) AllowedRoles() map[int]string {
-	return s.allowedRoles
+	return maps.Clone(s.allowedRoles)
 }
 
 func (s *Service) List(ctx context.Context, q ListQuery) (UserPage, error) {

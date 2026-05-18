@@ -27,7 +27,13 @@ templ fieldLabel(text string) {
 templ banForm(targetID int) {
 	<div class="rounded-xl ring-1 ring-gray-200 p-4 flex flex-col gap-3">
 		@actionCardHeader("bg-rose-500", "Ban")
-		<form class="flex flex-col gap-3 flex-1" x-data="{ permanent: false }">
+		<form
+			class="flex flex-col gap-3 flex-1"
+			x-data="{ permanent: false }"
+			hx-post={ fmt.Sprintf("/admin/users/%d/ban", targetID) }
+			hx-target="#user-detail"
+			hx-swap="outerHTML"
+		>
 			<label class="block space-y-1">
 				@fieldLabel("Reason (required)")
 				<input
@@ -58,11 +64,7 @@ templ banForm(targetID int) {
 				/>
 			</label>
 			<button
-				type="button"
-				hx-post={ fmt.Sprintf("/admin/users/%d/ban", targetID) }
-				hx-include="closest form"
-				hx-target="#user-detail"
-				hx-swap="outerHTML"
+				type="submit"
 				class="mt-auto w-full rounded-md bg-rose-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-rose-700 active:bg-rose-800"
 			>
 				Apply ban

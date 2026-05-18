@@ -2,6 +2,7 @@ package domain
 
 import (
 	"errors"
+	"math"
 	"testing"
 	"time"
 )
@@ -20,6 +21,7 @@ func TestParseBanDays(t *testing.T) {
 		{ErrInvalidDuration, "zero", 0, 0},
 		{ErrInvalidDuration, "negative", 0, -1},
 		{ErrInvalidDuration, "over ceiling", 0, 365 * 11},
+		{ErrInvalidDuration, "max int", 0, math.MaxInt},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -1,13 +1,19 @@
 package transport
 
 import (
+	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 	"github.com/hayakawakaki/go-racp/internal/users/app"
 )
+
+func pageURL(baseURL string, page int, query string) string {
+	return fmt.Sprintf("%s?page=%d&q=%s", baseURL, page, url.QueryEscape(query))
+}
 
 type listState struct {
 	Now     time.Time

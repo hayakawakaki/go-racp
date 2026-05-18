@@ -37,7 +37,7 @@ func (r *ActionRepository) ListByTarget(ctx context.Context, targetID, limit int
 	rows, err := r.Pool.Query(ctx,
 		`SELECT id, actor_user_id, target_user_id, action, reason, before_value, after_value, created_at
 		 FROM cp_user_actions WHERE target_user_id = $1
-		 ORDER BY created_at DESC LIMIT $2`,
+		 ORDER BY created_at DESC, id DESC LIMIT $2`,
 		targetID, limit,
 	)
 	if err != nil {

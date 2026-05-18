@@ -80,8 +80,8 @@ templ pagination(state listState) {
 			if state.Page.Page > 1 {
 				<a
 					class="rounded border px-2 py-1"
-					href={ templ.SafeURL(fmt.Sprintf("%s?page=%d&q=%s", state.BaseURL, state.Page.Page-1, state.Query)) }
-					hx-get={ fmt.Sprintf("%s?page=%d&q=%s", state.BaseURL, state.Page.Page-1, state.Query) }
+					href={ templ.SafeURL(pageURL(state.BaseURL, state.Page.Page-1, state.Query)) }
+					hx-get={ pageURL(state.BaseURL, state.Page.Page-1, state.Query) }
 					hx-target="#admin-content"
 					hx-push-url="true"
 				>Prev</a>
@@ -89,8 +89,8 @@ templ pagination(state listState) {
 			if state.Page.Page < state.Page.TotalPages {
 				<a
 					class="rounded border px-2 py-1"
-					href={ templ.SafeURL(fmt.Sprintf("%s?page=%d&q=%s", state.BaseURL, state.Page.Page+1, state.Query)) }
-					hx-get={ fmt.Sprintf("%s?page=%d&q=%s", state.BaseURL, state.Page.Page+1, state.Query) }
+					href={ templ.SafeURL(pageURL(state.BaseURL, state.Page.Page+1, state.Query)) }
+					hx-get={ pageURL(state.BaseURL, state.Page.Page+1, state.Query) }
 					hx-target="#admin-content"
 					hx-push-url="true"
 				>Next</a>

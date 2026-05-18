@@ -255,9 +255,9 @@ func pagination(state listState) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var12 templ.SafeURL
-			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(fmt.Sprintf("%s?page=%d&q=%s", state.BaseURL, state.Page.Page-1, state.Query)))
+			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(pageURL(state.BaseURL, state.Page.Page-1, state.Query)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/users/transport/list.templ`, Line: 83, Col: 104}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/users/transport/list.templ`, Line: 83, Col: 81}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 			if templ_7745c5c3_Err != nil {
@@ -268,9 +268,9 @@ func pagination(state listState) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var13 string
-			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%s?page=%d&q=%s", state.BaseURL, state.Page.Page-1, state.Query))
+			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(pageURL(state.BaseURL, state.Page.Page-1, state.Query))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/users/transport/list.templ`, Line: 84, Col: 91}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/users/transport/list.templ`, Line: 84, Col: 68}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 			if templ_7745c5c3_Err != nil {
@@ -287,9 +287,9 @@ func pagination(state listState) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var14 templ.SafeURL
-			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(fmt.Sprintf("%s?page=%d&q=%s", state.BaseURL, state.Page.Page+1, state.Query)))
+			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(pageURL(state.BaseURL, state.Page.Page+1, state.Query)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/users/transport/list.templ`, Line: 92, Col: 104}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/users/transport/list.templ`, Line: 92, Col: 81}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 			if templ_7745c5c3_Err != nil {
@@ -300,9 +300,9 @@ func pagination(state listState) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var15 string
-			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%s?page=%d&q=%s", state.BaseURL, state.Page.Page+1, state.Query))
+			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(pageURL(state.BaseURL, state.Page.Page+1, state.Query))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/users/transport/list.templ`, Line: 93, Col: 91}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/users/transport/list.templ`, Line: 93, Col: 68}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 			if templ_7745c5c3_Err != nil {

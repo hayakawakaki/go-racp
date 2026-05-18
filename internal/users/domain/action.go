@@ -21,7 +21,7 @@ type Action struct {
 	TargetUserID int
 }
 
-const banCeiling = 10 * 365 * 24 * time.Hour
+const maxBanDays = 10 * 365
 
 type BanDuration struct {
 	Duration  time.Duration
@@ -29,13 +29,9 @@ type BanDuration struct {
 }
 
 func ParseBanDays(days int) (BanDuration, error) {
-	if days <= 0 {
-		return BanDuration{}, ErrInvalidDuration
-	}
-	total := time.Duration(days) * 24 * time.Hour
-	if total > banCeiling {
+	if days <= 0 || days > maxBanDays {
 		return BanDuration{}, ErrInvalidDuration
 	}
 
-	return BanDuration{Duration: total}, nil
+	return BanDuration{Duration: time.Duration(days) * 24 * time.Hour}, nil
 }

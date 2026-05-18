@@ -95,7 +95,10 @@ func TestUserRepository_UpdateBan_TempThenUnban(t *testing.T) {
 	if err := repo.UpdateBan(context.Background(), id, 0, unbanAt); err != nil {
 		t.Fatalf("UpdateBan temp: %v", err)
 	}
-	user, _ := repo.GetByID(context.Background(), id)
+	user, err := repo.GetByID(context.Background(), id)
+	if err != nil {
+		t.Fatalf("GetByID after UpdateBan temp: %v", err)
+	}
 	if user.UnbanTime.IsZero() {
 		t.Errorf("UnbanTime should be set, got zero")
 	}
@@ -103,7 +106,10 @@ func TestUserRepository_UpdateBan_TempThenUnban(t *testing.T) {
 	if err := repo.UpdateBan(context.Background(), id, 0, 0); err != nil {
 		t.Fatalf("UpdateBan clear: %v", err)
 	}
-	user, _ = repo.GetByID(context.Background(), id)
+	user, err = repo.GetByID(context.Background(), id)
+	if err != nil {
+		t.Fatalf("GetByID after UpdateBan clear: %v", err)
+	}
 	if !user.UnbanTime.IsZero() {
 		t.Errorf("UnbanTime should be zero, got %v", user.UnbanTime)
 	}
@@ -116,7 +122,10 @@ func TestUserRepository_UpdateGroup(t *testing.T) {
 	if err := repo.UpdateGroup(context.Background(), id, 20); err != nil {
 		t.Fatalf("UpdateGroup: %v", err)
 	}
-	user, _ := repo.GetByID(context.Background(), id)
+	user, err := repo.GetByID(context.Background(), id)
+	if err != nil {
+		t.Fatalf("GetByID after UpdateGroup: %v", err)
+	}
 	if user.GroupID != 20 {
 		t.Errorf("GroupID = %d, want 20", user.GroupID)
 	}

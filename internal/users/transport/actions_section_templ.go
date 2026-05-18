@@ -190,7 +190,20 @@ func banForm(targetID int) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<form class=\"flex flex-col gap-3 flex-1\" x-data=\"{ permanent: false }\"><label class=\"block space-y-1\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<form class=\"flex flex-col gap-3 flex-1\" x-data=\"{ permanent: false }\" hx-post=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var9 string
+		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/admin/users/%d/ban", targetID))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/users/transport/actions_section.templ`, Line: 33, Col: 57}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "\" hx-target=\"#user-detail\" hx-swap=\"outerHTML\"><label class=\"block space-y-1\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -198,7 +211,7 @@ func banForm(targetID int) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<input type=\"text\" name=\"reason\" placeholder=\"Cheating, macro, scamming…\" class=\"w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-rose-500 focus:ring-1 focus:ring-rose-500 focus:outline-none\"></label> <label class=\"flex items-center gap-2 text-sm text-gray-700 select-none\"><input type=\"checkbox\" name=\"permanent\" value=\"on\" x-model=\"permanent\" class=\"h-4 w-4 rounded border-gray-300 text-rose-600 focus:ring-rose-500\"> <span>Permanent ban</span></label> <label class=\"block space-y-1\" :class=\"permanent && 'opacity-40'\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<input type=\"text\" name=\"reason\" placeholder=\"Cheating, macro, scamming…\" class=\"w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-rose-500 focus:ring-1 focus:ring-rose-500 focus:outline-none\"></label> <label class=\"flex items-center gap-2 text-sm text-gray-700 select-none\"><input type=\"checkbox\" name=\"permanent\" value=\"on\" x-model=\"permanent\" class=\"h-4 w-4 rounded border-gray-300 text-rose-600 focus:ring-rose-500\"> <span>Permanent ban</span></label> <label class=\"block space-y-1\" :class=\"permanent && 'opacity-40'\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -206,20 +219,7 @@ func banForm(targetID int) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<input type=\"number\" name=\"days\" min=\"1\" :disabled=\"permanent\" class=\"w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-rose-500 focus:ring-1 focus:ring-rose-500 focus:outline-none disabled:bg-gray-50\"></label> <button type=\"button\" hx-post=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var9 string
-		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/admin/users/%d/ban", targetID))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/users/transport/actions_section.templ`, Line: 62, Col: 58}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "\" hx-include=\"closest form\" hx-target=\"#user-detail\" hx-swap=\"outerHTML\" class=\"mt-auto w-full rounded-md bg-rose-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-rose-700 active:bg-rose-800\">Apply ban</button></form></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<input type=\"number\" name=\"days\" min=\"1\" :disabled=\"permanent\" class=\"w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-rose-500 focus:ring-1 focus:ring-rose-500 focus:outline-none disabled:bg-gray-50\"></label> <button type=\"submit\" class=\"mt-auto w-full rounded-md bg-rose-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-rose-700 active:bg-rose-800\">Apply ban</button></form></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -263,7 +263,7 @@ func unbanForm(targetID int) templ.Component {
 		var templ_7745c5c3_Var11 string
 		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/admin/users/%d/unban", targetID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/users/transport/actions_section.templ`, Line: 79, Col: 59}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/users/transport/actions_section.templ`, Line: 81, Col: 59}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 		if templ_7745c5c3_Err != nil {
@@ -321,7 +321,7 @@ func setRoleForm(state detailState) templ.Component {
 		var templ_7745c5c3_Var13 string
 		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/admin/users/%d/role", state.Detail.User.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/users/transport/actions_section.templ`, Line: 107, Col: 70}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/users/transport/actions_section.templ`, Line: 109, Col: 70}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
@@ -355,7 +355,7 @@ func setRoleForm(state detailState) templ.Component {
 			var templ_7745c5c3_Var14 string
 			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", opt.GroupID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/users/transport/actions_section.templ`, Line: 127, Col: 52}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/users/transport/actions_section.templ`, Line: 129, Col: 52}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 			if templ_7745c5c3_Err != nil {
@@ -378,7 +378,7 @@ func setRoleForm(state detailState) templ.Component {
 			var templ_7745c5c3_Var15 string
 			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(opt.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/users/transport/actions_section.templ`, Line: 128, Col: 17}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/users/transport/actions_section.templ`, Line: 130, Col: 17}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 			if templ_7745c5c3_Err != nil {
