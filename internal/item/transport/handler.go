@@ -8,6 +8,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 	itemapp "github.com/hayakawakaki/go-racp/internal/item/app"
 	"github.com/hayakawakaki/go-racp/internal/item/domain"
+	mobdomain "github.com/hayakawakaki/go-racp/internal/mob/domain"
 	"github.com/hayakawakaki/go-racp/internal/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
@@ -19,15 +20,21 @@ type itemService interface {
 	Status() itemapp.ServiceStatus
 }
 
+type dropLookup interface {
+	WhoDrops(itemAegis string) []mobdomain.DropOf
+}
+
 type HandlerConfig struct {
-	Logger  *slog.Logger
-	General config.GeneralConfig
+	Logger     *slog.Logger
+	DropLookup dropLookup
+	General    config.GeneralConfig
 }
 
 type Handler struct {
-	svc     itemService
-	logger  *slog.Logger
-	general config.GeneralConfig
+	svc        itemService
+	logger     *slog.Logger
+	dropLookup dropLookup
+	general    config.GeneralConfig
 }
 
 func NewHandler(svc itemService, cfg HandlerConfig) *Handler {
@@ -36,7 +43,7 @@ func NewHandler(svc itemService, cfg HandlerConfig) *Handler {
 		logger = slog.Default()
 	}
 
-	return &Handler{svc: svc, logger: logger, general: cfg.General}
+	return &Handler{svc: svc, logger: logger, dropLookup: cfg.DropLookup, general: cfg.General}
 }
 
 func (h *Handler) layout() httpx.Layout {

@@ -32,12 +32,36 @@ func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	lookup := h.currentItemLookup()
 	state := DetailState{
-		Mob:   mob,
-		Stats: buildStats(mob),
-		Exp:   buildExp(mob),
+		Mob:      mob,
+		Stats:    buildStats(mob),
+		Exp:      buildExp(mob),
+		Drops:    resolveDrops(mob.Drops, lookup),
+		MvpDrops: resolveDrops(mob.MvpDrops, lookup),
 	}
 	httpx.RenderHTML(w, r, h.logger, detailPage(h.layout(), state))
+}
+
+func resolveDrops(drops []domain.MobDrop, lookup ItemLookup) []dropRow {
+	if len(drops) == 0 {
+		return nil
+	}
+	out := make([]dropRow, 0, len(drops))
+	for _, drop := range drops {
+		row := dropRow{Aegis: drop.ItemAegis, Rate: drop.Rate}
+		if lookup != nil {
+			if item := lookup.LookupByAegis(drop.ItemAegis); item != nil {
+				row.ItemID = item.ID
+				row.Image = item.Image
+				row.ClientName = item.ClientName
+				row.Slots = item.Slots
+			}
+		}
+		out = append(out, row)
+	}
+
+	return out
 }
 
 func (h *Handler) renderNotFound(w http.ResponseWriter, r *http.Request, idText string) {

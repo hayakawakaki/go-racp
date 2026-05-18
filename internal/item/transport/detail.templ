@@ -5,17 +5,70 @@ import (
 
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 	"github.com/hayakawakaki/go-racp/internal/item/domain"
+	mobdomain "github.com/hayakawakaki/go-racp/internal/mob/domain"
 )
 
 type DetailState struct {
 	Item             *domain.Item
 	Stats            []labeledRow
 	DescriptionLines []string
+	DroppedBy        []mobdomain.DropOf
 }
 
 type labeledRow struct {
 	Label string
 	Value string
+}
+
+templ droppedBySection(entries []mobdomain.DropOf) {
+	<section
+		class="rounded-2xl bg-white ring-1 ring-gray-200 px-8 py-7"
+		x-data={ droppedByAlpineState(len(entries)) }
+	>
+		<header class="flex items-baseline justify-between border-b border-gray-100 pb-4">
+			<h2 class="text-lg font-semibold tracking-tight text-gray-900">Dropped By</h2>
+			<span class="text-xs uppercase tracking-[0.18em] text-gray-400">{ fmt.Sprintf("%d sources", len(entries)) }</span>
+		</header>
+		<ul class="mt-2 divide-y divide-gray-100">
+			for index, drop := range entries {
+				<li x-show={ fmt.Sprintf("Math.floor(%d / perPage) + 1 === page", index) }>
+					<a
+						href={ templ.SafeURL(fmt.Sprintf("/mobs/%d", drop.MobID)) }
+						class="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4 py-3 text-sm transition hover:bg-gray-50"
+					>
+						<span class="flex items-center gap-2 text-gray-900">
+							{ drop.MobName }
+							if drop.IsMVP {
+								<span class="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-amber-800">MVP</span>
+							}
+						</span>
+						<span class="text-right font-mono tabular-nums text-gray-900">{ fmt.Sprintf("%.2f%%", float64(drop.Rate)/100) }</span>
+					</a>
+				</li>
+			}
+		</ul>
+		if len(entries) > droppedByPerPage {
+			<nav aria-label="Dropped by pagination" class="mt-6 flex items-center justify-between border-t border-gray-100 pt-4">
+				<button
+					type="button"
+					@click="page = Math.max(1, page - 1)"
+					:disabled="page === 1"
+					class="rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-900 hover:text-gray-900 disabled:cursor-not-allowed disabled:border-gray-100 disabled:text-gray-300 disabled:hover:border-gray-100 disabled:hover:text-gray-300"
+				>
+					Previous
+				</button>
+				<span class="text-xs uppercase tracking-[0.18em] text-gray-400" x-text="page + ' / ' + totalPages"></span>
+				<button
+					type="button"
+					@click="page = Math.min(totalPages, page + 1)"
+					:disabled="page === totalPages"
+					class="rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-900 hover:text-gray-900 disabled:cursor-not-allowed disabled:border-gray-100 disabled:text-gray-300 disabled:hover:border-gray-100 disabled:hover:text-gray-300"
+				>
+					Next
+				</button>
+			</nav>
+		}
+	</section>
 }
 
 templ detailPage(layout httpx.Layout, state DetailState) {
@@ -55,6 +108,9 @@ templ detailPage(layout httpx.Layout, state DetailState) {
 					}
 				</dl>
 			</section>
+			if len(state.DroppedBy) > 0 {
+				@droppedBySection(state.DroppedBy)
+			}
 			<div
 				x-show="open"
 				x-cloak

@@ -63,7 +63,7 @@ func listPage(layout httpx.Layout, state ListState) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"w-full max-w-5xl space-y-6\"><section class=\"rounded-2xl bg-white ring-1 ring-gray-200 px-8 py-7\"><div class=\"flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between\"><div><p class=\"text-xs uppercase tracking-[0.18em] text-gray-400\">Catalog</p><h1 class=\"mt-2 text-3xl font-semibold tracking-tight text-gray-900\">Items</h1>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"w-full max-w-5xl space-y-6\"><section class=\"rounded-2xl bg-white ring-1 ring-gray-200 px-8 py-7\"><div class=\"flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between\"><div><p class=\"text-xs uppercase tracking-[0.18em] text-gray-400\">Item Database</p><h1 class=\"mt-2 text-3xl font-semibold tracking-tight text-gray-900\">Items</h1>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

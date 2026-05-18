@@ -9,14 +9,37 @@ import (
 )
 
 type DetailState struct {
-	Mob   *domain.Mob
-	Stats []labeledRow
-	Exp   []labeledRow
+	Mob      *domain.Mob
+	Stats    []labeledRow
+	Exp      []labeledRow
+	Drops    []dropRow
+	MvpDrops []dropRow
 }
 
 type labeledRow struct {
 	Label string
 	Value string
+}
+
+type dropRow struct {
+	Aegis      string
+	Image      string
+	ClientName string
+	ItemID     int
+	Slots      int
+	Rate       int
+}
+
+func (r dropRow) DisplayName() string {
+	name := r.ClientName
+	if name == "" {
+		name = r.Aegis
+	}
+	if r.Slots > 0 {
+		name += fmt.Sprintf(" [%d]", r.Slots)
+	}
+
+	return name
 }
 
 templ detailPage(layout httpx.Layout, state DetailState) {
@@ -96,11 +119,11 @@ templ detailPage(layout httpx.Layout, state DetailState) {
 					</dl>
 				</section>
 			}
-			if len(state.Mob.Drops) > 0 {
-				@dropTable("Drops", state.Mob.Drops)
+			if len(state.Drops) > 0 {
+				@dropTable("Drops", state.Drops)
 			}
-			if len(state.Mob.MvpDrops) > 0 {
-				@dropTable("MVP Drops", state.Mob.MvpDrops)
+			if len(state.MvpDrops) > 0 {
+				@dropTable("MVP Drops", state.MvpDrops)
 			}
 			if state.Mob.Modes != 0 {
 				@bitfieldSection("Modes", state.Mob.Modes.Display())
@@ -109,7 +132,7 @@ templ detailPage(layout httpx.Layout, state DetailState) {
 	}
 }
 
-templ dropTable(title string, drops []domain.MobDrop) {
+templ dropTable(title string, drops []dropRow) {
 	<section class="rounded-2xl bg-white ring-1 ring-gray-200 px-8 py-7">
 		<header class="flex items-baseline justify-between border-b border-gray-100 pb-4">
 			<h2 class="text-lg font-semibold tracking-tight text-gray-900">{ title }</h2>
@@ -117,9 +140,23 @@ templ dropTable(title string, drops []domain.MobDrop) {
 		</header>
 		<ul class="mt-2 divide-y divide-gray-100">
 			for _, drop := range drops {
-				<li class="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4 py-3 text-sm">
-					<span class="font-mono text-gray-700">{ drop.ItemAegis }</span>
-					<span class="text-right font-mono tabular-nums text-gray-900">{ formatRate(drop.Rate) }</span>
+				<li>
+					if drop.ItemID > 0 {
+						<a
+							href={ templ.SafeURL(fmt.Sprintf("/items/%d", drop.ItemID)) }
+							class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 py-3 text-sm transition hover:bg-gray-50"
+						>
+							@itemSpriteBox(drop.Image, "size-[25px]")
+							<span class="text-gray-900">{ drop.DisplayName() }</span>
+							<span class="text-right font-mono tabular-nums text-gray-900">{ formatRate(drop.Rate) }</span>
+						</a>
+					} else {
+						<div class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 py-3 text-sm">
+							@itemSpriteBox("", "size-[25px]")
+							<span class="font-mono text-gray-500">{ drop.Aegis }</span>
+							<span class="text-right font-mono tabular-nums text-gray-900">{ formatRate(drop.Rate) }</span>
+						</div>
+					}
 				</li>
 			}
 		</ul>

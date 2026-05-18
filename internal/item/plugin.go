@@ -6,11 +6,13 @@ import (
 	"net/http"
 	"path/filepath"
 	"slices"
+	"sync"
 
 	platinfra "github.com/hayakawakaki/go-racp/internal/infra"
 	itemapp "github.com/hayakawakaki/go-racp/internal/item/app"
 	"github.com/hayakawakaki/go-racp/internal/item/domain"
 	itemtransport "github.com/hayakawakaki/go-racp/internal/item/transport"
+	"github.com/hayakawakaki/go-racp/internal/mob"
 	"github.com/hayakawakaki/go-racp/internal/plugin"
 	"github.com/hayakawakaki/go-racp/internal/refdata"
 	"github.com/hayakawakaki/go-racp/internal/routes"
@@ -22,37 +24,48 @@ const (
 	itemCacheFileName = "item-snapshot.gob"
 )
 
+var (
+	svcOnce     sync.Once
+	svcInstance *itemapp.Service
+)
+
 func init() {
 	plugin.Register(plugin.Plugin{Name: "item", Mount: mount})
 }
 
 func mount(reg *routes.Registry, mux *http.ServeMux, in *platinfra.Infra) {
 	service := BuildService(in)
+	mob.SetItemLookup(service)
 	handler := itemtransport.NewHandler(service, itemtransport.HandlerConfig{
-		Logger:  in.Logger,
-		General: in.Config.App.General,
+		Logger:     in.Logger,
+		General:    in.Config.App.General,
+		DropLookup: mob.BuildService(in),
 	})
 	handler.RegisterRoutes(reg, mux)
 	startDevWatcher(in, service)
 }
 
 func BuildService(in *platinfra.Infra) *itemapp.Service {
-	sources := buildSources(in)
-	loader := func() (*domain.Snapshot, error) {
-		return itemapp.ParseSources(sources)
-	}
-	snap, err := loader()
-	if err != nil {
-		in.Logger.Error("item: initial load failed", "err", err)
-		panic(err)
-	}
-	if snap.SourceCount == 0 {
-		in.Logger.Warn("item: no item database configured, serving empty snapshot")
-	} else {
-		in.Logger.Info("item: snapshot loaded", "items", snap.SourceCount)
-	}
+	svcOnce.Do(func() {
+		sources := buildSources(in)
+		loader := func() (*domain.Snapshot, error) {
+			return itemapp.ParseSources(sources)
+		}
+		snap, err := loader()
+		if err != nil {
+			in.Logger.Error("item: initial load failed", "err", err)
+			panic(err)
+		}
+		if snap.SourceCount == 0 {
+			in.Logger.Warn("item: no item database configured, serving empty snapshot")
+		} else {
+			in.Logger.Info("item: snapshot loaded", "items", snap.SourceCount)
+		}
 
-	return itemapp.NewServiceWithSnapshot(snap, loader)
+		svcInstance = itemapp.NewServiceWithSnapshot(snap, loader)
+	})
+
+	return svcInstance
 }
 
 func buildSources(in *platinfra.Infra) itemapp.Sources {

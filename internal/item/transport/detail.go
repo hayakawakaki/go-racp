@@ -9,6 +9,7 @@ import (
 
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 	"github.com/hayakawakaki/go-racp/internal/item/domain"
+	mobdomain "github.com/hayakawakaki/go-racp/internal/mob/domain"
 )
 
 func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {
@@ -37,10 +38,15 @@ func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {
 	for _, line := range item.Description {
 		lines = append(lines, renderDescription([]string{line}))
 	}
+	var droppedBy []mobdomain.DropOf
+	if h.dropLookup != nil {
+		droppedBy = h.dropLookup.WhoDrops(item.AegisName)
+	}
 	state := DetailState{
 		Item:             item,
 		Stats:            buildStats(item),
 		DescriptionLines: lines,
+		DroppedBy:        droppedBy,
 	}
 	httpx.RenderHTML(w, r, h.logger, detailPage(h.layout(), state))
 }
@@ -106,4 +112,12 @@ func yesNo(value bool) string {
 	}
 
 	return "No"
+}
+
+const droppedByPerPage = 10
+
+func droppedByAlpineState(count int) string {
+	pages := max((count+droppedByPerPage-1)/droppedByPerPage, 1)
+
+	return fmt.Sprintf("{ page: 1, perPage: %d, totalPages: %d }", droppedByPerPage, pages)
 }
