@@ -401,3 +401,80 @@ func TestTierBadge_LabelsForEachTier(t *testing.T) {
 		})
 	}
 }
+
+func TestBuildRoleOptions(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		allowed map[int]string
+		want    []roleOption
+	}{
+		{
+			name:    "empty input returns empty slice",
+			allowed: map[int]string{},
+			want:    []roleOption{},
+		},
+		{
+			name:    "single role",
+			allowed: map[int]string{0: "Player"},
+			want:    []roleOption{{GroupID: 0, Name: "Player"}},
+		},
+		{
+			name:    "sorted ascending by group_id",
+			allowed: map[int]string{20: "Moderator", 0: "Player", 10: "Enforcer", 2: "Event"},
+			want: []roleOption{
+				{GroupID: 0, Name: "Player"},
+				{GroupID: 2, Name: "Event"},
+				{GroupID: 10, Name: "Enforcer"},
+				{GroupID: 20, Name: "Moderator"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got := buildRoleOptions(tt.allowed)
+			if len(got) != len(tt.want) {
+				t.Fatalf("len = %d, want %d (%+v)", len(got), len(tt.want), got)
+			}
+			for i := range got {
+				if got[i] != tt.want[i] {
+					t.Errorf("[%d] = %+v, want %+v", i, got[i], tt.want[i])
+				}
+			}
+		})
+	}
+}
+
+func TestRoleNameFor(t *testing.T) {
+	t.Parallel()
+
+	state := detailState{
+		AllowedRoles: []roleOption{
+			{GroupID: 0, Name: "Player"},
+			{GroupID: 20, Name: "Moderator"},
+		},
+	}
+
+	tests := []struct {
+		name    string
+		want    string
+		groupID int
+	}{
+		{name: "known player role", groupID: 0, want: "Player"},
+		{name: "known moderator role", groupID: 20, want: "Moderator"},
+		{name: "admin group resolves to Admin", groupID: usersdomain.AdminGroupID, want: "Admin"},
+		{name: "unknown group falls back", groupID: 77, want: "group_77"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := roleNameFor(state, tt.groupID); got != tt.want {
+				t.Errorf("roleNameFor(%d) = %q, want %q", tt.groupID, got, tt.want)
+			}
+		})
+	}
+}
