@@ -75,9 +75,20 @@ NewsCategories:
     Display: "Patch Notes"
 
 # Item Database
-# Drop your rAthena item_db YAML and client item info lua/lub files anywhere readable,
-# then list them here. Relative paths join with Root. Absolute paths bypass Root.
+# Relative paths resolve against the cp root. Absolute paths are followed as is.
+# Rathena's footer import is not resolved on the parser. Use the direct path to the yml files.
+#
+# Path examples:
+# Local Path
+#   Path: "data/"
+# Linux Absolute Path
+#   Path: "/home/username/rathena/db/"
+# Windows Absolute Path
+#   Path: "C:\Users\user1\Desktop\rathena\db\"
 ItemDB:
-  Root: "data/"
-  YAML: ["item_db_equip.yml", "item_db_etc.yml", "item_db_usable.yml"]
-  Lua: ["iteminfo.lub"]
+  YAML:
+    Path: "data/"
+    Files: ["item_db_equip.yml", "item_db_etc.yml", "item_db_usable.yml"]
+  Lua:
+    Path: "data/"
+    Files: ["iteminfo.lub"]

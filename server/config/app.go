@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/goccy/go-yaml"
+
+	"github.com/hayakawakaki/go-racp/internal/refdata"
 )
 
 // GeneralConfig holds UI/branding settings shared across every page.
@@ -86,9 +88,8 @@ type AuthConfig struct {
 }
 
 type ItemDBConfig struct {
-	Root string   `yaml:"Root"`
-	YAML []string `yaml:"YAML"`
-	Lua  []string `yaml:"Lua"`
+	YAML refdata.SourceGroup `yaml:"YAML"`
+	Lua  refdata.SourceGroup `yaml:"Lua"`
 }
 
 // AppConfig holds operator-tunable application settings loaded from config.yml.
@@ -141,7 +142,7 @@ func appConfigDefaults() *AppConfig {
 		Tickets:         TicketsConfig{StaffPollInterval: 30 * time.Second},
 		Auth:            AuthConfig{AllowTempBannedLogin: true},
 		DefaultLocation: DefaultLocationConfig{Map: "prontera", X: 156, Y: 191},
-		ItemDB:          ItemDBConfig{Root: "", YAML: nil, Lua: nil},
+		ItemDB:          ItemDBConfig{},
 	}
 }
 
