@@ -59,7 +59,6 @@ func buildSources(in *platinfra.Infra) itemapp.Sources {
 	cfg := in.Config.App.ItemDB
 	sources := itemapp.Sources{
 		Logger: in.Logger,
-		Root:   cfg.Root,
 		YAML:   cfg.YAML,
 		Lua:    cfg.Lua,
 	}

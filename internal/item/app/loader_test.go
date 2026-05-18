@@ -5,7 +5,24 @@ import (
 	"testing"
 
 	"github.com/hayakawakaki/go-racp/internal/item/domain"
+	"github.com/hayakawakaki/go-racp/internal/refdata"
 )
+
+func yamlGroup(t *testing.T, relatives ...string) refdata.SourceGroup {
+	t.Helper()
+	files := make([]string, len(relatives))
+	for i, rel := range relatives {
+		files[i] = absPath(t, rel)
+	}
+
+	return refdata.SourceGroup{Files: files}
+}
+
+func luaGroup(t *testing.T, relatives ...string) refdata.SourceGroup {
+	t.Helper()
+
+	return yamlGroup(t, relatives...)
+}
 
 func absPath(t *testing.T, relative string) string {
 	t.Helper()
@@ -19,8 +36,8 @@ func absPath(t *testing.T, relative string) string {
 
 func TestParseSources_BasicMerge(t *testing.T) {
 	snap, err := ParseSources(Sources{
-		YAML: []string{absPath(t, "testdata/single.yml")},
-		Lua:  []string{absPath(t, "testdata/iteminfo.lua")},
+		YAML: yamlGroup(t, "testdata/single.yml"),
+		Lua:  luaGroup(t, "testdata/iteminfo.lua"),
 	})
 	if err != nil {
 		t.Fatalf("ParseSources: %v", err)
@@ -61,8 +78,8 @@ func TestParseSources_BasicMerge(t *testing.T) {
 
 func TestParseSources_LastFileWins(t *testing.T) {
 	snap, err := ParseSources(Sources{
-		YAML: []string{absPath(t, "testdata/single.yml"), absPath(t, "testdata/override.yml")},
-		Lua:  []string{absPath(t, "testdata/iteminfo.lua")},
+		YAML: yamlGroup(t, "testdata/single.yml", "testdata/override.yml"),
+		Lua:  luaGroup(t, "testdata/iteminfo.lua"),
 	})
 	if err != nil {
 		t.Fatalf("ParseSources: %v", err)
@@ -84,7 +101,7 @@ func TestParseSources_LastFileWins(t *testing.T) {
 
 func TestParseSources_NoLuaForItem_UsesFallbacks(t *testing.T) {
 	snap, err := ParseSources(Sources{
-		YAML: []string{absPath(t, "testdata/single.yml")},
+		YAML: yamlGroup(t, "testdata/single.yml"),
 	})
 	if err != nil {
 		t.Fatalf("ParseSources: %v", err)
@@ -118,7 +135,7 @@ func TestParseSources_EmptyConfig_ReturnsEmptySnapshot(t *testing.T) {
 }
 
 func TestParseSources_MalformedYAML_ReturnsError(t *testing.T) {
-	_, err := ParseSources(Sources{YAML: []string{absPath(t, "testdata/malformed.yml")}})
+	_, err := ParseSources(Sources{YAML: yamlGroup(t, "testdata/malformed.yml")})
 	if err == nil {
 		t.Fatal("err is nil, want a parse error")
 	}
@@ -126,8 +143,8 @@ func TestParseSources_MalformedYAML_ReturnsError(t *testing.T) {
 
 func TestParseSources_MalformedLua_SkipsSilently(t *testing.T) {
 	snap, err := ParseSources(Sources{
-		YAML: []string{absPath(t, "testdata/single.yml")},
-		Lua:  []string{absPath(t, "testdata/malformed.lua")},
+		YAML: yamlGroup(t, "testdata/single.yml"),
+		Lua:  luaGroup(t, "testdata/malformed.lua"),
 	})
 	if err != nil {
 		t.Fatalf("ParseSources err = %v, want nil (regex parser tolerates malformed entries)", err)
