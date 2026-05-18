@@ -90,11 +90,16 @@ func (c Cache[T]) Save(value T, paths []string) error {
 	}
 
 	target := c.path()
-	tmp := target + ".tmp"
-	//nolint:gosec // G304: c.Dir is set by the caller from a trusted project path.
-	file, err := os.OpenFile(tmp, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, cacheFilePerm)
+	file, err := os.CreateTemp(c.Dir, c.Filename+".*.tmp")
 	if err != nil {
 		return fmt.Errorf("refdata.Cache.Save create: %w", err)
+	}
+	tmp := file.Name()
+	if err := file.Chmod(cacheFilePerm); err != nil {
+		_ = file.Close()
+		_ = os.Remove(tmp)
+
+		return fmt.Errorf("refdata.Cache.Save chmod: %w", err)
 	}
 
 	blob := cacheBlob[T]{Version: c.Version, Sources: hashes, Value: value}

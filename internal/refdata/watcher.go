@@ -29,6 +29,9 @@ func StartWatcher(ctx context.Context, paths []string, reload ReloadFunc, logger
 	if len(paths) == 0 || reload == nil {
 		return nil, nil
 	}
+	if logger == nil {
+		logger = slog.Default()
+	}
 
 	fsWatcher, err := fsnotify.NewWatcher()
 	if err != nil {
