@@ -2,6 +2,7 @@ package httpx
 
 import (
 	"bytes"
+	"cmp"
 	"log/slog"
 	"net/http"
 
@@ -12,7 +13,7 @@ import (
 func RenderHTML(w http.ResponseWriter, r *http.Request, logger *slog.Logger, comp templ.Component) {
 	var buf bytes.Buffer
 	if err := comp.Render(r.Context(), &buf); err != nil {
-		logger.Error("render", "err", err, "path", r.URL.Path)
+		cmp.Or(logger, slog.Default()).Error("render", "err", err, "path", r.URL.Path)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -29,7 +30,7 @@ func Render404(w http.ResponseWriter, r *http.Request, logger *slog.Logger, layo
 func RenderComponent404(w http.ResponseWriter, r *http.Request, logger *slog.Logger, comp templ.Component) {
 	var buf bytes.Buffer
 	if err := comp.Render(r.Context(), &buf); err != nil {
-		logger.Error("render", "err", err, "path", r.URL.Path)
+		cmp.Or(logger, slog.Default()).Error("render", "err", err, "path", r.URL.Path)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
