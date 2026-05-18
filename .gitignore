@@ -23,6 +23,7 @@ static/css/app.css
 # data (item_db.yml/lua/etc)
 /data
 
-# item images
+# images
 /static/item
 /static/collection
+/static/mob

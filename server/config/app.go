@@ -92,6 +92,10 @@ type ItemDBConfig struct {
 	Lua  refdata.SourceGroup `yaml:"Lua"`
 }
 
+type MobDBConfig struct {
+	YAML refdata.SourceGroup `yaml:"YAML"`
+}
+
 // AppConfig holds operator-tunable application settings loaded from config.yml.
 //
 //nolint:govet // fieldalignment: 8-byte gain inside a singleton config
@@ -103,6 +107,7 @@ type AppConfig struct {
 	Mailer           MailerConfig           `yaml:"MailerConfig"`
 	DefaultLocation  DefaultLocationConfig  `yaml:"DefaultLocation"`
 	ItemDB           ItemDBConfig           `yaml:"ItemDB"`
+	MobDB            MobDBConfig            `yaml:"MobDB"`
 	Cooldown         CooldownConfig         `yaml:"Cooldown"`
 	TTL              TTLConfig              `yaml:"TTL"`
 	Tickets          TicketsConfig          `yaml:"Tickets"`
@@ -143,6 +148,7 @@ func appConfigDefaults() *AppConfig {
 		Auth:            AuthConfig{AllowTempBannedLogin: true},
 		DefaultLocation: DefaultLocationConfig{Map: "prontera", X: 156, Y: 191},
 		ItemDB:          ItemDBConfig{},
+		MobDB:           MobDBConfig{},
 	}
 }
 

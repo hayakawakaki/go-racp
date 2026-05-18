@@ -92,3 +92,8 @@ ItemDB:
   Lua:
     Path: "data/"
     Files: ["iteminfo.lub"]
+
+MobDB:
+  YAML:
+    Path: "data/"
+    Files: ["mob_db.yml"]
