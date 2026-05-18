@@ -1,0 +1,35 @@
+package transport
+
+import (
+	"fmt"
+
+	"github.com/hayakawakaki/go-racp/internal/httpx"
+)
+
+templ accountSection(state detailState) {
+	<section class="rounded-2xl bg-white ring-1 ring-gray-200 p-5">
+		<h2 class="text-lg font-semibold text-gray-900 mb-3">Account</h2>
+		<dl class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+			<dt class="text-gray-500">ID</dt>
+			<dd class="font-mono">{ fmt.Sprintf("%d", state.Detail.User.ID) }</dd>
+			<dt class="text-gray-500">Username</dt>
+			<dd>{ state.Detail.User.Username }</dd>
+			<dt class="text-gray-500">Email</dt>
+			<dd>{ state.Detail.User.Email }</dd>
+			<dt class="text-gray-500">Role</dt>
+			<dd>{ roleNameFor(state, state.Detail.User.GroupID) }</dd>
+			<dt class="text-gray-500">Tier</dt>
+			<dd>@tierBadge(state.Detail.User, state.Now)</dd>
+			<dt class="text-gray-500">Last IP</dt>
+			<dd class="font-mono">{ state.Detail.User.LastIP }</dd>
+			<dt class="text-gray-500">Last login</dt>
+			<dd>
+				if state.Detail.User.LastLogin.IsZero() {
+					never
+				} else {
+					@httpx.LocalTime(state.Detail.User.LastLogin.Format("2006-01-02T15:04:05Z07:00"))
+				}
+			</dd>
+		</dl>
+	</section>
+}

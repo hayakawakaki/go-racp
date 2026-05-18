@@ -1,0 +1,91 @@
+package transport
+
+import "fmt"
+
+templ actionsSection(state detailState) {
+	<section class="rounded-2xl bg-white ring-1 ring-gray-200 p-5 space-y-4">
+		<h2 class="text-lg font-semibold text-gray-900">Actions</h2>
+		<div class="grid gap-4 md:grid-cols-3">
+			@banForm(state.Detail.User.ID)
+			@unbanForm(state.Detail.User.ID)
+			@setRoleForm(state)
+		</div>
+	</section>
+}
+
+templ banForm(targetID int) {
+	<div class="rounded-xl ring-1 ring-gray-200 p-4 space-y-3">
+		<h3 class="font-medium text-gray-900">Ban</h3>
+		<form class="space-y-2" hx-post={ fmt.Sprintf("/admin/users/%d/ban", targetID) } hx-target="#user-detail" hx-swap="outerHTML">
+			<label class="block">
+				<span class="text-xs uppercase tracking-wide text-gray-500">Reason (required)</span>
+				<textarea name="reason" rows="2" class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1 text-sm"></textarea>
+			</label>
+			<div class="grid grid-cols-3 gap-2">
+				@banPresetButton("1h", "1h")
+				@banPresetButton("1d", "1 day")
+				@banPresetButton("7d", "7 days")
+				@banPresetButton("30d", "30 days")
+				@banPresetButton("perm", "Permanent")
+			</div>
+			<div class="flex items-end gap-2 pt-2 border-t border-gray-100">
+				<label class="flex-1">
+					<span class="text-xs uppercase tracking-wide text-gray-500">Custom</span>
+					<input type="number" name="value" min="1" class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1 text-sm"/>
+				</label>
+				<select name="unit" class="rounded-md border border-gray-300 px-2 py-1 text-sm">
+					<option value="hours">hours</option>
+					<option value="days">days</option>
+				</select>
+				<button type="submit" class="rounded-md bg-gray-900 px-3 py-1 text-sm text-white">Apply</button>
+			</div>
+		</form>
+	</div>
+}
+
+templ banPresetButton(value, label string) {
+	<button
+		type="submit"
+		name="preset"
+		value={ value }
+		class="rounded-md border border-gray-300 px-2 py-1 text-xs hover:border-gray-900"
+	>
+		{ label }
+	</button>
+}
+
+templ unbanForm(targetID int) {
+	<div class="rounded-xl ring-1 ring-gray-200 p-4 space-y-3">
+		<h3 class="font-medium text-gray-900">Unban</h3>
+		<form class="space-y-2" hx-post={ fmt.Sprintf("/admin/users/%d/unban", targetID) } hx-target="#user-detail" hx-swap="outerHTML">
+			<label class="block">
+				<span class="text-xs uppercase tracking-wide text-gray-500">Reason (optional)</span>
+				<input type="text" name="reason" class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1 text-sm"/>
+			</label>
+			<button type="submit" class="rounded-md bg-emerald-600 px-3 py-1.5 text-sm text-white">Unban</button>
+		</form>
+	</div>
+}
+
+templ setRoleForm(state detailState) {
+	<div class="rounded-xl ring-1 ring-gray-200 p-4 space-y-3">
+		<h3 class="font-medium text-gray-900">Set role</h3>
+		<form class="space-y-2" hx-post={ fmt.Sprintf("/admin/users/%d/role", state.Detail.User.ID) } hx-target="#user-detail" hx-swap="outerHTML">
+			<label class="block">
+				<span class="text-xs uppercase tracking-wide text-gray-500">Role</span>
+				<select name="group_id" class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1 text-sm">
+					for _, opt := range state.AllowedRoles {
+						<option value={ fmt.Sprintf("%d", opt.GroupID) } selected?={ opt.GroupID == state.Detail.User.GroupID }>
+							{ opt.Name }
+						</option>
+					}
+				</select>
+			</label>
+			<label class="block">
+				<span class="text-xs uppercase tracking-wide text-gray-500">Reason (optional)</span>
+				<input type="text" name="reason" class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1 text-sm"/>
+			</label>
+			<button type="submit" class="rounded-md bg-gray-900 px-3 py-1.5 text-sm text-white">Apply</button>
+		</form>
+	</div>
+}

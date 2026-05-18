@@ -57,7 +57,7 @@ func (h *Handler) showDashboard(w http.ResponseWriter, r *http.Request) {
 		httpx.RenderHTML(w, r, h.logger, dashboardContent())
 		return
 	}
-	httpx.RenderHTML(w, r, h.logger, adminLayout(h.layout(), "Dashboard", dashboardContent()))
+	httpx.RenderHTML(w, r, h.logger, AdminLayout(h.layout(), "Dashboard", dashboardContent()))
 }
 
 func (h *Handler) showDatabase(w http.ResponseWriter, r *http.Request) {
@@ -66,7 +66,7 @@ func (h *Handler) showDatabase(w http.ResponseWriter, r *http.Request) {
 		httpx.RenderHTML(w, r, h.logger, databaseContent(state))
 		return
 	}
-	httpx.RenderHTML(w, r, h.logger, adminLayout(h.layout(), "Database", databaseContent(state)))
+	httpx.RenderHTML(w, r, h.logger, AdminLayout(h.layout(), "Database", databaseContent(state)))
 }
 
 func (h *Handler) databaseState() databaseState {

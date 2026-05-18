@@ -1,0 +1,19 @@
+package transport
+
+import (
+	admintransport "github.com/hayakawakaki/go-racp/internal/admin/transport"
+	"github.com/hayakawakaki/go-racp/internal/httpx"
+)
+
+templ detailPage(layout httpx.Layout, username string, state detailState) {
+	@admintransport.AdminLayout(layout, "Users / "+username, detailContent(state))
+}
+
+templ detailContent(state detailState) {
+	<div id="user-detail" class="space-y-6">
+		@accountSection(state)
+		@charactersSection(state)
+		@actionsSection(state)
+		@auditSection(state)
+	</div>
+}

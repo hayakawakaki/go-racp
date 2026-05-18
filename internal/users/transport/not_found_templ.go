@@ -10,7 +10,7 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import "github.com/hayakawakaki/go-racp/internal/httpx"
 
-func AdminLayout(layout httpx.Layout, pageTitle string, content templ.Component) templ.Component {
+func notFoundPage(layout httpx.Layout, id string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -43,21 +43,26 @@ func AdminLayout(layout httpx.Layout, pageTitle string, content templ.Component)
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"w-full max-w-6xl flex gap-6 p-6\" id=\"admin-shell\"><aside class=\"w-56 bg-white rounded-lg shadow-md p-4 flex-shrink-0\"><h2 class=\"text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3\">Admin</h2><nav class=\"flex flex-col gap-1\"><a href=\"/admin\" hx-get=\"/admin\" hx-target=\"#admin-content\" hx-push-url=\"true\" class=\"px-3 py-2 rounded text-sm text-gray-900 hover:bg-gray-100\">Dashboard</a> <a href=\"/admin/database\" hx-get=\"/admin/database\" hx-target=\"#admin-content\" hx-push-url=\"true\" class=\"px-3 py-2 rounded text-sm text-gray-900 hover:bg-gray-100\">Database</a></nav></aside><section id=\"admin-content\" class=\"flex-1 bg-white rounded-lg shadow-md p-6\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"w-full max-w-md\"><section class=\"rounded-2xl bg-white ring-1 ring-gray-200 px-8 py-7 text-center\"><p class=\"text-xs uppercase tracking-[0.18em] text-gray-400\">404</p><h1 class=\"mt-2 text-3xl font-semibold tracking-tight text-gray-900\">User not found</h1><p class=\"mt-3 text-sm text-gray-500\">No account exists with ID <span class=\"font-mono\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = content.Render(ctx, templ_7745c5c3_Buffer)
+			var templ_7745c5c3_Var3 string
+			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(id)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/users/transport/not_found.templ`, Line: 11, Col: 96}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</section></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</span>.</p><div class=\"mt-6\"><a href=\"/admin/users\" class=\"inline-block rounded-full border border-gray-300 px-5 py-2 text-sm font-medium text-gray-700\">Back to users</a></div></section></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = httpx.Base(layout, "Admin / "+pageTitle).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = httpx.Base(layout, "Admin / Users").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
