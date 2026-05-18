@@ -1,0 +1,13 @@
+Header:
+  Type: MOB_DB
+  Version: 3
+
+Body:
+  - Id: 1002
+    AegisName: PORING_OVERRIDE
+    Name: Pink Poring
+    Level: 5
+    Hp: 99
+    Race: Plant
+    Element: Water
+    Size: Small

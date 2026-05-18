@@ -1,0 +1,41 @@
+Header:
+  Type: MOB_DB
+  Version: 3
+
+Body:
+  - Id: 1002
+    AegisName: PORING
+    Name: Poring
+    Level: 1
+    Hp: 50
+    BaseExp: 2
+    JobExp: 1
+    Race: Plant
+    Element: Water
+    ElementLevel: 1
+    Size: Small
+    Attack: 7
+    Attack2: 10
+    Modes:
+      CanMove: true
+    Drops:
+      - Item: Red_Potion
+        Rate: 1000
+      - Item: Jellopy
+        Rate: 9000
+  - Id: 1511
+    AegisName: AMON_RA
+    Name: Amon Ra
+    Level: 88
+    Hp: 1276000
+    MvpExp: 528750
+    Race: Demihuman
+    Element: Fire
+    ElementLevel: 4
+    Size: Large
+    Modes:
+      Mvp: true
+      Aggressive: true
+    MvpDrops:
+      - Item: Old_Card_Album
+        Rate: 5500

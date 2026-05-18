@@ -57,6 +57,42 @@ func TestService_Get_Found(t *testing.T) {
 	}
 }
 
+func TestService_LookupByAegis_EmptyAegis(t *testing.T) {
+	snap := newFixtureSnapshot(t, &domain.Item{ID: 501, AegisName: "Red_Potion"})
+	service := NewServiceWithSnapshot(snap, nil)
+	if got := service.LookupByAegis(""); got != nil {
+		t.Errorf("LookupByAegis(\"\") = %v, want nil", got)
+	}
+}
+
+func TestService_LookupByAegis_EmptySnapshot(t *testing.T) {
+	service := NewServiceWithSnapshot(domain.EmptySnapshot(), nil)
+	if got := service.LookupByAegis("Red_Potion"); got != nil {
+		t.Errorf("LookupByAegis = %v, want nil for empty snapshot", got)
+	}
+}
+
+func TestService_LookupByAegis_NotFound(t *testing.T) {
+	snap := newFixtureSnapshot(t, &domain.Item{ID: 501, AegisName: "Red_Potion"})
+	service := NewServiceWithSnapshot(snap, nil)
+	if got := service.LookupByAegis("Unknown_Item"); got != nil {
+		t.Errorf("LookupByAegis = %v, want nil for unknown aegis", got)
+	}
+}
+
+func TestService_LookupByAegis_Found(t *testing.T) {
+	want := &domain.Item{ID: 501, AegisName: "Red_Potion", Name: "Red Potion"}
+	snap := newFixtureSnapshot(t, want)
+	service := NewServiceWithSnapshot(snap, nil)
+	got := service.LookupByAegis("Red_Potion")
+	if got == nil {
+		t.Fatal("LookupByAegis = nil, want item")
+	}
+	if got.ID != 501 || got.AegisName != "Red_Potion" {
+		t.Errorf("got = %+v, want id=501 aegis=Red_Potion", got)
+	}
+}
+
 func TestService_List_Pagination(t *testing.T) {
 	items := make([]*domain.Item, 0, 45)
 	for index := 1; index <= 45; index++ {

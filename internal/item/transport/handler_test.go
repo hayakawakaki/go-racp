@@ -15,6 +15,7 @@ import (
 
 	itemapp "github.com/hayakawakaki/go-racp/internal/item/app"
 	"github.com/hayakawakaki/go-racp/internal/item/domain"
+	mobdomain "github.com/hayakawakaki/go-racp/internal/mob/domain"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 
@@ -63,6 +64,17 @@ func (s *fakeItemService) Reload(_ context.Context) error {
 
 func (s *fakeItemService) Status() itemapp.ServiceStatus { return s.statusResp }
 
+type fakeDropLookup struct {
+	byAegis map[string][]mobdomain.DropOf
+	gotArg  string
+}
+
+func (l *fakeDropLookup) WhoDrops(itemAegis string) []mobdomain.DropOf {
+	l.gotArg = itemAegis
+
+	return l.byAegis[itemAegis]
+}
+
 func discardLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(io.Discard, nil))
 }
@@ -71,6 +83,14 @@ func newTestHandler(svc itemService) *Handler {
 	return NewHandler(svc, HandlerConfig{
 		Logger:  discardLogger(),
 		General: config.GeneralConfig{ServerName: "Test", Timezone: "UTC"},
+	})
+}
+
+func newTestHandlerWithDropLookup(svc itemService, lookup dropLookup) *Handler {
+	return NewHandler(svc, HandlerConfig{
+		Logger:     discardLogger(),
+		DropLookup: lookup,
+		General:    config.GeneralConfig{ServerName: "Test", Timezone: "UTC"},
 	})
 }
 
@@ -310,6 +330,74 @@ func TestHandler_ShowDetail_RendersItem(t *testing.T) {
 	}
 }
 
+func TestHandler_ShowDetail_NoDropLookupSkipsDroppedBy(t *testing.T) {
+	t.Parallel()
+
+	svc := newFakeItemService()
+	svc.itemsByID[501] = &domain.Item{ID: 501, AegisName: "Red_Potion", Name: "Red Potion", ClientName: "Red Potion"}
+	h := newTestHandler(svc)
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/items/501", http.NoBody)
+	req.SetPathValue("id", "501")
+	h.showDetail(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("status = %d, want 200", rr.Code)
+	}
+	if strings.Contains(rr.Body.String(), "Dropped By") {
+		t.Errorf("body contains Dropped By section without lookup configured")
+	}
+}
+
+func TestHandler_ShowDetail_DropLookupRendersDroppedBy(t *testing.T) {
+	t.Parallel()
+
+	svc := newFakeItemService()
+	svc.itemsByID[501] = &domain.Item{ID: 501, AegisName: "Red_Potion", Name: "Red Potion", ClientName: "Red Potion"}
+	lookup := &fakeDropLookup{byAegis: map[string][]mobdomain.DropOf{
+		"Red_Potion": {{MobID: 1002, MobName: "Poring", Rate: 1000}},
+	}}
+	h := newTestHandlerWithDropLookup(svc, lookup)
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/items/501", http.NoBody)
+	req.SetPathValue("id", "501")
+	h.showDetail(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("status = %d, want 200", rr.Code)
+	}
+	if lookup.gotArg != "Red_Potion" {
+		t.Errorf("WhoDrops arg = %q, want Red_Potion", lookup.gotArg)
+	}
+	body := rr.Body.String()
+	if !strings.Contains(body, "Dropped By") {
+		t.Errorf("body missing Dropped By section:\n%s", body)
+	}
+	if !strings.Contains(body, "Poring") {
+		t.Errorf("body missing mob name:\n%s", body)
+	}
+}
+
+func TestHandler_ShowDetail_DropLookupEmptyResultOmitsSection(t *testing.T) {
+	t.Parallel()
+
+	svc := newFakeItemService()
+	svc.itemsByID[501] = &domain.Item{ID: 501, AegisName: "Red_Potion", Name: "Red Potion", ClientName: "Red Potion"}
+	lookup := &fakeDropLookup{byAegis: map[string][]mobdomain.DropOf{}}
+	h := newTestHandlerWithDropLookup(svc, lookup)
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/items/501", http.NoBody)
+	req.SetPathValue("id", "501")
+	h.showDetail(rr, req)
+
+	if strings.Contains(rr.Body.String(), "Dropped By") {
+		t.Errorf("body contains Dropped By section when lookup returns no results")
+	}
+}
+
 func TestHandler_APIDetail_InvalidIDReturns404(t *testing.T) {
 	t.Parallel()
 
@@ -524,6 +612,31 @@ func TestParsePositiveInt(t *testing.T) {
 			t.Parallel()
 			if got := parsePositiveInt(tt.input, tt.fallback); got != tt.want {
 				t.Errorf("parsePositiveInt(%q, %d) = %d, want %d", tt.input, tt.fallback, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestDroppedByAlpineState(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		want  string
+		count int
+	}{
+		{name: "zero entries clamps to one page", count: 0, want: "{ page: 1, perPage: 10, totalPages: 1 }"},
+		{name: "fits in one page", count: 7, want: "{ page: 1, perPage: 10, totalPages: 1 }"},
+		{name: "exactly one page", count: 10, want: "{ page: 1, perPage: 10, totalPages: 1 }"},
+		{name: "rolls over to two pages", count: 11, want: "{ page: 1, perPage: 10, totalPages: 2 }"},
+		{name: "many pages", count: 35, want: "{ page: 1, perPage: 10, totalPages: 4 }"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := droppedByAlpineState(tt.count); got != tt.want {
+				t.Errorf("droppedByAlpineState(%d) = %q, want %q", tt.count, got, tt.want)
 			}
 		})
 	}

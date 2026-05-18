@@ -1,0 +1,29 @@
+Header:
+  Type: MOB_DB
+  Version: 3
+
+Body:
+  - Id: 1002
+    AegisName: PORING
+    Name: Poring
+    Level: 1
+    Hp: 50
+    Race: Plant
+    Element: Water
+    Size: Small
+    Drops:
+      - Item: Red_Potion
+        Rate: 1000
+  - Id: 1031
+    AegisName: POPORING
+    Name: Poporing
+    Level: 14
+    Hp: 405
+    Race: Plant
+    Element: Poison
+    Size: Small
+    Drops:
+      - Item: Red_Potion
+        Rate: 5000
+      - Item: ""
+        Rate: 100
