@@ -12,9 +12,23 @@ import (
 
 	"github.com/hayakawakaki/go-racp/internal/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
+	itemapp "github.com/hayakawakaki/go-racp/internal/item/app"
+	mobapp "github.com/hayakawakaki/go-racp/internal/mob/app"
 	"github.com/hayakawakaki/go-racp/internal/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
+
+type stubItemStatus struct {
+	status itemapp.ServiceStatus
+}
+
+func (s *stubItemStatus) Status() itemapp.ServiceStatus { return s.status }
+
+type stubMobStatus struct {
+	status mobapp.ServiceStatus
+}
+
+func (s *stubMobStatus) Status() mobapp.ServiceStatus { return s.status }
 
 type stubSession struct {
 	validateFn func(context.Context, string) (*domain.Session, error)
@@ -49,8 +63,10 @@ func newStubUserLookup() *stubUsers { return &stubUsers{} }
 
 func newTestHandler() *Handler {
 	return NewHandler(HandlerConfig{
-		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
-		General: config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
+		Logger:     slog.New(slog.NewTextHandler(io.Discard, nil)),
+		General:    config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
+		ItemStatus: &stubItemStatus{status: itemapp.ServiceStatus{ItemsLoaded: 42, LastReload: "2026-05-18T00:00:00Z"}},
+		MobStatus:  &stubMobStatus{status: mobapp.ServiceStatus{MobsLoaded: 7, LastReload: "2026-05-18T00:00:00Z"}},
 	})
 }
 
@@ -72,7 +88,7 @@ func TestHandler_ShowDashboard_FullPage(t *testing.T) {
 	if !strings.Contains(body, "<title>Test CP / Admin / Dashboard</title>") {
 		t.Errorf("full page must include layout title; body:\n%s", body)
 	}
-	if !strings.Contains(body, "Welcome to the admin panel") {
+	if !strings.Contains(body, "Server metrics will appear here.") {
 		t.Errorf("full page must include dashboard content; body:\n%s", body)
 	}
 	if !strings.Contains(body, `id="admin-shell"`) {
@@ -93,7 +109,7 @@ func TestHandler_ShowDashboard_HTMXFragment(t *testing.T) {
 		t.Errorf("status = %d, want 200", rr.Code)
 	}
 	body := rr.Body.String()
-	if !strings.Contains(body, "Welcome to the admin panel") {
+	if !strings.Contains(body, "Server metrics will appear here.") {
 		t.Errorf("HTMX fragment must include dashboard content; body:\n%s", body)
 	}
 	if strings.Contains(body, "<title>") {

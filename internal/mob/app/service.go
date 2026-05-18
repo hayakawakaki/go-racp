@@ -31,6 +31,7 @@ func NewService(loader LoaderFunc) *Service {
 func NewServiceWithSnapshot(snap *domain.Snapshot, loader LoaderFunc) *Service {
 	service := NewService(loader)
 	service.snap.Store(snap)
+	service.recordSuccess()
 
 	return service
 }

@@ -17,6 +17,15 @@ templ adminLayout(layout httpx.Layout, pageTitle string, content templ.Component
 					>
 						Dashboard
 					</a>
+					<a
+						href="/admin/database"
+						hx-get="/admin/database"
+						hx-target="#admin-content"
+						hx-push-url="true"
+						class="px-3 py-2 rounded text-sm text-gray-900 hover:bg-gray-100"
+					>
+						Database
+					</a>
 				</nav>
 			</aside>
 			<section id="admin-content" class="flex-1 bg-white rounded-lg shadow-md p-6">
