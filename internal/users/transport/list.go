@@ -2,9 +2,9 @@ package transport
 
 import (
 	"net/http"
-	"strconv"
 	"time"
 
+	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 	"github.com/hayakawakaki/go-racp/internal/users/app"
 )
@@ -18,12 +18,12 @@ type listState struct {
 
 func (h *Handler) showList(w http.ResponseWriter, r *http.Request) {
 	query := app.ListQuery{
-		Page:    parsePositiveInt(r.URL.Query().Get("page"), 1),
+		Page:    httpx.ParsePositiveInt(r.URL.Query().Get("page"), 1),
 		PerPage: 20,
 		Query:   r.URL.Query().Get("q"),
 	}
-	if actorID, ok := actorIDFromContext(r); ok {
-		query.ExcludeID = actorID
+	if snap, ok := middleware.SnapshotFromContext(r.Context()); ok && snap != nil {
+		query.ExcludeID = snap.UserID
 	}
 	page, err := h.svc.List(r.Context(), query)
 	if err != nil {
@@ -40,16 +40,4 @@ func (h *Handler) showList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.RenderHTML(w, r, h.logger, listPage(h.layout(), state))
-}
-
-func parsePositiveInt(value string, fallback int) int {
-	if value == "" {
-		return fallback
-	}
-	parsed, err := strconv.Atoi(value)
-	if err != nil || parsed < 1 {
-		return fallback
-	}
-
-	return parsed
 }

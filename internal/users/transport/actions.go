@@ -14,76 +14,68 @@ import (
 
 const maxUserActionFormBytes = 4 << 10
 
-func actorIDFromContext(r *http.Request) (int, bool) {
-	snap, ok := middleware.SnapshotFromContext(r.Context())
-	if !ok || snap == nil {
-		return 0, false
-	}
-
-	return snap.UserID, true
-}
-
-func (h *Handler) now() time.Time { return time.Now() }
-
-func (h *Handler) doBan(w http.ResponseWriter, r *http.Request) {
-	targetID, ok := pathID(r)
+func (h *Handler) targetAndActor(w http.ResponseWriter, r *http.Request) (targetID, actorID int, ok bool) {
+	targetID, ok = pathID(r)
 	if !ok {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 
-		return
+		return 0, 0, false
 	}
-	r.Body = http.MaxBytesReader(w, r.Body, maxUserActionFormBytes)
-	if err := r.ParseForm(); err != nil {
-		writeActionError(w, r, h, "Invalid form data.", http.StatusBadRequest)
+	snap, snapOK := middleware.SnapshotFromContext(r.Context())
+	if !snapOK || snap == nil {
+		h.writeActionError(w, r, "Session missing.", http.StatusUnauthorized)
 
-		return
-	}
-	actorID, ok := actorIDFromContext(r)
-	if !ok {
-		writeActionError(w, r, h, "Session missing.", http.StatusUnauthorized)
-
-		return
+		return 0, 0, false
 	}
 
-	cmd := app.BanCommand{
-		ActorUserID:  actorID,
-		TargetUserID: targetID,
-		Permanent:    r.FormValue("permanent") != "",
-		Days:         atoiOrZero(r.FormValue("days")),
-		Reason:       r.FormValue("reason"),
-	}
+	return targetID, snap.UserID, true
+}
 
-	detail, err := h.svc.Ban(r.Context(), cmd)
-	if err != nil {
-		writeActionErrorFromDomain(w, r, h, err)
-
-		return
-	}
-
+func (h *Handler) renderDetail(w http.ResponseWriter, r *http.Request, detail app.UserDetail) {
 	state := detailState{
 		Detail:       detail,
-		Now:          h.now(),
+		Now:          time.Now(),
 		AllowedRoles: buildRoleOptions(h.svc.AllowedRoles()),
 	}
 	httpx.RenderHTML(w, r, h.logger, detailContent(state))
 }
 
-func (h *Handler) doUnban(w http.ResponseWriter, r *http.Request) {
-	targetID, ok := pathID(r)
+func (h *Handler) doBan(w http.ResponseWriter, r *http.Request) {
+	targetID, actorID, ok := h.targetAndActor(w, r)
 	if !ok {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-
 		return
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, maxUserActionFormBytes)
 	if err := r.ParseForm(); err != nil {
-		writeActionError(w, r, h, "Invalid form data.", http.StatusBadRequest)
+		h.writeActionError(w, r, "Invalid form data.", http.StatusBadRequest)
 
 		return
 	}
-	actorID, ok := actorIDFromContext(r)
+
+	days, _ := strconv.Atoi(r.FormValue("days"))
+	detail, err := h.svc.Ban(r.Context(), app.BanCommand{
+		ActorUserID:  actorID,
+		TargetUserID: targetID,
+		Permanent:    r.FormValue("permanent") != "",
+		Days:         days,
+		Reason:       r.FormValue("reason"),
+	})
+	if err != nil {
+		h.writeActionErrorFromDomain(w, r, err)
+
+		return
+	}
+	h.renderDetail(w, r, detail)
+}
+
+func (h *Handler) doUnban(w http.ResponseWriter, r *http.Request) {
+	targetID, actorID, ok := h.targetAndActor(w, r)
 	if !ok {
-		writeActionError(w, r, h, "Session missing.", http.StatusUnauthorized)
+		return
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, maxUserActionFormBytes)
+	if err := r.ParseForm(); err != nil {
+		h.writeActionError(w, r, "Invalid form data.", http.StatusBadRequest)
 
 		return
 	}
@@ -94,42 +86,28 @@ func (h *Handler) doUnban(w http.ResponseWriter, r *http.Request) {
 		Reason:       r.FormValue("reason"),
 	})
 	if err != nil {
-		writeActionErrorFromDomain(w, r, h, err)
+		h.writeActionErrorFromDomain(w, r, err)
 
 		return
 	}
-
-	state := detailState{
-		Detail:       detail,
-		Now:          h.now(),
-		AllowedRoles: buildRoleOptions(h.svc.AllowedRoles()),
-	}
-	httpx.RenderHTML(w, r, h.logger, detailContent(state))
+	h.renderDetail(w, r, detail)
 }
 
 func (h *Handler) doSetRole(w http.ResponseWriter, r *http.Request) {
-	targetID, ok := pathID(r)
+	targetID, actorID, ok := h.targetAndActor(w, r)
 	if !ok {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-
 		return
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, maxUserActionFormBytes)
 	if err := r.ParseForm(); err != nil {
-		writeActionError(w, r, h, "Invalid form data.", http.StatusBadRequest)
-
-		return
-	}
-	actorID, ok := actorIDFromContext(r)
-	if !ok {
-		writeActionError(w, r, h, "Session missing.", http.StatusUnauthorized)
+		h.writeActionError(w, r, "Invalid form data.", http.StatusBadRequest)
 
 		return
 	}
 
 	groupID, err := strconv.Atoi(r.FormValue("group_id"))
 	if err != nil {
-		writeActionError(w, r, h, "Invalid role selection.", http.StatusBadRequest)
+		h.writeActionError(w, r, "Invalid role selection.", http.StatusBadRequest)
 
 		return
 	}
@@ -141,17 +119,11 @@ func (h *Handler) doSetRole(w http.ResponseWriter, r *http.Request) {
 		Reason:       r.FormValue("reason"),
 	})
 	if err != nil {
-		writeActionErrorFromDomain(w, r, h, err)
+		h.writeActionErrorFromDomain(w, r, err)
 
 		return
 	}
-
-	state := detailState{
-		Detail:       detail,
-		Now:          h.now(),
-		AllowedRoles: buildRoleOptions(h.svc.AllowedRoles()),
-	}
-	httpx.RenderHTML(w, r, h.logger, detailContent(state))
+	h.renderDetail(w, r, detail)
 }
 
 func pathID(r *http.Request) (int, bool) {
@@ -163,41 +135,29 @@ func pathID(r *http.Request) (int, bool) {
 	return id, true
 }
 
-func atoiOrZero(s string) int {
-	if s == "" {
-		return 0
-	}
-	n, err := strconv.Atoi(s)
-	if err != nil {
-		return 0
-	}
-
-	return n
-}
-
-func writeActionError(w http.ResponseWriter, r *http.Request, h *Handler, message string, status int) {
+func (h *Handler) writeActionError(w http.ResponseWriter, r *http.Request, message string, status int) {
 	w.WriteHeader(status)
 	httpx.RenderHTML(w, r, h.logger, actionError(message))
 }
 
-func writeActionErrorFromDomain(w http.ResponseWriter, r *http.Request, h *Handler, err error) {
+func (h *Handler) writeActionErrorFromDomain(w http.ResponseWriter, r *http.Request, err error) {
 	switch {
 	case errors.Is(err, domain.ErrSelfAction):
-		writeActionError(w, r, h, "You can't perform admin actions on your own account.", http.StatusBadRequest)
+		h.writeActionError(w, r, "You can't perform admin actions on your own account.", http.StatusBadRequest)
 	case errors.Is(err, domain.ErrTargetIsAdmin):
-		writeActionError(w, r, h, "Admin-on-admin actions must go through the database.", http.StatusBadRequest)
+		h.writeActionError(w, r, "Admin-on-admin actions must go through the database.", http.StatusBadRequest)
 	case errors.Is(err, domain.ErrEmptyReason):
-		writeActionError(w, r, h, "Reason is required.", http.StatusBadRequest)
+		h.writeActionError(w, r, "Reason is required.", http.StatusBadRequest)
 	case errors.Is(err, domain.ErrInvalidDuration):
-		writeActionError(w, r, h, "Invalid ban duration.", http.StatusBadRequest)
+		h.writeActionError(w, r, "Invalid ban duration.", http.StatusBadRequest)
 	case errors.Is(err, domain.ErrInvalidRole):
-		writeActionError(w, r, h, "Selected role is not allowed.", http.StatusBadRequest)
+		h.writeActionError(w, r, "Selected role is not allowed.", http.StatusBadRequest)
 	case errors.Is(err, domain.ErrInvalidState):
-		writeActionError(w, r, h, "Action not allowed in the current state.", http.StatusBadRequest)
+		h.writeActionError(w, r, "Action not allowed in the current state.", http.StatusBadRequest)
 	case errors.Is(err, domain.ErrNotFound):
-		writeActionError(w, r, h, "Account not found.", http.StatusNotFound)
+		h.writeActionError(w, r, "Account not found.", http.StatusNotFound)
 	default:
 		h.logger.Error("users: action failed", "err", err)
-		writeActionError(w, r, h, "Action failed. Check server logs.", http.StatusInternalServerError)
+		h.writeActionError(w, r, "Action failed. Check server logs.", http.StatusInternalServerError)
 	}
 }

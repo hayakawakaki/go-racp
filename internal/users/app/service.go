@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"strings"
 	"time"
 
+	accountapp "github.com/hayakawakaki/go-racp/internal/account/app"
 	"github.com/hayakawakaki/go-racp/internal/users/domain"
 )
 
@@ -87,23 +89,30 @@ func (s *Service) Get(ctx context.Context, id int) (UserDetail, error) {
 	return UserDetail{User: user, Characters: chars, Recent: recent}, nil
 }
 
-func (s *Service) now() time.Time { return time.Now() }
+func (s *Service) loadMutableTarget(ctx context.Context, actorID, targetID int) (*domain.User, error) {
+	if actorID == targetID {
+		return nil, domain.ErrSelfAction
+	}
+	target, err := s.users.GetByID(ctx, targetID)
+	if err != nil {
+		return nil, fmt.Errorf("loadMutableTarget: %w", err)
+	}
+	if target.IsAdmin() {
+		return nil, domain.ErrTargetIsAdmin
+	}
+
+	return target, nil
+}
 
 func (s *Service) Ban(ctx context.Context, cmd BanCommand) (UserDetail, error) {
-	if cmd.ActorUserID == cmd.TargetUserID {
-		return UserDetail{}, fmt.Errorf("app.Service.Ban: %w", domain.ErrSelfAction)
-	}
 	reason := strings.TrimSpace(cmd.Reason)
 	if reason == "" {
 		return UserDetail{}, fmt.Errorf("app.Service.Ban: %w", domain.ErrEmptyReason)
 	}
 
-	target, err := s.users.GetByID(ctx, cmd.TargetUserID)
+	target, err := s.loadMutableTarget(ctx, cmd.ActorUserID, cmd.TargetUserID)
 	if err != nil {
-		return UserDetail{}, fmt.Errorf("app.Service.Ban load: %w", err)
-	}
-	if target.IsAdmin() {
-		return UserDetail{}, fmt.Errorf("app.Service.Ban: %w", domain.ErrTargetIsAdmin)
+		return UserDetail{}, fmt.Errorf("app.Service.Ban: %w", err)
 	}
 
 	var dur domain.BanDuration
@@ -121,11 +130,11 @@ func (s *Service) Ban(ctx context.Context, cmd BanCommand) (UserDetail, error) {
 	var newState int
 	var newUnban uint32
 	if dur.Permanent {
-		newState = 5
+		newState = accountapp.StatePermaBanned
 		newUnban = 0
 	} else {
-		newState = 0
-		newUnban = uint32(s.now().Add(dur.Duration).Unix()) //nolint:gosec // rAthena unban_time is uint32
+		newState = accountapp.StateActive
+		newUnban = unbanSeconds(time.Now().Add(dur.Duration))
 	}
 
 	if err := s.users.UpdateBan(ctx, cmd.TargetUserID, newState, newUnban); err != nil {
@@ -144,34 +153,14 @@ func (s *Service) Ban(ctx context.Context, cmd BanCommand) (UserDetail, error) {
 	return s.Get(ctx, cmd.TargetUserID)
 }
 
-func (s *Service) recordAudit(ctx context.Context, a domain.Action) {
-	if err := s.actions.Record(ctx, a); err != nil {
-		s.logger.Error("users: audit insert failed",
-			"action", string(a.Kind),
-			"actor_user_id", a.ActorUserID,
-			"target_user_id", a.TargetUserID,
-			"reason", a.Reason,
-			"before", a.BeforeValue,
-			"after", a.AfterValue,
-			"err", err,
-		)
-	}
-}
-
 func (s *Service) Unban(ctx context.Context, cmd UnbanCommand) (UserDetail, error) {
-	if cmd.ActorUserID == cmd.TargetUserID {
-		return UserDetail{}, fmt.Errorf("app.Service.Unban: %w", domain.ErrSelfAction)
-	}
-
-	target, err := s.users.GetByID(ctx, cmd.TargetUserID)
+	target, err := s.loadMutableTarget(ctx, cmd.ActorUserID, cmd.TargetUserID)
 	if err != nil {
-		return UserDetail{}, fmt.Errorf("app.Service.Unban load: %w", err)
-	}
-	if target.IsAdmin() {
-		return UserDetail{}, fmt.Errorf("app.Service.Unban: %w", domain.ErrTargetIsAdmin)
+		return UserDetail{}, fmt.Errorf("app.Service.Unban: %w", err)
 	}
 
-	banned := target.State == 5 || (target.State == 0 && !target.UnbanTime.IsZero() && target.UnbanTime.After(s.now()))
+	banned := target.State == accountapp.StatePermaBanned ||
+		(target.State == accountapp.StateActive && !target.UnbanTime.IsZero() && target.UnbanTime.After(time.Now()))
 	if !banned {
 		return UserDetail{}, fmt.Errorf("app.Service.Unban: %w", domain.ErrInvalidState)
 	}
@@ -179,7 +168,7 @@ func (s *Service) Unban(ctx context.Context, cmd UnbanCommand) (UserDetail, erro
 	beforeState := target.State
 	beforeUnban := unbanSeconds(target.UnbanTime)
 
-	if err := s.users.UpdateBan(ctx, cmd.TargetUserID, 0, 0); err != nil {
+	if err := s.users.UpdateBan(ctx, cmd.TargetUserID, accountapp.StateActive, 0); err != nil {
 		return UserDetail{}, fmt.Errorf("app.Service.Unban update: %w", err)
 	}
 
@@ -196,19 +185,13 @@ func (s *Service) Unban(ctx context.Context, cmd UnbanCommand) (UserDetail, erro
 }
 
 func (s *Service) SetRole(ctx context.Context, cmd SetRoleCommand) (UserDetail, error) {
-	if cmd.ActorUserID == cmd.TargetUserID {
-		return UserDetail{}, fmt.Errorf("app.Service.SetRole: %w", domain.ErrSelfAction)
-	}
 	if _, ok := s.allowedRoles[cmd.NewGroupID]; !ok {
 		return UserDetail{}, fmt.Errorf("app.Service.SetRole: %w", domain.ErrInvalidRole)
 	}
 
-	target, err := s.users.GetByID(ctx, cmd.TargetUserID)
+	target, err := s.loadMutableTarget(ctx, cmd.ActorUserID, cmd.TargetUserID)
 	if err != nil {
-		return UserDetail{}, fmt.Errorf("app.Service.SetRole load: %w", err)
-	}
-	if target.IsAdmin() {
-		return UserDetail{}, fmt.Errorf("app.Service.SetRole: %w", domain.ErrTargetIsAdmin)
+		return UserDetail{}, fmt.Errorf("app.Service.SetRole: %w", err)
 	}
 	if target.GroupID == cmd.NewGroupID {
 		return UserDetail{}, fmt.Errorf("app.Service.SetRole: %w", domain.ErrInvalidState)
@@ -224,11 +207,25 @@ func (s *Service) SetRole(ctx context.Context, cmd SetRoleCommand) (UserDetail, 
 		TargetUserID: cmd.TargetUserID,
 		Kind:         domain.ActionSetRole,
 		Reason:       strings.TrimSpace(cmd.Reason),
-		BeforeValue:  fmt.Sprintf("%d", before),
-		AfterValue:   fmt.Sprintf("%d", cmd.NewGroupID),
+		BeforeValue:  strconv.Itoa(before),
+		AfterValue:   strconv.Itoa(cmd.NewGroupID),
 	})
 
 	return s.Get(ctx, cmd.TargetUserID)
+}
+
+func (s *Service) recordAudit(ctx context.Context, a domain.Action) {
+	if err := s.actions.Record(ctx, a); err != nil {
+		s.logger.Error("users: audit insert failed",
+			"action", string(a.Kind),
+			"actor_user_id", a.ActorUserID,
+			"target_user_id", a.TargetUserID,
+			"reason", a.Reason,
+			"before", a.BeforeValue,
+			"after", a.AfterValue,
+			"err", err,
+		)
+	}
 }
 
 func unbanSeconds(t time.Time) uint32 {

@@ -2,6 +2,8 @@ package domain
 
 import "time"
 
+const AdminGroupID = 99
+
 type User struct {
 	UnbanTime time.Time
 	LastLogin time.Time
@@ -14,5 +16,5 @@ type User struct {
 }
 
 func (u *User) IsAdmin() bool {
-	return u.GroupID == 99
+	return u.GroupID == AdminGroupID
 }

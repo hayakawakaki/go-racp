@@ -3,7 +3,6 @@ package transport
 import (
 	"errors"
 	"net/http"
-	"strconv"
 
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 	mobapp "github.com/hayakawakaki/go-racp/internal/mob/app"
@@ -12,7 +11,7 @@ import (
 
 func (h *Handler) showList(w http.ResponseWriter, r *http.Request) {
 	query := mobapp.ListQuery{
-		Page:    parsePositiveInt(r.URL.Query().Get("page"), 1),
+		Page:    httpx.ParsePositiveInt(r.URL.Query().Get("page"), 1),
 		PerPage: mobapp.DefaultPerPage,
 		Query:   r.URL.Query().Get("q"),
 	}
@@ -32,16 +31,4 @@ func (h *Handler) showList(w http.ResponseWriter, r *http.Request) {
 
 	state := ListState{Page: page, Query: query.Query, BaseURL: "/mobs"}
 	httpx.RenderHTML(w, r, h.logger, listPage(h.layout(), state))
-}
-
-func parsePositiveInt(value string, fallback int) int {
-	if value == "" {
-		return fallback
-	}
-	parsed, err := strconv.Atoi(value)
-	if err != nil || parsed < 1 {
-		return fallback
-	}
-
-	return parsed
 }

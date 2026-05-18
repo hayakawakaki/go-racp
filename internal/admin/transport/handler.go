@@ -3,7 +3,6 @@ package transport
 import (
 	"log/slog"
 	"net/http"
-	"strconv"
 
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 	itemapp "github.com/hayakawakaki/go-racp/internal/item/app"
@@ -79,8 +78,4 @@ func (h *Handler) databaseState() databaseState {
 	}
 
 	return state
-}
-
-func formatInt(value int) string {
-	return strconv.Itoa(value)
 }

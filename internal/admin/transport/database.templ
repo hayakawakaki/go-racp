@@ -1,6 +1,8 @@
 package transport
 
 import (
+	"strconv"
+
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 	itemapp "github.com/hayakawakaki/go-racp/internal/item/app"
 	mobapp "github.com/hayakawakaki/go-racp/internal/mob/app"
@@ -42,7 +44,7 @@ templ reloadCard(title, endpoint, resultID string, loaded int, lastReload, lastE
 	<div class="rounded-2xl bg-white ring-1 ring-gray-200 p-5 space-y-3">
 		<div class="flex items-baseline justify-between">
 			<h3 class="text-base font-semibold text-gray-900">{ title }</h3>
-			<span class="text-sm text-gray-500">Loaded: <span class="font-mono tabular-nums font-semibold text-gray-900">{ formatInt(loaded) }</span></span>
+			<span class="text-sm text-gray-500">Loaded: <span class="font-mono tabular-nums font-semibold text-gray-900">{ strconv.Itoa(loaded) }</span></span>
 		</div>
 		<dl class="text-xs text-gray-500 space-y-1">
 			<div class="flex justify-between gap-2">

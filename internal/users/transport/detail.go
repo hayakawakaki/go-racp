@@ -25,8 +25,8 @@ type detailState struct {
 }
 
 func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(r.PathValue("id"))
-	if err != nil || id <= 0 {
+	id, ok := pathID(r)
+	if !ok {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 
 		return
@@ -76,7 +76,7 @@ func roleNameFor(state detailState, groupID int) string {
 			return opt.Name
 		}
 	}
-	if groupID == 99 {
+	if groupID == domain.AdminGroupID {
 		return "Admin"
 	}
 
