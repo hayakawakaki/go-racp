@@ -34,7 +34,6 @@ func ParseSources(sources Sources) (*domain.Snapshot, error) {
 
 	if snap, ok := tryLoadFromCache(sources.Cache, yamlPaths, logger); ok {
 		logger.Info("mob: snapshot restored from cache", "mobs", snap.SourceCount, "took", time.Since(overall).String())
-
 		return snap, nil
 	}
 
@@ -170,10 +169,8 @@ func loadAllYAML(logger *slog.Logger, paths []string) ([]infra.YAMLInput, error)
 		if err != nil {
 			if errors.Is(err, fs.ErrNotExist) {
 				log.Warn("mob: yaml file not found", "resolved", path)
-
 				continue
 			}
-
 			return nil, fmt.Errorf("app.loadAllYAML(%s): %w", path, err)
 		}
 		all = append(all, rows...)

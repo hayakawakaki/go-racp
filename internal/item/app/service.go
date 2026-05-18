@@ -38,6 +38,7 @@ func NewService(loader LoaderFunc) *Service {
 func NewServiceWithSnapshot(snap *domain.Snapshot, loader LoaderFunc) *Service {
 	service := NewService(loader)
 	service.snap.Store(snap)
+	service.recordSuccess()
 
 	return service
 }
@@ -155,13 +156,11 @@ func (s *Service) Reload(_ context.Context) error {
 	if s.loader == nil {
 		err := fmt.Errorf("app.Service.Reload: %w", domain.ErrParseFailed)
 		s.recordFailure(err)
-
 		return err
 	}
 	snap, err := s.loader()
 	if err != nil {
 		s.recordFailure(err)
-
 		return fmt.Errorf("app.Service.Reload: %w", err)
 	}
 

@@ -221,3 +221,26 @@ func TestService_Reload_TryLockBlocksSecondCall(t *testing.T) {
 		t.Errorf("secondErr = %v, want ErrReloadConflict", secondErr)
 	}
 }
+
+func TestNewServiceWithSnapshot_StampsLastReloadAtBoot(t *testing.T) {
+	t.Parallel()
+
+	before := time.Now()
+	service := NewServiceWithSnapshot(domain.EmptySnapshot(), nil)
+	after := time.Now()
+
+	status := service.Status()
+	if status.LastReload == "" {
+		t.Fatalf("LastReload empty after construction")
+	}
+	parsed, err := time.Parse(time.RFC3339, status.LastReload)
+	if err != nil {
+		t.Fatalf("LastReload %q not RFC3339: %v", status.LastReload, err)
+	}
+	if parsed.Before(before.Truncate(time.Second)) || parsed.After(after.Add(time.Second)) {
+		t.Errorf("LastReload %v outside [%v, %v]", parsed, before, after)
+	}
+	if status.LastError != "" {
+		t.Errorf("LastError = %q, want empty", status.LastError)
+	}
+}

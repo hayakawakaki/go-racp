@@ -244,7 +244,6 @@ func (h *Handler) fetchList(r *http.Request, category string) ([]newsapp.NewsIte
 		if err != nil {
 			return nil, fmt.Errorf("transport.Handler.fetchList: %w", err)
 		}
-
 		return items, nil
 	}
 

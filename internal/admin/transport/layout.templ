@@ -2,7 +2,7 @@ package transport
 
 import "github.com/hayakawakaki/go-racp/internal/httpx"
 
-templ adminLayout(layout httpx.Layout, pageTitle string, content templ.Component) {
+templ AdminLayout(layout httpx.Layout, pageTitle string, content templ.Component) {
 	@httpx.Base(layout, "Admin / "+pageTitle) {
 		<div class="w-full max-w-6xl flex gap-6 p-6" id="admin-shell">
 			<aside class="w-56 bg-white rounded-lg shadow-md p-4 flex-shrink-0">
@@ -16,6 +16,24 @@ templ adminLayout(layout httpx.Layout, pageTitle string, content templ.Component
 						class="px-3 py-2 rounded text-sm text-gray-900 hover:bg-gray-100"
 					>
 						Dashboard
+					</a>
+					<a
+						href="/admin/users"
+						hx-get="/admin/users"
+						hx-target="#admin-content"
+						hx-push-url="true"
+						class="px-3 py-2 rounded text-sm text-gray-900 hover:bg-gray-100"
+					>
+						Users
+					</a>
+					<a
+						href="/admin/database"
+						hx-get="/admin/database"
+						hx-target="#admin-content"
+						hx-push-url="true"
+						class="px-3 py-2 rounded text-sm text-gray-900 hover:bg-gray-100"
+					>
+						Database
 					</a>
 				</nav>
 			</aside>

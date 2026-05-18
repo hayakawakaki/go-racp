@@ -3,6 +3,7 @@ package transport
 import (
 	"fmt"
 
+	"github.com/hayakawakaki/go-racp/internal/httpx"
 	mobapp "github.com/hayakawakaki/go-racp/internal/mob/app"
 )
 
@@ -12,7 +13,9 @@ templ reloadSuccess(status mobapp.ServiceStatus) {
 		<p class="mt-1 text-emerald-800">
 			<span class="font-mono tabular-nums">{ fmt.Sprintf("%d", status.MobsLoaded) }</span>
 			monsters loaded at
-			<span class="font-mono">{ status.LastReload }</span>.
+			<span class="font-mono">
+				@httpx.LocalTime(status.LastReload)
+			</span>.
 		</p>
 	</div>
 }

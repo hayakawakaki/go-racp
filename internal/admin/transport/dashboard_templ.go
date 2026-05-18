@@ -29,7 +29,7 @@ func dashboardContent() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"space-y-4\"><h1 class=\"text-2xl font-semibold text-gray-900\">Welcome to the admin panel</h1><p class=\"text-sm text-gray-600\">More tools will appear here as features ship. For now, this is the staff landing page.</p></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"space-y-4\"><header><h1 class=\"text-2xl font-semibold text-gray-900\">Dashboard</h1><p class=\"mt-1 text-sm text-gray-600\">Server metrics will appear here.</p></header></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

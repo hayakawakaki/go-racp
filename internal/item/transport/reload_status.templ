@@ -3,6 +3,7 @@ package transport
 import (
 	"fmt"
 
+	"github.com/hayakawakaki/go-racp/internal/httpx"
 	itemapp "github.com/hayakawakaki/go-racp/internal/item/app"
 )
 
@@ -12,7 +13,9 @@ templ reloadSuccess(status itemapp.ServiceStatus) {
 		<p class="mt-1 text-emerald-800">
 			<span class="font-mono tabular-nums">{ fmt.Sprintf("%d", status.ItemsLoaded) }</span>
 			items loaded at
-			<span class="font-mono">{ status.LastReload }</span>.
+			<span class="font-mono">
+				@httpx.LocalTime(status.LastReload)
+			</span>.
 		</p>
 	</div>
 }
