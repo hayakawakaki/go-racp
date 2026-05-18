@@ -108,9 +108,9 @@ func tipboxReplace(captures []string) string {
 func naviReplace(captures []string) string {
 	label := html.EscapeString(captures[1])
 	mapName := strings.TrimSpace(captures[2])
-	xCoord := strings.TrimSpace(captures[3])
-	yCoord := strings.TrimSpace(captures[4])
-	payload := fmt.Sprintf("/navi %s %s/%s", mapName, xCoord, yCoord)
+	x := strings.TrimSpace(captures[3])
+	y := strings.TrimSpace(captures[4])
+	payload := fmt.Sprintf("/navi %s %s/%s", mapName, x, y)
 
 	return fmt.Sprintf(`<span class="navi-link cursor-pointer underline text-blue-400" data-navi=%q>%s</span>`, payload, label)
 }
