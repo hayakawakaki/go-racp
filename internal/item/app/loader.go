@@ -5,18 +5,22 @@ import (
 	"fmt"
 	"io/fs"
 	"log/slog"
-	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/hayakawakaki/go-racp/internal/item/domain"
 	"github.com/hayakawakaki/go-racp/internal/item/infra"
+	"github.com/hayakawakaki/go-racp/internal/refdata"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 
+type ItemCache = refdata.Cache[[]*domain.Item]
+
 type Sources struct {
 	Logger *slog.Logger
+	Cache  *ItemCache
 	Root   string
 	YAML   []string
 	Lua    []string
@@ -26,36 +30,107 @@ func ParseSources(sources Sources) (*domain.Snapshot, error) {
 	logger := loggerOrDefault(sources.Logger)
 	overall := time.Now()
 
-	startYAML := time.Now()
-	yamlInputs, err := loadAllYAML(sources)
+	yamlPaths, luaPaths, err := ResolveSourcePaths(sources)
 	if err != nil {
 		return nil, fmt.Errorf("app.ParseSources: %w", err)
 	}
-	logger.Info("item: yaml parsed", "items", len(yamlInputs), "took", time.Since(startYAML).String())
+	allPaths := slices.Concat(yamlPaths, luaPaths)
 
-	startLua := time.Now()
-	luaInfos, err := loadAllLua(sources)
+	if snap, ok := tryLoadFromCache(sources.Cache, allPaths, logger); ok {
+		logger.Info("item: snapshot restored from cache", "items", snap.SourceCount, "took", time.Since(overall).String())
+
+		return snap, nil
+	}
+
+	items, err := parseAndBuildItems(sources.Logger, yamlPaths, luaPaths)
 	if err != nil {
 		return nil, fmt.Errorf("app.ParseSources: %w", err)
 	}
-	logger.Info("item: lua parsed", "entries", len(luaInfos), "took", time.Since(startLua).String())
-
-	if len(yamlInputs) == 0 {
+	if len(items) == 0 {
 		return domain.EmptySnapshot(), nil
 	}
 
-	startBuild := time.Now()
+	snap := assembleSnapshot(items)
+	logger.Info("item: snapshot built", "items", len(items), "total", time.Since(overall).String())
+
+	persistCache(sources.Cache, items, allPaths, logger)
+
+	return snap, nil
+}
+
+func ResolveSourcePaths(sources Sources) (yamlPaths, luaPaths []string, err error) {
+	if len(sources.YAML) == 0 && len(sources.Lua) == 0 {
+		return nil, nil, nil
+	}
+	projectRoot, err := config.ProjectRoot()
+	if err != nil {
+		return nil, nil, fmt.Errorf("app.ResolveSourcePaths: %w", err)
+	}
+	yamlPaths = refdata.ResolvePaths(projectRoot, sources.Root, sources.YAML)
+	luaPaths = refdata.ResolvePaths(projectRoot, sources.Root, sources.Lua)
+
+	return yamlPaths, luaPaths, nil
+}
+
+func tryLoadFromCache(cache *ItemCache, paths []string, logger *slog.Logger) (*domain.Snapshot, bool) {
+	if cache == nil {
+		return nil, false
+	}
+	items, ok := cache.Load(paths)
+	if !ok || len(items) == 0 {
+		return nil, false
+	}
+	assembleStart := time.Now()
+	snap := assembleSnapshot(items)
+	loggerOrDefault(logger).Info("item: snapshot assembled", "items", snap.SourceCount, "took", time.Since(assembleStart).String())
+
+	return snap, true
+}
+
+func persistCache(cache *ItemCache, items []*domain.Item, paths []string, logger *slog.Logger) {
+	if cache == nil {
+		return
+	}
+	if err := cache.Save(items, paths); err != nil {
+		logger.Warn("item: cache save failed", "err", err)
+	}
+}
+
+func parseAndBuildItems(logger *slog.Logger, yamlPaths, luaPaths []string) ([]*domain.Item, error) {
+	log := loggerOrDefault(logger)
+
+	startYAML := time.Now()
+	yamlInputs, err := loadAllYAML(logger, yamlPaths)
+	if err != nil {
+		return nil, err
+	}
+	log.Info("item: yaml parsed", "items", len(yamlInputs), "took", time.Since(startYAML).String())
+
+	startLua := time.Now()
+	luaInfos, err := loadAllLua(logger, luaPaths)
+	if err != nil {
+		return nil, err
+	}
+	log.Info("item: lua parsed", "entries", len(luaInfos), "took", time.Since(startLua).String())
+
+	if len(yamlInputs) == 0 {
+		return nil, nil
+	}
+
 	byID := map[int]*infra.YAMLInput{}
 	for index := range yamlInputs {
 		byID[yamlInputs[index].ID] = &yamlInputs[index]
 	}
-
 	items := make([]*domain.Item, 0, len(byID))
 	for _, input := range byID {
 		items = append(items, buildItem(input, luaInfos))
 	}
 	sort.Slice(items, func(i, j int) bool { return items[i].ID < items[j].ID })
 
+	return items, nil
+}
+
+func assembleSnapshot(items []*domain.Item) *domain.Snapshot {
 	snap := &domain.Snapshot{
 		LoadedAt:    time.Now(),
 		ByID:        make(map[int]*domain.Item, len(items)),
@@ -67,30 +142,23 @@ func ParseSources(sources Sources) (*domain.Snapshot, error) {
 		snap.ByID[item.ID] = item
 		snap.ByName[item.AegisName] = item
 	}
-	logger.Info("item: snapshot built", "items", len(items), "took", time.Since(startBuild).String(), "total", time.Since(overall).String())
 
-	return snap, nil
+	return snap
 }
 
-func loadAllYAML(sources Sources) ([]infra.YAMLInput, error) {
-	if len(sources.YAML) == 0 {
+func loadAllYAML(logger *slog.Logger, paths []string) ([]infra.YAMLInput, error) {
+	if len(paths) == 0 {
 		return nil, nil
 	}
 
-	projectRoot, err := config.ProjectRoot()
-	if err != nil {
-		return nil, fmt.Errorf("app.loadAllYAML: %w", err)
-	}
-
-	logger := loggerOrDefault(sources.Logger)
+	log := loggerOrDefault(logger)
 
 	var all []infra.YAMLInput
-	for _, relative := range sources.YAML {
-		path := resolvePath(projectRoot, sources.Root, relative)
+	for _, path := range paths {
 		rows, err := infra.ReadYAML(path)
 		if err != nil {
 			if errors.Is(err, fs.ErrNotExist) {
-				logger.Warn("item: yaml file not found", "configured", relative, "resolved", path)
+				log.Warn("item: yaml file not found", "resolved", path)
 
 				continue
 			}
@@ -103,25 +171,19 @@ func loadAllYAML(sources Sources) ([]infra.YAMLInput, error) {
 	return all, nil
 }
 
-func loadAllLua(sources Sources) (map[int]infra.LuaInfo, error) {
-	if len(sources.Lua) == 0 {
+func loadAllLua(logger *slog.Logger, paths []string) (map[int]infra.LuaInfo, error) {
+	if len(paths) == 0 {
 		return map[int]infra.LuaInfo{}, nil
 	}
 
-	projectRoot, err := config.ProjectRoot()
-	if err != nil {
-		return nil, fmt.Errorf("app.loadAllLua: %w", err)
-	}
-
-	logger := loggerOrDefault(sources.Logger)
+	log := loggerOrDefault(logger)
 
 	merged := map[int]infra.LuaInfo{}
-	for _, relative := range sources.Lua {
-		path := resolvePath(projectRoot, sources.Root, relative)
+	for _, path := range paths {
 		entries, err := infra.ReadLua(path)
 		if err != nil {
 			if errors.Is(err, fs.ErrNotExist) {
-				logger.Warn("item: lua file not found", "configured", relative, "resolved", path)
+				log.Warn("item: lua file not found", "resolved", path)
 
 				continue
 			}
@@ -145,18 +207,6 @@ func loggerOrDefault(logger *slog.Logger) *slog.Logger {
 	}
 
 	return slog.Default()
-}
-
-func resolvePath(projectRoot, configRoot, relative string) string {
-	if filepath.IsAbs(relative) {
-		return relative
-	}
-	joined := filepath.Join(configRoot, relative)
-	if filepath.IsAbs(joined) {
-		return joined
-	}
-
-	return filepath.Join(projectRoot, joined)
 }
 
 func buildItem(input *infra.YAMLInput, luaInfos map[int]infra.LuaInfo) *domain.Item {
