@@ -156,6 +156,12 @@ func (s *Service) Reload(_ context.Context) error {
 
 		return fmt.Errorf("app.Service.Reload: %w", err)
 	}
+	if snap == nil {
+		err = fmt.Errorf("loader returned nil snapshot: %w", domain.ErrParseFailed)
+		s.recordFailure(err)
+
+		return fmt.Errorf("app.Service.Reload: %w", err)
+	}
 
 	s.snap.Store(snap)
 	s.recordSuccess()
