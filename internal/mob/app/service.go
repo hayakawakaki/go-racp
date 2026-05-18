@@ -12,10 +12,9 @@ import (
 
 type LoaderFunc func() (*domain.Snapshot, error)
 
-//nolint:govet // singleton, alignment over readability
 type Service struct {
-	refdata.ReloadGuard[domain.Snapshot]
 	loader LoaderFunc
+	refdata.ReloadGuard[domain.Snapshot]
 }
 
 func NewService(loader LoaderFunc) *Service {

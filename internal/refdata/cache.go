@@ -1,6 +1,7 @@
 package refdata
 
 import (
+	"cmp"
 	"encoding/gob"
 	"errors"
 	"fmt"
@@ -44,7 +45,7 @@ func (c Cache[T]) path() string {
 
 func (c Cache[T]) Load(paths []string) (T, bool) {
 	var zero T
-	logger := c.loggerOrDefault()
+	logger := cmp.Or(c.Logger, slog.Default())
 
 	//nolint:gosec // G304: c.Dir is set by the config
 	file, err := os.Open(c.path())
@@ -113,18 +114,6 @@ func (c Cache[T]) Save(value T, paths []string) error {
 	}
 
 	return nil
-}
-
-func (c Cache[T]) loggerOrDefault() *slog.Logger {
-	return LoggerOrDefault(c.Logger)
-}
-
-func LoggerOrDefault(logger *slog.Logger) *slog.Logger {
-	if logger != nil {
-		return logger
-	}
-
-	return slog.Default()
 }
 
 func hashSources(paths []string) ([]sourceHash, error) {

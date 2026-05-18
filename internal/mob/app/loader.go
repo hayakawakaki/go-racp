@@ -1,6 +1,7 @@
 package app
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -24,7 +25,7 @@ type Sources struct {
 }
 
 func ParseSources(sources Sources) (*domain.Snapshot, error) {
-	logger := refdata.LoggerOrDefault(sources.Logger)
+	logger := cmp.Or(sources.Logger, slog.Default())
 	overall := time.Now()
 
 	yamlPaths, err := ResolveSourcePaths(sources)
@@ -75,7 +76,7 @@ func tryLoadFromCache(cache *MobCache, paths []string, logger *slog.Logger) (*do
 	}
 	start := time.Now()
 	snap := assembleSnapshot(mobs)
-	refdata.LoggerOrDefault(logger).Info("mob: snapshot assembled", "mobs", snap.SourceCount, "took", time.Since(start).String())
+	cmp.Or(logger, slog.Default()).Info("mob: snapshot assembled", "mobs", snap.SourceCount, "took", time.Since(start).String())
 
 	return snap, true
 }
@@ -90,7 +91,7 @@ func persistCache(cache *MobCache, mobs []*domain.Mob, paths []string, logger *s
 }
 
 func parseAndBuildMobs(logger *slog.Logger, yamlPaths []string) ([]*domain.Mob, error) {
-	log := refdata.LoggerOrDefault(logger)
+	log := cmp.Or(logger, slog.Default())
 
 	start := time.Now()
 	inputs, err := loadAllYAML(logger, yamlPaths)
@@ -161,7 +162,7 @@ func loadAllYAML(logger *slog.Logger, paths []string) ([]infra.YAMLInput, error)
 		return nil, nil
 	}
 
-	log := refdata.LoggerOrDefault(logger)
+	log := cmp.Or(logger, slog.Default())
 
 	var all []infra.YAMLInput
 	for _, path := range paths {

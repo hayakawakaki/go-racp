@@ -19,10 +19,9 @@ type ListQuery struct {
 	PerPage int
 }
 
-//nolint:govet // singleton, alignment over readability
 type Service struct {
-	refdata.ReloadGuard[domain.Snapshot]
 	loader LoaderFunc
+	refdata.ReloadGuard[domain.Snapshot]
 }
 
 func NewService(loader LoaderFunc) *Service {
