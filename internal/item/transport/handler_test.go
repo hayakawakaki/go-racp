@@ -16,6 +16,7 @@ import (
 	itemapp "github.com/hayakawakaki/go-racp/internal/item/app"
 	"github.com/hayakawakaki/go-racp/internal/item/domain"
 	mobdomain "github.com/hayakawakaki/go-racp/internal/mob/domain"
+	"github.com/hayakawakaki/go-racp/internal/refdata"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 
@@ -555,7 +556,7 @@ func TestHandler_DoReload_ConflictReturns409(t *testing.T) {
 	t.Parallel()
 
 	svc := newFakeItemService()
-	svc.reloadErr = domain.ErrReloadConflict
+	svc.reloadErr = refdata.ErrReloadConflict
 	h := newTestHandler(svc)
 
 	rr := httptest.NewRecorder()

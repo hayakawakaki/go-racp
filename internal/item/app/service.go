@@ -2,14 +2,12 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"strings"
-	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/hayakawakaki/go-racp/internal/item/domain"
+	"github.com/hayakawakaki/go-racp/internal/refdata"
 )
 
 type LoaderFunc func() (*domain.Snapshot, error)
@@ -21,14 +19,10 @@ type ListQuery struct {
 	PerPage int
 }
 
-//nolint:govet // fieldalignment: 8-byte gain on a singleton
+//nolint:govet // singleton, alignment over readability
 type Service struct {
-	loader     LoaderFunc
-	snap       atomic.Pointer[domain.Snapshot]
-	reloadMu   sync.Mutex
-	statusMu   sync.RWMutex
-	lastReload time.Time
-	lastError  string
+	refdata.ReloadGuard[domain.Snapshot]
+	loader LoaderFunc
 }
 
 func NewService(loader LoaderFunc) *Service {
@@ -37,14 +31,13 @@ func NewService(loader LoaderFunc) *Service {
 
 func NewServiceWithSnapshot(snap *domain.Snapshot, loader LoaderFunc) *Service {
 	service := NewService(loader)
-	service.snap.Store(snap)
-	service.recordSuccess()
+	service.Store(snap)
 
 	return service
 }
 
 func (s *Service) Snapshot() *domain.Snapshot {
-	snap := s.snap.Load()
+	snap := s.Load()
 	if snap == nil {
 		return domain.EmptySnapshot()
 	}
@@ -148,49 +141,15 @@ func matchesQuery(item *domain.Item, needle string, asID int) bool {
 }
 
 func (s *Service) Reload(_ context.Context) error {
-	if !s.reloadMu.TryLock() {
-		return domain.ErrReloadConflict
-	}
-	defer s.reloadMu.Unlock()
-
-	if s.loader == nil {
-		err := fmt.Errorf("app.Service.Reload: %w", domain.ErrParseFailed)
-		s.recordFailure(err)
-		return err
-	}
-	snap, err := s.loader()
-	if err != nil {
-		s.recordFailure(err)
-		return fmt.Errorf("app.Service.Reload: %w", err)
-	}
-
-	s.snap.Store(snap)
-	s.recordSuccess()
-
-	return nil
-}
-
-func (s *Service) recordSuccess() {
-	s.statusMu.Lock()
-	defer s.statusMu.Unlock()
-	s.lastReload = time.Now()
-	s.lastError = ""
-}
-
-func (s *Service) recordFailure(err error) {
-	s.statusMu.Lock()
-	defer s.statusMu.Unlock()
-	s.lastError = err.Error()
+	return s.ReloadGuard.Reload(s.loader) //nolint:wrapcheck // wrapped inside refdata
 }
 
 func (s *Service) Status() ServiceStatus {
-	s.statusMu.RLock()
-	defer s.statusMu.RUnlock()
 	snap := s.Snapshot()
 	lastReload := ""
-	if !s.lastReload.IsZero() {
-		lastReload = s.lastReload.Format(time.RFC3339)
+	if last := s.LastReload(); !last.IsZero() {
+		lastReload = last.Format(time.RFC3339)
 	}
 
-	return ServiceStatus{ItemsLoaded: snap.SourceCount, LastReload: lastReload, LastError: s.lastError}
+	return ServiceStatus{ItemsLoaded: snap.SourceCount, LastReload: lastReload, LastError: s.LastError()}
 }

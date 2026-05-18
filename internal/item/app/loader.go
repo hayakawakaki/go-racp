@@ -26,7 +26,7 @@ type Sources struct {
 }
 
 func ParseSources(sources Sources) (*domain.Snapshot, error) {
-	logger := loggerOrDefault(sources.Logger)
+	logger := refdata.LoggerOrDefault(sources.Logger)
 	overall := time.Now()
 
 	yamlPaths, luaPaths, err := ResolveSourcePaths(sources)
@@ -80,7 +80,7 @@ func tryLoadFromCache(cache *ItemCache, paths []string, logger *slog.Logger) (*d
 	}
 	assembleStart := time.Now()
 	snap := assembleSnapshot(items)
-	loggerOrDefault(logger).Info("item: snapshot assembled", "items", snap.SourceCount, "took", time.Since(assembleStart).String())
+	refdata.LoggerOrDefault(logger).Info("item: snapshot assembled", "items", snap.SourceCount, "took", time.Since(assembleStart).String())
 
 	return snap, true
 }
@@ -95,7 +95,7 @@ func persistCache(cache *ItemCache, items []*domain.Item, paths []string, logger
 }
 
 func parseAndBuildItems(logger *slog.Logger, yamlPaths, luaPaths []string) ([]*domain.Item, error) {
-	log := loggerOrDefault(logger)
+	log := refdata.LoggerOrDefault(logger)
 
 	startYAML := time.Now()
 	yamlInputs, err := loadAllYAML(logger, yamlPaths)
@@ -149,7 +149,7 @@ func loadAllYAML(logger *slog.Logger, paths []string) ([]infra.YAMLInput, error)
 		return nil, nil
 	}
 
-	log := loggerOrDefault(logger)
+	log := refdata.LoggerOrDefault(logger)
 
 	var all []infra.YAMLInput
 	for _, path := range paths {
@@ -172,7 +172,7 @@ func loadAllLua(logger *slog.Logger, paths []string) (map[int]infra.LuaInfo, err
 		return map[int]infra.LuaInfo{}, nil
 	}
 
-	log := loggerOrDefault(logger)
+	log := refdata.LoggerOrDefault(logger)
 
 	merged := map[int]infra.LuaInfo{}
 	for _, path := range paths {
@@ -193,14 +193,6 @@ func loadAllLua(logger *slog.Logger, paths []string) (map[int]infra.LuaInfo, err
 	}
 
 	return merged, nil
-}
-
-func loggerOrDefault(logger *slog.Logger) *slog.Logger {
-	if logger != nil {
-		return logger
-	}
-
-	return slog.Default()
 }
 
 func buildItem(input *infra.YAMLInput, luaInfos map[int]infra.LuaInfo) *domain.Item {

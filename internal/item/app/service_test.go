@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/hayakawakaki/go-racp/internal/item/domain"
+	"github.com/hayakawakaki/go-racp/internal/refdata"
 )
 
 func newFixtureSnapshot(t *testing.T, items ...*domain.Item) *domain.Snapshot {
@@ -217,7 +218,7 @@ func TestService_Reload_TryLockBlocksSecondCall(t *testing.T) {
 	if firstErr != nil {
 		t.Errorf("firstErr = %v, want nil", firstErr)
 	}
-	if !errors.Is(secondErr, domain.ErrReloadConflict) {
+	if !errors.Is(secondErr, refdata.ErrReloadConflict) {
 		t.Errorf("secondErr = %v, want ErrReloadConflict", secondErr)
 	}
 }

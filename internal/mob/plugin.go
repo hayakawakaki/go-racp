@@ -2,9 +2,7 @@ package mob
 
 import (
 	"context"
-	"log/slog"
 	"net/http"
-	"path/filepath"
 	"sync"
 	"sync/atomic"
 
@@ -15,13 +13,9 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/plugin"
 	"github.com/hayakawakaki/go-racp/internal/refdata"
 	"github.com/hayakawakaki/go-racp/internal/routes"
-	"github.com/hayakawakaki/go-racp/server/config"
 )
 
-const (
-	devCacheSubdir   = "tmp"
-	mobCacheFileName = "mob-snapshot.gob"
-)
+const mobCacheFileName = "mob-snapshot.gob"
 
 var (
 	svcOnce          sync.Once
@@ -86,7 +80,7 @@ func buildSources(in *platinfra.Infra) mobapp.Sources {
 		Logger: in.Logger,
 		YAML:   cfg.YAML,
 	}
-	if dir := devCacheDir(in.Config.Env.Mode, in.Logger); dir != "" {
+	if dir := platinfra.DevCacheDir(in.Config.Env.Mode, in.Logger); dir != "" {
 		sources.Cache = &mobapp.MobCache{
 			Logger:   in.Logger,
 			Dir:      dir,
@@ -95,19 +89,6 @@ func buildSources(in *platinfra.Infra) mobapp.Sources {
 	}
 
 	return sources
-}
-
-func devCacheDir(mode string, logger *slog.Logger) string {
-	if mode != "development" {
-		return ""
-	}
-	root, err := config.ProjectRoot()
-	if err != nil {
-		logger.Warn("mob: cache disabled, project root not found", "err", err)
-		return ""
-	}
-
-	return filepath.Join(root, devCacheSubdir)
 }
 
 func startDevWatcher(in *platinfra.Infra, service *mobapp.Service) {

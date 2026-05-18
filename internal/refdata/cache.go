@@ -116,8 +116,12 @@ func (c Cache[T]) Save(value T, paths []string) error {
 }
 
 func (c Cache[T]) loggerOrDefault() *slog.Logger {
-	if c.Logger != nil {
-		return c.Logger
+	return LoggerOrDefault(c.Logger)
+}
+
+func LoggerOrDefault(logger *slog.Logger) *slog.Logger {
+	if logger != nil {
+		return logger
 	}
 
 	return slog.Default()

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/hayakawakaki/go-racp/internal/mob/domain"
+	"github.com/hayakawakaki/go-racp/internal/refdata"
 )
 
 func newFixtureSnapshot(t *testing.T, mobs ...*domain.Mob) *domain.Snapshot {
@@ -243,7 +244,7 @@ func TestService_Reload_NilLoaderReturnsParseError(t *testing.T) {
 
 	service := NewService(nil)
 	err := service.Reload(context.Background())
-	if !errors.Is(err, domain.ErrParseFailed) {
+	if !errors.Is(err, refdata.ErrParseFailed) {
 		t.Errorf("err = %v, want ErrParseFailed", err)
 	}
 	if service.Status().LastError == "" {
@@ -257,7 +258,7 @@ func TestService_Reload_NilSnapshotReturnsParseError(t *testing.T) {
 	loader := func() (*domain.Snapshot, error) { return nil, nil }
 	service := NewService(loader)
 	err := service.Reload(context.Background())
-	if !errors.Is(err, domain.ErrParseFailed) {
+	if !errors.Is(err, refdata.ErrParseFailed) {
 		t.Errorf("err = %v, want ErrParseFailed", err)
 	}
 }
@@ -337,7 +338,7 @@ func TestService_Reload_TryLockBlocksSecondCall(t *testing.T) {
 	if firstErr != nil {
 		t.Errorf("firstErr = %v, want nil", firstErr)
 	}
-	if !errors.Is(secondErr, domain.ErrReloadConflict) {
+	if !errors.Is(secondErr, refdata.ErrReloadConflict) {
 		t.Errorf("secondErr = %v, want ErrReloadConflict", secondErr)
 	}
 }
