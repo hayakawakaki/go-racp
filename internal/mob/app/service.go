@@ -13,12 +13,11 @@ import (
 type LoaderFunc func() (*domain.Snapshot, error)
 
 type Service struct {
-	loader LoaderFunc
 	refdata.ReloadGuard[domain.Snapshot]
 }
 
 func NewService(loader LoaderFunc) *Service {
-	return &Service{loader: loader}
+	return &Service{ReloadGuard: refdata.ReloadGuard[domain.Snapshot]{Loader: loader}}
 }
 
 func NewServiceWithSnapshot(snap *domain.Snapshot, loader LoaderFunc) *Service {
@@ -129,10 +128,6 @@ func (s *Service) WhoDrops(itemAegis string) []domain.DropOf {
 	}
 
 	return entries
-}
-
-func (s *Service) Reload(_ context.Context) error {
-	return s.ReloadGuard.Reload(s.loader) //nolint:wrapcheck // wrapped inside refdata
 }
 
 func (s *Service) Status() ServiceStatus {

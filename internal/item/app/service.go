@@ -20,12 +20,11 @@ type ListQuery struct {
 }
 
 type Service struct {
-	loader LoaderFunc
 	refdata.ReloadGuard[domain.Snapshot]
 }
 
 func NewService(loader LoaderFunc) *Service {
-	return &Service{loader: loader}
+	return &Service{ReloadGuard: refdata.ReloadGuard[domain.Snapshot]{Loader: loader}}
 }
 
 func NewServiceWithSnapshot(snap *domain.Snapshot, loader LoaderFunc) *Service {
@@ -137,10 +136,6 @@ func matchesQuery(item *domain.Item, needle string, asID int) bool {
 	}
 
 	return false
-}
-
-func (s *Service) Reload(_ context.Context) error {
-	return s.ReloadGuard.Reload(s.loader) //nolint:wrapcheck // wrapped inside refdata
 }
 
 func (s *Service) Status() ServiceStatus {

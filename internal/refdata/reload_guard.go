@@ -1,6 +1,7 @@
 package refdata
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -9,6 +10,7 @@ import (
 
 //nolint:govet // alignment varies per T
 type ReloadGuard[T any] struct {
+	Loader     func() (*T, error)
 	snap       atomic.Pointer[T]
 	reloadMu   sync.Mutex
 	statusMu   sync.RWMutex
@@ -25,18 +27,18 @@ func (g *ReloadGuard[T]) Store(snap *T) {
 	g.recordSuccess()
 }
 
-func (g *ReloadGuard[T]) Reload(loader func() (*T, error)) error {
+func (g *ReloadGuard[T]) Reload(_ context.Context) error {
 	if !g.reloadMu.TryLock() {
 		return ErrReloadConflict
 	}
 	defer g.reloadMu.Unlock()
 
-	if loader == nil {
+	if g.Loader == nil {
 		err := fmt.Errorf("refdata.ReloadGuard.Reload: %w", ErrParseFailed)
 		g.recordFailure(err)
 		return err
 	}
-	snap, err := loader()
+	snap, err := g.Loader()
 	if err != nil {
 		g.recordFailure(err)
 		return fmt.Errorf("refdata.ReloadGuard.Reload: %w", err)
