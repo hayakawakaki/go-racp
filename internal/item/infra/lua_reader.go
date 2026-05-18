@@ -33,7 +33,6 @@ func ReadLua(path string) (map[int]LuaInfo, error) {
 		if errors.Is(err, fs.ErrNotExist) {
 			return nil, fs.ErrNotExist
 		}
-
 		return nil, fmt.Errorf("infra.ReadLua: %w", err)
 	}
 	if len(data) == 0 {

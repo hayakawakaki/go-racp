@@ -25,13 +25,11 @@ func (h *Handler) showList(w http.ResponseWriter, r *http.Request) {
 	page, err := h.svc.List(r.Context(), query)
 	if errors.Is(err, domain.ErrEmptySnapshot) {
 		httpx.RenderHTML(w, r, h.logger, emptyDatabasePage(h.layout()))
-
 		return
 	}
 	if err != nil {
 		h.logger.Error("item: list", "err", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-
 		return
 	}
 

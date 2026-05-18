@@ -93,7 +93,6 @@ func devCacheDir(mode string, logger *slog.Logger) string {
 	root, err := config.ProjectRoot()
 	if err != nil {
 		logger.Warn("item: cache disabled, project root not found", "err", err)
-
 		return ""
 	}
 
@@ -107,7 +106,6 @@ func startDevWatcher(in *platinfra.Infra, service *itemapp.Service) {
 	yamlPaths, luaPaths, err := itemapp.ResolveSourcePaths(buildSources(in))
 	if err != nil {
 		in.Logger.Warn("item: dev watcher disabled, cannot resolve sources", "err", err)
-
 		return
 	}
 	paths := slices.Concat(yamlPaths, luaPaths)
@@ -116,7 +114,6 @@ func startDevWatcher(in *platinfra.Infra, service *itemapp.Service) {
 	}
 	if _, err := refdata.StartWatcher(context.Background(), paths, service.Reload, in.Logger); err != nil {
 		in.Logger.Warn("item: dev watcher failed to start", "err", err)
-
 		return
 	}
 	in.Logger.Info("item: dev watcher started", "files", len(paths))

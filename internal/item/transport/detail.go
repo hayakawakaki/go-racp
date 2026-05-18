@@ -17,20 +17,17 @@ func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(idText)
 	if err != nil || id < 1 {
 		h.renderNotFound(w, r, idText)
-
 		return
 	}
 
 	item, err := h.svc.Get(r.Context(), id)
 	if errors.Is(err, domain.ErrNotFound) || errors.Is(err, domain.ErrEmptySnapshot) {
 		h.renderNotFound(w, r, idText)
-
 		return
 	}
 	if err != nil {
 		h.logger.Error("item: detail", "err", err, "id", id)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-
 		return
 	}
 

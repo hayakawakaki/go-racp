@@ -67,7 +67,6 @@ func ProcessAccessConfig() AccessConfig {
 		if errors.Is(err, fs.ErrNotExist) {
 			cfg := AccessConfig{}
 			validateAccessConfig(cfg)
-
 			return cfg
 		}
 		panic(fmt.Errorf("locate access.yml: %w", err))

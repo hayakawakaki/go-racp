@@ -87,7 +87,6 @@ func (w *Watcher) run(ctx context.Context) {
 	fire := func() {
 		if err := w.reload(ctx); err != nil {
 			w.logger.Warn("refdata: watcher reload failed", "err", err)
-
 			return
 		}
 		w.logger.Info("refdata: snapshot reloaded via watcher")

@@ -18,13 +18,11 @@ func (h *Handler) targetAndActor(w http.ResponseWriter, r *http.Request) (target
 	targetID, ok = pathID(r)
 	if !ok {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-
 		return 0, 0, false
 	}
 	snap, snapOK := middleware.SnapshotFromContext(r.Context())
 	if !snapOK || snap == nil {
 		h.writeActionError(w, r, "Session missing.", http.StatusUnauthorized)
-
 		return 0, 0, false
 	}
 
@@ -48,7 +46,6 @@ func (h *Handler) doBan(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, maxUserActionFormBytes)
 	if err := r.ParseForm(); err != nil {
 		h.writeActionError(w, r, "Invalid form data.", http.StatusBadRequest)
-
 		return
 	}
 
@@ -62,7 +59,6 @@ func (h *Handler) doBan(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		h.writeActionErrorFromDomain(w, r, err)
-
 		return
 	}
 	h.renderDetail(w, r, detail)
@@ -76,7 +72,6 @@ func (h *Handler) doUnban(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, maxUserActionFormBytes)
 	if err := r.ParseForm(); err != nil {
 		h.writeActionError(w, r, "Invalid form data.", http.StatusBadRequest)
-
 		return
 	}
 
@@ -87,7 +82,6 @@ func (h *Handler) doUnban(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		h.writeActionErrorFromDomain(w, r, err)
-
 		return
 	}
 	h.renderDetail(w, r, detail)
@@ -101,14 +95,12 @@ func (h *Handler) doSetRole(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, maxUserActionFormBytes)
 	if err := r.ParseForm(); err != nil {
 		h.writeActionError(w, r, "Invalid form data.", http.StatusBadRequest)
-
 		return
 	}
 
 	groupID, err := strconv.Atoi(r.FormValue("group_id"))
 	if err != nil {
 		h.writeActionError(w, r, "Invalid role selection.", http.StatusBadRequest)
-
 		return
 	}
 
@@ -120,7 +112,6 @@ func (h *Handler) doSetRole(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		h.writeActionErrorFromDomain(w, r, err)
-
 		return
 	}
 	h.renderDetail(w, r, detail)

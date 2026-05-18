@@ -29,14 +29,12 @@ func (h *Handler) showList(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.logger.Error("users: list failed", "err", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-
 		return
 	}
 
 	state := listState{Page: page, Query: query.Query, BaseURL: "/admin/users", Now: time.Now()}
 	if httpx.IsHTMX(r) {
 		httpx.RenderHTML(w, r, h.logger, listContent(state))
-
 		return
 	}
 	httpx.RenderHTML(w, r, h.logger, listPage(h.layout(), state))

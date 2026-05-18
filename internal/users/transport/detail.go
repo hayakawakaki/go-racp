@@ -28,7 +28,6 @@ func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {
 	id, ok := pathID(r)
 	if !ok {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-
 		return
 	}
 
@@ -36,13 +35,11 @@ func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {
 	if errors.Is(err, domain.ErrNotFound) {
 		w.WriteHeader(http.StatusNotFound)
 		httpx.RenderHTML(w, r, h.logger, notFoundPage(h.layout(), strconv.Itoa(id)))
-
 		return
 	}
 	if err != nil {
 		h.logger.Error("users: get failed", "id", id, "err", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-
 		return
 	}
 
@@ -54,7 +51,6 @@ func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {
 
 	if httpx.IsHTMX(r) {
 		httpx.RenderHTML(w, r, h.logger, detailContent(state))
-
 		return
 	}
 	httpx.RenderHTML(w, r, h.logger, detailPage(h.layout(), detail.User.Username, state))

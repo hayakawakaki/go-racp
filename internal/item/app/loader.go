@@ -37,7 +37,6 @@ func ParseSources(sources Sources) (*domain.Snapshot, error) {
 
 	if snap, ok := tryLoadFromCache(sources.Cache, allPaths, logger); ok {
 		logger.Info("item: snapshot restored from cache", "items", snap.SourceCount, "took", time.Since(overall).String())
-
 		return snap, nil
 	}
 
@@ -158,10 +157,8 @@ func loadAllYAML(logger *slog.Logger, paths []string) ([]infra.YAMLInput, error)
 		if err != nil {
 			if errors.Is(err, fs.ErrNotExist) {
 				log.Warn("item: yaml file not found", "resolved", path)
-
 				continue
 			}
-
 			return nil, fmt.Errorf("app.loadAllYAML(%s): %w", path, err)
 		}
 		all = append(all, rows...)
@@ -183,10 +180,8 @@ func loadAllLua(logger *slog.Logger, paths []string) (map[int]infra.LuaInfo, err
 		if err != nil {
 			if errors.Is(err, fs.ErrNotExist) {
 				log.Warn("item: lua file not found", "resolved", path)
-
 				continue
 			}
-
 			return nil, fmt.Errorf("app.loadAllLua(%s): %w", path, err)
 		}
 		for id, info := range entries {
@@ -322,7 +317,6 @@ func applyLua(item *domain.Item, luaInfos map[int]infra.LuaInfo) {
 		if item.ClientName == "" {
 			item.ClientName = item.Name
 		}
-
 		return
 	}
 	if info.DisplayName != "" {

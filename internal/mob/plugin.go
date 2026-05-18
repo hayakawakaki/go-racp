@@ -104,7 +104,6 @@ func devCacheDir(mode string, logger *slog.Logger) string {
 	root, err := config.ProjectRoot()
 	if err != nil {
 		logger.Warn("mob: cache disabled, project root not found", "err", err)
-
 		return ""
 	}
 
@@ -118,7 +117,6 @@ func startDevWatcher(in *platinfra.Infra, service *mobapp.Service) {
 	paths, err := mobapp.ResolveSourcePaths(buildSources(in))
 	if err != nil {
 		in.Logger.Warn("mob: dev watcher disabled, cannot resolve sources", "err", err)
-
 		return
 	}
 	if len(paths) == 0 {
@@ -126,7 +124,6 @@ func startDevWatcher(in *platinfra.Infra, service *mobapp.Service) {
 	}
 	if _, err := refdata.StartWatcher(context.Background(), paths, service.Reload, in.Logger); err != nil {
 		in.Logger.Warn("mob: dev watcher failed to start", "err", err)
-
 		return
 	}
 	in.Logger.Info("mob: dev watcher started", "files", len(paths))

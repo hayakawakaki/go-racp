@@ -52,7 +52,6 @@ func (c Cache[T]) Load(paths []string) (T, bool) {
 		if !errors.Is(err, fs.ErrNotExist) {
 			logger.Warn("refdata: cache open failed", "err", err)
 		}
-
 		return zero, false
 	}
 	defer func() { _ = file.Close() }()
@@ -61,7 +60,6 @@ func (c Cache[T]) Load(paths []string) (T, bool) {
 	decodeStart := time.Now()
 	if err = gob.NewDecoder(file).Decode(&blob); err != nil {
 		logger.Warn("refdata: cache decode failed", "err", err)
-
 		return zero, false
 	}
 	decodeTook := time.Since(decodeStart)
@@ -96,7 +94,6 @@ func (c Cache[T]) Save(value T, paths []string) error {
 	if err := file.Chmod(cacheFilePerm); err != nil {
 		_ = file.Close()
 		_ = os.Remove(tmp)
-
 		return fmt.Errorf("refdata.Cache.Save chmod: %w", err)
 	}
 
@@ -104,17 +101,14 @@ func (c Cache[T]) Save(value T, paths []string) error {
 	if err := gob.NewEncoder(file).Encode(blob); err != nil {
 		_ = file.Close()
 		_ = os.Remove(tmp)
-
 		return fmt.Errorf("refdata.Cache.Save encode: %w", err)
 	}
 	if err := file.Close(); err != nil {
 		_ = os.Remove(tmp)
-
 		return fmt.Errorf("refdata.Cache.Save close: %w", err)
 	}
 	if err := os.Rename(tmp, target); err != nil {
 		_ = os.Remove(tmp)
-
 		return fmt.Errorf("refdata.Cache.Save rename: %w", err)
 	}
 
@@ -137,7 +131,6 @@ func hashSources(paths []string) ([]sourceHash, error) {
 			if errors.Is(err, fs.ErrNotExist) {
 				continue
 			}
-
 			return nil, fmt.Errorf("stat %s: %w", path, err)
 		}
 		sum, err := hashFile(path)
@@ -169,7 +162,6 @@ func verifySources(cached []sourceHash, paths []string) bool {
 			if errors.Is(err, fs.ErrNotExist) {
 				continue
 			}
-
 			return false
 		}
 		prev, ok := byPath[path]

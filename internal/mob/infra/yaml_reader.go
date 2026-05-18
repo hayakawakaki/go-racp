@@ -69,7 +69,6 @@ func ReadYAML(path string) ([]YAMLInput, error) {
 		if errors.Is(err, fs.ErrNotExist) {
 			return nil, fs.ErrNotExist
 		}
-
 		return nil, fmt.Errorf("infra.ReadYAML: %w", err)
 	}
 	if len(data) == 0 {
