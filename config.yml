@@ -75,14 +75,16 @@ NewsCategories:
     Display: "Patch Notes"
 
 # Item Database
-# Server-side YAML and client-side Lua usually live in different trees,
-# so each group has its own `Path` prefix joined onto its `Files` entries.
-# Relative paths resolve against the cp root. Absolute paths are honored as-is.
+# Relative paths resolve against the cp root. Absolute paths are followed as is.
+# Rathena's footer import is not resolved on the parser. Use the direct path to the yml files.
 #
 # Path examples:
-#   Path: "data/"                          # → <cp root>/data/<file>
-#   Path: "/home/username/rathena/db/"     # → /home/username/rathena/db/<file>
-#   Path: ""                               # → files must be absolute or project-relative
+# Local Path
+#   Path: "data/"
+# Linux Absolute Path
+#   Path: "/home/username/rathena/db/"
+# Windows Absolute Path
+#   Path: "C:\Users\user1\Desktop\rathena\db\"
 ItemDB:
   YAML:
     Path: "data/"
