@@ -20,7 +20,7 @@ import (
 const (
 	devCacheSubdir    = "tmp"
 	itemCacheFileName = "item-snapshot.gob"
-	itemParserVersion = 1
+	itemParserVersion = 2
 )
 
 func init() {

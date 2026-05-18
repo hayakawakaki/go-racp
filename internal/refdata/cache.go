@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"time"
 )
 
 const (
@@ -26,8 +27,10 @@ type Cache[T any] struct {
 }
 
 type sourceHash struct {
-	Path string
-	Hash uint64
+	Path  string
+	Hash  uint64
+	Mtime int64
+	Size  int64
 }
 
 //nolint:govet // generic instantiation pays the alignment cost; readability wins here
@@ -57,24 +60,24 @@ func (c Cache[T]) Load(paths []string) (T, bool) {
 	defer func() { _ = file.Close() }()
 
 	var blob cacheBlob[T]
+	decodeStart := time.Now()
 	if err = gob.NewDecoder(file).Decode(&blob); err != nil {
 		logger.Warn("refdata: cache decode failed", "err", err)
 
 		return zero, false
 	}
+	decodeTook := time.Since(decodeStart)
 	if blob.Version != c.Version {
 		return zero, false
 	}
 
-	current, err := hashSources(paths)
-	if err != nil {
-		logger.Warn("refdata: source hash failed", "err", err)
+	verifyStart := time.Now()
+	if !verifySources(blob.Sources, paths) {
+		return zero, false
+	}
+	verifyTook := time.Since(verifyStart)
 
-		return zero, false
-	}
-	if !sameHashes(blob.Sources, current) {
-		return zero, false
-	}
+	logger.Info("refdata: cache hit", "file", c.path(), "decode", decodeTook.String(), "verify", verifyTook.String())
 
 	return blob.Value, true
 }
@@ -134,19 +137,66 @@ func (c Cache[T]) loggerOrDefault() *slog.Logger {
 func hashSources(paths []string) ([]sourceHash, error) {
 	out := make([]sourceHash, 0, len(paths))
 	for _, path := range paths {
-		sum, err := hashFile(path)
+		info, err := os.Stat(path)
 		if err != nil {
 			if errors.Is(err, fs.ErrNotExist) {
 				continue
 			}
 
+			return nil, fmt.Errorf("stat %s: %w", path, err)
+		}
+		sum, err := hashFile(path)
+		if err != nil {
 			return nil, err
 		}
-		out = append(out, sourceHash{Path: path, Hash: sum})
+		out = append(out, sourceHash{
+			Path:  path,
+			Hash:  sum,
+			Mtime: info.ModTime().Unix(),
+			Size:  info.Size(),
+		})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Path < out[j].Path })
 
 	return out, nil
+}
+
+func verifySources(cached []sourceHash, paths []string) bool {
+	byPath := make(map[string]sourceHash, len(cached))
+	for _, entry := range cached {
+		byPath[entry.Path] = entry
+	}
+
+	matched := 0
+	for _, path := range paths {
+		info, err := os.Stat(path)
+		if err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
+				continue
+			}
+
+			return false
+		}
+		prev, ok := byPath[path]
+		if !ok {
+			return false
+		}
+		if prev.Mtime == info.ModTime().Unix() && prev.Size == info.Size() {
+			matched++
+
+			continue
+		}
+		sum, err := hashFile(path)
+		if err != nil {
+			return false
+		}
+		if sum != prev.Hash {
+			return false
+		}
+		matched++
+	}
+
+	return matched == len(cached)
 }
 
 func hashFile(path string) (uint64, error) {
@@ -163,17 +213,4 @@ func hashFile(path string) (uint64, error) {
 	}
 
 	return hasher.Sum64(), nil
-}
-
-func sameHashes(a, b []sourceHash) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for index := range a {
-		if a[index] != b[index] {
-			return false
-		}
-	}
-
-	return true
 }

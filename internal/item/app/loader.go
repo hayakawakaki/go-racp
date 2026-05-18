@@ -36,7 +36,7 @@ func ParseSources(sources Sources) (*domain.Snapshot, error) {
 	}
 	allPaths := slices.Concat(yamlPaths, luaPaths)
 
-	if snap, ok := tryLoadFromCache(sources.Cache, allPaths); ok {
+	if snap, ok := tryLoadFromCache(sources.Cache, allPaths, logger); ok {
 		logger.Info("item: snapshot restored from cache", "items", snap.SourceCount, "took", time.Since(overall).String())
 
 		return snap, nil
@@ -72,7 +72,7 @@ func ResolveSourcePaths(sources Sources) (yamlPaths, luaPaths []string, err erro
 	return yamlPaths, luaPaths, nil
 }
 
-func tryLoadFromCache(cache *ItemCache, paths []string) (*domain.Snapshot, bool) {
+func tryLoadFromCache(cache *ItemCache, paths []string, logger *slog.Logger) (*domain.Snapshot, bool) {
 	if cache == nil {
 		return nil, false
 	}
@@ -80,8 +80,11 @@ func tryLoadFromCache(cache *ItemCache, paths []string) (*domain.Snapshot, bool)
 	if !ok || len(items) == 0 {
 		return nil, false
 	}
+	assembleStart := time.Now()
+	snap := assembleSnapshot(items)
+	loggerOrDefault(logger).Info("item: snapshot assembled", "items", snap.SourceCount, "took", time.Since(assembleStart).String())
 
-	return assembleSnapshot(items), true
+	return snap, true
 }
 
 func persistCache(cache *ItemCache, items []*domain.Item, paths []string, logger *slog.Logger) {
