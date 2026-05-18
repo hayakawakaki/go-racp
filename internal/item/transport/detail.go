@@ -49,11 +49,7 @@ func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) renderNotFound(w http.ResponseWriter, r *http.Request, idText string) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusNotFound)
-	if err := notFoundPage(h.layout(), idText).Render(r.Context(), w); err != nil {
-		h.logger.Error("item: render not found", "err", err)
-	}
+	httpx.RenderComponent404(w, r, h.logger, notFoundPage(h.layout(), idText))
 }
 
 func buildStats(item *domain.Item) []labeledRow {
