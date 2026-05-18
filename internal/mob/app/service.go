@@ -97,7 +97,7 @@ func filterMobs(mobs []*domain.Mob, query ListQuery) []*domain.Mob {
 		asID = parsed
 	}
 
-	out := make([]*domain.Mob, 0, len(mobs))
+	out := make([]*domain.Mob, 0, 32)
 	for _, mob := range mobs {
 		if !matchesQuery(mob, needle, asID) {
 			continue
@@ -134,10 +134,8 @@ func (s *Service) WhoDrops(itemAegis string) []domain.DropOf {
 	if !ok || len(entries) == 0 {
 		return nil
 	}
-	out := make([]domain.DropOf, len(entries))
-	copy(out, entries)
 
-	return out
+	return entries
 }
 
 func (s *Service) Reload(_ context.Context) error {

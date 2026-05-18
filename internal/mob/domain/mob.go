@@ -26,7 +26,6 @@ type Mob struct {
 	Title           string
 	AegisLower      string
 	NameLower       string
-	Sprite          string
 	ID              int
 	Level           int
 	HP              int

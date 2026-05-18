@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"net/http"
 	"path/filepath"
-	"sync"
 
 	platinfra "github.com/hayakawakaki/go-racp/internal/infra"
 	mobapp "github.com/hayakawakaki/go-racp/internal/mob/app"
@@ -20,11 +19,6 @@ import (
 const (
 	devCacheSubdir   = "tmp"
 	mobCacheFileName = "mob-snapshot.gob"
-)
-
-var (
-	svcOnce     sync.Once
-	svcInstance *mobapp.Service
 )
 
 func init() {
@@ -42,26 +36,22 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *platinfra.Infra) {
 }
 
 func BuildService(in *platinfra.Infra) *mobapp.Service {
-	svcOnce.Do(func() {
-		sources := buildSources(in)
-		loader := func() (*domain.Snapshot, error) {
-			return mobapp.ParseSources(sources)
-		}
-		snap, err := loader()
-		if err != nil {
-			in.Logger.Error("mob: initial load failed", "err", err)
-			panic(err)
-		}
-		if snap.SourceCount == 0 {
-			in.Logger.Warn("mob: no monster database configured, serving empty snapshot")
-		} else {
-			in.Logger.Info("mob: snapshot loaded", "mobs", snap.SourceCount)
-		}
+	sources := buildSources(in)
+	loader := func() (*domain.Snapshot, error) {
+		return mobapp.ParseSources(sources)
+	}
+	snap, err := loader()
+	if err != nil {
+		in.Logger.Error("mob: initial load failed", "err", err)
+		panic(err)
+	}
+	if snap.SourceCount == 0 {
+		in.Logger.Warn("mob: no monster database configured, serving empty snapshot")
+	} else {
+		in.Logger.Info("mob: snapshot loaded", "mobs", snap.SourceCount)
+	}
 
-		svcInstance = mobapp.NewServiceWithSnapshot(snap, loader)
-	})
-
-	return svcInstance
+	return mobapp.NewServiceWithSnapshot(snap, loader)
 }
 
 func buildSources(in *platinfra.Infra) mobapp.Sources {

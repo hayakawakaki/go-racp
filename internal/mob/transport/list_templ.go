@@ -230,7 +230,7 @@ func mobRow(mob *domain.Mob) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = mobSpriteBox(mob.Sprite, "size-18").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = mobSpriteBox(domain.ResolveSprite(mob.AegisName), "size-18").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

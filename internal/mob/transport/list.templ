@@ -88,7 +88,7 @@ templ mobRow(mob *domain.Mob) {
 			class="grid grid-cols-[4rem_auto_minmax(0,1fr)_auto] items-center gap-x-4 py-3 text-sm transition hover:bg-gray-50"
 		>
 			<span class="font-mono text-xs text-gray-400">{ fmt.Sprintf("%d", mob.ID) }</span>
-			@mobSpriteBox(mob.Sprite, "size-18")
+			@mobSpriteBox(domain.ResolveSprite(mob.AegisName), "size-18")
 			<span class="font-medium tracking-tight text-gray-900">{ mob.Name }</span>
 			<div class="hidden items-center gap-2 text-xs uppercase tracking-[0.14em] text-gray-400 md:flex">
 				<span>{ fmt.Sprintf("Lv %d", mob.Level) }</span>

@@ -49,24 +49,22 @@ func (h *Handler) renderNotFound(w http.ResponseWriter, r *http.Request, idText 
 }
 
 func buildStats(mob *domain.Mob) []labeledRow {
-	rows := []labeledRow{
-		{Label: "HP", Value: fmt.Sprintf("%d", mob.HP)},
+	return []labeledRow{
+		intRow("HP", mob.HP),
 		{Label: "Attack", Value: fmt.Sprintf("%d - %d", mob.Attack, mob.Attack2)},
-		{Label: "Defense", Value: fmt.Sprintf("%d", mob.Defense)},
-		{Label: "Magic Defense", Value: fmt.Sprintf("%d", mob.MagicDefense)},
-		{Label: "Resistance", Value: fmt.Sprintf("%d", mob.Resistance)},
-		{Label: "Magic Resistance", Value: fmt.Sprintf("%d", mob.MagicResistance)},
-		{Label: "Attack Range", Value: fmt.Sprintf("%d", mob.AttackRange)},
-		{Label: "Skill Range", Value: fmt.Sprintf("%d", mob.SkillRange)},
-		{Label: "Str", Value: fmt.Sprintf("%d", mob.Str)},
-		{Label: "Agi", Value: fmt.Sprintf("%d", mob.Agi)},
-		{Label: "Vit", Value: fmt.Sprintf("%d", mob.Vit)},
-		{Label: "Int", Value: fmt.Sprintf("%d", mob.Int)},
-		{Label: "Dex", Value: fmt.Sprintf("%d", mob.Dex)},
-		{Label: "Luk", Value: fmt.Sprintf("%d", mob.Luk)},
+		intRow("Defense", mob.Defense),
+		intRow("Magic Defense", mob.MagicDefense),
+		intRow("Resistance", mob.Resistance),
+		intRow("Magic Resistance", mob.MagicResistance),
+		intRow("Attack Range", mob.AttackRange),
+		intRow("Skill Range", mob.SkillRange),
+		intRow("Str", mob.Str),
+		intRow("Agi", mob.Agi),
+		intRow("Vit", mob.Vit),
+		intRow("Int", mob.Int),
+		intRow("Dex", mob.Dex),
+		intRow("Luk", mob.Luk),
 	}
-
-	return rows
 }
 
 func buildExp(mob *domain.Mob) []labeledRow {
@@ -74,12 +72,16 @@ func buildExp(mob *domain.Mob) []labeledRow {
 		return nil
 	}
 	rows := []labeledRow{
-		{Label: "Base Exp", Value: fmt.Sprintf("%d", mob.BaseExp)},
-		{Label: "Job Exp", Value: fmt.Sprintf("%d", mob.JobExp)},
+		intRow("Base Exp", mob.BaseExp),
+		intRow("Job Exp", mob.JobExp),
 	}
 	if mob.MvpExp > 0 {
-		rows = append(rows, labeledRow{Label: "MVP Exp", Value: fmt.Sprintf("%d", mob.MvpExp)})
+		rows = append(rows, intRow("MVP Exp", mob.MvpExp))
 	}
 
 	return rows
+}
+
+func intRow(label string, value int) labeledRow {
+	return labeledRow{Label: label, Value: fmt.Sprintf("%d", value)}
 }

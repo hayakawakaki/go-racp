@@ -79,7 +79,7 @@ func ToDTO(mob *domain.Mob) MobDTO {
 		AegisName:    mob.AegisName,
 		Name:         mob.Name,
 		JapaneseName: mob.JapaneseName,
-		Sprite:       mob.Sprite,
+		Sprite:       domain.ResolveSprite(mob.AegisName),
 		Level:        mob.Level,
 		HP:           mob.HP,
 		BaseExp:      mob.BaseExp,

@@ -122,7 +122,7 @@ func assembleSnapshot(mobs []*domain.Mob) *domain.Snapshot {
 		LoadedAt:    time.Now(),
 		ByID:        make(map[int]*domain.Mob, len(mobs)),
 		ByAegis:     make(map[string]*domain.Mob, len(mobs)),
-		DroppedBy:   map[string][]domain.DropOf{},
+		DroppedBy:   make(map[string][]domain.DropOf, len(mobs)),
 		Sorted:      mobs,
 		SourceCount: len(mobs),
 	}
@@ -232,7 +232,6 @@ func buildMob(input *infra.YAMLInput) *domain.Mob {
 	}
 	mob.AegisLower = strings.ToLower(mob.AegisName)
 	mob.NameLower = strings.ToLower(mob.Name)
-	mob.Sprite = domain.ResolveSprite(mob.AegisName)
 
 	return mob
 }
