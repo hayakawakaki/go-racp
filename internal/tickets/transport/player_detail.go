@@ -61,8 +61,7 @@ func (h *Handler) playerReply(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, maxReplyFormBytes)
-	if parseErr := r.ParseForm(); parseErr != nil {
+	if parseErr := httpx.ParseForm(w, r, maxReplyFormBytes); parseErr != nil {
 		http.Error(w, "invalid form", http.StatusBadRequest)
 		return
 	}

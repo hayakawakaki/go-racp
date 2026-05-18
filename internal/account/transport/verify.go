@@ -71,8 +71,7 @@ func (h *Handler) showVerify(w http.ResponseWriter, r *http.Request) {
 //nolint:cyclop // splitting would obscure the flow
 func (h *Handler) doVerify(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Referrer-Policy", "no-referrer")
-	r.Body = http.MaxBytesReader(w, r.Body, maxVerifyFormBytes)
-	if err := r.ParseForm(); err != nil {
+	if err := httpx.ParseForm(w, r, maxVerifyFormBytes); err != nil {
 		httpx.RenderHTML(w, r, h.logger, verifyResultPage(h.layout(), VerifyResultState{Kind: VerifyResultInvalid}))
 		return
 	}

@@ -23,8 +23,7 @@ func (h *Handler) showResetPassword(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) doResetPassword(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Referrer-Policy", "no-referrer")
-	r.Body = http.MaxBytesReader(w, r.Body, maxResetPasswordFormBytes)
-	if err := r.ParseForm(); err != nil {
+	if err := httpx.ParseForm(w, r, maxResetPasswordFormBytes); err != nil {
 		httpx.RenderHTML(w, r, h.logger, resetResultPage(h.layout(), ResetResultState{Kind: ResetResultInvalid}))
 		return
 	}

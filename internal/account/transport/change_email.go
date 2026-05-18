@@ -22,8 +22,7 @@ func (h *Handler) doChangeEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, maxAccountFormBytes)
-	if err := r.ParseForm(); err != nil {
+	if err := httpx.ParseForm(w, r, maxAccountFormBytes); err != nil {
 		h.renderChangeEmail(w, r, ChangeEmailState{
 			Errors: map[string]string{fieldNewEmail: invalidFormDataMsg},
 		}, false)

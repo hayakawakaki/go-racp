@@ -77,8 +77,7 @@ func (h *Handler) parseStaffForm(w http.ResponseWriter, r *http.Request, maxByte
 	if maxBytes <= 0 {
 		return true
 	}
-	r.Body = http.MaxBytesReader(w, r.Body, maxBytes)
-	if err := r.ParseForm(); err != nil {
+	if err := httpx.ParseForm(w, r, maxBytes); err != nil {
 		http.Error(w, "invalid form", http.StatusBadRequest)
 		return false
 	}

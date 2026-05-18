@@ -75,12 +75,11 @@ func (h *Handler) htmlCreateForm(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) htmlPreview(w http.ResponseWriter, r *http.Request) {
-	r.Body = http.MaxBytesReader(w, r.Body, maxHTMLFormBytes)
-	if err := r.ParseForm(); err != nil {
+	if err := httpx.ParseForm(w, r, maxHTMLFormBytes); err != nil {
 		http.Error(w, "request too large or malformed", http.StatusBadRequest)
 		return
 	}
-	rendered := h.renderer.Render(r.FormValue(fieldBody))
+	rendered := h.renderer.Render(r.PostFormValue(fieldBody))
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if _, err := w.Write([]byte(rendered)); err != nil { //nolint:gosec // rendered is already sanitized via goldmark + bluemonday in the renderer.
 		h.logger.Error("news: preview write", "err", err)
@@ -88,14 +87,13 @@ func (h *Handler) htmlPreview(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) htmlCreate(w http.ResponseWriter, r *http.Request) {
-	r.Body = http.MaxBytesReader(w, r.Body, maxHTMLFormBytes)
-	if err := r.ParseForm(); err != nil {
+	if err := httpx.ParseForm(w, r, maxHTMLFormBytes); err != nil {
 		http.Error(w, "request too large or malformed", http.StatusBadRequest)
 		return
 	}
-	title := r.FormValue(fieldTitle)
-	body := r.FormValue(fieldBody)
-	category := r.FormValue(fieldCategory)
+	title := r.PostFormValue(fieldTitle)
+	body := r.PostFormValue(fieldBody)
+	category := r.PostFormValue(fieldCategory)
 
 	id, err := h.svc.Create(r.Context(), title, body, category)
 	if err == nil {
@@ -140,14 +138,13 @@ func (h *Handler) htmlUpdate(w http.ResponseWriter, r *http.Request) {
 		httpx.Render404(w, r, h.logger, h.layout())
 		return
 	}
-	r.Body = http.MaxBytesReader(w, r.Body, maxHTMLFormBytes)
-	if err := r.ParseForm(); err != nil {
+	if err := httpx.ParseForm(w, r, maxHTMLFormBytes); err != nil {
 		http.Error(w, "request too large or malformed", http.StatusBadRequest)
 		return
 	}
-	title := r.FormValue(fieldTitle)
-	body := r.FormValue(fieldBody)
-	category := r.FormValue(fieldCategory)
+	title := r.PostFormValue(fieldTitle)
+	body := r.PostFormValue(fieldBody)
+	category := r.PostFormValue(fieldCategory)
 
 	err := h.svc.Update(r.Context(), id, title, body, category)
 	if err == nil {

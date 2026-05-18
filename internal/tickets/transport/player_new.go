@@ -25,8 +25,7 @@ func (h *Handler) playerCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, maxOpenFormBytes)
-	if err := r.ParseForm(); err != nil {
+	if err := httpx.ParseForm(w, r, maxOpenFormBytes); err != nil {
 		h.renderNewWithError(w, r, PlayerNewState{FormError: "Invalid form data."})
 		return
 	}

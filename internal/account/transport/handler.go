@@ -154,10 +154,9 @@ func (h *Handler) showRegister(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) doRegister(w http.ResponseWriter, r *http.Request) {
-	r.Body = http.MaxBytesReader(w, r.Body, maxRegisterFormBytes)
 	minDate, maxDate := h.birthdateBounds()
 
-	if err := r.ParseForm(); err != nil {
+	if err := httpx.ParseForm(w, r, maxRegisterFormBytes); err != nil {
 		h.renderRegister(w, r, RegisterFormState{
 			FormError:    invalidFormDataMsg,
 			BirthdateMin: minDate,
@@ -227,8 +226,7 @@ func (h *Handler) showLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) doLogin(w http.ResponseWriter, r *http.Request) {
-	r.Body = http.MaxBytesReader(w, r.Body, maxLoginFormBytes)
-	if err := r.ParseForm(); err != nil {
+	if err := httpx.ParseForm(w, r, maxLoginFormBytes); err != nil {
 		h.renderLogin(w, r, LoginFormState{Error: invalidFormDataMsg})
 		return
 	}

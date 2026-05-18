@@ -44,8 +44,7 @@ func (h *Handler) showVerifyEmailChange(w http.ResponseWriter, r *http.Request) 
 
 func (h *Handler) doVerifyEmailChange(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Referrer-Policy", "no-referrer")
-	r.Body = http.MaxBytesReader(w, r.Body, maxVerifyFormBytes)
-	if err := r.ParseForm(); err != nil {
+	if err := httpx.ParseForm(w, r, maxVerifyFormBytes); err != nil {
 		httpx.RenderHTML(w, r, h.logger, emailChangeResultPage(h.layout(), EmailChangeResultState{Kind: EmailChangeResultInvalid}))
 		return
 	}

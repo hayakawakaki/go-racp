@@ -43,8 +43,7 @@ func (h *Handler) doBan(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	r.Body = http.MaxBytesReader(w, r.Body, maxUserActionFormBytes)
-	if err := r.ParseForm(); err != nil {
+	if err := httpx.ParseForm(w, r, maxUserActionFormBytes); err != nil {
 		h.writeActionError(w, r, "Invalid form data.", http.StatusBadRequest)
 		return
 	}
@@ -69,8 +68,7 @@ func (h *Handler) doUnban(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	r.Body = http.MaxBytesReader(w, r.Body, maxUserActionFormBytes)
-	if err := r.ParseForm(); err != nil {
+	if err := httpx.ParseForm(w, r, maxUserActionFormBytes); err != nil {
 		h.writeActionError(w, r, "Invalid form data.", http.StatusBadRequest)
 		return
 	}
@@ -92,8 +90,7 @@ func (h *Handler) doSetRole(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	r.Body = http.MaxBytesReader(w, r.Body, maxUserActionFormBytes)
-	if err := r.ParseForm(); err != nil {
+	if err := httpx.ParseForm(w, r, maxUserActionFormBytes); err != nil {
 		h.writeActionError(w, r, "Invalid form data.", http.StatusBadRequest)
 		return
 	}

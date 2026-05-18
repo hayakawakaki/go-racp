@@ -21,8 +21,7 @@ func (h *Handler) doChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, maxAccountFormBytes)
-	if err := r.ParseForm(); err != nil {
+	if err := httpx.ParseForm(w, r, maxAccountFormBytes); err != nil {
 		h.renderChangePassword(w, r, ChangePasswordState{
 			Errors: map[string]string{fieldNewPassword: invalidFormDataMsg},
 		}, false)

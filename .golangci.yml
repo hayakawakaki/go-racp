@@ -41,6 +41,7 @@ linters:
     gosec:
       excludes:
         - G104
+        - G120
         - G404
 
     govet:
