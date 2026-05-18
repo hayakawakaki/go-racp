@@ -33,7 +33,7 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *platinfra.Infra) {
 		General: in.Config.App.General,
 	})
 	handler.RegisterRoutes(reg, mux)
-	maybeStartDevWatcher(in, service)
+	startDevWatcher(in, service)
 }
 
 func BuildService(in *platinfra.Infra) *itemapp.Service {
@@ -88,7 +88,7 @@ func devCacheDir(mode string, logger *slog.Logger) string {
 	return filepath.Join(root, devCacheSubdir)
 }
 
-func maybeStartDevWatcher(in *platinfra.Infra, service *itemapp.Service) {
+func startDevWatcher(in *platinfra.Infra, service *itemapp.Service) {
 	if in.Config.Env.Mode != "development" {
 		return
 	}
