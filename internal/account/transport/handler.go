@@ -48,9 +48,7 @@ type accountService interface {
 	ResendVerification(ctx context.Context, accountID int) error
 	RequestPasswordReset(ctx context.Context, email string) error
 	ConsumePasswordReset(ctx context.Context, rawToken, newPassword string) error
-	PeekPasswordReset(ctx context.Context, rawToken string) (*actiontokendomain.ActionToken, error)
-	PeekVerification(ctx context.Context, rawToken string) (*actiontokendomain.ActionToken, error)
-	PeekEmailChange(ctx context.Context, rawToken string) (*actiontokendomain.ActionToken, error)
+	Peek(ctx context.Context, kind actiontokendomain.Action, rawToken string) (*actiontokendomain.ActionToken, error)
 	UpdatePassword(ctx context.Context, userID int, currentRawToken, currentPassword, newPassword, confirmPassword string) error
 	RequestEmailChange(ctx context.Context, userID int, currentPassword, newEmail string) error
 	ConsumeEmailChange(ctx context.Context, rawToken string) (*domain.User, error)

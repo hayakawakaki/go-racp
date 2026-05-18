@@ -13,7 +13,7 @@ const maxResetPasswordFormBytes = 2 << 10
 
 func (h *Handler) showResetPassword(w http.ResponseWriter, r *http.Request) {
 	expired := resetResultPage(h.layout(), ResetResultState{Kind: ResetResultExpired})
-	token, ok := h.validateTokenLink(w, r, h.svc.PeekPasswordReset, "reset_password peek", expired)
+	token, ok := h.validateTokenLink(w, r, actiontokendomain.PasswordReset, "reset_password peek", expired)
 	if !ok {
 		return
 	}

@@ -18,7 +18,7 @@ func (h *Handler) showVerifyEmailChange(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	peeked, err := h.svc.PeekEmailChange(r.Context(), token)
+	peeked, err := h.svc.Peek(r.Context(), actiontokendomain.EmailChange, token)
 	if err != nil {
 		state := EmailChangeResultState{Kind: EmailChangeResultInvalid}
 		switch {

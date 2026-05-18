@@ -920,9 +920,9 @@ func TestService_PeekPasswordReset_HappyPath(t *testing.T) {
 		ExpiresAt: time.Now().Add(time.Hour), CreatedAt: time.Now(),
 	}
 
-	token, err := fx.svc.PeekPasswordReset(context.Background(), base64.RawURLEncoding.EncodeToString(raw[:]))
+	token, err := fx.svc.Peek(context.Background(), actiontokendomain.PasswordReset, base64.RawURLEncoding.EncodeToString(raw[:]))
 	if err != nil {
-		t.Fatalf("PeekPasswordReset: %v", err)
+		t.Fatalf("Peek: %v", err)
 	}
 	if token.AccountID != 7 {
 		t.Errorf("AccountID = %d, want 7", token.AccountID)
@@ -936,8 +936,8 @@ func TestService_PeekPasswordReset_WrapsError(t *testing.T) {
 	t.Parallel()
 	fx := newServiceWithReset(t)
 
-	_, err := fx.svc.PeekPasswordReset(context.Background(), "***bad***")
-	if err == nil || !strings.Contains(err.Error(), "app.Service.PeekPasswordReset") {
+	_, err := fx.svc.Peek(context.Background(), actiontokendomain.PasswordReset, "***bad***")
+	if err == nil || !strings.Contains(err.Error(), "app.Service.Peek") {
 		t.Errorf("not wrapped: %v", err)
 	}
 }

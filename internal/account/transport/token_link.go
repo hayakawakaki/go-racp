@@ -1,7 +1,6 @@
 package transport
 
 import (
-	"context"
 	"errors"
 	"net/http"
 
@@ -10,9 +9,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 )
 
-type tokenPeek func(ctx context.Context, rawToken string) (*actiontokendomain.ActionToken, error)
-
-func (h *Handler) validateTokenLink(w http.ResponseWriter, r *http.Request, peek tokenPeek, op string, expired templ.Component) (string, bool) {
+func (h *Handler) validateTokenLink(w http.ResponseWriter, r *http.Request, kind actiontokendomain.Action, op string, expired templ.Component) (string, bool) {
 	w.Header().Set("Referrer-Policy", "no-referrer")
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Pragma", "no-cache")
@@ -23,7 +20,7 @@ func (h *Handler) validateTokenLink(w http.ResponseWriter, r *http.Request, peek
 		return "", false
 	}
 
-	if _, err := peek(r.Context(), token); err != nil {
+	if _, err := h.svc.Peek(r.Context(), kind, token); err != nil {
 		if errors.Is(err, actiontokendomain.ErrTokenExpired) {
 			httpx.RenderHTML(w, r, h.logger, expired)
 			return "", false

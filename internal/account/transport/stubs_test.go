@@ -66,9 +66,7 @@ type stubAccountService struct {
 	resendVerificationFn  func(context.Context, int) error
 	requestResetFn        func(context.Context, string) error
 	consumeResetFn        func(context.Context, string, string) error
-	peekResetFn           func(context.Context, string) (*actiontokendomain.ActionToken, error)
-	peekVerificationFn    func(context.Context, string) (*actiontokendomain.ActionToken, error)
-	peekEmailChangeFn     func(context.Context, string) (*actiontokendomain.ActionToken, error)
+	peekFn                func(context.Context, actiontokendomain.Action, string) (*actiontokendomain.ActionToken, error)
 	updatePasswordFn      func(context.Context, int, string, string, string, string) error
 	requestEmailChangeFn  func(context.Context, int, string, string) error
 	consumeEmailChangeFn  func(context.Context, string) (*authdomain.User, error)
@@ -150,23 +148,9 @@ func (s *stubAccountService) ConsumePasswordReset(ctx context.Context, rawToken,
 	return nil
 }
 
-func (s *stubAccountService) PeekPasswordReset(ctx context.Context, rawToken string) (*actiontokendomain.ActionToken, error) {
-	if s.peekResetFn != nil {
-		return s.peekResetFn(ctx, rawToken)
-	}
-	return &actiontokendomain.ActionToken{}, nil
-}
-
-func (s *stubAccountService) PeekVerification(ctx context.Context, rawToken string) (*actiontokendomain.ActionToken, error) {
-	if s.peekVerificationFn != nil {
-		return s.peekVerificationFn(ctx, rawToken)
-	}
-	return &actiontokendomain.ActionToken{}, nil
-}
-
-func (s *stubAccountService) PeekEmailChange(ctx context.Context, rawToken string) (*actiontokendomain.ActionToken, error) {
-	if s.peekEmailChangeFn != nil {
-		return s.peekEmailChangeFn(ctx, rawToken)
+func (s *stubAccountService) Peek(ctx context.Context, kind actiontokendomain.Action, rawToken string) (*actiontokendomain.ActionToken, error) {
+	if s.peekFn != nil {
+		return s.peekFn(ctx, kind, rawToken)
 	}
 	return &actiontokendomain.ActionToken{}, nil
 }

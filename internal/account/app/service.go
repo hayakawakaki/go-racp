@@ -512,31 +512,10 @@ func (s *Service) Delete(ctx context.Context, id int) error {
 	return nil
 }
 
-// PeekPasswordReset inspects a password-reset token without consuming it.
-func (s *Service) PeekPasswordReset(ctx context.Context, rawToken string) (*actiontokendomain.ActionToken, error) {
-	token, err := s.TokenManager.Peek(ctx, actiontokendomain.PasswordReset, rawToken)
+func (s *Service) Peek(ctx context.Context, kind actiontokendomain.Action, rawToken string) (*actiontokendomain.ActionToken, error) {
+	token, err := s.TokenManager.Peek(ctx, kind, rawToken)
 	if err != nil {
-		return nil, fmt.Errorf("app.Service.PeekPasswordReset: %w", err)
-	}
-
-	return token, nil
-}
-
-// PeekVerification inspects an email-verification token without consuming it.
-func (s *Service) PeekVerification(ctx context.Context, rawToken string) (*actiontokendomain.ActionToken, error) {
-	token, err := s.TokenManager.Peek(ctx, actiontokendomain.EmailVerification, rawToken)
-	if err != nil {
-		return nil, fmt.Errorf("app.Service.PeekVerification: %w", err)
-	}
-
-	return token, nil
-}
-
-// PeekEmailChange inspects an email-change token without consuming it, exposing the new address from the payload.
-func (s *Service) PeekEmailChange(ctx context.Context, rawToken string) (*actiontokendomain.ActionToken, error) {
-	token, err := s.TokenManager.Peek(ctx, actiontokendomain.EmailChange, rawToken)
-	if err != nil {
-		return nil, fmt.Errorf("app.Service.PeekEmailChange: %w", err)
+		return nil, fmt.Errorf("app.Service.Peek: %w", err)
 	}
 
 	return token, nil
@@ -595,7 +574,7 @@ func (s *Service) GetAccount(ctx context.Context, userID int) (*AccountDTO, erro
 
 // UpdatePassword rotates the password and invalidates every other session belonging to the account, keeping the caller's current session alive.
 //
-//nolint:cyclop // sequential validation, splitting would break the flow
+//nolint:cyclop // splitting would break the flow
 func (s *Service) UpdatePassword(ctx context.Context, userID int, currentRawToken, currentPassword, newPassword, confirmPassword string) error {
 	if err := domain.ValidatePassword(newPassword); err != nil {
 		return &domain.ValidationError{Fields: domain.FieldErrors{fieldNewPassword: err.Error()}}
@@ -638,7 +617,7 @@ func (s *Service) UpdatePassword(ctx context.Context, userID int, currentRawToke
 
 // RequestEmailChange issues a confirmation token and sends it to the proposed new address, not the current one, so the change only completes if the new mailbox is reachable.
 //
-//nolint:cyclop // sequential validation, splitting would break the flow
+//nolint:cyclop // splitting would break the flow
 func (s *Service) RequestEmailChange(ctx context.Context, userID int, currentPassword, newEmail string) error {
 	normalizedNewEmail, err := domain.ValidateEmail(newEmail)
 	if err != nil {

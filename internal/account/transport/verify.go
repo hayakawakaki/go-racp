@@ -60,7 +60,7 @@ func (h *Handler) showVerifyAccount(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) showVerify(w http.ResponseWriter, r *http.Request) {
 	expired := verifyResultPage(h.layout(), VerifyResultState{Kind: VerifyResultExpired})
-	token, ok := h.validateTokenLink(w, r, h.svc.PeekVerification, "verify peek", expired)
+	token, ok := h.validateTokenLink(w, r, actiontokendomain.EmailVerification, "verify peek", expired)
 	if !ok {
 		return
 	}
