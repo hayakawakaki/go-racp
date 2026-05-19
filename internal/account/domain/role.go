@@ -9,6 +9,7 @@ type Role struct {
 
 var (
 	RoleAuthenticated = Role{Name: "*", GroupID: -1}
+	RolePublic        = Role{Name: "Public", GroupID: -2}
 	RolePlayer        = Role{Name: "Player", GroupID: 0}
 	RoleAdmin         = Role{Name: "Admin", GroupID: 99}
 )
@@ -50,6 +51,9 @@ func (r RoleResolver) Resolve(groupID int) Role {
 func (r RoleResolver) GetRole(name string) (Role, bool) {
 	if name == RoleAuthenticated.Name {
 		return RoleAuthenticated, true
+	}
+	if name == RolePublic.Name {
+		return RolePublic, true
 	}
 	role, ok := r.byName[name]
 

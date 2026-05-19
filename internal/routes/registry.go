@@ -55,10 +55,6 @@ func NewRegistry(
 	}
 }
 
-func (r *Registry) Public(mux *http.ServeMux, pattern string, handler http.Handler) {
-	mux.Handle(pattern, handler)
-}
-
 // Wrap mounts handler under pattern with role gating derived from tag ("Group.Action"). Admin tags are hardcoded, other tags consult access.yml and pass through ungated (recorded for audit) when no entry is configured.
 func (r *Registry) Wrap(mux *http.ServeMux, tag, pattern string, handler http.Handler) {
 	group, action := parseTag(tag)
@@ -75,6 +71,11 @@ func (r *Registry) Wrap(mux *http.ServeMux, tag, pattern string, handler http.Ha
 		r.ungated = append(r.ungated, ungatedRoute{tag: tag, pattern: pattern})
 		policy := middleware.AuthPolicy{AllowTempBannedLogin: r.allowTempBannedLogin}
 		mux.Handle(pattern, middleware.RequireRole(r.sessSvc, r.users, r.resolver, r.logger, r.secure, policy, domain.RoleAuthenticated)(handler))
+		return
+	}
+
+	if len(entry.roles) == 1 && entry.roles[0] == domain.RolePublic {
+		mux.Handle(pattern, handler)
 		return
 	}
 
@@ -135,7 +136,11 @@ func (r *Registry) Finalize() {
 		panic(fmt.Errorf("access.yml references tags not registered by any plugin: %s", strings.Join(deadEntries, ", ")))
 	}
 
-	for _, ungated := range r.ungated {
-		r.logger.Warn("route audit: ungated", "tag", ungated.tag, "pattern", ungated.pattern)
+	if len(r.ungated) > 0 {
+		descriptions := make([]string, 0, len(r.ungated))
+		for _, u := range r.ungated {
+			descriptions = append(descriptions, u.tag+" ("+u.pattern+")")
+		}
+		panic(fmt.Errorf("routes: tags registered without access.yml entries: %s", strings.Join(descriptions, ", ")))
 	}
 }

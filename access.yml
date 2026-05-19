@@ -1,12 +1,17 @@
-# Admin is implicit on every gated entry
-# * is any authenticated user
-# Leaving a route blank will allow any user to access it
+# Every registered route must have an entry here. Missing entries panic at startup.
+# Admin is implicit on every gated entry and cannot be listed.
+# * means any authenticated user.
+# Public means no auth at all (anonymous) — cannot be combined with other roles or with Requires: [Unrestricted].
 #
-# Valid Roles: ["*", "Event", "Moderator", "Enforcer"]
+# Valid Roles: ["Public", "*", "Event", "Moderator", "Enforcer"]
 # Valid Requires:
 #  Unrestricted: Not permanently banned, Not temporarily banned, Email Verified and Exists in Database
 # Declare Custom Roles in config.yml under UserRoles:
 
+
+Home:
+  View:
+    Roles: ["Public"]
 
 Account:
   View:
@@ -17,6 +22,20 @@ Account:
   ChangeEmail:
     Roles: ["*"]
     Requires: ["Unrestricted"]
+  Login:
+    Roles: ["Public"]
+  Register:
+    Roles: ["Public"]
+  Logout:
+    Roles: ["Public"]
+  ForgotPassword:
+    Roles: ["Public"]
+  ResetPassword:
+    Roles: ["Public"]
+  Verify:
+    Roles: ["Public"]
+  VerifyEmailChange:
+    Roles: ["Public"]
 
 Tickets:
   View:
@@ -30,6 +49,8 @@ Tickets:
     Requires: ["Unrestricted"]
 
 News:
+  View:
+    Roles: ["Public"]
   Manage:
     Roles: ["Moderator"]
     Requires: ["Unrestricted"]
@@ -40,3 +61,15 @@ Character:
   Reset:
     Roles: ["*"]
     Requires: ["Unrestricted"]
+
+Item:
+  View:
+    Roles: ["*"]
+  APILookup:
+    Roles: ["Public"]
+
+Mob:
+  View:
+    Roles: ["*"]
+  APILookup:
+    Roles: ["Public"]

@@ -59,21 +59,6 @@ func okHandler() http.Handler {
 	})
 }
 
-func TestRegistry_Public_PassesThroughUnwrapped(t *testing.T) {
-	t.Parallel()
-	mux := http.NewServeMux()
-	reg, _ := newRegistry(t, config.AccessConfig{})
-
-	reg.Public(mux, "GET /login", okHandler())
-
-	rr := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/login", http.NoBody)
-	mux.ServeHTTP(rr, req)
-	if rr.Code != http.StatusOK {
-		t.Errorf("status = %d, want 200", rr.Code)
-	}
-}
-
 func TestRegistry_Wrap_AdminTagIsHardcoded(t *testing.T) {
 	t.Parallel()
 	mux := http.NewServeMux()
@@ -135,6 +120,23 @@ func TestRegistry_Wrap_StarMeansAuthenticated(t *testing.T) {
 	mux.ServeHTTP(rr, req)
 	if rr.Code != http.StatusSeeOther {
 		t.Errorf("anonymous on * route must redirect; status = %d, want 303", rr.Code)
+	}
+}
+
+func TestRegistry_Wrap_PublicSentinelMountsUnwrapped(t *testing.T) {
+	t.Parallel()
+	mux := http.NewServeMux()
+	reg, _ := newRegistry(t, config.AccessConfig{
+		"Account": config.ActionRoles{"Login": config.Entry{Roles: config.RoleList{"Public"}}},
+	})
+
+	reg.Wrap(mux, "Account.Login", "GET /login", okHandler())
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/login", http.NoBody)
+	mux.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Errorf("Public sentinel must mount handler unwrapped; status = %d, want 200", rr.Code)
 	}
 }
 
@@ -309,31 +311,29 @@ func TestRegistry_Finalize_PanicsOnDeadConfig(t *testing.T) {
 	reg.Finalize()
 }
 
-func TestRegistry_Finalize_LogsUngatedAudit(t *testing.T) {
+func TestRegistry_Finalize_PanicsOnUngatedTag(t *testing.T) {
 	t.Parallel()
 	mux := http.NewServeMux()
-	reg, buf := newRegistry(t, config.AccessConfig{})
+	reg, _ := newRegistry(t, config.AccessConfig{})
 	reg.Wrap(mux, "Forum.View", "GET /forum", okHandler())
+
+	defer func() {
+		v := recover()
+		if v == nil {
+			t.Fatalf("Finalize did not panic for ungated tag")
+		}
+		msg, ok := v.(error)
+		if !ok || !strings.Contains(msg.Error(), "Forum.View") {
+			t.Errorf("panic = %v, want mention of Forum.View", v)
+		}
+	}()
 	reg.Finalize()
-	if !strings.Contains(buf.String(), "ungated") {
-		t.Errorf("expected audit log entry for ungated route; got %q", buf.String())
-	}
-	if !strings.Contains(buf.String(), "Forum.View") {
-		t.Errorf("audit log missing tag name; got %q", buf.String())
-	}
 }
 
-func TestRegistry_Finalize_SilentForAdminTagsAndPublic(t *testing.T) {
+func TestRegistry_Finalize_SilentForAdminTags(t *testing.T) {
 	t.Parallel()
 	mux := http.NewServeMux()
-	reg, buf := newRegistry(t, config.AccessConfig{})
+	reg, _ := newRegistry(t, config.AccessConfig{})
 	reg.Wrap(mux, "Admin.Dashboard", "GET /admin", okHandler())
-	reg.Public(mux, "GET /login", okHandler())
 	reg.Finalize()
-	if strings.Contains(buf.String(), "Admin.Dashboard") {
-		t.Errorf("Admin tags must not appear in ungated audit; got %q", buf.String())
-	}
-	if strings.Contains(buf.String(), "GET /login") {
-		t.Errorf("Public routes must not appear in ungated audit; got %q", buf.String())
-	}
 }
