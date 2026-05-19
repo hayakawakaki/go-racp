@@ -82,6 +82,7 @@ func Start() error {
 		TokenManager: tokenMgr,
 		Config:       cfg,
 		Roles:        domain.NewRoleResolver(cfg.App.UserRoles),
+		ShutdownCtx:  ctx,
 	}
 
 	sessSvc := app.NewSessionService(accinfra.NewSessionRepository(cpPool), cfg.App.TTL.Session)

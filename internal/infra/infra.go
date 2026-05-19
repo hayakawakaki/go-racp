@@ -1,6 +1,7 @@
 package infra
 
 import (
+	"context"
 	"database/sql"
 	"log/slog"
 
@@ -21,4 +22,5 @@ type Infra struct {
 	TokenManager *actiontokenapp.Manager
 	Config       *config.Config
 	Roles        accdomain.RoleResolver
+	ShutdownCtx  context.Context
 }
