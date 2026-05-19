@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/hayakawakaki/go-racp/internal/infra"
-	"github.com/hayakawakaki/go-racp/internal/routes"
+	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 )
 
 type Plugin struct {

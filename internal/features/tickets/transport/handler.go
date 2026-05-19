@@ -13,7 +13,7 @@ import (
 	ticketsapp "github.com/hayakawakaki/go-racp/internal/features/tickets/app"
 	domain2 "github.com/hayakawakaki/go-racp/internal/features/tickets/domain"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
-	"github.com/hayakawakaki/go-racp/internal/routes"
+	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 

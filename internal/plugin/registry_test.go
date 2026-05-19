@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/hayakawakaki/go-racp/internal/infra"
-	"github.com/hayakawakaki/go-racp/internal/routes"
+	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 )
 
 func resetRegistry(t *testing.T) {

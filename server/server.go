@@ -24,8 +24,8 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/infra/mysql"
 	"github.com/hayakawakaki/go-racp/internal/infra/postgres"
 	"github.com/hayakawakaki/go-racp/internal/platform/health"
+	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 	"github.com/hayakawakaki/go-racp/internal/plugin"
-	"github.com/hayakawakaki/go-racp/internal/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 

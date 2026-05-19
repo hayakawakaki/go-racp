@@ -7,8 +7,8 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/features/item"
 	"github.com/hayakawakaki/go-racp/internal/features/mob"
 	coreinfra "github.com/hayakawakaki/go-racp/internal/infra"
+	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 	"github.com/hayakawakaki/go-racp/internal/plugin"
-	"github.com/hayakawakaki/go-racp/internal/routes"
 )
 
 func init() {
