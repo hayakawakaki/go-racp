@@ -99,11 +99,12 @@ func (r *Repository) List(ctx context.Context, q domain.ListQuery) (domain.Guild
 
 func (r *Repository) ListMembers(ctx context.Context, guildID int) ([]domain.Member, error) {
 	rows, err := r.Client.QueryContext(ctx,
-		"SELECT gm.char_id, gm.name, gm.position, gp.name "+
+		"SELECT gm.char_id, c.name, gm.position, gp.name "+
 			"FROM guild_member gm "+
+			"LEFT JOIN `char` c ON c.char_id = gm.char_id "+
 			"LEFT JOIN guild_position gp ON gp.guild_id = gm.guild_id AND gp.position = gm.position "+
 			"WHERE gm.guild_id = ? "+
-			"ORDER BY gm.position ASC, gm.name ASC",
+			"ORDER BY gm.position ASC, c.name ASC",
 		guildID,
 	)
 	if err != nil {
@@ -114,12 +115,14 @@ func (r *Repository) ListMembers(ctx context.Context, guildID int) ([]domain.Mem
 	var out []domain.Member
 	for rows.Next() {
 		var (
-			m       domain.Member
-			posName sql.NullString
+			m        domain.Member
+			charName sql.NullString
+			posName  sql.NullString
 		)
-		if err := rows.Scan(&m.CharID, &m.Name, &m.Position, &posName); err != nil {
+		if err := rows.Scan(&m.CharID, &charName, &m.Position, &posName); err != nil {
 			return nil, fmt.Errorf("infra.Repository.ListMembers scan: %w", err)
 		}
+		m.Name = charName.String
 		m.PositionName = posName.String
 		out = append(out, m)
 	}
