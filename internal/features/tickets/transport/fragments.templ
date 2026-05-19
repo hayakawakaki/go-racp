@@ -1,0 +1,354 @@
+package transport
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/hayakawakaki/go-racp/internal/features/tickets/domain"
+)
+
+templ Thread(messages []domain.Message, isStaff bool, otherSeenAt time.Time) {
+	<div id="ticket-thread" class="space-y-3">
+		if len(messages) == 0 {
+			<p class="text-sm text-gray-500 italic">No messages yet.</p>
+		}
+		for _, message := range messages {
+			if !(message.Visibility == domain.VisibilityInternal && !isStaff) {
+				@threadMessage(message, isStaff, otherSeenAt, lastOwnPublicID(messages, isStaff), lastPublicID(messages))
+			}
+		}
+	</div>
+}
+
+templ threadMessage(message domain.Message, isStaff bool, otherSeenAt time.Time, lastOwnID, lastPubID int64) {
+	if message.Visibility == domain.VisibilitySystem {
+		<div class="flex items-center gap-3 py-1 text-xs text-gray-500">
+			<span class="flex-1 border-t border-gray-200"></span>
+			<span class="italic">{ message.Body }</span>
+			<span class="flex-1 border-t border-gray-200"></span>
+		</div>
+	} else {
+		<div class={ "rounded-md border px-4 pt-3 pb-2 shadow-sm", messageContainerClass(message) }>
+			<div class="flex items-center justify-between gap-3 mb-1.5">
+				<div class="flex items-center gap-2">
+					<span class={ "inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold uppercase", messageAvatarClass(message) }>
+						{ authorInitial(message) }
+					</span>
+					<span class="text-sm font-medium text-gray-800">{ messageAuthorLabel(message, isStaff) }</span>
+					if message.Visibility == domain.VisibilityInternal {
+						<span class="ml-1 inline-flex items-center gap-1 rounded bg-amber-100 text-amber-800 text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5">Internal note</span>
+					}
+				</div>
+				<time class="text-xs text-gray-400 tabular-nums">{ message.CreatedAt.Format("Jan 2, 2006 · 15:04") }</time>
+			</div>
+			<div class="whitespace-pre-wrap text-sm leading-relaxed text-gray-800">{ message.Body }</div>
+			if showViewed(message, lastOwnID, lastPubID, otherSeenAt) {
+				<div class="mt-2 pt-1.5 flex justify-end text-xs text-emerald-600">
+					<span class="inline-flex items-center gap-1" title={ "Viewed " + otherSeenAt.Format("Jan 2, 2006 · 15:04") }>
+						Viewed
+						<svg class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M0 11l2-2 5 5L18 3l2 2L7 18z"></path></svg>
+					</span>
+				</div>
+			}
+		</div>
+	}
+}
+
+func isOwnPublicMessage(message domain.Message, isStaff bool) bool {
+	if message.Visibility != domain.VisibilityPublic {
+		return false
+	}
+	if isStaff {
+		return message.AuthorRole == domain.ActorStaff
+	}
+
+	return message.AuthorRole == domain.ActorPlayer
+}
+
+func lastOwnPublicID(messages []domain.Message, isStaff bool) int64 {
+	var lastID int64
+	for _, message := range messages {
+		if isOwnPublicMessage(message, isStaff) {
+			lastID = message.ID
+		}
+	}
+
+	return lastID
+}
+
+func lastPublicID(messages []domain.Message) int64 {
+	var lastID int64
+	for _, message := range messages {
+		if message.Visibility == domain.VisibilityPublic {
+			lastID = message.ID
+		}
+	}
+
+	return lastID
+}
+
+func showViewed(message domain.Message, lastOwnID, lastPubID int64, otherSeenAt time.Time) bool {
+	if message.ID != lastOwnID {
+		return false
+	}
+	if lastOwnID != lastPubID {
+		return false
+	}
+
+	return otherSeenAt.After(message.CreatedAt)
+}
+
+templ Composer(ticket domain.Ticket, canReply, isStaff bool, errorMsg string) {
+	<div id="ticket-composer">
+		@composerContent(ticket, canReply, isStaff, errorMsg)
+	</div>
+}
+
+templ ComposerOOB(ticket domain.Ticket, canReply, isStaff bool, errorMsg string) {
+	<div id="ticket-composer" hx-swap-oob="true">
+		@composerContent(ticket, canReply, isStaff, errorMsg)
+	</div>
+}
+
+templ composerContent(ticket domain.Ticket, canReply, isStaff bool, errorMsg string) {
+	if !canReply {
+		<div class="rounded-md border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-600">
+			if ticket.IsTerminal() {
+				<p class="font-medium text-gray-700">This ticket is { string(ticket.Status) }.</p>
+				<p class="text-gray-500 italic mt-0.5">No further replies can be added. Open a new ticket if you need more help.</p>
+			} else if isStaff {
+				<p class="italic">Waiting for the player to respond.</p>
+			} else {
+				<p class="font-medium text-gray-700">Your message has been sent.</p>
+				<p class="text-gray-500 italic mt-0.5">Please wait for a staff to reply.</p>
+			}
+		</div>
+	} else {
+		<form
+			x-data="{ submitting: false, bodyLen: 0 }"
+			@submit="submitting = true"
+			@htmx:after-request="submitting = false"
+			hx-post={ composerPostURL(ticket, isStaff) }
+			hx-target="#ticket-thread"
+			hx-swap="outerHTML"
+			hx-sync="this:drop"
+			class="rounded-md border border-gray-200 bg-white shadow-sm"
+		>
+			<div class="px-4 pt-3 pb-2 border-b border-gray-100">
+				<span class="text-xs font-medium uppercase tracking-wide text-gray-500">
+					if isStaff {
+						Staff reply
+					} else {
+						Your reply
+					}
+				</span>
+			</div>
+			<textarea
+				name="body"
+				rows="4"
+				required
+				maxlength={ fmt.Sprint(domain.MaxBodyLen) }
+				placeholder="Write your message…"
+				x-init="bodyLen = $el.value.length; $el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px'"
+				@input="bodyLen = $el.value.length; $el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px'"
+				class="block w-full px-4 py-3 text-sm leading-relaxed text-gray-900 placeholder-gray-400 focus:outline-none resize-none overflow-hidden"
+			></textarea>
+			if errorMsg != "" {
+				<p class="px-4 pb-2 text-sm text-red-600">{ errorMsg }</p>
+			}
+			<div class="flex items-center justify-between gap-2 px-4 py-2 bg-gray-50 border-t border-gray-100 rounded-b-md">
+				<span class="text-xs tabular-nums" :class={ counterClassExpr("bodyLen", domain.MaxBodyLen) }>
+					<span x-text="bodyLen"></span> / { fmt.Sprint(domain.MaxBodyLen) }
+				</span>
+				<button type="submit" :disabled="submitting" x-text="submitting ? 'Sending…' : 'Send'" class="rounded bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-1.5 transition">Send</button>
+			</div>
+		</form>
+	}
+}
+
+templ PlayerReplyResponse(ticket domain.Ticket, messages []domain.Message, otherSeenAt time.Time) {
+	@Thread(messages, false, otherSeenAt)
+	@ComposerOOB(ticket, ticket.CanPlayerReply(), false, "")
+}
+
+templ StaffNoteComposer(ticket domain.Ticket) {
+	if !ticket.IsTerminal() {
+		<form
+			x-data="{ submitting: false, noteLen: 0 }"
+			@submit="submitting = true"
+			@htmx:after-request="submitting = false"
+			hx-post={ fmt.Sprintf("/tickets/%d/note", ticket.ID) }
+			hx-target="#ticket-thread"
+			hx-swap="outerHTML"
+			hx-sync="this:drop"
+			class="mt-3 rounded-md border border-amber-200 bg-amber-50 shadow-sm"
+		>
+			<div class="px-4 pt-3 pb-2 border-b border-amber-200 flex items-center justify-between">
+				<span class="text-xs font-medium uppercase tracking-wide text-amber-800">Internal note · staff only</span>
+			</div>
+			<textarea
+				name="body"
+				rows="3"
+				required
+				maxlength={ fmt.Sprint(domain.MaxBodyLen) }
+				placeholder="Notes only visible to other staff…"
+				x-init="noteLen = $el.value.length; $el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px'"
+				@input="noteLen = $el.value.length; $el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px'"
+				class="block w-full px-4 py-3 text-sm leading-relaxed text-amber-900 placeholder-amber-400 bg-amber-50 focus:outline-none resize-none overflow-hidden"
+			></textarea>
+			<div class="flex items-center justify-between gap-2 px-4 py-2 bg-amber-100 border-t border-amber-200 rounded-b-md">
+				<span class="text-xs tabular-nums" :class={ counterClassExpr("noteLen", domain.MaxBodyLen) }>
+					<span x-text="noteLen"></span> / { fmt.Sprint(domain.MaxBodyLen) }
+				</span>
+				<button type="submit" :disabled="submitting" x-text="submitting ? 'Adding…' : 'Add note'" class="rounded border border-amber-700 bg-white hover:bg-amber-700 hover:text-white disabled:bg-amber-200 disabled:cursor-not-allowed text-amber-800 text-sm font-medium px-4 py-1.5 transition">Add note</button>
+			</div>
+		</form>
+	}
+}
+
+templ Header(ticket domain.Ticket, isStaff bool, categories []domain.Category) {
+	<div id="ticket-header" class="border-b border-gray-200 pb-4 mb-5">
+		<div class="flex items-start justify-between gap-4">
+			<div class="min-w-0 flex-1">
+				<div class="flex items-center gap-2 text-xs text-gray-500">
+					<span class="font-mono">#{ fmt.Sprint(ticket.ID) }</span>
+					<span class="text-gray-300">·</span>
+					<span>Opened { ticket.CreatedAt.Format("Jan 2, 2006") }</span>
+				</div>
+				<h1 class="mt-1 text-2xl font-semibold text-gray-900 break-words">{ ticket.Subject }</h1>
+				<div class="mt-2 flex flex-wrap items-center gap-2">
+					@statusBadge(ticket.Status)
+					<span class="inline-flex items-center rounded-full bg-gray-100 text-gray-700 text-xs font-medium px-2.5 py-0.5">{ categoryDisplay(ticket.Category, categories) }</span>
+					<span class="text-xs text-gray-500">{ fmt.Sprint(ticket.MessageCount) } messages</span>
+				</div>
+			</div>
+		</div>
+		if isStaff && !ticket.IsTerminal() {
+			@staffHeaderActions(ticket, categories)
+		}
+	</div>
+}
+
+func categoryDisplay(key string, categories []domain.Category) string {
+	for _, category := range categories {
+		if category.Key == key {
+			return category.Display
+		}
+	}
+
+	return key
+}
+
+templ statusBadge(status domain.Status) {
+	switch status {
+		case domain.StatusOpen:
+			<span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium px-2.5 py-0.5">
+				<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+				Open
+			</span>
+		case domain.StatusResolved:
+			<span class="inline-flex items-center gap-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-xs font-medium px-2.5 py-0.5">
+				<span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+				Resolved
+			</span>
+		case domain.StatusClosed:
+			<span class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 border border-gray-300 text-gray-700 text-xs font-medium px-2.5 py-0.5">
+				<span class="w-1.5 h-1.5 rounded-full bg-gray-500"></span>
+				Closed
+			</span>
+	}
+}
+
+templ staffHeaderActions(ticket domain.Ticket, categories []domain.Category) {
+	<div class="mt-4 flex flex-wrap items-center gap-2">
+		<form
+			x-data="{ current: '', original: '' }"
+			x-init="original = $refs.cat.value; current = original"
+			hx-post={ fmt.Sprintf("/tickets/%d/category", ticket.ID) }
+			hx-target="#ticket-header"
+			hx-swap="outerHTML"
+			hx-sync="this:drop"
+			class="flex items-center gap-2"
+		>
+			<label class="text-xs uppercase tracking-wide text-gray-500">Recategorize</label>
+			<select x-ref="cat" name="category" @change="current = $el.value" class="rounded border border-gray-300 text-sm px-2 py-1 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+				for _, category := range categories {
+					if category.Key == ticket.Category {
+						<option value={ category.Key } selected>{ category.Display }</option>
+					} else {
+						<option value={ category.Key }>{ category.Display }</option>
+					}
+				}
+			</select>
+			<button type="submit" :disabled="current === original" class="rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 text-xs font-medium px-2.5 py-1 transition">Apply</button>
+		</form>
+		<span class="text-gray-300">|</span>
+		@terminalActionButton(ticket, "resolve", "Mark resolved", "rounded bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-3 py-1.5 transition")
+		@terminalActionButton(ticket, "close", "Close", "rounded border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-xs font-medium px-3 py-1.5 transition")
+	</div>
+}
+
+templ terminalActionButton(ticket domain.Ticket, action, label, buttonClass string) {
+	<span x-data="{ confirm: false }" x-cloak class="inline-flex items-center gap-1">
+		<button type="button" x-show="!confirm" @click="confirm = true" class={ buttonClass }>{ label }</button>
+		<span x-show="confirm" class="inline-flex items-center gap-1">
+			<span class="text-xs text-gray-600">Sure?</span>
+			<button hx-post={ fmt.Sprintf("/tickets/%d/%s", ticket.ID, action) } hx-target="body" hx-swap="outerHTML" hx-disabled-elt="this" hx-sync="this:drop" class={ buttonClass }>Yes, { label }</button>
+			<button type="button" @click="confirm = false" class="text-xs text-gray-500 hover:text-gray-700 px-2">Cancel</button>
+		</span>
+	</span>
+}
+
+func counterClassExpr(varName string, max int) string {
+	warn := max * 9 / 10
+	return fmt.Sprintf("%s >= %d ? 'text-red-600' : %s >= %d ? 'text-amber-600' : 'text-gray-400'", varName, max, varName, warn)
+}
+
+func messageContainerClass(message domain.Message) string {
+	if message.Visibility == domain.VisibilityInternal {
+		return "bg-amber-50 border-amber-200"
+	}
+	if message.AuthorRole == domain.ActorStaff {
+		return "bg-blue-50 border-blue-100"
+	}
+
+	return "bg-white border-gray-200"
+}
+
+func messageAvatarClass(message domain.Message) string {
+	if message.Visibility == domain.VisibilityInternal {
+		return "bg-amber-200 text-amber-900"
+	}
+	if message.AuthorRole == domain.ActorStaff {
+		return "bg-blue-600 text-white"
+	}
+
+	return "bg-gray-200 text-gray-700"
+}
+
+func messageAuthorLabel(message domain.Message, isStaff bool) string {
+	if message.AuthorRole == domain.ActorStaff {
+		if isStaff {
+			return "You"
+		}
+
+		return "Staff"
+	}
+	if isStaff {
+		return "Player"
+	}
+
+	return "You"
+}
+
+func authorInitial(message domain.Message) string {
+	if message.AuthorRole == domain.ActorStaff {
+		return "S"
+	}
+
+	return "P"
+}
+
+func composerPostURL(ticket domain.Ticket, _ bool) string {
+	return fmt.Sprintf("/tickets/%d/reply", ticket.ID)
+}

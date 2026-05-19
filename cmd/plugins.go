@@ -11,6 +11,6 @@ import (
 	_ "github.com/hayakawakaki/go-racp/internal/features/item"
 	_ "github.com/hayakawakaki/go-racp/internal/features/mob"
 	_ "github.com/hayakawakaki/go-racp/internal/features/news"
-	_ "github.com/hayakawakaki/go-racp/internal/tickets"
+	_ "github.com/hayakawakaki/go-racp/internal/features/tickets"
 	_ "github.com/hayakawakaki/go-racp/internal/users"
 )
