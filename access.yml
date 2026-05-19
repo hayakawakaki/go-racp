@@ -73,3 +73,17 @@ Mob:
     Roles: ["*"]
   API:
     Roles: ["Public"]
+
+Users:
+  List:
+    Roles: ["Admin"]
+  View:
+    Roles: ["Admin"]
+  Ban:
+    Roles: ["Moderator", "Enforcer"]
+    Requires: ["Unrestricted"]
+  Unban:
+    Roles: ["Moderator", "Enforcer"]
+    Requires: ["Unrestricted"]
+  SetRole:
+    Roles: ["Admin"]

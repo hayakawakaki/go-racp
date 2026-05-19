@@ -41,11 +41,10 @@ func TestRepository_CreateAndGet(t *testing.T) {
 	u := &domain.User{
 		Username:  "racp_test_" + suf,
 		Email:     "racp_test_" + suf + "@example.invalid",
-		Password:  "Test1234!",
 		Gender:    "M",
 		Birthdate: wantBirthdate,
 	}
-	created, err := repo.Create(ctx, u)
+	created, err := repo.Create(ctx, u, "Test1234!")
 	if err != nil {
 		t.Fatalf("Create: %v", err)
 	}
@@ -100,11 +99,10 @@ func TestRepository_Authenticate(t *testing.T) {
 	u := &domain.User{
 		Username:  "racp_test_" + suf,
 		Email:     "racp_test_" + suf + "@example.invalid",
-		Password:  "secret",
 		Gender:    "M",
 		Birthdate: birthdate,
 	}
-	created, err := repo.Create(ctx, u)
+	created, err := repo.Create(ctx, u, "secret")
 	if err != nil {
 		t.Fatalf("Create: %v", err)
 	}
@@ -144,9 +142,8 @@ func TestRepository_Create_SetsStateFiveAndPersistsIt(t *testing.T) {
 	created, err := repo.Create(ctx, &domain.User{
 		Username: "racp_test_" + suf,
 		Email:    "racp_test_" + suf + "@example.invalid",
-		Password: "Test1234!",
 		Gender:   "M",
-	})
+	}, "Test1234!")
 	if err != nil {
 		t.Fatalf("Create: %v", err)
 	}
@@ -175,9 +172,8 @@ func TestRepository_MarkVerified(t *testing.T) {
 		user, err := repo.Create(ctx, &domain.User{
 			Username: "racp_test_" + suf,
 			Email:    "racp_test_" + suf + "@example.invalid",
-			Password: "Test1234!",
 			Gender:   "M",
-		})
+		}, "Test1234!")
 		if err != nil {
 			t.Fatalf("Create: %v", err)
 		}
@@ -200,9 +196,8 @@ func TestRepository_MarkVerified(t *testing.T) {
 		user, err := repo.Create(ctx, &domain.User{
 			Username: "racp_test_" + suf,
 			Email:    "racp_test_" + suf + "@example.invalid",
-			Password: "Test1234!",
 			Gender:   "M",
-		})
+		}, "Test1234!")
 		if err != nil {
 			t.Fatalf("Create: %v", err)
 		}
@@ -233,9 +228,8 @@ func TestRepository_UpdatePassword(t *testing.T) {
 	u, err := repo.Create(ctx, &domain.User{
 		Username: "racp_test_" + suf,
 		Email:    "racp_test_" + suf + "@example.invalid",
-		Password: "Old1234!",
 		Gender:   "M",
-	})
+	}, "Old1234!")
 	if err != nil {
 		t.Fatalf("Create: %v", err)
 	}
@@ -273,9 +267,8 @@ func TestRepository_UpdateEmail(t *testing.T) {
 	u, err := repo.Create(ctx, &domain.User{
 		Username: "racp_test_" + suf,
 		Email:    "old_" + suf + "@example.invalid",
-		Password: "Old1234!",
 		Gender:   "M",
-	})
+	}, "Old1234!")
 	if err != nil {
 		t.Fatalf("Create: %v", err)
 	}
@@ -311,9 +304,8 @@ func TestRepository_Delete(t *testing.T) {
 	u, err := repo.Create(ctx, &domain.User{
 		Username: "racp_test_" + suf,
 		Email:    "racp_test_" + suf + "@x",
-		Password: "Test1234!",
 		Gender:   "M",
-	})
+	}, "Test1234!")
 	if err != nil {
 		t.Fatalf("Create: %v", err)
 	}
@@ -323,5 +315,49 @@ func TestRepository_Delete(t *testing.T) {
 	}
 	if err := repo.Delete(ctx, u.ID); !errors.Is(err, domain.ErrUserNotFound) {
 		t.Errorf("second Delete: got %v, want ErrUserNotFound", err)
+	}
+}
+
+func TestRepository_VerifyPassword(t *testing.T) {
+	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
+	repo := NewRepository(db)
+	ctx := context.Background()
+
+	suf := randomizeSuffix(t)
+	wantBirthdate, err := time.Parse("2006-01-02", "1995-06-15")
+	if err != nil {
+		t.Fatalf("parse birthdate: %v", err)
+	}
+	u := &domain.User{
+		Username:  "racp_test_" + suf,
+		Email:     "racp_test_" + suf + "@example.invalid",
+		Gender:    "M",
+		Birthdate: wantBirthdate,
+	}
+	created, err := repo.Create(ctx, u, "Test1234!")
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	cleanupUser(t, repo, created.ID)
+
+	ok, err := repo.VerifyPassword(ctx, created.ID, "Test1234!")
+	if err != nil {
+		t.Fatalf("VerifyPassword good: %v", err)
+	}
+	if !ok {
+		t.Fatalf("VerifyPassword good: got false, want true")
+	}
+
+	ok, err = repo.VerifyPassword(ctx, created.ID, "wrongpass")
+	if err != nil {
+		t.Fatalf("VerifyPassword bad: %v", err)
+	}
+	if ok {
+		t.Fatalf("VerifyPassword bad: got true, want false")
+	}
+
+	_, err = repo.VerifyPassword(ctx, 9999999, "anything")
+	if !errors.Is(err, domain.ErrUserNotFound) {
+		t.Fatalf("VerifyPassword missing: err = %v, want ErrUserNotFound", err)
 	}
 }

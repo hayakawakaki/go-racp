@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	domain2 "github.com/hayakawakaki/go-racp/internal/features/account/domain"
@@ -20,10 +21,10 @@ func NewRepository(client *sql.DB) *Repository {
 	}
 }
 
-func (r *Repository) Create(ctx context.Context, user *domain2.User) (*domain2.User, error) {
+func (r *Repository) Create(ctx context.Context, user *domain2.User, password string) (*domain2.User, error) {
 	res, err := r.Client.ExecContext(ctx,
 		"INSERT INTO login (userid, email, user_pass, sex, birthdate, state) VALUES (?, ?, ?, ?, ?, 1)",
-		user.Username, user.Email, user.Password, user.Gender, user.Birthdate)
+		user.Username, user.Email, password, user.Gender, user.Birthdate)
 	if err != nil {
 		return nil, fmt.Errorf("infra.Repository.Create: %w", err)
 	}
@@ -39,7 +40,7 @@ func (r *Repository) Create(ctx context.Context, user *domain2.User) (*domain2.U
 
 func (r *Repository) GetAll(ctx context.Context) ([]domain2.User, error) {
 	rows, err := r.Client.QueryContext(ctx,
-		"SELECT account_id, userid, email, birthdate, state, group_id, unban_time FROM login")
+		"SELECT account_id, userid, email, birthdate, state, group_id, unban_time, last_ip, lastlogin FROM login")
 	if err != nil {
 		return nil, fmt.Errorf("infra.Repository.GetAll: %w", err)
 	}
@@ -47,12 +48,20 @@ func (r *Repository) GetAll(ctx context.Context) ([]domain2.User, error) {
 
 	var userList []domain2.User
 	for rows.Next() {
-		var u domain2.User
-		var unbanSecs uint32
-		if err := rows.Scan(&u.ID, &u.Username, &u.Email, &u.Birthdate, &u.State, &u.GroupID, &unbanSecs); err != nil {
+		var (
+			u         domain2.User
+			unbanSecs uint32
+			lastIP    sql.NullString
+			lastLogin sql.NullTime
+		)
+		if err := rows.Scan(&u.ID, &u.Username, &u.Email, &u.Birthdate, &u.State, &u.GroupID, &unbanSecs, &lastIP, &lastLogin); err != nil {
 			return nil, fmt.Errorf("infra.Repository.GetAll: %w", err)
 		}
 		u.UnbanTime = unbanTimeFromSeconds(unbanSecs)
+		u.LastIP = lastIP.String
+		if lastLogin.Valid {
+			u.LastLogin = lastLogin.Time
+		}
 		userList = append(userList, u)
 	}
 	if err := rows.Err(); err != nil {
@@ -62,64 +71,71 @@ func (r *Repository) GetAll(ctx context.Context) ([]domain2.User, error) {
 	return userList, nil
 }
 
-func (r *Repository) GetByID(ctx context.Context, id int) (*domain2.User, error) {
-	var u domain2.User
-	var unbanSecs uint32
+const selectLoginColumns = "account_id, userid, email, birthdate, state, group_id, unban_time, last_ip, lastlogin"
+
+func (r *Repository) selectLoginRow(ctx context.Context, op, where string, args ...any) (*domain2.User, error) {
+	var (
+		u         domain2.User
+		unbanSecs uint32
+		lastIP    sql.NullString
+		lastLogin sql.NullTime
+	)
 	err := r.Client.QueryRowContext(ctx,
-		"SELECT account_id, userid, email, birthdate, state, group_id, unban_time FROM login WHERE account_id = ?", id,
-	).Scan(&u.ID, &u.Username, &u.Email, &u.Birthdate, &u.State, &u.GroupID, &unbanSecs)
+		"SELECT "+selectLoginColumns+" FROM login WHERE "+where, args...,
+	).Scan(&u.ID, &u.Username, &u.Email, &u.Birthdate, &u.State, &u.GroupID, &unbanSecs, &lastIP, &lastLogin)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, domain2.ErrUserNotFound
 	}
 	if err != nil {
-		return nil, fmt.Errorf("infra.Repository.GetByID: %w", err)
+		return nil, fmt.Errorf("infra.Repository.%s: %w", op, err)
 	}
 	u.UnbanTime = unbanTimeFromSeconds(unbanSecs)
+	u.LastIP = lastIP.String
+	if lastLogin.Valid {
+		u.LastLogin = lastLogin.Time
+	}
 
 	return &u, nil
+}
+
+func (r *Repository) GetByID(ctx context.Context, id int) (*domain2.User, error) {
+	return r.selectLoginRow(ctx, "GetByID", "account_id = ?", id)
 }
 
 func (r *Repository) GetByUsername(ctx context.Context, username string) (*domain2.User, error) {
-	var u domain2.User
-	var unbanSecs uint32
-	err := r.Client.QueryRowContext(ctx,
-		"SELECT account_id, userid, email, birthdate, state, group_id, unban_time FROM login WHERE userid = ?", username,
-	).Scan(&u.ID, &u.Username, &u.Email, &u.Birthdate, &u.State, &u.GroupID, &unbanSecs)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, domain2.ErrUserNotFound
-	}
-	if err != nil {
-		return nil, fmt.Errorf("infra.Repository.GetByUsername: %w", err)
-	}
-	u.UnbanTime = unbanTimeFromSeconds(unbanSecs)
-
-	return &u, nil
+	return r.selectLoginRow(ctx, "GetByUsername", "userid = ?", username)
 }
 
 func (r *Repository) GetByEmail(ctx context.Context, email string) (*domain2.User, error) {
-	var u domain2.User
-	var unbanSecs uint32
+	return r.selectLoginRow(ctx, "GetByEmail", "email = ?", email)
+}
+
+func (r *Repository) VerifyPassword(ctx context.Context, id int, password string) (bool, error) {
+	var stored string
 	err := r.Client.QueryRowContext(ctx,
-		"SELECT account_id, userid, email, birthdate, state, group_id, unban_time FROM login WHERE email = ?", email,
-	).Scan(&u.ID, &u.Username, &u.Email, &u.Birthdate, &u.State, &u.GroupID, &unbanSecs)
+		"SELECT user_pass FROM login WHERE account_id = ?", id,
+	).Scan(&stored)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, domain2.ErrUserNotFound
+		return false, domain2.ErrUserNotFound
 	}
 	if err != nil {
-		return nil, fmt.Errorf("infra.Repository.GetByEmail: %w", err)
+		return false, fmt.Errorf("infra.Repository.VerifyPassword: %w", err)
 	}
-	u.UnbanTime = unbanTimeFromSeconds(unbanSecs)
 
-	return &u, nil
+	return stored == password, nil
 }
 
 func (r *Repository) Authenticate(ctx context.Context, username, password string) (*domain2.User, error) {
-	var u domain2.User
-	var unbanSecs uint32
+	var (
+		u         domain2.User
+		unbanSecs uint32
+		lastIP    sql.NullString
+		lastLogin sql.NullTime
+	)
 	err := r.Client.QueryRowContext(ctx,
-		"SELECT account_id, userid, email, birthdate, state, group_id, unban_time FROM login WHERE userid = ? AND user_pass = ?",
+		"SELECT account_id, userid, email, birthdate, state, group_id, unban_time, last_ip, lastlogin FROM login WHERE userid = ? AND user_pass = ?",
 		username, password,
-	).Scan(&u.ID, &u.Username, &u.Email, &u.Birthdate, &u.State, &u.GroupID, &unbanSecs)
+	).Scan(&u.ID, &u.Username, &u.Email, &u.Birthdate, &u.State, &u.GroupID, &unbanSecs, &lastIP, &lastLogin)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, domain2.ErrInvalidCredentials
 	}
@@ -127,6 +143,10 @@ func (r *Repository) Authenticate(ctx context.Context, username, password string
 		return nil, fmt.Errorf("infra.Repository.Authenticate: %w", err)
 	}
 	u.UnbanTime = unbanTimeFromSeconds(unbanSecs)
+	u.LastIP = lastIP.String
+	if lastLogin.Valid {
+		u.LastLogin = lastLogin.Time
+	}
 
 	return &u, nil
 }
@@ -201,6 +221,136 @@ func (r *Repository) Delete(ctx context.Context, id int) error {
 	rows, err := res.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("infra.Repository.Delete: %w", err)
+	}
+	if rows == 0 {
+		return domain2.ErrUserNotFound
+	}
+
+	return nil
+}
+
+const DefaultPerPage = 20
+
+type ListQuery struct {
+	Query     string
+	Page      int
+	PerPage   int
+	ExcludeID int
+}
+
+type UserPage struct {
+	Users      []domain2.User
+	Total      int
+	Page       int
+	PerPage    int
+	TotalPages int
+}
+
+func (r *Repository) List(ctx context.Context, q ListQuery) (UserPage, error) {
+	if q.PerPage <= 0 {
+		q.PerPage = DefaultPerPage
+	}
+	if q.Page <= 0 {
+		q.Page = 1
+	}
+
+	where, args := buildListWhere(q)
+
+	var total int
+	if err := r.Client.QueryRowContext(ctx,
+		"SELECT COUNT(*) FROM login "+where, args...,
+	).Scan(&total); err != nil {
+		return UserPage{}, fmt.Errorf("infra.Repository.List count: %w", err)
+	}
+
+	offset := (q.Page - 1) * q.PerPage
+	queryArgs := append([]any{}, args...)
+	queryArgs = append(queryArgs, q.PerPage, offset)
+
+	rows, err := r.Client.QueryContext(ctx,
+		"SELECT "+selectLoginColumns+" FROM login "+where+ //nolint:gosec // where built from constants
+			" ORDER BY account_id ASC LIMIT ? OFFSET ?", queryArgs...,
+	)
+	if err != nil {
+		return UserPage{}, fmt.Errorf("infra.Repository.List query: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	users := make([]domain2.User, 0, q.PerPage)
+	for rows.Next() {
+		var (
+			u         domain2.User
+			unbanSecs uint32
+			lastIP    sql.NullString
+			lastLogin sql.NullTime
+		)
+		if err := rows.Scan(&u.ID, &u.Username, &u.Email, &u.Birthdate, &u.State, &u.GroupID, &unbanSecs, &lastIP, &lastLogin); err != nil {
+			return UserPage{}, fmt.Errorf("infra.Repository.List scan: %w", err)
+		}
+		u.UnbanTime = unbanTimeFromSeconds(unbanSecs)
+		u.LastIP = lastIP.String
+		if lastLogin.Valid {
+			u.LastLogin = lastLogin.Time
+		}
+		users = append(users, u)
+	}
+	if err := rows.Err(); err != nil {
+		return UserPage{}, fmt.Errorf("infra.Repository.List rows: %w", err)
+	}
+
+	totalPages := (total + q.PerPage - 1) / q.PerPage
+
+	return UserPage{Users: users, Total: total, Page: q.Page, PerPage: q.PerPage, TotalPages: totalPages}, nil
+}
+
+func buildListWhere(q ListQuery) (where string, args []any) {
+	clauses := make([]string, 0, 2)
+	if needle := strings.TrimSpace(q.Query); needle != "" {
+		clauses = append(clauses, "(userid LIKE ? OR email LIKE ?)")
+		like := "%" + needle + "%"
+		args = append(args, like, like)
+	}
+	if q.ExcludeID > 0 {
+		clauses = append(clauses, "account_id <> ?")
+		args = append(args, q.ExcludeID)
+	}
+	if len(clauses) == 0 {
+		return "", args
+	}
+
+	return "WHERE " + strings.Join(clauses, " AND "), args
+}
+
+func (r *Repository) UpdateBan(ctx context.Context, id, state int, unbanTime uint32) error {
+	res, err := r.Client.ExecContext(ctx,
+		"UPDATE login SET state = ?, unban_time = ? WHERE account_id = ?",
+		state, unbanTime, id,
+	)
+	if err != nil {
+		return fmt.Errorf("infra.Repository.UpdateBan: %w", err)
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("infra.Repository.UpdateBan rows: %w", err)
+	}
+	if rows == 0 {
+		return domain2.ErrUserNotFound
+	}
+
+	return nil
+}
+
+func (r *Repository) UpdateGroup(ctx context.Context, id, groupID int) error {
+	res, err := r.Client.ExecContext(ctx,
+		"UPDATE login SET group_id = ? WHERE account_id = ?",
+		groupID, id,
+	)
+	if err != nil {
+		return fmt.Errorf("infra.Repository.UpdateGroup: %w", err)
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("infra.Repository.UpdateGroup rows: %w", err)
 	}
 	if rows == 0 {
 		return domain2.ErrUserNotFound

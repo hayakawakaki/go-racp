@@ -337,3 +337,38 @@ func TestRegistry_Finalize_SilentForAdminTags(t *testing.T) {
 	reg.Wrap(mux, "Admin.Dashboard", "GET /admin", okHandler())
 	reg.Finalize()
 }
+
+func TestRegistry_Wrap_SoleAdminEntryIs404ForNonAdmin(t *testing.T) {
+	t.Parallel()
+	mux := http.NewServeMux()
+	buf := &bytes.Buffer{}
+	resolver := accdomain.NewRoleResolver(config.RolesConfig{"Moderator": 20})
+	logger := slog.New(slog.NewTextHandler(buf, nil))
+	sess := &stubSession{
+		validateFn: func(context.Context, string) (*accdomain.Session, error) {
+			return &accdomain.Session{UserID: 1}, nil
+		},
+	}
+	users := &stubUsers{
+		getFn: func(context.Context, int) (*accdomain.User, error) {
+			return &accdomain.User{ID: 1, GroupID: 20, State: 0}, nil
+		},
+	}
+	cfg := config.AccessConfig{
+		"Users": config.ActionRoles{
+			"List": config.Entry{Roles: config.RoleList{"Admin"}},
+		},
+	}
+	reg := NewRegistry(cfg, resolver, sess, users, logger, false, true, httpx.Layout{})
+
+	reg.Wrap(mux, "Users.List", "GET /users", okHandler())
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/users", http.NoBody)
+	req.AddCookie(&http.Cookie{Name: "racp_session", Value: "valid"})
+	mux.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusNotFound {
+		t.Errorf("non-admin hitting sole-Admin route must 404 (hidden); got %d", rr.Code)
+	}
+}
