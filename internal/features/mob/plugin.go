@@ -6,10 +6,10 @@ import (
 	"sync"
 	"sync/atomic"
 
-	platinfra "github.com/hayakawakaki/go-racp/internal/infra"
-	mobapp "github.com/hayakawakaki/go-racp/internal/mob/app"
-	"github.com/hayakawakaki/go-racp/internal/mob/domain"
-	mobtransport "github.com/hayakawakaki/go-racp/internal/mob/transport"
+	"github.com/hayakawakaki/go-racp/internal/features/mob/app"
+	"github.com/hayakawakaki/go-racp/internal/features/mob/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/mob/transport"
+	coreinfra "github.com/hayakawakaki/go-racp/internal/infra"
 	"github.com/hayakawakaki/go-racp/internal/plugin"
 	"github.com/hayakawakaki/go-racp/internal/refdata"
 	"github.com/hayakawakaki/go-racp/internal/routes"
@@ -19,15 +19,15 @@ const mobCacheFileName = "mob-snapshot.gob"
 
 var (
 	svcOnce          sync.Once
-	svcInstance      *mobapp.Service
-	itemLookupAtomic atomic.Pointer[mobtransport.ItemLookup]
+	svcInstance      *app.Service
+	itemLookupAtomic atomic.Pointer[transport.ItemLookup]
 )
 
-func SetItemLookup(l mobtransport.ItemLookup) {
+func SetItemLookup(l transport.ItemLookup) {
 	itemLookupAtomic.Store(&l)
 }
 
-func currentItemLookup() mobtransport.ItemLookup {
+func currentItemLookup() transport.ItemLookup {
 	p := itemLookupAtomic.Load()
 	if p == nil {
 		return nil
@@ -40,9 +40,9 @@ func init() {
 	plugin.Register(plugin.Plugin{Name: "mob", Mount: mount})
 }
 
-func mount(reg *routes.Registry, mux *http.ServeMux, in *platinfra.Infra) {
+func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 	service := BuildService(in)
-	handler := mobtransport.NewHandler(service, mobtransport.HandlerConfig{
+	handler := transport.NewHandler(service, transport.HandlerConfig{
 		Logger:       in.Logger,
 		General:      in.Config.App.General,
 		ItemLookupFn: currentItemLookup,
@@ -51,11 +51,11 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *platinfra.Infra) {
 	startDevWatcher(in, service)
 }
 
-func BuildService(in *platinfra.Infra) *mobapp.Service {
+func BuildService(in *coreinfra.Infra) *app.Service {
 	svcOnce.Do(func() {
 		sources := buildSources(in)
 		loader := func() (*domain.Snapshot, error) {
-			return mobapp.ParseSources(sources)
+			return app.ParseSources(sources)
 		}
 		snap, err := loader()
 		if err != nil {
@@ -68,20 +68,20 @@ func BuildService(in *platinfra.Infra) *mobapp.Service {
 			in.Logger.Info("mob: snapshot loaded", "mobs", snap.SourceCount)
 		}
 
-		svcInstance = mobapp.NewServiceWithSnapshot(snap, loader)
+		svcInstance = app.NewServiceWithSnapshot(snap, loader)
 	})
 
 	return svcInstance
 }
 
-func buildSources(in *platinfra.Infra) mobapp.Sources {
+func buildSources(in *coreinfra.Infra) app.Sources {
 	cfg := in.Config.App.MobDB
-	sources := mobapp.Sources{
+	sources := app.Sources{
 		Logger: in.Logger,
 		YAML:   cfg.YAML,
 	}
-	if dir := platinfra.DevCacheDir(in.Config.Env.Mode, in.Logger); dir != "" {
-		sources.Cache = &mobapp.MobCache{
+	if dir := coreinfra.DevCacheDir(in.Config.Env.Mode, in.Logger); dir != "" {
+		sources.Cache = &app.MobCache{
 			Logger:   in.Logger,
 			Dir:      dir,
 			Filename: mobCacheFileName,
@@ -91,11 +91,11 @@ func buildSources(in *platinfra.Infra) mobapp.Sources {
 	return sources
 }
 
-func startDevWatcher(in *platinfra.Infra, service *mobapp.Service) {
+func startDevWatcher(in *coreinfra.Infra, service *app.Service) {
 	if in.Config.Env.Mode != "development" {
 		return
 	}
-	paths, err := mobapp.ResolveSourcePaths(buildSources(in))
+	paths, err := app.ResolveSourcePaths(buildSources(in))
 	if err != nil {
 		in.Logger.Warn("mob: dev watcher disabled, cannot resolve sources", "err", err)
 		return

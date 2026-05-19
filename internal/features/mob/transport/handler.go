@@ -6,18 +6,18 @@ import (
 	"net/http"
 
 	itemdomain "github.com/hayakawakaki/go-racp/internal/features/item/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/mob/app"
+	"github.com/hayakawakaki/go-racp/internal/features/mob/domain"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
-	mobapp "github.com/hayakawakaki/go-racp/internal/mob/app"
-	"github.com/hayakawakaki/go-racp/internal/mob/domain"
 	"github.com/hayakawakaki/go-racp/internal/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 
 type mobService interface {
 	Get(ctx context.Context, id int) (*domain.Mob, error)
-	List(ctx context.Context, query mobapp.ListQuery) (mobapp.MobPage, error)
+	List(ctx context.Context, query app.ListQuery) (app.MobPage, error)
 	Reload(ctx context.Context) error
-	Status() mobapp.ServiceStatus
+	Status() app.ServiceStatus
 }
 
 type ItemLookup interface {

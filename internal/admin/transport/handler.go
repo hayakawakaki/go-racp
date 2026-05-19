@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	itemapp "github.com/hayakawakaki/go-racp/internal/features/item/app"
+	mobapp "github.com/hayakawakaki/go-racp/internal/features/mob/app"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
-	mobapp "github.com/hayakawakaki/go-racp/internal/mob/app"
 	"github.com/hayakawakaki/go-racp/internal/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
 )

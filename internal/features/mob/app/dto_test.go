@@ -3,7 +3,7 @@ package app
 import (
 	"testing"
 
-	"github.com/hayakawakaki/go-racp/internal/mob/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/mob/domain"
 )
 
 func TestToDTO_NilReturnsZeroValue(t *testing.T) {

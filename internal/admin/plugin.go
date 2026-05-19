@@ -5,8 +5,8 @@ import (
 
 	"github.com/hayakawakaki/go-racp/internal/admin/transport"
 	"github.com/hayakawakaki/go-racp/internal/features/item"
-	platinfra "github.com/hayakawakaki/go-racp/internal/infra"
-	"github.com/hayakawakaki/go-racp/internal/mob"
+	"github.com/hayakawakaki/go-racp/internal/features/mob"
+	coreinfra "github.com/hayakawakaki/go-racp/internal/infra"
 	"github.com/hayakawakaki/go-racp/internal/plugin"
 	"github.com/hayakawakaki/go-racp/internal/routes"
 )
@@ -18,7 +18,7 @@ func init() {
 	})
 }
 
-func mount(reg *routes.Registry, mux *http.ServeMux, in *platinfra.Infra) {
+func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 	h := transport.NewHandler(transport.HandlerConfig{
 		Logger:     in.Logger,
 		General:    in.Config.App.General,

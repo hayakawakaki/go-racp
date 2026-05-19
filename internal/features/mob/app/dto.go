@@ -1,6 +1,8 @@
 package app
 
-import "github.com/hayakawakaki/go-racp/internal/mob/domain"
+import (
+	"github.com/hayakawakaki/go-racp/internal/features/mob/domain"
+)
 
 const DefaultPerPage = 20
 

@@ -4,15 +4,15 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/hayakawakaki/go-racp/internal/features/mob/app"
+	"github.com/hayakawakaki/go-racp/internal/features/mob/domain"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
-	mobapp "github.com/hayakawakaki/go-racp/internal/mob/app"
-	"github.com/hayakawakaki/go-racp/internal/mob/domain"
 )
 
 func (h *Handler) showList(w http.ResponseWriter, r *http.Request) {
-	query := mobapp.ListQuery{
+	query := app.ListQuery{
 		Page:    httpx.ParsePositiveInt(r.URL.Query().Get("page"), 1),
-		PerPage: mobapp.DefaultPerPage,
+		PerPage: app.DefaultPerPage,
 		Query:   r.URL.Query().Get("q"),
 	}
 

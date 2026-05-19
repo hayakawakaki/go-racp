@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hayakawakaki/go-racp/internal/mob/domain"
-	"github.com/hayakawakaki/go-racp/internal/mob/infra"
+	"github.com/hayakawakaki/go-racp/internal/features/mob/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/mob/infra"
 	"github.com/hayakawakaki/go-racp/internal/refdata"
 	"github.com/hayakawakaki/go-racp/server/config"
 )

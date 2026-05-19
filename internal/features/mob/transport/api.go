@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/hayakawakaki/go-racp/internal/features/mob/app"
+	"github.com/hayakawakaki/go-racp/internal/features/mob/domain"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
-	mobapp "github.com/hayakawakaki/go-racp/internal/mob/app"
-	"github.com/hayakawakaki/go-racp/internal/mob/domain"
 )
 
 type apiError struct {
@@ -34,5 +34,5 @@ func (h *Handler) apiDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = httpx.WriteJSON(w, http.StatusOK, mobapp.ToDTO(mob))
+	_ = httpx.WriteJSON(w, http.StatusOK, app.ToDTO(mob))
 }

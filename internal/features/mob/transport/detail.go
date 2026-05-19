@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/hayakawakaki/go-racp/internal/features/mob/domain"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
-	"github.com/hayakawakaki/go-racp/internal/mob/domain"
 )
 
 func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {

@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/hayakawakaki/go-racp/internal/mob/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/mob/domain"
 	"github.com/hayakawakaki/go-racp/internal/refdata"
 )
 

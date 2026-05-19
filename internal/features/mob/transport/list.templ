@@ -5,12 +5,12 @@ import (
 	"net/url"
 
 	"github.com/hayakawakaki/go-racp/internal/httpx"
-	mobapp "github.com/hayakawakaki/go-racp/internal/mob/app"
-	"github.com/hayakawakaki/go-racp/internal/mob/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/mob/app"
+	"github.com/hayakawakaki/go-racp/internal/features/mob/domain"
 )
 
 type ListState struct {
-	Page    mobapp.MobPage
+	Page    app.MobPage
 	Query   string
 	BaseURL string
 }

@@ -12,8 +12,8 @@ import (
 	"fmt"
 
 	"github.com/hayakawakaki/go-racp/internal/features/item/domain"
+	mobdomain "github.com/hayakawakaki/go-racp/internal/features/mob/domain"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
-	mobdomain "github.com/hayakawakaki/go-racp/internal/mob/domain"
 )
 
 type DetailState struct {

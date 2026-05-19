@@ -13,8 +13,8 @@ import (
 	"time"
 
 	itemdomain "github.com/hayakawakaki/go-racp/internal/features/item/domain"
-	mobapp "github.com/hayakawakaki/go-racp/internal/mob/app"
-	"github.com/hayakawakaki/go-racp/internal/mob/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/mob/app"
+	"github.com/hayakawakaki/go-racp/internal/features/mob/domain"
 	"github.com/hayakawakaki/go-racp/internal/refdata"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
@@ -25,9 +25,9 @@ type fakeMobService struct {
 	getErr      error
 	listErr     error
 	reloadErr   error
-	listResp    mobapp.MobPage
-	gotListArg  mobapp.ListQuery
-	statusResp  mobapp.ServiceStatus
+	listResp    app.MobPage
+	gotListArg  app.ListQuery
+	statusResp  app.ServiceStatus
 	reloadCalls int
 }
 
@@ -47,10 +47,10 @@ func (s *fakeMobService) Get(_ context.Context, id int) (*domain.Mob, error) {
 	return mob, nil
 }
 
-func (s *fakeMobService) List(_ context.Context, query mobapp.ListQuery) (mobapp.MobPage, error) {
+func (s *fakeMobService) List(_ context.Context, query app.ListQuery) (app.MobPage, error) {
 	s.gotListArg = query
 	if s.listErr != nil {
-		return mobapp.MobPage{}, s.listErr
+		return app.MobPage{}, s.listErr
 	}
 
 	return s.listResp, nil
@@ -62,7 +62,7 @@ func (s *fakeMobService) Reload(_ context.Context) error {
 	return s.reloadErr
 }
 
-func (s *fakeMobService) Status() mobapp.ServiceStatus { return s.statusResp }
+func (s *fakeMobService) Status() app.ServiceStatus { return s.statusResp }
 
 type fakeItemLookup struct {
 	byAegis map[string]*itemdomain.Item
@@ -120,8 +120,8 @@ func TestHandler_ShowList_RendersResults(t *testing.T) {
 
 	mob := &domain.Mob{ID: 1002, AegisName: "PORING", Name: "Poring"}
 	svc := newFakeMobService()
-	svc.listResp = mobapp.MobPage{
-		Mobs: []*domain.Mob{mob}, Total: 1, Page: 1, PerPage: mobapp.DefaultPerPage, TotalPages: 1,
+	svc.listResp = app.MobPage{
+		Mobs: []*domain.Mob{mob}, Total: 1, Page: 1, PerPage: app.DefaultPerPage, TotalPages: 1,
 	}
 	h := newTestHandler(svc)
 
@@ -165,32 +165,32 @@ func TestHandler_ShowList_ParsesQueryParameters(t *testing.T) {
 			name:        "defaults when no params",
 			url:         "/mobs",
 			wantPage:    1,
-			wantPerPage: mobapp.DefaultPerPage,
+			wantPerPage: app.DefaultPerPage,
 		},
 		{
 			name:        "page param",
 			url:         "/mobs?page=3",
 			wantPage:    3,
-			wantPerPage: mobapp.DefaultPerPage,
+			wantPerPage: app.DefaultPerPage,
 		},
 		{
 			name:        "negative page falls back",
 			url:         "/mobs?page=-5",
 			wantPage:    1,
-			wantPerPage: mobapp.DefaultPerPage,
+			wantPerPage: app.DefaultPerPage,
 		},
 		{
 			name:        "non-numeric page falls back",
 			url:         "/mobs?page=abc",
 			wantPage:    1,
-			wantPerPage: mobapp.DefaultPerPage,
+			wantPerPage: app.DefaultPerPage,
 		},
 		{
 			name:        "query is forwarded",
 			url:         "/mobs?q=poring",
 			wantPage:    1,
 			wantQuery:   "poring",
-			wantPerPage: mobapp.DefaultPerPage,
+			wantPerPage: app.DefaultPerPage,
 		},
 	}
 
@@ -504,7 +504,7 @@ func TestHandler_APIDetail_Success(t *testing.T) {
 		t.Errorf("Content-Type = %q", got)
 	}
 
-	var got mobapp.MobDTO
+	var got app.MobDTO
 	if err := json.Unmarshal(rr.Body.Bytes(), &got); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
@@ -517,7 +517,7 @@ func TestHandler_DoReload_Success(t *testing.T) {
 	t.Parallel()
 
 	svc := newFakeMobService()
-	svc.statusResp = mobapp.ServiceStatus{MobsLoaded: 7, LastReload: time.Now().Format(time.RFC3339)}
+	svc.statusResp = app.ServiceStatus{MobsLoaded: 7, LastReload: time.Now().Format(time.RFC3339)}
 	h := newTestHandler(svc)
 
 	rr := httptest.NewRecorder()
