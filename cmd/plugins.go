@@ -7,6 +7,7 @@ import (
 	_ "github.com/hayakawakaki/go-racp/internal/features/account"
 	_ "github.com/hayakawakaki/go-racp/internal/features/admin"
 	_ "github.com/hayakawakaki/go-racp/internal/features/character"
+	_ "github.com/hayakawakaki/go-racp/internal/features/guild"
 	_ "github.com/hayakawakaki/go-racp/internal/features/home"
 	_ "github.com/hayakawakaki/go-racp/internal/features/item"
 	_ "github.com/hayakawakaki/go-racp/internal/features/mob"

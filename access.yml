@@ -65,6 +65,10 @@ Character:
     Roles: ["*"]
     Requires: ["Unrestricted"]
 
+Guild:
+  View:
+    Roles: ["Admin"]
+
 Item:
   View:
     Roles: ["*"]
