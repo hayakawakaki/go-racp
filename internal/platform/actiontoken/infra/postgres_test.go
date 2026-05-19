@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hayakawakaki/go-racp/internal/actiontoken/domain"
+	"github.com/hayakawakaki/go-racp/internal/platform/actiontoken/domain"
 	"github.com/hayakawakaki/go-racp/internal/testutil"
 )
 

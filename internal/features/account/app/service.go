@@ -8,10 +8,10 @@ import (
 	"sync"
 	"time"
 
-	actiontokenapp "github.com/hayakawakaki/go-racp/internal/actiontoken/app"
-	actiontokendomain "github.com/hayakawakaki/go-racp/internal/actiontoken/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	mailtemplate "github.com/hayakawakaki/go-racp/internal/infra/mailer/template"
+	actiontokenapp "github.com/hayakawakaki/go-racp/internal/platform/actiontoken/app"
+	actiontokendomain "github.com/hayakawakaki/go-racp/internal/platform/actiontoken/domain"
 )
 
 const (

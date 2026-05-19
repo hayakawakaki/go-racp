@@ -5,10 +5,10 @@ import (
 	"errors"
 	"net/http"
 
-	actiontokendomain "github.com/hayakawakaki/go-racp/internal/actiontoken/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/account/app"
 	"github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
+	actiontokendomain "github.com/hayakawakaki/go-racp/internal/platform/actiontoken/domain"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 

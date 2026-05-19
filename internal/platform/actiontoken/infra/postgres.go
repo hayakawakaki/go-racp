@@ -7,10 +7,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hayakawakaki/go-racp/internal/platform/actiontoken/domain"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-
-	"github.com/hayakawakaki/go-racp/internal/actiontoken/domain"
 )
 
 type PostgresRepository struct {

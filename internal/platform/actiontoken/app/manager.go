@@ -8,20 +8,20 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hayakawakaki/go-racp/internal/actiontoken/domain"
+	actiontokendomain "github.com/hayakawakaki/go-racp/internal/platform/actiontoken/domain"
 )
 
 type Manager struct {
-	repo domain.Repository
+	repo actiontokendomain.Repository
 	now  func() time.Time
 }
 
-func NewManager(repo domain.Repository) *Manager {
+func NewManager(repo actiontokendomain.Repository) *Manager {
 	return &Manager{repo: repo, now: time.Now}
 }
 
 // Issue invalidates any prior unconsumed tokens for the account and action, then mints a fresh single-use token.
-func (m *Manager) Issue(ctx context.Context, action domain.Action, accountID int, payload []byte, ttl time.Duration) (string, error) {
+func (m *Manager) Issue(ctx context.Context, action actiontokendomain.Action, accountID int, payload []byte, ttl time.Duration) (string, error) {
 	if err := m.repo.DeleteUnconsumed(ctx, accountID, action); err != nil {
 		return "", fmt.Errorf("app.Manager.Issue: %w", err)
 	}
@@ -33,7 +33,7 @@ func (m *Manager) Issue(ctx context.Context, action domain.Action, accountID int
 
 	hash := sha256.Sum256(raw[:])
 	now := m.now()
-	token := &domain.ActionToken{
+	token := &actiontokendomain.ActionToken{
 		TokenHash: hash,
 		AccountID: accountID,
 		Action:    action,
@@ -49,7 +49,7 @@ func (m *Manager) Issue(ctx context.Context, action domain.Action, accountID int
 }
 
 // Consume validates the token and atomically marks it used so it cannot be replayed.
-func (m *Manager) Consume(ctx context.Context, action domain.Action, rawToken string) (*domain.ActionToken, error) {
+func (m *Manager) Consume(ctx context.Context, action actiontokendomain.Action, rawToken string) (*actiontokendomain.ActionToken, error) {
 	now := m.now()
 	token, err := m.lookup(ctx, action, rawToken, now)
 	if err != nil {
@@ -66,11 +66,11 @@ func (m *Manager) Consume(ctx context.Context, action domain.Action, rawToken st
 }
 
 // Peek validates the token and returns it without marking it consumed.
-func (m *Manager) Peek(ctx context.Context, action domain.Action, rawToken string) (*domain.ActionToken, error) {
+func (m *Manager) Peek(ctx context.Context, action actiontokendomain.Action, rawToken string) (*actiontokendomain.ActionToken, error) {
 	return m.lookup(ctx, action, rawToken, m.now())
 }
 
-func (m *Manager) MostRecentIssuedAt(ctx context.Context, accountID int, action domain.Action) (time.Time, error) {
+func (m *Manager) MostRecentIssuedAt(ctx context.Context, accountID int, action actiontokendomain.Action) (time.Time, error) {
 	t, err := m.repo.MostRecentIssuedAt(ctx, accountID, action)
 	if err != nil {
 		return time.Time{}, fmt.Errorf("app.Manager.MostRecentIssuedAt: %w", err)
@@ -79,10 +79,10 @@ func (m *Manager) MostRecentIssuedAt(ctx context.Context, accountID int, action 
 	return t, nil
 }
 
-func (m *Manager) lookup(ctx context.Context, action domain.Action, rawToken string, now time.Time) (*domain.ActionToken, error) {
+func (m *Manager) lookup(ctx context.Context, action actiontokendomain.Action, rawToken string, now time.Time) (*actiontokendomain.ActionToken, error) {
 	decoded, err := base64.RawURLEncoding.DecodeString(rawToken)
 	if err != nil || len(decoded) != 32 {
-		return nil, domain.ErrTokenInvalid
+		return nil, actiontokendomain.ErrTokenInvalid
 	}
 	hash := sha256.Sum256(decoded)
 
@@ -92,15 +92,15 @@ func (m *Manager) lookup(ctx context.Context, action domain.Action, rawToken str
 	}
 
 	if token.Action != action {
-		return nil, domain.ErrTokenInvalid
+		return nil, actiontokendomain.ErrTokenInvalid
 	}
 
 	if token.IsConsumed() {
-		return nil, domain.ErrTokenAlreadyUsed
+		return nil, actiontokendomain.ErrTokenAlreadyUsed
 	}
 
 	if token.IsExpired(now) {
-		return nil, domain.ErrTokenExpired
+		return nil, actiontokendomain.ErrTokenExpired
 	}
 
 	return token, nil

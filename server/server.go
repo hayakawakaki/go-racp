@@ -12,8 +12,6 @@ import (
 	"syscall"
 	"time"
 
-	actiontokenapp "github.com/hayakawakaki/go-racp/internal/actiontoken/app"
-	actiontokeninfra "github.com/hayakawakaki/go-racp/internal/actiontoken/infra"
 	"github.com/hayakawakaki/go-racp/internal/features/account/app"
 	"github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	accinfra "github.com/hayakawakaki/go-racp/internal/features/account/infra"
@@ -22,6 +20,8 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/infra/mailer"
 	"github.com/hayakawakaki/go-racp/internal/infra/mysql"
 	"github.com/hayakawakaki/go-racp/internal/infra/postgres"
+	actiontokenapp "github.com/hayakawakaki/go-racp/internal/platform/actiontoken/app"
+	actiontokeninfra "github.com/hayakawakaki/go-racp/internal/platform/actiontoken/infra"
 	"github.com/hayakawakaki/go-racp/internal/platform/health"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"

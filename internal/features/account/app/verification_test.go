@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	actiontokenapp "github.com/hayakawakaki/go-racp/internal/actiontoken/app"
-	actiontokendomain "github.com/hayakawakaki/go-racp/internal/actiontoken/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/account/domain"
+	actiontokenapp "github.com/hayakawakaki/go-racp/internal/platform/actiontoken/app"
+	actiontokendomain "github.com/hayakawakaki/go-racp/internal/platform/actiontoken/domain"
 )
 
 type fakeActionTokenRepo struct {

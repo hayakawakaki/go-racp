@@ -11,9 +11,9 @@ import (
 	"strings"
 	"testing"
 
-	actiontokendomain "github.com/hayakawakaki/go-racp/internal/actiontoken/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
+	actiontokendomain "github.com/hayakawakaki/go-racp/internal/platform/actiontoken/domain"
 )
 
 func newVerifyHandler(users *stubUserLookup, sess *stubSessionService, verify *stubAccountService, logBuffer io.Writer) *Handler {

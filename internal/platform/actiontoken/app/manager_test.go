@@ -11,30 +11,30 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hayakawakaki/go-racp/internal/actiontoken/domain"
+	actiontokendomain "github.com/hayakawakaki/go-racp/internal/platform/actiontoken/domain"
 	"github.com/hayakawakaki/go-racp/internal/testutil"
 )
 
 type fakeTokenRepo struct {
-	byHash                 map[[32]byte]*domain.ActionToken
-	insertHook             func(*domain.ActionToken) error
-	getByHashHook          func([32]byte) (*domain.ActionToken, error)
-	deleteUnconsumedHook   func(int, domain.Action) error
+	byHash                 map[[32]byte]*actiontokendomain.ActionToken
+	insertHook             func(*actiontokendomain.ActionToken) error
+	getByHashHook          func([32]byte) (*actiontokendomain.ActionToken, error)
+	deleteUnconsumedHook   func(int, actiontokendomain.Action) error
 	markConsumedHook       func([32]byte, time.Time) error
-	mostRecentIssuedAtHook func(int, domain.Action) (time.Time, error)
-	insertCalls            []domain.ActionToken
+	mostRecentIssuedAtHook func(int, actiontokendomain.Action) (time.Time, error)
+	insertCalls            []actiontokendomain.ActionToken
 	deleteCalls            []struct {
 		AccountID int
-		Action    domain.Action
+		Action    actiontokendomain.Action
 	}
 	mu sync.Mutex
 }
 
 func newFakeTokenRepo() *fakeTokenRepo {
-	return &fakeTokenRepo{byHash: map[[32]byte]*domain.ActionToken{}}
+	return &fakeTokenRepo{byHash: map[[32]byte]*actiontokendomain.ActionToken{}}
 }
 
-func (f *fakeTokenRepo) Insert(_ context.Context, token *domain.ActionToken) error {
+func (f *fakeTokenRepo) Insert(_ context.Context, token *actiontokendomain.ActionToken) error {
 	if f.insertHook != nil {
 		return f.insertHook(token)
 	}
@@ -46,7 +46,7 @@ func (f *fakeTokenRepo) Insert(_ context.Context, token *domain.ActionToken) err
 	return nil
 }
 
-func (f *fakeTokenRepo) GetByHash(_ context.Context, hash [32]byte) (*domain.ActionToken, error) {
+func (f *fakeTokenRepo) GetByHash(_ context.Context, hash [32]byte) (*actiontokendomain.ActionToken, error) {
 	if f.getByHashHook != nil {
 		return f.getByHashHook(hash)
 	}
@@ -54,17 +54,17 @@ func (f *fakeTokenRepo) GetByHash(_ context.Context, hash [32]byte) (*domain.Act
 	defer f.mu.Unlock()
 	token, ok := f.byHash[hash]
 	if !ok {
-		return nil, domain.ErrTokenInvalid
+		return nil, actiontokendomain.ErrTokenInvalid
 	}
 	cp := *token
 	return &cp, nil
 }
 
-func (f *fakeTokenRepo) DeleteUnconsumed(_ context.Context, accountID int, action domain.Action) error {
+func (f *fakeTokenRepo) DeleteUnconsumed(_ context.Context, accountID int, action actiontokendomain.Action) error {
 	f.mu.Lock()
 	f.deleteCalls = append(f.deleteCalls, struct {
 		AccountID int
-		Action    domain.Action
+		Action    actiontokendomain.Action
 	}{accountID, action})
 	f.mu.Unlock()
 	if f.deleteUnconsumedHook != nil {
@@ -88,17 +88,17 @@ func (f *fakeTokenRepo) MarkConsumed(_ context.Context, hash [32]byte, at time.T
 	defer f.mu.Unlock()
 	token, ok := f.byHash[hash]
 	if !ok {
-		return domain.ErrTokenInvalid
+		return actiontokendomain.ErrTokenInvalid
 	}
 	if token.ConsumedAt.Valid {
-		return domain.ErrTokenAlreadyUsed
+		return actiontokendomain.ErrTokenAlreadyUsed
 	}
 	token.ConsumedAt.Time = at
 	token.ConsumedAt.Valid = true
 	return nil
 }
 
-func (f *fakeTokenRepo) MostRecentIssuedAt(_ context.Context, accountID int, action domain.Action) (time.Time, error) {
+func (f *fakeTokenRepo) MostRecentIssuedAt(_ context.Context, accountID int, action actiontokendomain.Action) (time.Time, error) {
 	if f.mostRecentIssuedAtHook != nil {
 		return f.mostRecentIssuedAtHook(accountID, action)
 	}
@@ -138,7 +138,7 @@ func TestActionToken_IsExpired(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			token := &domain.ActionToken{ExpiresAt: tt.expiresAt}
+			token := &actiontokendomain.ActionToken{ExpiresAt: tt.expiresAt}
 			if got := token.IsExpired(tt.now); got != tt.want {
 				t.Errorf("IsExpired(%v) = %v, want %v", tt.now, got, tt.want)
 			}
@@ -161,7 +161,7 @@ func TestActionToken_IsConsumed(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			token := &domain.ActionToken{ConsumedAt: tt.consumedAt}
+			token := &actiontokendomain.ActionToken{ConsumedAt: tt.consumedAt}
 			if got := token.IsConsumed(); got != tt.want {
 				t.Errorf("IsConsumed = %v, want %v", got, tt.want)
 			}
@@ -174,7 +174,7 @@ func TestManager_Issue_HappyPath(t *testing.T) {
 	clock := testutil.NewClock(time.Date(2026, 5, 12, 12, 0, 0, 0, time.UTC))
 	manager, repo := newManagerWithClock(t, clock)
 
-	rawToken, err := manager.Issue(context.Background(), domain.EmailVerification, 42, []byte("payload"), time.Hour)
+	rawToken, err := manager.Issue(context.Background(), actiontokendomain.EmailVerification, 42, []byte("payload"), time.Hour)
 	if err != nil {
 		t.Fatalf("Issue: %v", err)
 	}
@@ -194,7 +194,7 @@ func TestManager_Issue_HappyPath(t *testing.T) {
 	if stored.AccountID != 42 {
 		t.Errorf("AccountID = %d, want 42", stored.AccountID)
 	}
-	if stored.Action != domain.EmailVerification {
+	if stored.Action != actiontokendomain.EmailVerification {
 		t.Errorf("Action = %v, want EmailVerification", stored.Action)
 	}
 	if !stored.CreatedAt.Equal(clock.Now()) {
@@ -216,7 +216,7 @@ func TestManager_Issue_DeletesUnconsumedFirst(t *testing.T) {
 	clock := testutil.NewClock(time.Now())
 	manager, repo := newManagerWithClock(t, clock)
 
-	if _, err := manager.Issue(context.Background(), domain.PasswordReset, 7, nil, time.Hour); err != nil {
+	if _, err := manager.Issue(context.Background(), actiontokendomain.PasswordReset, 7, nil, time.Hour); err != nil {
 		t.Fatalf("Issue: %v", err)
 	}
 	if len(repo.deleteCalls) != 1 {
@@ -225,7 +225,7 @@ func TestManager_Issue_DeletesUnconsumedFirst(t *testing.T) {
 	if repo.deleteCalls[0].AccountID != 7 {
 		t.Errorf("DeleteUnconsumed accountID = %d, want 7", repo.deleteCalls[0].AccountID)
 	}
-	if repo.deleteCalls[0].Action != domain.PasswordReset {
+	if repo.deleteCalls[0].Action != actiontokendomain.PasswordReset {
 		t.Errorf("DeleteUnconsumed action = %v, want PasswordReset", repo.deleteCalls[0].Action)
 	}
 }
@@ -235,11 +235,11 @@ func TestManager_Issue_ProducesDistinctTokens(t *testing.T) {
 	clock := testutil.NewClock(time.Now())
 	manager, _ := newManagerWithClock(t, clock)
 
-	first, err := manager.Issue(context.Background(), domain.EmailVerification, 1, nil, time.Hour)
+	first, err := manager.Issue(context.Background(), actiontokendomain.EmailVerification, 1, nil, time.Hour)
 	if err != nil {
 		t.Fatal(err)
 	}
-	second, err := manager.Issue(context.Background(), domain.EmailVerification, 1, nil, time.Hour)
+	second, err := manager.Issue(context.Background(), actiontokendomain.EmailVerification, 1, nil, time.Hour)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -252,9 +252,9 @@ func TestManager_Issue_DeleteError_Wraps(t *testing.T) {
 	t.Parallel()
 	clock := testutil.NewClock(time.Now())
 	manager, repo := newManagerWithClock(t, clock)
-	repo.deleteUnconsumedHook = func(int, domain.Action) error { return errors.New("delete boom") }
+	repo.deleteUnconsumedHook = func(int, actiontokendomain.Action) error { return errors.New("delete boom") }
 
-	_, err := manager.Issue(context.Background(), domain.EmailVerification, 1, nil, time.Hour)
+	_, err := manager.Issue(context.Background(), actiontokendomain.EmailVerification, 1, nil, time.Hour)
 	if err == nil || !strings.Contains(err.Error(), "app.Manager.Issue") {
 		t.Errorf("not wrapped: %v", err)
 	}
@@ -264,19 +264,19 @@ func TestManager_Issue_InsertError_Wraps(t *testing.T) {
 	t.Parallel()
 	clock := testutil.NewClock(time.Now())
 	manager, repo := newManagerWithClock(t, clock)
-	repo.insertHook = func(*domain.ActionToken) error { return errors.New("insert boom") }
+	repo.insertHook = func(*actiontokendomain.ActionToken) error { return errors.New("insert boom") }
 
-	_, err := manager.Issue(context.Background(), domain.EmailVerification, 1, nil, time.Hour)
+	_, err := manager.Issue(context.Background(), actiontokendomain.EmailVerification, 1, nil, time.Hour)
 	if err == nil || !strings.Contains(err.Error(), "app.Manager.Issue") {
 		t.Errorf("not wrapped: %v", err)
 	}
 }
 
-func seedToken(repo *fakeTokenRepo, action domain.Action, accountID int, suffix byte, expiresAt, createdAt time.Time, payload []byte) (rawToken string, hash [32]byte) {
+func seedToken(repo *fakeTokenRepo, action actiontokendomain.Action, accountID int, suffix byte, expiresAt, createdAt time.Time, payload []byte) (rawToken string, hash [32]byte) {
 	var raw [32]byte
 	raw[0] = suffix
 	hash = sha256.Sum256(raw[:])
-	repo.byHash[hash] = &domain.ActionToken{
+	repo.byHash[hash] = &actiontokendomain.ActionToken{
 		TokenHash: hash,
 		AccountID: accountID,
 		Action:    action,
@@ -291,10 +291,10 @@ func TestManager_Consume_HappyPath(t *testing.T) {
 	t.Parallel()
 	clock := testutil.NewClock(time.Date(2026, 5, 12, 12, 0, 0, 0, time.UTC))
 	manager, repo := newManagerWithClock(t, clock)
-	rawToken, hash := seedToken(repo, domain.EmailVerification, 1, 0xa1,
+	rawToken, hash := seedToken(repo, actiontokendomain.EmailVerification, 1, 0xa1,
 		clock.Now().Add(time.Hour), clock.Now(), []byte("p"))
 
-	token, err := manager.Consume(context.Background(), domain.EmailVerification, rawToken)
+	token, err := manager.Consume(context.Background(), actiontokendomain.EmailVerification, rawToken)
 	if err != nil {
 		t.Fatalf("Consume: %v", err)
 	}
@@ -325,8 +325,8 @@ func TestManager_Consume_InvalidEncoding(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			_, err := manager.Consume(context.Background(), domain.EmailVerification, tt.input)
-			if !errors.Is(err, domain.ErrTokenInvalid) {
+			_, err := manager.Consume(context.Background(), actiontokendomain.EmailVerification, tt.input)
+			if !errors.Is(err, actiontokendomain.ErrTokenInvalid) {
 				t.Errorf("got %v, want ErrTokenInvalid", err)
 			}
 		})
@@ -340,8 +340,8 @@ func TestManager_Consume_UnknownToken(t *testing.T) {
 	raw := make([]byte, 32)
 	rawToken := base64.RawURLEncoding.EncodeToString(raw)
 
-	_, err := manager.Consume(context.Background(), domain.EmailVerification, rawToken)
-	if !errors.Is(err, domain.ErrTokenInvalid) {
+	_, err := manager.Consume(context.Background(), actiontokendomain.EmailVerification, rawToken)
+	if !errors.Is(err, actiontokendomain.ErrTokenInvalid) {
 		t.Errorf("got %v, want ErrTokenInvalid", err)
 	}
 }
@@ -350,11 +350,11 @@ func TestManager_Consume_WrongAction(t *testing.T) {
 	t.Parallel()
 	clock := testutil.NewClock(time.Now())
 	manager, repo := newManagerWithClock(t, clock)
-	rawToken, _ := seedToken(repo, domain.PasswordReset, 1, 0x01,
+	rawToken, _ := seedToken(repo, actiontokendomain.PasswordReset, 1, 0x01,
 		clock.Now().Add(time.Hour), clock.Now(), nil)
 
-	_, err := manager.Consume(context.Background(), domain.EmailVerification, rawToken)
-	if !errors.Is(err, domain.ErrTokenInvalid) {
+	_, err := manager.Consume(context.Background(), actiontokendomain.EmailVerification, rawToken)
+	if !errors.Is(err, actiontokendomain.ErrTokenInvalid) {
 		t.Errorf("got %v, want ErrTokenInvalid for action mismatch", err)
 	}
 }
@@ -363,12 +363,12 @@ func TestManager_Consume_AlreadyConsumed(t *testing.T) {
 	t.Parallel()
 	clock := testutil.NewClock(time.Now())
 	manager, repo := newManagerWithClock(t, clock)
-	rawToken, hash := seedToken(repo, domain.EmailVerification, 1, 0x02,
+	rawToken, hash := seedToken(repo, actiontokendomain.EmailVerification, 1, 0x02,
 		clock.Now().Add(time.Hour), clock.Now(), nil)
 	repo.byHash[hash].ConsumedAt = sql.NullTime{Time: clock.Now(), Valid: true}
 
-	_, err := manager.Consume(context.Background(), domain.EmailVerification, rawToken)
-	if !errors.Is(err, domain.ErrTokenAlreadyUsed) {
+	_, err := manager.Consume(context.Background(), actiontokendomain.EmailVerification, rawToken)
+	if !errors.Is(err, actiontokendomain.ErrTokenAlreadyUsed) {
 		t.Errorf("got %v, want ErrTokenAlreadyUsed", err)
 	}
 }
@@ -377,11 +377,11 @@ func TestManager_Consume_Expired(t *testing.T) {
 	t.Parallel()
 	clock := testutil.NewClock(time.Date(2026, 5, 12, 12, 0, 0, 0, time.UTC))
 	manager, repo := newManagerWithClock(t, clock)
-	rawToken, _ := seedToken(repo, domain.EmailVerification, 1, 0x03,
+	rawToken, _ := seedToken(repo, actiontokendomain.EmailVerification, 1, 0x03,
 		clock.Now().Add(-time.Second), clock.Now().Add(-time.Hour), nil)
 
-	_, err := manager.Consume(context.Background(), domain.EmailVerification, rawToken)
-	if !errors.Is(err, domain.ErrTokenExpired) {
+	_, err := manager.Consume(context.Background(), actiontokendomain.EmailVerification, rawToken)
+	if !errors.Is(err, actiontokendomain.ErrTokenExpired) {
 		t.Errorf("got %v, want ErrTokenExpired", err)
 	}
 }
@@ -390,11 +390,11 @@ func TestManager_Consume_MarkConsumedError_Wraps(t *testing.T) {
 	t.Parallel()
 	clock := testutil.NewClock(time.Now())
 	manager, repo := newManagerWithClock(t, clock)
-	rawToken, _ := seedToken(repo, domain.EmailVerification, 1, 0x04,
+	rawToken, _ := seedToken(repo, actiontokendomain.EmailVerification, 1, 0x04,
 		clock.Now().Add(time.Hour), clock.Now(), nil)
 	repo.markConsumedHook = func([32]byte, time.Time) error { return errors.New("mark boom") }
 
-	_, err := manager.Consume(context.Background(), domain.EmailVerification, rawToken)
+	_, err := manager.Consume(context.Background(), actiontokendomain.EmailVerification, rawToken)
 	if err == nil || !strings.Contains(err.Error(), "app.Manager.Consume") {
 		t.Errorf("not wrapped: %v", err)
 	}
@@ -404,10 +404,10 @@ func TestManager_Consume_RepoLookupError_Wraps(t *testing.T) {
 	t.Parallel()
 	clock := testutil.NewClock(time.Now())
 	manager, repo := newManagerWithClock(t, clock)
-	repo.getByHashHook = func([32]byte) (*domain.ActionToken, error) { return nil, errors.New("lookup boom") }
+	repo.getByHashHook = func([32]byte) (*actiontokendomain.ActionToken, error) { return nil, errors.New("lookup boom") }
 
 	raw := make([]byte, 32)
-	_, err := manager.Consume(context.Background(), domain.EmailVerification, base64.RawURLEncoding.EncodeToString(raw))
+	_, err := manager.Consume(context.Background(), actiontokendomain.EmailVerification, base64.RawURLEncoding.EncodeToString(raw))
 	if err == nil || !strings.Contains(err.Error(), "app.Manager.lookup") {
 		t.Errorf("not wrapped: %v", err)
 	}
@@ -417,10 +417,10 @@ func TestManager_Peek_DoesNotConsume(t *testing.T) {
 	t.Parallel()
 	clock := testutil.NewClock(time.Now())
 	manager, repo := newManagerWithClock(t, clock)
-	rawToken, hash := seedToken(repo, domain.PasswordReset, 1, 0x05,
+	rawToken, hash := seedToken(repo, actiontokendomain.PasswordReset, 1, 0x05,
 		clock.Now().Add(time.Hour), clock.Now(), []byte("p"))
 
-	token, err := manager.Peek(context.Background(), domain.PasswordReset, rawToken)
+	token, err := manager.Peek(context.Background(), actiontokendomain.PasswordReset, rawToken)
 	if err != nil {
 		t.Fatalf("Peek: %v", err)
 	}
@@ -439,18 +439,18 @@ func TestManager_Peek_PropagatesLookupErrors(t *testing.T) {
 
 	t.Run("invalid encoding", func(t *testing.T) {
 		t.Parallel()
-		_, err := manager.Peek(context.Background(), domain.PasswordReset, "***")
-		if !errors.Is(err, domain.ErrTokenInvalid) {
+		_, err := manager.Peek(context.Background(), actiontokendomain.PasswordReset, "***")
+		if !errors.Is(err, actiontokendomain.ErrTokenInvalid) {
 			t.Errorf("got %v, want ErrTokenInvalid", err)
 		}
 	})
 
 	t.Run("expired", func(t *testing.T) {
 		t.Parallel()
-		rawToken, _ := seedToken(repo, domain.PasswordReset, 1, 0x06,
+		rawToken, _ := seedToken(repo, actiontokendomain.PasswordReset, 1, 0x06,
 			clock.Now().Add(-time.Second), clock.Now().Add(-time.Hour), nil)
-		_, err := manager.Peek(context.Background(), domain.PasswordReset, rawToken)
-		if !errors.Is(err, domain.ErrTokenExpired) {
+		_, err := manager.Peek(context.Background(), actiontokendomain.PasswordReset, rawToken)
+		if !errors.Is(err, actiontokendomain.ErrTokenExpired) {
 			t.Errorf("got %v, want ErrTokenExpired", err)
 		}
 	})
@@ -461,9 +461,9 @@ func TestManager_MostRecentIssuedAt_PassesThrough(t *testing.T) {
 	clock := testutil.NewClock(time.Now())
 	manager, repo := newManagerWithClock(t, clock)
 	want := clock.Now().Add(-time.Minute)
-	repo.mostRecentIssuedAtHook = func(int, domain.Action) (time.Time, error) { return want, nil }
+	repo.mostRecentIssuedAtHook = func(int, actiontokendomain.Action) (time.Time, error) { return want, nil }
 
-	got, err := manager.MostRecentIssuedAt(context.Background(), 1, domain.EmailVerification)
+	got, err := manager.MostRecentIssuedAt(context.Background(), 1, actiontokendomain.EmailVerification)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -476,11 +476,11 @@ func TestManager_MostRecentIssuedAt_WrapsError(t *testing.T) {
 	t.Parallel()
 	clock := testutil.NewClock(time.Now())
 	manager, repo := newManagerWithClock(t, clock)
-	repo.mostRecentIssuedAtHook = func(int, domain.Action) (time.Time, error) {
+	repo.mostRecentIssuedAtHook = func(int, actiontokendomain.Action) (time.Time, error) {
 		return time.Time{}, errors.New("most-recent boom")
 	}
 
-	_, err := manager.MostRecentIssuedAt(context.Background(), 1, domain.EmailVerification)
+	_, err := manager.MostRecentIssuedAt(context.Background(), 1, actiontokendomain.EmailVerification)
 	if err == nil || !strings.Contains(err.Error(), "app.Manager.MostRecentIssuedAt") {
 		t.Errorf("not wrapped: %v", err)
 	}

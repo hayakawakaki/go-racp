@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	actiontokendomain "github.com/hayakawakaki/go-racp/internal/actiontoken/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/account/domain"
+	actiontokendomain "github.com/hayakawakaki/go-racp/internal/platform/actiontoken/domain"
 )
 
 func newResetHandler(reset *stubAccountService) *Handler {

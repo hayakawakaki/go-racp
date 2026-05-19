@@ -5,9 +5,9 @@ import (
 	"log/slog"
 
 	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
+	actiontokenapp "github.com/hayakawakaki/go-racp/internal/platform/actiontoken/app"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	actiontokenapp "github.com/hayakawakaki/go-racp/internal/actiontoken/app"
 	"github.com/hayakawakaki/go-racp/internal/infra/mailer"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
