@@ -4,10 +4,10 @@ import (
 	"fmt"
 
 	"github.com/hayakawakaki/go-racp/internal/httpx"
-	itemapp "github.com/hayakawakaki/go-racp/internal/item/app"
+	"github.com/hayakawakaki/go-racp/internal/features/item/app"
 )
 
-templ reloadSuccess(status itemapp.ServiceStatus) {
+templ reloadSuccess(status app.ServiceStatus) {
 	<div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-900">
 		<p class="font-medium">Database reloaded.</p>
 		<p class="mt-1 text-emerald-800">

@@ -3,7 +3,7 @@ package app
 import (
 	"testing"
 
-	"github.com/hayakawakaki/go-racp/internal/item/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/item/domain"
 )
 
 func TestToDTO_NilItemReturnsZeroValue(t *testing.T) {

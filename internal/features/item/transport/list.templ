@@ -5,12 +5,12 @@ import (
 	"net/url"
 
 	"github.com/hayakawakaki/go-racp/internal/httpx"
-	itemapp "github.com/hayakawakaki/go-racp/internal/item/app"
-	"github.com/hayakawakaki/go-racp/internal/item/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/item/app"
+	"github.com/hayakawakaki/go-racp/internal/features/item/domain"
 )
 
 type ListState struct {
-	Page    itemapp.ItemPage
+	Page    app.ItemPage
 	Query   string
 	Type    string
 	BaseURL string

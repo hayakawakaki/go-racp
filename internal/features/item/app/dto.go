@@ -1,7 +1,7 @@
 package app
 
 import (
-	"github.com/hayakawakaki/go-racp/internal/item/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/item/domain"
 )
 
 const DefaultPerPage = 20

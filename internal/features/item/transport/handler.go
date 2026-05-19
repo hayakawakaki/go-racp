@@ -5,9 +5,9 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/hayakawakaki/go-racp/internal/features/item/app"
+	"github.com/hayakawakaki/go-racp/internal/features/item/domain"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
-	itemapp "github.com/hayakawakaki/go-racp/internal/item/app"
-	"github.com/hayakawakaki/go-racp/internal/item/domain"
 	mobdomain "github.com/hayakawakaki/go-racp/internal/mob/domain"
 	"github.com/hayakawakaki/go-racp/internal/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
@@ -15,9 +15,9 @@ import (
 
 type itemService interface {
 	Get(ctx context.Context, id int) (*domain.Item, error)
-	List(ctx context.Context, query itemapp.ListQuery) (itemapp.ItemPage, error)
+	List(ctx context.Context, query app.ListQuery) (app.ItemPage, error)
 	Reload(ctx context.Context) error
-	Status() itemapp.ServiceStatus
+	Status() app.ServiceStatus
 }
 
 type dropLookup interface {

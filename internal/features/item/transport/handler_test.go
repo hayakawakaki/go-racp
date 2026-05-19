@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	itemapp "github.com/hayakawakaki/go-racp/internal/item/app"
-	"github.com/hayakawakaki/go-racp/internal/item/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/item/app"
+	"github.com/hayakawakaki/go-racp/internal/features/item/domain"
 	mobdomain "github.com/hayakawakaki/go-racp/internal/mob/domain"
 	"github.com/hayakawakaki/go-racp/internal/refdata"
 	"github.com/hayakawakaki/go-racp/server/config"
@@ -26,9 +26,9 @@ type fakeItemService struct {
 	getErr      error
 	listErr     error
 	reloadErr   error
-	listResp    itemapp.ItemPage
-	gotListArg  itemapp.ListQuery
-	statusResp  itemapp.ServiceStatus
+	listResp    app.ItemPage
+	gotListArg  app.ListQuery
+	statusResp  app.ServiceStatus
 	reloadCalls int
 }
 
@@ -48,10 +48,10 @@ func (s *fakeItemService) Get(_ context.Context, id int) (*domain.Item, error) {
 	return item, nil
 }
 
-func (s *fakeItemService) List(_ context.Context, query itemapp.ListQuery) (itemapp.ItemPage, error) {
+func (s *fakeItemService) List(_ context.Context, query app.ListQuery) (app.ItemPage, error) {
 	s.gotListArg = query
 	if s.listErr != nil {
-		return itemapp.ItemPage{}, s.listErr
+		return app.ItemPage{}, s.listErr
 	}
 
 	return s.listResp, nil
@@ -63,7 +63,7 @@ func (s *fakeItemService) Reload(_ context.Context) error {
 	return s.reloadErr
 }
 
-func (s *fakeItemService) Status() itemapp.ServiceStatus { return s.statusResp }
+func (s *fakeItemService) Status() app.ServiceStatus { return s.statusResp }
 
 type fakeDropLookup struct {
 	byAegis map[string][]mobdomain.DropOf
@@ -121,8 +121,8 @@ func TestHandler_ShowList_RendersResults(t *testing.T) {
 
 	item := &domain.Item{ID: 501, AegisName: "Red_Potion", ClientName: "Red Potion", Type: domain.ItemTypeHealing, Image: "red_potion"}
 	svc := newFakeItemService()
-	svc.listResp = itemapp.ItemPage{
-		Items: []*domain.Item{item}, Total: 1, Page: 1, PerPage: itemapp.DefaultPerPage, TotalPages: 1,
+	svc.listResp = app.ItemPage{
+		Items: []*domain.Item{item}, Total: 1, Page: 1, PerPage: app.DefaultPerPage, TotalPages: 1,
 	}
 	h := newTestHandler(svc)
 
@@ -170,25 +170,25 @@ func TestHandler_ShowList_ParsesQueryParameters(t *testing.T) {
 			wantPage:    1,
 			wantQuery:   "",
 			wantType:    domain.ItemTypeUnknown,
-			wantPerPage: itemapp.DefaultPerPage,
+			wantPerPage: app.DefaultPerPage,
 		},
 		{
 			name:        "page param",
 			url:         "/items?page=3",
 			wantPage:    3,
-			wantPerPage: itemapp.DefaultPerPage,
+			wantPerPage: app.DefaultPerPage,
 		},
 		{
 			name:        "negative page falls back",
 			url:         "/items?page=-5",
 			wantPage:    1,
-			wantPerPage: itemapp.DefaultPerPage,
+			wantPerPage: app.DefaultPerPage,
 		},
 		{
 			name:        "non-numeric page falls back",
 			url:         "/items?page=abc",
 			wantPage:    1,
-			wantPerPage: itemapp.DefaultPerPage,
+			wantPerPage: app.DefaultPerPage,
 		},
 		{
 			name:        "query and type",
@@ -196,14 +196,14 @@ func TestHandler_ShowList_ParsesQueryParameters(t *testing.T) {
 			wantPage:    1,
 			wantQuery:   "red",
 			wantType:    domain.ItemTypeHealing,
-			wantPerPage: itemapp.DefaultPerPage,
+			wantPerPage: app.DefaultPerPage,
 		},
 		{
 			name:        "unknown type is ignored",
 			url:         "/items?type=Mystery",
 			wantPage:    1,
 			wantType:    domain.ItemTypeUnknown,
-			wantPerPage: itemapp.DefaultPerPage,
+			wantPerPage: app.DefaultPerPage,
 		},
 	}
 
@@ -525,7 +525,7 @@ func TestHandler_APIDetail_Success(t *testing.T) {
 		t.Errorf("Content-Type = %q", got)
 	}
 
-	var got itemapp.ItemDTO
+	var got app.ItemDTO
 	if err := json.Unmarshal(rr.Body.Bytes(), &got); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
@@ -538,7 +538,7 @@ func TestHandler_DoReload_Success(t *testing.T) {
 	t.Parallel()
 
 	svc := newFakeItemService()
-	svc.statusResp = itemapp.ServiceStatus{ItemsLoaded: 7, LastReload: time.Now().Format(time.RFC3339)}
+	svc.statusResp = app.ServiceStatus{ItemsLoaded: 7, LastReload: time.Now().Format(time.RFC3339)}
 	h := newTestHandler(svc)
 
 	rr := httptest.NewRecorder()

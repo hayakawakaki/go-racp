@@ -4,15 +4,15 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/hayakawakaki/go-racp/internal/features/item/app"
+	"github.com/hayakawakaki/go-racp/internal/features/item/domain"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
-	itemapp "github.com/hayakawakaki/go-racp/internal/item/app"
-	"github.com/hayakawakaki/go-racp/internal/item/domain"
 )
 
 func (h *Handler) showList(w http.ResponseWriter, r *http.Request) {
-	query := itemapp.ListQuery{
+	query := app.ListQuery{
 		Page:    httpx.ParsePositiveInt(r.URL.Query().Get("page"), 1),
-		PerPage: itemapp.DefaultPerPage,
+		PerPage: app.DefaultPerPage,
 		Query:   r.URL.Query().Get("q"),
 	}
 	typeName := r.URL.Query().Get("type")

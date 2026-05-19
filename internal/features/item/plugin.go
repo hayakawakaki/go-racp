@@ -6,10 +6,10 @@ import (
 	"slices"
 	"sync"
 
-	platinfra "github.com/hayakawakaki/go-racp/internal/infra"
-	itemapp "github.com/hayakawakaki/go-racp/internal/item/app"
-	"github.com/hayakawakaki/go-racp/internal/item/domain"
-	itemtransport "github.com/hayakawakaki/go-racp/internal/item/transport"
+	"github.com/hayakawakaki/go-racp/internal/features/item/app"
+	"github.com/hayakawakaki/go-racp/internal/features/item/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/item/transport"
+	coreinfra "github.com/hayakawakaki/go-racp/internal/infra"
 	"github.com/hayakawakaki/go-racp/internal/mob"
 	"github.com/hayakawakaki/go-racp/internal/plugin"
 	"github.com/hayakawakaki/go-racp/internal/refdata"
@@ -20,17 +20,17 @@ const itemCacheFileName = "item-snapshot.gob"
 
 var (
 	svcOnce     sync.Once
-	svcInstance *itemapp.Service
+	svcInstance *app.Service
 )
 
 func init() {
 	plugin.Register(plugin.Plugin{Name: "item", Mount: mount})
 }
 
-func mount(reg *routes.Registry, mux *http.ServeMux, in *platinfra.Infra) {
+func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 	service := BuildService(in)
 	mob.SetItemLookup(service)
-	handler := itemtransport.NewHandler(service, itemtransport.HandlerConfig{
+	handler := transport.NewHandler(service, transport.HandlerConfig{
 		Logger:     in.Logger,
 		General:    in.Config.App.General,
 		DropLookup: mob.BuildService(in),
@@ -39,11 +39,11 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *platinfra.Infra) {
 	startDevWatcher(in, service)
 }
 
-func BuildService(in *platinfra.Infra) *itemapp.Service {
+func BuildService(in *coreinfra.Infra) *app.Service {
 	svcOnce.Do(func() {
 		sources := buildSources(in)
 		loader := func() (*domain.Snapshot, error) {
-			return itemapp.ParseSources(sources)
+			return app.ParseSources(sources)
 		}
 		snap, err := loader()
 		if err != nil {
@@ -56,21 +56,21 @@ func BuildService(in *platinfra.Infra) *itemapp.Service {
 			in.Logger.Info("item: snapshot loaded", "items", snap.SourceCount)
 		}
 
-		svcInstance = itemapp.NewServiceWithSnapshot(snap, loader)
+		svcInstance = app.NewServiceWithSnapshot(snap, loader)
 	})
 
 	return svcInstance
 }
 
-func buildSources(in *platinfra.Infra) itemapp.Sources {
+func buildSources(in *coreinfra.Infra) app.Sources {
 	cfg := in.Config.App.ItemDB
-	sources := itemapp.Sources{
+	sources := app.Sources{
 		Logger: in.Logger,
 		YAML:   cfg.YAML,
 		Lua:    cfg.Lua,
 	}
-	if dir := platinfra.DevCacheDir(in.Config.Env.Mode, in.Logger); dir != "" {
-		sources.Cache = &itemapp.ItemCache{
+	if dir := coreinfra.DevCacheDir(in.Config.Env.Mode, in.Logger); dir != "" {
+		sources.Cache = &app.ItemCache{
 			Logger:   in.Logger,
 			Dir:      dir,
 			Filename: itemCacheFileName,
@@ -80,11 +80,11 @@ func buildSources(in *platinfra.Infra) itemapp.Sources {
 	return sources
 }
 
-func startDevWatcher(in *platinfra.Infra, service *itemapp.Service) {
+func startDevWatcher(in *coreinfra.Infra, service *app.Service) {
 	if in.Config.Env.Mode != "development" {
 		return
 	}
-	yamlPaths, luaPaths, err := itemapp.ResolveSourcePaths(buildSources(in))
+	yamlPaths, luaPaths, err := app.ResolveSourcePaths(buildSources(in))
 	if err != nil {
 		in.Logger.Warn("item: dev watcher disabled, cannot resolve sources", "err", err)
 		return

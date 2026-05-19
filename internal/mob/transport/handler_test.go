@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	itemdomain "github.com/hayakawakaki/go-racp/internal/item/domain"
+	itemdomain "github.com/hayakawakaki/go-racp/internal/features/item/domain"
 	mobapp "github.com/hayakawakaki/go-racp/internal/mob/app"
 	"github.com/hayakawakaki/go-racp/internal/mob/domain"
 	"github.com/hayakawakaki/go-racp/internal/refdata"
