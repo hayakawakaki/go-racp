@@ -11,7 +11,7 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"fmt"
 
-	admintransport "github.com/hayakawakaki/go-racp/internal/admin/transport"
+	admintransport "github.com/hayakawakaki/go-racp/internal/features/admin/transport"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 )
 

@@ -3,7 +3,7 @@ package admin
 import (
 	"net/http"
 
-	"github.com/hayakawakaki/go-racp/internal/admin/transport"
+	"github.com/hayakawakaki/go-racp/internal/features/admin/transport"
 	"github.com/hayakawakaki/go-racp/internal/features/item"
 	"github.com/hayakawakaki/go-racp/internal/features/mob"
 	coreinfra "github.com/hayakawakaki/go-racp/internal/infra"
