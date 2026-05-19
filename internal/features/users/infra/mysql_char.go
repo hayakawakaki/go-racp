@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/hayakawakaki/go-racp/internal/users/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/users/domain"
 )
 
 type CharRepository struct {

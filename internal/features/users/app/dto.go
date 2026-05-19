@@ -1,8 +1,8 @@
 package app
 
 import (
-	"github.com/hayakawakaki/go-racp/internal/users/domain"
-	"github.com/hayakawakaki/go-racp/internal/users/infra"
+	domain2 "github.com/hayakawakaki/go-racp/internal/features/users/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/users/infra"
 )
 
 type ListQuery = infra.ListQuery
@@ -10,9 +10,9 @@ type ListQuery = infra.ListQuery
 type UserPage = infra.UserPage
 
 type UserDetail struct {
-	User       *domain.User
-	Characters []domain.Character
-	Recent     []domain.Action
+	User       *domain2.User
+	Characters []domain2.Character
+	Recent     []domain2.Action
 }
 
 type BanCommand struct {

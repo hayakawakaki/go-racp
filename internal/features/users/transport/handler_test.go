@@ -12,10 +12,10 @@ import (
 
 	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
+	"github.com/hayakawakaki/go-racp/internal/features/users/app"
+	"github.com/hayakawakaki/go-racp/internal/features/users/domain"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 	"github.com/hayakawakaki/go-racp/internal/routes"
-	"github.com/hayakawakaki/go-racp/internal/users/app"
-	usersdomain "github.com/hayakawakaki/go-racp/internal/users/domain"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 
@@ -42,7 +42,7 @@ func (s *stubService) Get(ctx context.Context, id int) (app.UserDetail, error) {
 	if s.getFn != nil {
 		return s.getFn(ctx, id)
 	}
-	return app.UserDetail{}, usersdomain.ErrNotFound
+	return app.UserDetail{}, domain.ErrNotFound
 }
 func (s *stubService) Ban(ctx context.Context, cmd app.BanCommand) (app.UserDetail, error) {
 	if s.banFn != nil {
@@ -117,7 +117,7 @@ func TestHandler_ShowList_RendersUsernames(t *testing.T) {
 	svc := &stubService{
 		listFn: func(_ context.Context, _ app.ListQuery) (app.UserPage, error) {
 			return app.UserPage{
-				Users: []usersdomain.User{
+				Users: []domain.User{
 					{ID: 7, Username: "kaki", Email: "kaki@example.com"},
 					{ID: 8, Username: "crazyarashi", Email: "crazy@example.com"},
 				},
@@ -174,7 +174,7 @@ func TestHandler_ShowList_HTMXFragment(t *testing.T) {
 	t.Parallel()
 	svc := &stubService{
 		listFn: func(_ context.Context, _ app.ListQuery) (app.UserPage, error) {
-			return app.UserPage{Users: []usersdomain.User{{ID: 7, Username: "kaki"}}, Total: 1, Page: 1, PerPage: 20, TotalPages: 1}, nil
+			return app.UserPage{Users: []domain.User{{ID: 7, Username: "kaki"}}, Total: 1, Page: 1, PerPage: 20, TotalPages: 1}, nil
 		},
 	}
 	h := NewHandler(svc, HandlerConfig{
@@ -201,8 +201,8 @@ func TestHandler_ShowDetail_RendersUsernameAndChars(t *testing.T) {
 	svc := &stubService{
 		getFn: func(_ context.Context, _ int) (app.UserDetail, error) {
 			return app.UserDetail{
-				User:       &usersdomain.User{ID: 7, Username: "kaki", Email: "k@example.com"},
-				Characters: []usersdomain.Character{{ID: 1, Name: "Aurora", Class: 1, BaseLevel: 50}},
+				User:       &domain.User{ID: 7, Username: "kaki", Email: "k@example.com"},
+				Characters: []domain.Character{{ID: 1, Name: "Aurora", Class: 1, BaseLevel: 50}},
 			}, nil
 		},
 		allowed: map[int]string{0: "Player", 20: "Moderator"},
@@ -227,7 +227,7 @@ func TestHandler_ShowDetail_NotFound(t *testing.T) {
 	t.Parallel()
 	svc := &stubService{
 		getFn: func(_ context.Context, _ int) (app.UserDetail, error) {
-			return app.UserDetail{}, usersdomain.ErrNotFound
+			return app.UserDetail{}, domain.ErrNotFound
 		},
 	}
 	h := NewHandler(svc, HandlerConfig{
@@ -253,7 +253,7 @@ func TestHandler_DoBan_SwapsDetail(t *testing.T) {
 			if !cmd.Permanent || cmd.Reason != "spam" {
 				t.Errorf("unexpected cmd: %+v", cmd)
 			}
-			return app.UserDetail{User: &usersdomain.User{ID: 7, Username: "kaki", State: 5}}, nil
+			return app.UserDetail{User: &domain.User{ID: 7, Username: "kaki", State: 5}}, nil
 		},
 	}
 	h := NewHandler(svc, HandlerConfig{
@@ -281,7 +281,7 @@ func TestHandler_DoBan_ValidationError(t *testing.T) {
 	t.Parallel()
 	svc := &stubService{
 		banFn: func(_ context.Context, _ app.BanCommand) (app.UserDetail, error) {
-			return app.UserDetail{}, usersdomain.ErrEmptyReason
+			return app.UserDetail{}, domain.ErrEmptyReason
 		},
 	}
 	h := NewHandler(svc, HandlerConfig{
@@ -314,7 +314,7 @@ func TestHandler_DoUnban_Calls(t *testing.T) {
 			if cmd.TargetUserID != 7 {
 				t.Errorf("target = %d", cmd.TargetUserID)
 			}
-			return app.UserDetail{User: &usersdomain.User{ID: 7, Username: "kaki"}}, nil
+			return app.UserDetail{User: &domain.User{ID: 7, Username: "kaki"}}, nil
 		},
 	}
 	h := NewHandler(svc, HandlerConfig{
@@ -347,7 +347,7 @@ func TestHandler_DoSetRole_Calls(t *testing.T) {
 			if cmd.NewGroupID != 20 {
 				t.Errorf("group = %d", cmd.NewGroupID)
 			}
-			return app.UserDetail{User: &usersdomain.User{ID: 7, Username: "kaki", GroupID: 20}}, nil
+			return app.UserDetail{User: &domain.User{ID: 7, Username: "kaki", GroupID: 20}}, nil
 		},
 		allowed: map[int]string{0: "Player", 20: "Moderator"},
 	}
@@ -391,7 +391,7 @@ func TestTierBadge_LabelsForEachTier(t *testing.T) {
 			t.Parallel()
 			w := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
-			user := &usersdomain.User{State: tc.state, UnbanTime: tc.unban}
+			user := &domain.User{State: tc.state, UnbanTime: tc.unban}
 			if err := tierBadge(user, now).Render(req.Context(), w); err != nil {
 				t.Fatalf("render: %v", err)
 			}
@@ -465,7 +465,7 @@ func TestRoleNameFor(t *testing.T) {
 	}{
 		{name: "known player role", groupID: 0, want: "Player"},
 		{name: "known moderator role", groupID: 20, want: "Moderator"},
-		{name: "admin group resolves to Admin", groupID: usersdomain.AdminGroupID, want: "Admin"},
+		{name: "admin group resolves to Admin", groupID: domain.AdminGroupID, want: "Admin"},
 		{name: "unknown group falls back", groupID: 77, want: "group_77"},
 	}
 

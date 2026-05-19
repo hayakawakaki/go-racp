@@ -12,7 +12,7 @@ import (
 	"time"
 
 	accapp "github.com/hayakawakaki/go-racp/internal/features/account/app"
-	"github.com/hayakawakaki/go-racp/internal/users/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/users/domain"
 )
 
 func tierBadge(user *domain.User, now time.Time) templ.Component {

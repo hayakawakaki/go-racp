@@ -8,32 +8,32 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hayakawakaki/go-racp/internal/users/domain"
+	domain2 "github.com/hayakawakaki/go-racp/internal/features/users/domain"
 )
 
 type fakeUserRepo struct {
-	users  map[int]*domain.User
+	users  map[int]*domain2.User
 	getErr error
 }
 
 func newFakeUserRepo() *fakeUserRepo {
-	return &fakeUserRepo{users: map[int]*domain.User{}}
+	return &fakeUserRepo{users: map[int]*domain2.User{}}
 }
 
-func (r *fakeUserRepo) GetByID(_ context.Context, id int) (*domain.User, error) {
+func (r *fakeUserRepo) GetByID(_ context.Context, id int) (*domain2.User, error) {
 	if r.getErr != nil {
 		return nil, r.getErr
 	}
 	u, ok := r.users[id]
 	if !ok {
-		return nil, domain.ErrNotFound
+		return nil, domain2.ErrNotFound
 	}
 
 	return u, nil
 }
 
 func (r *fakeUserRepo) List(_ context.Context, _ ListQuery) (UserPage, error) {
-	users := make([]domain.User, 0, len(r.users))
+	users := make([]domain2.User, 0, len(r.users))
 	for _, u := range r.users {
 		users = append(users, *u)
 	}
@@ -44,7 +44,7 @@ func (r *fakeUserRepo) List(_ context.Context, _ ListQuery) (UserPage, error) {
 func (r *fakeUserRepo) UpdateBan(_ context.Context, id, state int, unbanTime uint32) error {
 	u, ok := r.users[id]
 	if !ok {
-		return domain.ErrNotFound
+		return domain2.ErrNotFound
 	}
 	u.State = state
 	if unbanTime == 0 {
@@ -59,7 +59,7 @@ func (r *fakeUserRepo) UpdateBan(_ context.Context, id, state int, unbanTime uin
 func (r *fakeUserRepo) UpdateGroup(_ context.Context, id, groupID int) error {
 	u, ok := r.users[id]
 	if !ok {
-		return domain.ErrNotFound
+		return domain2.ErrNotFound
 	}
 	u.GroupID = groupID
 
@@ -67,30 +67,30 @@ func (r *fakeUserRepo) UpdateGroup(_ context.Context, id, groupID int) error {
 }
 
 type fakeCharRepo struct {
-	chars map[int][]domain.Character
+	chars map[int][]domain2.Character
 }
 
-func (r *fakeCharRepo) ListByAccount(_ context.Context, accountID int) ([]domain.Character, error) {
+func (r *fakeCharRepo) ListByAccount(_ context.Context, accountID int) ([]domain2.Character, error) {
 	return r.chars[accountID], nil
 }
 
 type fakeActionRepo struct {
 	recordErr error
-	rows      []domain.Action
+	rows      []domain2.Action
 }
 
-func (r *fakeActionRepo) Record(_ context.Context, a domain.Action) error {
+func (r *fakeActionRepo) Record(_ context.Context, a domain2.Action) error {
 	if r.recordErr != nil {
 		return r.recordErr
 	}
 	a.At = time.Now()
-	r.rows = append([]domain.Action{a}, r.rows...)
+	r.rows = append([]domain2.Action{a}, r.rows...)
 
 	return nil
 }
 
-func (r *fakeActionRepo) ListByTarget(_ context.Context, targetID, limit int) ([]domain.Action, error) {
-	out := make([]domain.Action, 0, len(r.rows))
+func (r *fakeActionRepo) ListByTarget(_ context.Context, targetID, limit int) ([]domain2.Action, error) {
+	out := make([]domain2.Action, 0, len(r.rows))
 	for _, a := range r.rows {
 		if a.TargetUserID == targetID {
 			out = append(out, a)
@@ -106,7 +106,7 @@ func (r *fakeActionRepo) ListByTarget(_ context.Context, targetID, limit int) ([
 func newTestService(t *testing.T) (*Service, *fakeUserRepo, *fakeCharRepo, *fakeActionRepo) {
 	t.Helper()
 	users := newFakeUserRepo()
-	chars := &fakeCharRepo{chars: map[int][]domain.Character{}}
+	chars := &fakeCharRepo{chars: map[int][]domain2.Character{}}
 	actions := &fakeActionRepo{}
 	svc := NewService(Sources{
 		Users:        users,
@@ -122,9 +122,9 @@ func newTestService(t *testing.T) (*Service, *fakeUserRepo, *fakeCharRepo, *fake
 func TestService_Get_BundlesUserCharsAndActions(t *testing.T) {
 	t.Parallel()
 	svc, users, chars, actions := newTestService(t)
-	users.users[7] = &domain.User{ID: 7, Username: "kaki"}
-	chars.chars[7] = []domain.Character{{ID: 1, Name: "Kaki1"}}
-	_ = actions.Record(context.Background(), domain.Action{ActorUserID: 1, TargetUserID: 7, Kind: domain.ActionBan})
+	users.users[7] = &domain2.User{ID: 7, Username: "kaki"}
+	chars.chars[7] = []domain2.Character{{ID: 1, Name: "Kaki1"}}
+	_ = actions.Record(context.Background(), domain2.Action{ActorUserID: 1, TargetUserID: 7, Kind: domain2.ActionBan})
 
 	detail, err := svc.Get(context.Background(), 7)
 	if err != nil {
@@ -139,7 +139,7 @@ func TestService_Get_NotFound(t *testing.T) {
 	t.Parallel()
 	svc, _, _, _ := newTestService(t)
 	_, err := svc.Get(context.Background(), 9999)
-	if !errors.Is(err, domain.ErrNotFound) {
+	if !errors.Is(err, domain2.ErrNotFound) {
 		t.Errorf("err = %v, want ErrNotFound", err)
 	}
 }
@@ -147,8 +147,8 @@ func TestService_Get_NotFound(t *testing.T) {
 func TestService_List_ReturnsPage(t *testing.T) {
 	t.Parallel()
 	svc, users, _, _ := newTestService(t)
-	users.users[1] = &domain.User{ID: 1, Username: "kaki"}
-	users.users[2] = &domain.User{ID: 2, Username: "crazyarashi"}
+	users.users[1] = &domain2.User{ID: 1, Username: "kaki"}
+	users.users[2] = &domain2.User{ID: 2, Username: "crazyarashi"}
 
 	page, err := svc.List(context.Background(), ListQuery{Page: 1, PerPage: 20})
 	if err != nil {
@@ -162,7 +162,7 @@ func TestService_List_ReturnsPage(t *testing.T) {
 func TestService_Ban_CustomTemp(t *testing.T) {
 	t.Parallel()
 	svc, users, _, actions := newTestService(t)
-	users.users[7] = &domain.User{ID: 7, Username: "kaki"}
+	users.users[7] = &domain2.User{ID: 7, Username: "kaki"}
 
 	detail, err := svc.Ban(context.Background(), BanCommand{
 		ActorUserID:  1,
@@ -176,7 +176,7 @@ func TestService_Ban_CustomTemp(t *testing.T) {
 	if detail.User.UnbanTime.IsZero() {
 		t.Errorf("UnbanTime should be set for temp ban")
 	}
-	if len(actions.rows) != 1 || actions.rows[0].Kind != domain.ActionBan {
+	if len(actions.rows) != 1 || actions.rows[0].Kind != domain2.ActionBan {
 		t.Errorf("audit not recorded: %+v", actions.rows)
 	}
 }
@@ -184,7 +184,7 @@ func TestService_Ban_CustomTemp(t *testing.T) {
 func TestService_Ban_Permanent(t *testing.T) {
 	t.Parallel()
 	svc, users, _, _ := newTestService(t)
-	users.users[7] = &domain.User{ID: 7, Username: "kaki"}
+	users.users[7] = &domain2.User{ID: 7, Username: "kaki"}
 
 	_, err := svc.Ban(context.Background(), BanCommand{
 		ActorUserID:  1,
@@ -203,7 +203,7 @@ func TestService_Ban_Permanent(t *testing.T) {
 func TestService_Ban_Custom(t *testing.T) {
 	t.Parallel()
 	svc, users, _, _ := newTestService(t)
-	users.users[7] = &domain.User{ID: 7, Username: "kaki"}
+	users.users[7] = &domain2.User{ID: 7, Username: "kaki"}
 
 	_, err := svc.Ban(context.Background(), BanCommand{
 		ActorUserID:  1,
@@ -222,7 +222,7 @@ func TestService_Ban_Custom(t *testing.T) {
 func TestService_Ban_RejectsSelf(t *testing.T) {
 	t.Parallel()
 	svc, users, _, _ := newTestService(t)
-	users.users[7] = &domain.User{ID: 7, Username: "kaki"}
+	users.users[7] = &domain2.User{ID: 7, Username: "kaki"}
 
 	_, err := svc.Ban(context.Background(), BanCommand{
 		ActorUserID:  7,
@@ -230,7 +230,7 @@ func TestService_Ban_RejectsSelf(t *testing.T) {
 		Permanent:    true,
 		Reason:       "x",
 	})
-	if !errors.Is(err, domain.ErrSelfAction) {
+	if !errors.Is(err, domain2.ErrSelfAction) {
 		t.Errorf("err = %v, want ErrSelfAction", err)
 	}
 }
@@ -238,7 +238,7 @@ func TestService_Ban_RejectsSelf(t *testing.T) {
 func TestService_Ban_RejectsAdminTarget(t *testing.T) {
 	t.Parallel()
 	svc, users, _, _ := newTestService(t)
-	users.users[7] = &domain.User{ID: 7, Username: "kaki", GroupID: 99}
+	users.users[7] = &domain2.User{ID: 7, Username: "kaki", GroupID: 99}
 
 	_, err := svc.Ban(context.Background(), BanCommand{
 		ActorUserID:  1,
@@ -246,7 +246,7 @@ func TestService_Ban_RejectsAdminTarget(t *testing.T) {
 		Permanent:    true,
 		Reason:       "x",
 	})
-	if !errors.Is(err, domain.ErrTargetIsAdmin) {
+	if !errors.Is(err, domain2.ErrTargetIsAdmin) {
 		t.Errorf("err = %v, want ErrTargetIsAdmin", err)
 	}
 }
@@ -254,7 +254,7 @@ func TestService_Ban_RejectsAdminTarget(t *testing.T) {
 func TestService_Ban_RejectsEmptyReason(t *testing.T) {
 	t.Parallel()
 	svc, users, _, _ := newTestService(t)
-	users.users[7] = &domain.User{ID: 7, Username: "kaki"}
+	users.users[7] = &domain2.User{ID: 7, Username: "kaki"}
 
 	_, err := svc.Ban(context.Background(), BanCommand{
 		ActorUserID:  1,
@@ -262,7 +262,7 @@ func TestService_Ban_RejectsEmptyReason(t *testing.T) {
 		Permanent:    true,
 		Reason:       "   ",
 	})
-	if !errors.Is(err, domain.ErrEmptyReason) {
+	if !errors.Is(err, domain2.ErrEmptyReason) {
 		t.Errorf("err = %v, want ErrEmptyReason", err)
 	}
 }
@@ -270,7 +270,7 @@ func TestService_Ban_RejectsEmptyReason(t *testing.T) {
 func TestService_Unban_ClearsState(t *testing.T) {
 	t.Parallel()
 	svc, users, _, _ := newTestService(t)
-	users.users[7] = &domain.User{ID: 7, Username: "kaki", State: 5}
+	users.users[7] = &domain2.User{ID: 7, Username: "kaki", State: 5}
 
 	detail, err := svc.Unban(context.Background(), UnbanCommand{
 		ActorUserID:  1,
@@ -287,13 +287,13 @@ func TestService_Unban_ClearsState(t *testing.T) {
 func TestService_Unban_NotBanned(t *testing.T) {
 	t.Parallel()
 	svc, users, _, _ := newTestService(t)
-	users.users[7] = &domain.User{ID: 7, Username: "kaki"}
+	users.users[7] = &domain2.User{ID: 7, Username: "kaki"}
 
 	_, err := svc.Unban(context.Background(), UnbanCommand{
 		ActorUserID:  1,
 		TargetUserID: 7,
 	})
-	if !errors.Is(err, domain.ErrInvalidState) {
+	if !errors.Is(err, domain2.ErrInvalidState) {
 		t.Errorf("err = %v, want ErrInvalidState", err)
 	}
 }
@@ -301,10 +301,10 @@ func TestService_Unban_NotBanned(t *testing.T) {
 func TestService_Unban_RejectsAdminTarget(t *testing.T) {
 	t.Parallel()
 	svc, users, _, _ := newTestService(t)
-	users.users[7] = &domain.User{ID: 7, Username: "kaki", State: 5, GroupID: 99}
+	users.users[7] = &domain2.User{ID: 7, Username: "kaki", State: 5, GroupID: 99}
 
 	_, err := svc.Unban(context.Background(), UnbanCommand{ActorUserID: 1, TargetUserID: 7})
-	if !errors.Is(err, domain.ErrTargetIsAdmin) {
+	if !errors.Is(err, domain2.ErrTargetIsAdmin) {
 		t.Errorf("err = %v, want ErrTargetIsAdmin", err)
 	}
 }
@@ -312,7 +312,7 @@ func TestService_Unban_RejectsAdminTarget(t *testing.T) {
 func TestService_SetRole_AllowedRole(t *testing.T) {
 	t.Parallel()
 	svc, users, _, _ := newTestService(t)
-	users.users[7] = &domain.User{ID: 7, Username: "kaki", GroupID: 0}
+	users.users[7] = &domain2.User{ID: 7, Username: "kaki", GroupID: 0}
 
 	detail, err := svc.SetRole(context.Background(), SetRoleCommand{
 		ActorUserID:  1,
@@ -330,14 +330,14 @@ func TestService_SetRole_AllowedRole(t *testing.T) {
 func TestService_SetRole_DisallowedRole(t *testing.T) {
 	t.Parallel()
 	svc, users, _, _ := newTestService(t)
-	users.users[7] = &domain.User{ID: 7, Username: "kaki"}
+	users.users[7] = &domain2.User{ID: 7, Username: "kaki"}
 
 	_, err := svc.SetRole(context.Background(), SetRoleCommand{
 		ActorUserID:  1,
 		TargetUserID: 7,
 		NewGroupID:   99,
 	})
-	if !errors.Is(err, domain.ErrInvalidRole) {
+	if !errors.Is(err, domain2.ErrInvalidRole) {
 		t.Errorf("err = %v, want ErrInvalidRole", err)
 	}
 }
@@ -345,14 +345,14 @@ func TestService_SetRole_DisallowedRole(t *testing.T) {
 func TestService_SetRole_NoOpRejected(t *testing.T) {
 	t.Parallel()
 	svc, users, _, _ := newTestService(t)
-	users.users[7] = &domain.User{ID: 7, Username: "kaki", GroupID: 0}
+	users.users[7] = &domain2.User{ID: 7, Username: "kaki", GroupID: 0}
 
 	_, err := svc.SetRole(context.Background(), SetRoleCommand{
 		ActorUserID:  1,
 		TargetUserID: 7,
 		NewGroupID:   0,
 	})
-	if !errors.Is(err, domain.ErrInvalidState) {
+	if !errors.Is(err, domain2.ErrInvalidState) {
 		t.Errorf("err = %v, want ErrInvalidState", err)
 	}
 }
@@ -360,7 +360,7 @@ func TestService_SetRole_NoOpRejected(t *testing.T) {
 func TestService_Ban_AuditFailureDoesNotRollBack(t *testing.T) {
 	t.Parallel()
 	svc, users, _, actions := newTestService(t)
-	users.users[7] = &domain.User{ID: 7, Username: "kaki"}
+	users.users[7] = &domain2.User{ID: 7, Username: "kaki"}
 	actions.recordErr = errors.New("postgres down")
 
 	detail, err := svc.Ban(context.Background(), BanCommand{

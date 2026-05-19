@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
+	"github.com/hayakawakaki/go-racp/internal/features/users/app"
+	"github.com/hayakawakaki/go-racp/internal/features/users/domain"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
-	"github.com/hayakawakaki/go-racp/internal/users/app"
-	"github.com/hayakawakaki/go-racp/internal/users/domain"
 )
 
 const maxUserActionFormBytes = 4 << 10

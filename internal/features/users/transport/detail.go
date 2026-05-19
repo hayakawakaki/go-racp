@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/hayakawakaki/go-racp/internal/features/users/app"
+	domain2 "github.com/hayakawakaki/go-racp/internal/features/users/domain"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
-	"github.com/hayakawakaki/go-racp/internal/users/app"
-	"github.com/hayakawakaki/go-racp/internal/users/domain"
 )
 
 type roleOption struct {
@@ -32,7 +32,7 @@ func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	detail, err := h.svc.Get(r.Context(), id)
-	if errors.Is(err, domain.ErrNotFound) {
+	if errors.Is(err, domain2.ErrNotFound) {
 		w.WriteHeader(http.StatusNotFound)
 		httpx.RenderHTML(w, r, h.logger, notFoundPage(h.layout(), strconv.Itoa(id)))
 		return
@@ -72,7 +72,7 @@ func roleNameFor(state detailState, groupID int) string {
 			return opt.Name
 		}
 	}
-	if groupID == domain.AdminGroupID {
+	if groupID == domain2.AdminGroupID {
 		return "Admin"
 	}
 

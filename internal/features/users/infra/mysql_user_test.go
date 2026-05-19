@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hayakawakaki/go-racp/internal/features/users/domain"
 	"github.com/hayakawakaki/go-racp/internal/testutil"
-	"github.com/hayakawakaki/go-racp/internal/users/domain"
 )
 
 func setupUserRepo(t *testing.T) *UserRepository {

@@ -4,9 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hayakawakaki/go-racp/internal/features/users/domain"
 	"github.com/jackc/pgx/v5/pgxpool"
-
-	"github.com/hayakawakaki/go-racp/internal/users/domain"
 )
 
 type ActionRepository struct {

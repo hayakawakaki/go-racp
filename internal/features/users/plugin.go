@@ -3,12 +3,12 @@ package users
 import (
 	"net/http"
 
+	usersapp "github.com/hayakawakaki/go-racp/internal/features/users/app"
+	"github.com/hayakawakaki/go-racp/internal/features/users/infra"
+	userstransport "github.com/hayakawakaki/go-racp/internal/features/users/transport"
 	platinfra "github.com/hayakawakaki/go-racp/internal/infra"
 	"github.com/hayakawakaki/go-racp/internal/plugin"
 	"github.com/hayakawakaki/go-racp/internal/routes"
-	usersapp "github.com/hayakawakaki/go-racp/internal/users/app"
-	usersinfra "github.com/hayakawakaki/go-racp/internal/users/infra"
-	userstransport "github.com/hayakawakaki/go-racp/internal/users/transport"
 )
 
 func init() {
@@ -19,9 +19,9 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *platinfra.Infra) {
 	allowed := buildAllowedRoles(in)
 
 	service := usersapp.NewService(usersapp.Sources{
-		Users:        usersinfra.NewUserRepository(in.MainDB),
-		Characters:   usersinfra.NewCharRepository(in.MainDB),
-		Actions:      usersinfra.NewActionRepository(in.DB),
+		Users:        infra.NewUserRepository(in.MainDB),
+		Characters:   infra.NewCharRepository(in.MainDB),
+		Actions:      infra.NewActionRepository(in.DB),
 		AllowedRoles: allowed,
 		Logger:       in.Logger,
 	})

@@ -10,23 +10,23 @@ import (
 	"time"
 
 	accapp "github.com/hayakawakaki/go-racp/internal/features/account/app"
-	"github.com/hayakawakaki/go-racp/internal/users/domain"
+	domain2 "github.com/hayakawakaki/go-racp/internal/features/users/domain"
 )
 
 type UserRepo interface {
-	GetByID(ctx context.Context, id int) (*domain.User, error)
+	GetByID(ctx context.Context, id int) (*domain2.User, error)
 	List(ctx context.Context, q ListQuery) (UserPage, error)
 	UpdateBan(ctx context.Context, id, state int, unbanTime uint32) error
 	UpdateGroup(ctx context.Context, id, groupID int) error
 }
 
 type CharRepo interface {
-	ListByAccount(ctx context.Context, accountID int) ([]domain.Character, error)
+	ListByAccount(ctx context.Context, accountID int) ([]domain2.Character, error)
 }
 
 type ActionRepo interface {
-	Record(ctx context.Context, a domain.Action) error
-	ListByTarget(ctx context.Context, targetID, limit int) ([]domain.Action, error)
+	Record(ctx context.Context, a domain2.Action) error
+	ListByTarget(ctx context.Context, targetID, limit int) ([]domain2.Action, error)
 }
 
 type Sources struct {
@@ -90,16 +90,16 @@ func (s *Service) Get(ctx context.Context, id int) (UserDetail, error) {
 	return UserDetail{User: user, Characters: chars, Recent: recent}, nil
 }
 
-func (s *Service) loadMutableTarget(ctx context.Context, actorID, targetID int) (*domain.User, error) {
+func (s *Service) loadMutableTarget(ctx context.Context, actorID, targetID int) (*domain2.User, error) {
 	if actorID == targetID {
-		return nil, domain.ErrSelfAction
+		return nil, domain2.ErrSelfAction
 	}
 	target, err := s.users.GetByID(ctx, targetID)
 	if err != nil {
 		return nil, fmt.Errorf("loadMutableTarget: %w", err)
 	}
 	if target.IsAdmin() {
-		return nil, domain.ErrTargetIsAdmin
+		return nil, domain2.ErrTargetIsAdmin
 	}
 
 	return target, nil
@@ -108,7 +108,7 @@ func (s *Service) loadMutableTarget(ctx context.Context, actorID, targetID int) 
 func (s *Service) Ban(ctx context.Context, cmd BanCommand) (UserDetail, error) {
 	reason := strings.TrimSpace(cmd.Reason)
 	if reason == "" {
-		return UserDetail{}, fmt.Errorf("app.Service.Ban: %w", domain.ErrEmptyReason)
+		return UserDetail{}, fmt.Errorf("app.Service.Ban: %w", domain2.ErrEmptyReason)
 	}
 
 	target, err := s.loadMutableTarget(ctx, cmd.ActorUserID, cmd.TargetUserID)
@@ -116,11 +116,11 @@ func (s *Service) Ban(ctx context.Context, cmd BanCommand) (UserDetail, error) {
 		return UserDetail{}, fmt.Errorf("app.Service.Ban: %w", err)
 	}
 
-	var dur domain.BanDuration
+	var dur domain2.BanDuration
 	if cmd.Permanent {
-		dur = domain.BanDuration{Permanent: true}
+		dur = domain2.BanDuration{Permanent: true}
 	} else {
-		dur, err = domain.ParseBanDays(cmd.Days)
+		dur, err = domain2.ParseBanDays(cmd.Days)
 		if err != nil {
 			return UserDetail{}, fmt.Errorf("app.Service.Ban duration: %w", err)
 		}
@@ -142,10 +142,10 @@ func (s *Service) Ban(ctx context.Context, cmd BanCommand) (UserDetail, error) {
 		return UserDetail{}, fmt.Errorf("app.Service.Ban update: %w", err)
 	}
 
-	s.recordAudit(ctx, domain.Action{
+	s.recordAudit(ctx, domain2.Action{
 		ActorUserID:  cmd.ActorUserID,
 		TargetUserID: cmd.TargetUserID,
-		Kind:         domain.ActionBan,
+		Kind:         domain2.ActionBan,
 		Reason:       reason,
 		BeforeValue:  fmt.Sprintf("%d,%d", beforeState, beforeUnban),
 		AfterValue:   fmt.Sprintf("%d,%d", newState, newUnban),
@@ -163,7 +163,7 @@ func (s *Service) Unban(ctx context.Context, cmd UnbanCommand) (UserDetail, erro
 	banned := target.State == accapp.StatePermaBanned ||
 		(target.State == accapp.StateActive && !target.UnbanTime.IsZero() && target.UnbanTime.After(time.Now()))
 	if !banned {
-		return UserDetail{}, fmt.Errorf("app.Service.Unban: %w", domain.ErrInvalidState)
+		return UserDetail{}, fmt.Errorf("app.Service.Unban: %w", domain2.ErrInvalidState)
 	}
 
 	beforeState := target.State
@@ -173,10 +173,10 @@ func (s *Service) Unban(ctx context.Context, cmd UnbanCommand) (UserDetail, erro
 		return UserDetail{}, fmt.Errorf("app.Service.Unban update: %w", err)
 	}
 
-	s.recordAudit(ctx, domain.Action{
+	s.recordAudit(ctx, domain2.Action{
 		ActorUserID:  cmd.ActorUserID,
 		TargetUserID: cmd.TargetUserID,
-		Kind:         domain.ActionUnban,
+		Kind:         domain2.ActionUnban,
 		Reason:       strings.TrimSpace(cmd.Reason),
 		BeforeValue:  fmt.Sprintf("%d,%d", beforeState, beforeUnban),
 		AfterValue:   "0,0",
@@ -187,7 +187,7 @@ func (s *Service) Unban(ctx context.Context, cmd UnbanCommand) (UserDetail, erro
 
 func (s *Service) SetRole(ctx context.Context, cmd SetRoleCommand) (UserDetail, error) {
 	if _, ok := s.allowedRoles[cmd.NewGroupID]; !ok {
-		return UserDetail{}, fmt.Errorf("app.Service.SetRole: %w", domain.ErrInvalidRole)
+		return UserDetail{}, fmt.Errorf("app.Service.SetRole: %w", domain2.ErrInvalidRole)
 	}
 
 	target, err := s.loadMutableTarget(ctx, cmd.ActorUserID, cmd.TargetUserID)
@@ -195,7 +195,7 @@ func (s *Service) SetRole(ctx context.Context, cmd SetRoleCommand) (UserDetail, 
 		return UserDetail{}, fmt.Errorf("app.Service.SetRole: %w", err)
 	}
 	if target.GroupID == cmd.NewGroupID {
-		return UserDetail{}, fmt.Errorf("app.Service.SetRole: %w", domain.ErrInvalidState)
+		return UserDetail{}, fmt.Errorf("app.Service.SetRole: %w", domain2.ErrInvalidState)
 	}
 
 	before := target.GroupID
@@ -203,10 +203,10 @@ func (s *Service) SetRole(ctx context.Context, cmd SetRoleCommand) (UserDetail, 
 		return UserDetail{}, fmt.Errorf("app.Service.SetRole update: %w", err)
 	}
 
-	s.recordAudit(ctx, domain.Action{
+	s.recordAudit(ctx, domain2.Action{
 		ActorUserID:  cmd.ActorUserID,
 		TargetUserID: cmd.TargetUserID,
-		Kind:         domain.ActionSetRole,
+		Kind:         domain2.ActionSetRole,
 		Reason:       strings.TrimSpace(cmd.Reason),
 		BeforeValue:  strconv.Itoa(before),
 		AfterValue:   strconv.Itoa(cmd.NewGroupID),
@@ -215,7 +215,7 @@ func (s *Service) SetRole(ctx context.Context, cmd SetRoleCommand) (UserDetail, 
 	return s.Get(ctx, cmd.TargetUserID)
 }
 
-func (s *Service) recordAudit(ctx context.Context, a domain.Action) {
+func (s *Service) recordAudit(ctx context.Context, a domain2.Action) {
 	if err := s.actions.Record(ctx, a); err != nil {
 		s.logger.Error("users: audit insert failed",
 			"action", string(a.Kind),

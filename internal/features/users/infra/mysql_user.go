@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hayakawakaki/go-racp/internal/users/domain"
+	domain2 "github.com/hayakawakaki/go-racp/internal/features/users/domain"
 )
 
 const DefaultPerPage = 20
@@ -21,7 +21,7 @@ type ListQuery struct {
 }
 
 type UserPage struct {
-	Users      []domain.User
+	Users      []domain2.User
 	Total      int
 	Page       int
 	PerPage    int
@@ -36,9 +36,9 @@ func NewUserRepository(client *sql.DB) *UserRepository {
 	return &UserRepository{Client: client}
 }
 
-func (r *UserRepository) GetByID(ctx context.Context, id int) (*domain.User, error) {
+func (r *UserRepository) GetByID(ctx context.Context, id int) (*domain2.User, error) {
 	var (
-		user      domain.User
+		user      domain2.User
 		unbanSecs uint32
 		lastIP    sql.NullString
 		lastLogin sql.NullTime
@@ -47,7 +47,7 @@ func (r *UserRepository) GetByID(ctx context.Context, id int) (*domain.User, err
 		"SELECT account_id, userid, email, group_id, state, unban_time, last_ip, lastlogin FROM login WHERE account_id = ?", id,
 	).Scan(&user.ID, &user.Username, &user.Email, &user.GroupID, &user.State, &unbanSecs, &lastIP, &lastLogin)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, domain.ErrNotFound
+		return nil, domain2.ErrNotFound
 	}
 	if err != nil {
 		return nil, fmt.Errorf("infra.UserRepository.GetByID: %w", err)
@@ -91,10 +91,10 @@ func (r *UserRepository) List(ctx context.Context, q ListQuery) (UserPage, error
 	}
 	defer func() { _ = rows.Close() }()
 
-	users := make([]domain.User, 0, q.PerPage)
+	users := make([]domain2.User, 0, q.PerPage)
 	for rows.Next() {
 		var (
-			u         domain.User
+			u         domain2.User
 			unbanSecs uint32
 			lastIP    sql.NullString
 			lastLogin sql.NullTime
@@ -149,7 +149,7 @@ func (r *UserRepository) UpdateBan(ctx context.Context, id, state int, unbanTime
 		return fmt.Errorf("infra.UserRepository.UpdateBan rows: %w", err)
 	}
 	if rows == 0 {
-		return domain.ErrNotFound
+		return domain2.ErrNotFound
 	}
 
 	return nil
@@ -168,7 +168,7 @@ func (r *UserRepository) UpdateGroup(ctx context.Context, id, groupID int) error
 		return fmt.Errorf("infra.UserRepository.UpdateGroup rows: %w", err)
 	}
 	if rows == 0 {
-		return domain.ErrNotFound
+		return domain2.ErrNotFound
 	}
 
 	return nil
