@@ -5,7 +5,7 @@ import (
 
 	accountapp "github.com/hayakawakaki/go-racp/internal/account/app"
 	accountinfra "github.com/hayakawakaki/go-racp/internal/account/infra"
-	"github.com/hayakawakaki/go-racp/internal/home/transport"
+	"github.com/hayakawakaki/go-racp/internal/features/home/transport"
 	platinfra "github.com/hayakawakaki/go-racp/internal/infra"
 	"github.com/hayakawakaki/go-racp/internal/plugin"
 	"github.com/hayakawakaki/go-racp/internal/routes"
