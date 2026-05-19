@@ -229,7 +229,10 @@ func (r *Repository) Delete(ctx context.Context, id int) error {
 	return nil
 }
 
-const DefaultPerPage = 20
+const (
+	DefaultPerPage = 20
+	MaxPerPage     = 100
+)
 
 type ListQuery struct {
 	Query     string
@@ -249,6 +252,9 @@ type UserPage struct {
 func (r *Repository) List(ctx context.Context, q ListQuery) (UserPage, error) {
 	if q.PerPage <= 0 {
 		q.PerPage = DefaultPerPage
+	}
+	if q.PerPage > MaxPerPage {
+		q.PerPage = MaxPerPage
 	}
 	if q.Page <= 0 {
 		q.Page = 1

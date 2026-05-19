@@ -34,7 +34,7 @@ func TestRepository_CreateAndGet(t *testing.T) {
 	ctx := context.Background()
 
 	suf := randomizeSuffix(t)
-	wantBirthdate, err := time.Parse("2012-01-02", "2008-06-05")
+	wantBirthdate, err := time.Parse("2006-01-02", "2008-06-05")
 	if err != nil {
 		t.Fatalf("parse birthdate: %v", err)
 	}
@@ -60,7 +60,7 @@ func TestRepository_CreateAndGet(t *testing.T) {
 	if got.Username != u.Username || got.Email != u.Email {
 		t.Errorf("mismatch: %+v", got)
 	}
-	if got.Birthdate.Format("2012-01-02") != "2008-06-05" {
+	if got.Birthdate.Format("2006-01-02") != "2008-06-05" {
 		t.Errorf("Birthdate = %v; want 2008-06-05", got.Birthdate)
 	}
 
@@ -95,7 +95,7 @@ func TestRepository_Authenticate(t *testing.T) {
 	ctx := context.Background()
 
 	suf := randomizeSuffix(t)
-	birthdate, _ := time.Parse("2012-01-02", "2008-06-05")
+	birthdate, _ := time.Parse("2006-01-02", "2008-06-05")
 	u := &domain.User{
 		Username:  "racp_test_" + suf,
 		Email:     "racp_test_" + suf + "@example.invalid",
@@ -324,7 +324,7 @@ func TestRepository_VerifyPassword(t *testing.T) {
 	ctx := context.Background()
 
 	suf := randomizeSuffix(t)
-	wantBirthdate, err := time.Parse("2012-01-02", "2008-06-05")
+	wantBirthdate, err := time.Parse("2006-01-02", "2008-06-05")
 	if err != nil {
 		t.Fatalf("parse birthdate: %v", err)
 	}
@@ -356,7 +356,7 @@ func TestRepository_VerifyPassword(t *testing.T) {
 		t.Fatalf("VerifyPassword bad: got true, want false")
 	}
 
-	_, err = repo.VerifyPassword(ctx, 9999999, "anything")
+	_, err = repo.VerifyPassword(ctx, -1, "anything")
 	if !errors.Is(err, domain.ErrUserNotFound) {
 		t.Fatalf("VerifyPassword missing: err = %v, want ErrUserNotFound", err)
 	}
@@ -364,7 +364,7 @@ func TestRepository_VerifyPassword(t *testing.T) {
 
 func createSeedUser(t *testing.T, repo *Repository, username, email string) *domain.User {
 	t.Helper()
-	bd, err := time.Parse("2012-01-02", "2008-06-05")
+	bd, err := time.Parse("2006-01-02", "2008-06-05")
 	if err != nil {
 		t.Fatalf("parse birthdate: %v", err)
 	}
