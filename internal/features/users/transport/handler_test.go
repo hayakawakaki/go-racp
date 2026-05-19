@@ -383,8 +383,8 @@ func TestTierBadge_LabelsForEachTier(t *testing.T) {
 	}{
 		{time.Time{}, "Active", 0},
 		{time.Time{}, "Unverified", 1},
-		{time.Time{}, "Perma Ban", 5},
-		{now.Add(time.Hour), "Temp Ban", 0},
+		{time.Time{}, "Permanent Ban", 5},
+		{now.Add(time.Hour), "Temporary Ban", 0},
 	}
 	for _, tc := range cases {
 		t.Run(tc.expected, func(t *testing.T) {
