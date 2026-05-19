@@ -11,20 +11,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hayakawakaki/go-racp/internal/account/domain"
+	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 
 type stubSession struct {
-	validateFn func(context.Context, string) (*domain.Session, error)
+	validateFn func(context.Context, string) (*accdomain.Session, error)
 }
 
-func (s *stubSession) Validate(ctx context.Context, token string) (*domain.Session, error) {
+func (s *stubSession) Validate(ctx context.Context, token string) (*accdomain.Session, error) {
 	if s.validateFn != nil {
 		return s.validateFn(ctx, token)
 	}
-	return nil, domain.ErrSessionNotFound
+	return nil, accdomain.ErrSessionNotFound
 }
 
 func (s *stubSession) Destroy(_ context.Context, _ string) error {
@@ -34,20 +34,20 @@ func (s *stubSession) Destroy(_ context.Context, _ string) error {
 func (s *stubSession) TTL() time.Duration { return time.Hour }
 
 type stubUsers struct {
-	getFn func(context.Context, int) (*domain.User, error)
+	getFn func(context.Context, int) (*accdomain.User, error)
 }
 
-func (s *stubUsers) GetByID(ctx context.Context, id int) (*domain.User, error) {
+func (s *stubUsers) GetByID(ctx context.Context, id int) (*accdomain.User, error) {
 	if s.getFn != nil {
 		return s.getFn(ctx, id)
 	}
-	return &domain.User{ID: id}, nil
+	return &accdomain.User{ID: id}, nil
 }
 
 func newRegistry(t *testing.T, cfg config.AccessConfig) (*Registry, *bytes.Buffer) {
 	t.Helper()
 	buf := &bytes.Buffer{}
-	resolver := domain.NewRoleResolver(config.RolesConfig{"Moderator": 20, "Enforcer": 10, "Event": 2})
+	resolver := accdomain.NewRoleResolver(config.RolesConfig{"Moderator": 20, "Enforcer": 10, "Event": 2})
 	logger := slog.New(slog.NewTextHandler(buf, nil))
 	return NewRegistry(cfg, resolver, &stubSession{}, &stubUsers{}, logger, false, true, httpx.Layout{}), buf
 }
@@ -191,16 +191,16 @@ func TestRegistry_Wrap_AdminTagBlocksTempBanned(t *testing.T) {
 	t.Parallel()
 	mux := http.NewServeMux()
 	buf := &bytes.Buffer{}
-	resolver := domain.NewRoleResolver(config.RolesConfig{"Moderator": 20})
+	resolver := accdomain.NewRoleResolver(config.RolesConfig{"Moderator": 20})
 	logger := slog.New(slog.NewTextHandler(buf, nil))
 	sess := &stubSession{
-		validateFn: func(context.Context, string) (*domain.Session, error) {
-			return &domain.Session{UserID: 1}, nil
+		validateFn: func(context.Context, string) (*accdomain.Session, error) {
+			return &accdomain.Session{UserID: 1}, nil
 		},
 	}
 	users := &stubUsers{
-		getFn: func(context.Context, int) (*domain.User, error) {
-			return &domain.User{ID: 1, State: 0, UnbanTime: time.Now().Add(time.Hour)}, nil
+		getFn: func(context.Context, int) (*accdomain.User, error) {
+			return &accdomain.User{ID: 1, State: 0, UnbanTime: time.Now().Add(time.Hour)}, nil
 		},
 	}
 	reg := NewRegistry(config.AccessConfig{}, resolver, sess, users, logger, false, true, httpx.Layout{})
@@ -221,16 +221,16 @@ func TestRegistry_Wrap_UnrestrictedRouteSoftBlocksTempBanned(t *testing.T) {
 	t.Parallel()
 	mux := http.NewServeMux()
 	buf := &bytes.Buffer{}
-	resolver := domain.NewRoleResolver(config.RolesConfig{"Moderator": 20})
+	resolver := accdomain.NewRoleResolver(config.RolesConfig{"Moderator": 20})
 	logger := slog.New(slog.NewTextHandler(buf, nil))
 	sess := &stubSession{
-		validateFn: func(context.Context, string) (*domain.Session, error) {
-			return &domain.Session{UserID: 1}, nil
+		validateFn: func(context.Context, string) (*accdomain.Session, error) {
+			return &accdomain.Session{UserID: 1}, nil
 		},
 	}
 	users := &stubUsers{
-		getFn: func(context.Context, int) (*domain.User, error) {
-			return &domain.User{ID: 1, State: 0, UnbanTime: time.Now().Add(time.Hour)}, nil
+		getFn: func(context.Context, int) (*accdomain.User, error) {
+			return &accdomain.User{ID: 1, State: 0, UnbanTime: time.Now().Add(time.Hour)}, nil
 		},
 	}
 	cfg := config.AccessConfig{
@@ -259,16 +259,16 @@ func TestRegistry_Wrap_NonUnrestrictedRouteAllowsTempBanned(t *testing.T) {
 	t.Parallel()
 	mux := http.NewServeMux()
 	buf := &bytes.Buffer{}
-	resolver := domain.NewRoleResolver(config.RolesConfig{"Moderator": 20})
+	resolver := accdomain.NewRoleResolver(config.RolesConfig{"Moderator": 20})
 	logger := slog.New(slog.NewTextHandler(buf, nil))
 	sess := &stubSession{
-		validateFn: func(context.Context, string) (*domain.Session, error) {
-			return &domain.Session{UserID: 1}, nil
+		validateFn: func(context.Context, string) (*accdomain.Session, error) {
+			return &accdomain.Session{UserID: 1}, nil
 		},
 	}
 	users := &stubUsers{
-		getFn: func(context.Context, int) (*domain.User, error) {
-			return &domain.User{ID: 1, State: 0, UnbanTime: time.Now().Add(time.Hour)}, nil
+		getFn: func(context.Context, int) (*accdomain.User, error) {
+			return &accdomain.User{ID: 1, State: 0, UnbanTime: time.Now().Add(time.Hour)}, nil
 		},
 	}
 	cfg := config.AccessConfig{

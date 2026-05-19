@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
+	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 	"github.com/hayakawakaki/go-racp/internal/users/app"
 	"github.com/hayakawakaki/go-racp/internal/users/domain"

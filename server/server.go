@@ -12,12 +12,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/hayakawakaki/go-racp/internal/account/app"
-	"github.com/hayakawakaki/go-racp/internal/account/domain"
-	accountinfra "github.com/hayakawakaki/go-racp/internal/account/infra"
-	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
 	actiontokenapp "github.com/hayakawakaki/go-racp/internal/actiontoken/app"
 	actiontokeninfra "github.com/hayakawakaki/go-racp/internal/actiontoken/infra"
+	"github.com/hayakawakaki/go-racp/internal/features/account/app"
+	"github.com/hayakawakaki/go-racp/internal/features/account/domain"
+	accinfra "github.com/hayakawakaki/go-racp/internal/features/account/infra"
+	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/health"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 	"github.com/hayakawakaki/go-racp/internal/infra"
@@ -84,12 +84,12 @@ func Start() error {
 		Roles:        domain.NewRoleResolver(cfg.App.UserRoles),
 	}
 
-	sessSvc := app.NewSessionService(accountinfra.NewSessionRepository(cpPool), cfg.App.TTL.Session)
+	sessSvc := app.NewSessionService(accinfra.NewSessionRepository(cpPool), cfg.App.TTL.Session)
 	secure := cfg.Env.Mode != "development"
 	withSession := middleware.WithSession(sessSvc, logger, secure)
 
 	accessCfg := config.ProcessAccessConfig()
-	userRepo := accountinfra.NewRepository(mainDB)
+	userRepo := accinfra.NewRepository(mainDB)
 	reg := routes.NewRegistry(
 		accessCfg,
 		in.Roles,

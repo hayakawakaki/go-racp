@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"sort"
 
-	accinfra "github.com/hayakawakaki/go-racp/internal/account/infra"
+	accinfra "github.com/hayakawakaki/go-racp/internal/features/account/infra"
 	"github.com/hayakawakaki/go-racp/internal/features/news/app"
 	"github.com/hayakawakaki/go-racp/internal/features/news/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/news/infra"

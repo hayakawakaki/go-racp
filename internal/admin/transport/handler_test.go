@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hayakawakaki/go-racp/internal/account/domain"
+	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	itemapp "github.com/hayakawakaki/go-racp/internal/features/item/app"
 	mobapp "github.com/hayakawakaki/go-racp/internal/features/mob/app"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
@@ -31,14 +31,14 @@ type stubMobStatus struct {
 func (s *stubMobStatus) Status() mobapp.ServiceStatus { return s.status }
 
 type stubSession struct {
-	validateFn func(context.Context, string) (*domain.Session, error)
+	validateFn func(context.Context, string) (*accdomain.Session, error)
 }
 
-func (s *stubSession) Validate(ctx context.Context, token string) (*domain.Session, error) {
+func (s *stubSession) Validate(ctx context.Context, token string) (*accdomain.Session, error) {
 	if s.validateFn != nil {
 		return s.validateFn(ctx, token)
 	}
-	return nil, domain.ErrSessionNotFound
+	return nil, accdomain.ErrSessionNotFound
 }
 
 func (s *stubSession) Destroy(_ context.Context, _ string) error {
@@ -48,14 +48,14 @@ func (s *stubSession) Destroy(_ context.Context, _ string) error {
 func (s *stubSession) TTL() time.Duration { return time.Hour }
 
 type stubUsers struct {
-	getFn func(context.Context, int) (*domain.User, error)
+	getFn func(context.Context, int) (*accdomain.User, error)
 }
 
-func (s *stubUsers) GetByID(ctx context.Context, id int) (*domain.User, error) {
+func (s *stubUsers) GetByID(ctx context.Context, id int) (*accdomain.User, error) {
 	if s.getFn != nil {
 		return s.getFn(ctx, id)
 	}
-	return &domain.User{ID: id}, nil
+	return &accdomain.User{ID: id}, nil
 }
 
 func newStubSession() *stubSession  { return &stubSession{} }
@@ -126,7 +126,7 @@ func TestHandler_RegisterRoutes_WrapsAdminRouteInRegistry(t *testing.T) {
 
 	reg := routes.NewRegistry(
 		config.AccessConfig{},
-		domain.NewRoleResolver(config.RolesConfig{"Moderator": 20, "Enforcer": 10, "Event": 2}),
+		accdomain.NewRoleResolver(config.RolesConfig{"Moderator": 20, "Enforcer": 10, "Event": 2}),
 		newStubSession(),
 		newStubUserLookup(),
 		slog.New(slog.NewTextHandler(io.Discard, nil)),
@@ -151,7 +151,7 @@ func TestHandler_RegisterRoutes_RejectsNonGet(t *testing.T) {
 
 	reg := routes.NewRegistry(
 		config.AccessConfig{},
-		domain.NewRoleResolver(config.RolesConfig{"Moderator": 20, "Enforcer": 10, "Event": 2}),
+		accdomain.NewRoleResolver(config.RolesConfig{"Moderator": 20, "Enforcer": 10, "Event": 2}),
 		newStubSession(),
 		newStubUserLookup(),
 		slog.New(slog.NewTextHandler(io.Discard, nil)),

@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"time"
 
-	accountdomain "github.com/hayakawakaki/go-racp/internal/account/domain"
+	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/tickets/domain"
 )
 
@@ -15,7 +15,7 @@ type Mailer interface {
 }
 
 type UserLookup interface {
-	GetByID(ctx context.Context, id int) (*accountdomain.User, error)
+	GetByID(ctx context.Context, id int) (*accdomain.User, error)
 }
 
 type Config struct {

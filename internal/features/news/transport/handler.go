@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"net/http"
 
-	accdomain "github.com/hayakawakaki/go-racp/internal/account/domain"
-	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
+	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/features/news/app"
 	"github.com/hayakawakaki/go-racp/internal/features/news/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/news/infra"

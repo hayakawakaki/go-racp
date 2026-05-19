@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	accountinfra "github.com/hayakawakaki/go-racp/internal/account/infra"
-	platinfra "github.com/hayakawakaki/go-racp/internal/infra"
+	accinfra "github.com/hayakawakaki/go-racp/internal/features/account/infra"
+	coreinfra "github.com/hayakawakaki/go-racp/internal/infra"
 	"github.com/hayakawakaki/go-racp/internal/plugin"
 	"github.com/hayakawakaki/go-racp/internal/routes"
 	ticketsapp "github.com/hayakawakaki/go-racp/internal/tickets/app"
@@ -22,12 +22,12 @@ func init() {
 	})
 }
 
-func mount(reg *routes.Registry, mux *http.ServeMux, in *platinfra.Infra) {
+func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 	access := config.ProcessAccessConfig()
 	validateAccessCrossConfig(in.Config.App.TicketCategories, access)
 
 	categories := buildCategoryResolver(in.Config.App.TicketCategories)
-	userRepo := accountinfra.NewRepository(in.MainDB)
+	userRepo := accinfra.NewRepository(in.MainDB)
 
 	ticketRepo := ticketsinfra.NewRepository(in.DB)
 	messageRepo := ticketsinfra.NewMessageRepository(in.DB)

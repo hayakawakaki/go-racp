@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	accountapp "github.com/hayakawakaki/go-racp/internal/account/app"
+	accapp "github.com/hayakawakaki/go-racp/internal/features/account/app"
 	"github.com/hayakawakaki/go-racp/internal/users/domain"
 )
 
@@ -131,10 +131,10 @@ func (s *Service) Ban(ctx context.Context, cmd BanCommand) (UserDetail, error) {
 	var newState int
 	var newUnban uint32
 	if dur.Permanent {
-		newState = accountapp.StatePermaBanned
+		newState = accapp.StatePermaBanned
 		newUnban = 0
 	} else {
-		newState = accountapp.StateActive
+		newState = accapp.StateActive
 		newUnban = unbanSeconds(time.Now().Add(dur.Duration))
 	}
 
@@ -160,8 +160,8 @@ func (s *Service) Unban(ctx context.Context, cmd UnbanCommand) (UserDetail, erro
 		return UserDetail{}, fmt.Errorf("app.Service.Unban: %w", err)
 	}
 
-	banned := target.State == accountapp.StatePermaBanned ||
-		(target.State == accountapp.StateActive && !target.UnbanTime.IsZero() && target.UnbanTime.After(time.Now()))
+	banned := target.State == accapp.StatePermaBanned ||
+		(target.State == accapp.StateActive && !target.UnbanTime.IsZero() && target.UnbanTime.After(time.Now()))
 	if !banned {
 		return UserDetail{}, fmt.Errorf("app.Service.Unban: %w", domain.ErrInvalidState)
 	}
@@ -169,7 +169,7 @@ func (s *Service) Unban(ctx context.Context, cmd UnbanCommand) (UserDetail, erro
 	beforeState := target.State
 	beforeUnban := unbanSeconds(target.UnbanTime)
 
-	if err := s.users.UpdateBan(ctx, cmd.TargetUserID, accountapp.StateActive, 0); err != nil {
+	if err := s.users.UpdateBan(ctx, cmd.TargetUserID, accapp.StateActive, 0); err != nil {
 		return UserDetail{}, fmt.Errorf("app.Service.Unban update: %w", err)
 	}
 

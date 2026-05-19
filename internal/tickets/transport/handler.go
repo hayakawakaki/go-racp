@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	accountdomain "github.com/hayakawakaki/go-racp/internal/account/domain"
-	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
+	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 	"github.com/hayakawakaki/go-racp/internal/routes"
 	ticketsapp "github.com/hayakawakaki/go-racp/internal/tickets/app"
@@ -53,12 +53,12 @@ type ticketService interface {
 }
 
 type userLookup interface {
-	GetByID(ctx context.Context, id int) (*accountdomain.User, error)
+	GetByID(ctx context.Context, id int) (*accdomain.User, error)
 }
 
 type HandlerConfig struct {
 	General      config.GeneralConfig
-	Roles        accountdomain.RoleResolver
+	Roles        accdomain.RoleResolver
 	Logger       *slog.Logger
 	Users        userLookup
 	ManageRoles  []string
@@ -70,7 +70,7 @@ type Handler struct {
 	users       userLookup
 	logger      *slog.Logger
 	manageRoles map[string]struct{}
-	roles       accountdomain.RoleResolver
+	roles       accdomain.RoleResolver
 	general     config.GeneralConfig
 	poll        time.Duration
 }
@@ -96,9 +96,9 @@ func (h *Handler) layout() httpx.Layout {
 	return httpx.Layout{GeneralConfig: h.general}
 }
 
-func (h *Handler) currentUser(r *http.Request) (*accountdomain.User, accountdomain.Role, error) {
+func (h *Handler) currentUser(r *http.Request) (*accdomain.User, accdomain.Role, error) {
 	if snap, ok := middleware.SnapshotFromContext(r.Context()); ok {
-		user := &accountdomain.User{
+		user := &accdomain.User{
 			ID:        snap.UserID,
 			Username:  snap.Username,
 			GroupID:   snap.GroupID,
@@ -110,37 +110,37 @@ func (h *Handler) currentUser(r *http.Request) (*accountdomain.User, accountdoma
 
 	session, ok := middleware.SessionFromContext(r.Context())
 	if !ok {
-		return nil, accountdomain.Role{}, errUnauthenticated
+		return nil, accdomain.Role{}, errUnauthenticated
 	}
 	user, err := h.users.GetByID(r.Context(), session.UserID)
 	if err != nil {
-		return nil, accountdomain.Role{}, fmt.Errorf("transport.Handler.currentUser: %w", err)
+		return nil, accdomain.Role{}, fmt.Errorf("transport.Handler.currentUser: %w", err)
 	}
 
 	return user, h.roles.Resolve(user.GroupID), nil
 }
 
-func (h *Handler) resolveUser(w http.ResponseWriter, r *http.Request) (*accountdomain.User, accountdomain.Role, bool) {
+func (h *Handler) resolveUser(w http.ResponseWriter, r *http.Request) (*accdomain.User, accdomain.Role, bool) {
 	user, role, err := h.currentUser(r)
 	if err == nil {
 		return user, role, true
 	}
 	if errors.Is(err, errUnauthenticated) {
 		httpx.Redirect(w, r, "/login")
-		return nil, accountdomain.Role{}, false
+		return nil, accdomain.Role{}, false
 	}
 	h.logger.Error("tickets: load user", "err", err)
 	http.Error(w, "internal server error", http.StatusInternalServerError)
 
-	return nil, accountdomain.Role{}, false
+	return nil, accdomain.Role{}, false
 }
 
-func (h *Handler) categoryAllowed(role accountdomain.Role, categoryKey string) bool {
-	return h.svc.Categories().Permits(categoryKey, role.Name, role == accountdomain.RoleAdmin)
+func (h *Handler) categoryAllowed(role accdomain.Role, categoryKey string) bool {
+	return h.svc.Categories().Permits(categoryKey, role.Name, role == accdomain.RoleAdmin)
 }
 
-func (h *Handler) isStaff(role accountdomain.Role) bool {
-	if role == accountdomain.RoleAdmin {
+func (h *Handler) isStaff(role accdomain.Role) bool {
+	if role == accdomain.RoleAdmin {
 		return true
 	}
 	_, ok := h.manageRoles[role.Name]

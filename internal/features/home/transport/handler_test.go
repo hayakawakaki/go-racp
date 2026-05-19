@@ -10,9 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hayakawakaki/go-racp/internal/account/app"
-	"github.com/hayakawakaki/go-racp/internal/account/domain"
-	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
+	"github.com/hayakawakaki/go-racp/internal/features/account/app"
+	"github.com/hayakawakaki/go-racp/internal/features/account/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
 )
 
 type stubUserService struct {

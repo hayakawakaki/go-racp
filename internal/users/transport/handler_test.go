@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hayakawakaki/go-racp/internal/account/domain"
-	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
+	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 	"github.com/hayakawakaki/go-racp/internal/routes"
 	"github.com/hayakawakaki/go-racp/internal/users/app"
@@ -71,16 +71,16 @@ func (s *stubService) AllowedRoles() map[int]string {
 
 type stubSession struct{}
 
-func (s *stubSession) Validate(_ context.Context, _ string) (*domain.Session, error) {
-	return nil, domain.ErrSessionNotFound
+func (s *stubSession) Validate(_ context.Context, _ string) (*accdomain.Session, error) {
+	return nil, accdomain.ErrSessionNotFound
 }
 func (s *stubSession) Destroy(_ context.Context, _ string) error { return nil }
 func (s *stubSession) TTL() time.Duration                        { return time.Hour }
 
 type stubUsers struct{}
 
-func (s *stubUsers) GetByID(_ context.Context, id int) (*domain.User, error) {
-	return &domain.User{ID: id}, nil
+func (s *stubUsers) GetByID(_ context.Context, id int) (*accdomain.User, error) {
+	return &accdomain.User{ID: id}, nil
 }
 
 func newTestHandler() *Handler {
@@ -95,7 +95,7 @@ func TestHandler_RegisterRoutes_GatesListBehindAdmin(t *testing.T) {
 	h := newTestHandler()
 	reg := routes.NewRegistry(
 		config.AccessConfig{},
-		domain.NewRoleResolver(config.RolesConfig{"Moderator": 20}),
+		accdomain.NewRoleResolver(config.RolesConfig{"Moderator": 20}),
 		&stubSession{},
 		&stubUsers{},
 		slog.New(slog.NewTextHandler(io.Discard, nil)),

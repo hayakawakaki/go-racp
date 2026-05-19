@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
-	accountdomain "github.com/hayakawakaki/go-racp/internal/account/domain"
+	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 	"github.com/hayakawakaki/go-racp/internal/tickets/domain"
 )
@@ -14,7 +14,7 @@ func (h *Handler) staffList(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	allowed := h.svc.Categories().AllowedForRole(role.Name, role == accountdomain.RoleAdmin)
+	allowed := h.svc.Categories().AllowedForRole(role.Name, role == accdomain.RoleAdmin)
 
 	tab := parseTab(r.URL.Query().Get("tab"))
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))

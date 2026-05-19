@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	accountdomain "github.com/hayakawakaki/go-racp/internal/account/domain"
+	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/tickets/domain"
 )
 
@@ -101,11 +101,11 @@ func (f fakeViews) OtherSeenAt(context.Context, int64, int, bool) (time.Time, er
 }
 
 type fakeUsers struct {
-	user *accountdomain.User
+	user *accdomain.User
 	err  error
 }
 
-func (f fakeUsers) GetByID(context.Context, int) (*accountdomain.User, error) {
+func (f fakeUsers) GetByID(context.Context, int) (*accdomain.User, error) {
 	return f.user, f.err
 }
 
@@ -137,7 +137,7 @@ func TestOpenTicket_BlockedByMaxOpen(t *testing.T) {
 	repo := newFakeRepo()
 	repo.openCount = 2
 	service := newService(repo, &fakeMailer{},
-		fakeUsers{user: &accountdomain.User{Username: "alice", Email: "a@b"}})
+		fakeUsers{user: &accdomain.User{Username: "alice", Email: "a@b"}})
 	_, err := service.OpenTicket(context.Background(), 1, "Other", "subj", "body")
 	if !errors.Is(err, domain.ErrTooManyOpenTickets) {
 		t.Errorf("err = %v, want ErrTooManyOpenTickets", err)
@@ -150,7 +150,7 @@ func TestOpenTicket_BlockedByCooldown(t *testing.T) {
 	repo := newFakeRepo()
 	repo.lastOpened = time.Now()
 	service := newService(repo, &fakeMailer{},
-		fakeUsers{user: &accountdomain.User{Username: "alice", Email: "a@b"}})
+		fakeUsers{user: &accdomain.User{Username: "alice", Email: "a@b"}})
 	_, err := service.OpenTicket(context.Background(), 1, "Other", "subj", "body")
 	if !errors.Is(err, domain.ErrTicketCooldown) {
 		t.Errorf("err = %v, want ErrTicketCooldown", err)
@@ -162,7 +162,7 @@ func TestOpenTicket_UnknownCategory(t *testing.T) {
 
 	repo := newFakeRepo()
 	service := newService(repo, &fakeMailer{},
-		fakeUsers{user: &accountdomain.User{Username: "alice", Email: "a@b"}})
+		fakeUsers{user: &accdomain.User{Username: "alice", Email: "a@b"}})
 	_, err := service.OpenTicket(context.Background(), 1, "Nope", "subj", "body")
 	if !errors.Is(err, domain.ErrUnknownCategory) {
 		t.Errorf("err = %v, want ErrUnknownCategory", err)
@@ -174,7 +174,7 @@ func TestOpenTicket_Succeeds(t *testing.T) {
 
 	repo := newFakeRepo()
 	service := newService(repo, &fakeMailer{},
-		fakeUsers{user: &accountdomain.User{Username: "alice", Email: "a@b"}})
+		fakeUsers{user: &accdomain.User{Username: "alice", Email: "a@b"}})
 	id, err := service.OpenTicket(context.Background(), 1, "Other", "subj", "body")
 	if err != nil {
 		t.Fatalf("OpenTicket: %v", err)
@@ -197,7 +197,7 @@ func TestStaffReply_NotifiesMailer(t *testing.T) {
 	repo.nextID = 2
 	mailer := &fakeMailer{}
 	service := newService(repo, mailer,
-		fakeUsers{user: &accountdomain.User{Username: "alice", Email: "alice@example"}})
+		fakeUsers{user: &accdomain.User{Username: "alice", Email: "alice@example"}})
 
 	if err := service.StaffReply(context.Background(), 9, 1, "hi"); err != nil {
 		t.Fatalf("StaffReply: %v", err)
@@ -214,7 +214,7 @@ func TestStaffNote_DoesNotNotify(t *testing.T) {
 	repo.tickets[1] = domain.Ticket{ID: 1, AccountID: 100, Status: domain.StatusOpen, LastActor: domain.ActorPlayer}
 	mailer := &fakeMailer{}
 	service := newService(repo, mailer,
-		fakeUsers{user: &accountdomain.User{Username: "alice", Email: "alice@example"}})
+		fakeUsers{user: &accdomain.User{Username: "alice", Email: "alice@example"}})
 
 	if err := service.StaffNote(context.Background(), 9, 1, "secret"); err != nil {
 		t.Fatalf("StaffNote: %v", err)
@@ -230,7 +230,7 @@ func TestPlayerReply_RejectsNonOwner(t *testing.T) {
 	repo := newFakeRepo()
 	repo.tickets[1] = domain.Ticket{ID: 1, AccountID: 100, Status: domain.StatusOpen, LastActor: domain.ActorStaff}
 	service := newService(repo, &fakeMailer{},
-		fakeUsers{user: &accountdomain.User{Username: "alice", Email: "x"}})
+		fakeUsers{user: &accdomain.User{Username: "alice", Email: "x"}})
 	err := service.PlayerReply(context.Background(), 999, 1, "hi")
 	if !errors.Is(err, domain.ErrNotTicketOwner) {
 		t.Errorf("err = %v, want ErrNotTicketOwner", err)
@@ -244,7 +244,7 @@ func TestStaffResolve_NotifiesAndSetsStatus(t *testing.T) {
 	repo.tickets[1] = domain.Ticket{ID: 1, AccountID: 100, Status: domain.StatusOpen, LastActor: domain.ActorStaff}
 	mailer := &fakeMailer{}
 	service := newService(repo, mailer,
-		fakeUsers{user: &accountdomain.User{Username: "alice", Email: "alice@example"}})
+		fakeUsers{user: &accdomain.User{Username: "alice", Email: "alice@example"}})
 
 	if err := service.StaffResolve(context.Background(), 9, 1); err != nil {
 		t.Fatalf("StaffResolve: %v", err)

@@ -3,8 +3,8 @@ package home
 import (
 	"net/http"
 
-	accountapp "github.com/hayakawakaki/go-racp/internal/account/app"
-	accountinfra "github.com/hayakawakaki/go-racp/internal/account/infra"
+	accountapp "github.com/hayakawakaki/go-racp/internal/features/account/app"
+	accountinfra "github.com/hayakawakaki/go-racp/internal/features/account/infra"
 	"github.com/hayakawakaki/go-racp/internal/features/home/transport"
 	platinfra "github.com/hayakawakaki/go-racp/internal/infra"
 	"github.com/hayakawakaki/go-racp/internal/plugin"

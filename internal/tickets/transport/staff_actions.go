@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	accountdomain "github.com/hayakawakaki/go-racp/internal/account/domain"
+	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 	"github.com/hayakawakaki/go-racp/internal/tickets/domain"
 )
@@ -85,7 +85,7 @@ func (h *Handler) parseStaffForm(w http.ResponseWriter, r *http.Request, maxByte
 	return true
 }
 
-func (h *Handler) assertCategoryAllowed(w http.ResponseWriter, r *http.Request, role accountdomain.Role, ticketID int64) bool {
+func (h *Handler) assertCategoryAllowed(w http.ResponseWriter, r *http.Request, role accdomain.Role, ticketID int64) bool {
 	current, err := h.svc.GetTicketForStaff(r.Context(), ticketID)
 	if err != nil {
 		if errors.Is(err, domain.ErrTicketNotFound) {
@@ -104,7 +104,7 @@ func (h *Handler) assertCategoryAllowed(w http.ResponseWriter, r *http.Request, 
 	return true
 }
 
-func (h *Handler) respondStaffMutateSuccess(w http.ResponseWriter, r *http.Request, role accountdomain.Role, ticketID int64) {
+func (h *Handler) respondStaffMutateSuccess(w http.ResponseWriter, r *http.Request, role accdomain.Role, ticketID int64) {
 	refreshed, err := h.svc.GetTicketForStaff(r.Context(), ticketID)
 	if err != nil {
 		h.logger.Error("staffMutate: refetch", "err", err)
