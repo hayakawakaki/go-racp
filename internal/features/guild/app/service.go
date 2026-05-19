@@ -31,7 +31,7 @@ func (s *Service) Get(ctx context.Context, id int) (GuildDetail, error) {
 	}
 	members, err := s.repo.ListMembers(ctx, id)
 	if err != nil {
-		return GuildDetail{}, fmt.Errorf("app.Service.Get members: %w", err)
+		return GuildDetail{}, fmt.Errorf("app.Service.Get: %w", err)
 	}
 
 	return GuildDetail{Guild: g, Members: members}, nil
