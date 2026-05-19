@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hayakawakaki/go-racp/internal/character/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/character/domain"
 )
 
 type DefaultLocation struct {

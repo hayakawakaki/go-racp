@@ -5,14 +5,14 @@ import (
 	"log/slog"
 	"net/http"
 
-	characterapp "github.com/hayakawakaki/go-racp/internal/character/app"
+	"github.com/hayakawakaki/go-racp/internal/features/character/app"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 	"github.com/hayakawakaki/go-racp/internal/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 
 type characterService interface {
-	Get(ctx context.Context, accountID, charID int) (*characterapp.CharacterDTO, error)
+	Get(ctx context.Context, accountID, charID int) (*app.CharacterDTO, error)
 	ResetLook(ctx context.Context, accountID, charID int) error
 	ResetLocation(ctx context.Context, accountID, charID int) error
 }

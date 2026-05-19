@@ -3,10 +3,10 @@ package account
 import (
 	"net/http"
 
-	"github.com/hayakawakaki/go-racp/internal/character"
 	"github.com/hayakawakaki/go-racp/internal/features/account/app"
 	"github.com/hayakawakaki/go-racp/internal/features/account/infra"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport"
+	"github.com/hayakawakaki/go-racp/internal/features/character"
 	coreinfra "github.com/hayakawakaki/go-racp/internal/infra"
 	"github.com/hayakawakaki/go-racp/internal/plugin"
 	"github.com/hayakawakaki/go-racp/internal/routes"

@@ -3,8 +3,8 @@ package transport
 import (
 	"net/http"
 
-	charapp "github.com/hayakawakaki/go-racp/internal/character/app"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
+	charapp "github.com/hayakawakaki/go-racp/internal/features/character/app"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 )
 

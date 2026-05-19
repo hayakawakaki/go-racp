@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hayakawakaki/go-racp/internal/character/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/character/domain"
 )
 
 type updateLookCall struct {

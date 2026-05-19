@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"time"
 
-	characterapp "github.com/hayakawakaki/go-racp/internal/character/app"
+	"github.com/hayakawakaki/go-racp/internal/features/character/app"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 )
 
 type DetailState struct {
-	Char   *characterapp.CharacterDTO
+	Char   *app.CharacterDTO
 	Now    time.Time
 	Notice string
 }

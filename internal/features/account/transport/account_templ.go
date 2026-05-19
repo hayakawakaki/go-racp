@@ -11,8 +11,8 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"fmt"
 
-	charapp "github.com/hayakawakaki/go-racp/internal/character/app"
 	"github.com/hayakawakaki/go-racp/internal/features/account/app"
+	charapp "github.com/hayakawakaki/go-racp/internal/features/character/app"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 )
 

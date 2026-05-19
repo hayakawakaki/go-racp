@@ -6,10 +6,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hayakawakaki/go-racp/internal/features/character/domain"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-
-	"github.com/hayakawakaki/go-racp/internal/character/domain"
 )
 
 type CooldownRepository struct {

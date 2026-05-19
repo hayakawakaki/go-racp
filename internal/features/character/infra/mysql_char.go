@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/hayakawakaki/go-racp/internal/character/domain"
+	domain2 "github.com/hayakawakaki/go-racp/internal/features/character/domain"
 )
 
 const charSelectColumns = "char_id, account_id, char_num, name, zeny, sex, class, base_level, job_level, " +
@@ -21,7 +21,7 @@ func NewRepository(client *sql.DB) *Repository {
 	return &Repository{Client: client}
 }
 
-func (r *Repository) ListByAccount(ctx context.Context, accountID int) ([]domain.Character, error) {
+func (r *Repository) ListByAccount(ctx context.Context, accountID int) ([]domain2.Character, error) {
 	rows, err := r.Client.QueryContext(ctx,
 		"SELECT "+charSelectColumns+" FROM `char` WHERE account_id = ? ORDER BY char_num",
 		accountID,
@@ -31,7 +31,7 @@ func (r *Repository) ListByAccount(ctx context.Context, accountID int) ([]domain
 	}
 	defer func() { _ = rows.Close() }()
 
-	var out []domain.Character
+	var out []domain2.Character
 	for rows.Next() {
 		c, err := scanCharacter(rows)
 		if err != nil {
@@ -46,14 +46,14 @@ func (r *Repository) ListByAccount(ctx context.Context, accountID int) ([]domain
 	return out, nil
 }
 
-func (r *Repository) GetByID(ctx context.Context, charID int) (*domain.Character, error) {
+func (r *Repository) GetByID(ctx context.Context, charID int) (*domain2.Character, error) {
 	row := r.Client.QueryRowContext(ctx,
 		"SELECT "+charSelectColumns+" FROM `char` WHERE char_id = ?",
 		charID,
 	)
 	c, err := scanCharacter(row)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, domain.ErrCharacterNotFound
+		return nil, domain2.ErrCharacterNotFound
 	}
 	if err != nil {
 		return nil, fmt.Errorf("infra.Repository.GetByID: %w", err)
@@ -75,7 +75,7 @@ func (r *Repository) UpdateLook(ctx context.Context, charID, hair, hairColor, cl
 		return fmt.Errorf("infra.Repository.UpdateLook: %w", err)
 	}
 	if rows == 0 {
-		return domain.ErrCharacterNotFound
+		return domain2.ErrCharacterNotFound
 	}
 
 	return nil
@@ -94,7 +94,7 @@ func (r *Repository) UpdateLocation(ctx context.Context, charID int, mapName str
 		return fmt.Errorf("infra.Repository.UpdateLocation: %w", err)
 	}
 	if rows == 0 {
-		return domain.ErrCharacterNotFound
+		return domain2.ErrCharacterNotFound
 	}
 
 	return nil
@@ -104,8 +104,8 @@ type rowScanner interface {
 	Scan(dest ...any) error
 }
 
-func scanCharacter(s rowScanner) (domain.Character, error) {
-	var c domain.Character
+func scanCharacter(s rowScanner) (domain2.Character, error) {
+	var c domain2.Character
 	var online int
 	err := s.Scan(
 		&c.ID, &c.AccountID, &c.Slot, &c.Name, &c.Zeny, &c.Gender, &c.JobID,
@@ -117,7 +117,7 @@ func scanCharacter(s rowScanner) (domain.Character, error) {
 		&online,
 	)
 	if err != nil {
-		return domain.Character{}, fmt.Errorf("scan character: %w", err)
+		return domain2.Character{}, fmt.Errorf("scan character: %w", err)
 	}
 	c.Online = online != 0
 

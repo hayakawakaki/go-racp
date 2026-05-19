@@ -10,10 +10,10 @@ import (
 	"time"
 
 	actiontokendomain "github.com/hayakawakaki/go-racp/internal/actiontoken/domain"
-	characterapp "github.com/hayakawakaki/go-racp/internal/character/app"
 	"github.com/hayakawakaki/go-racp/internal/features/account/app"
 	"github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
+	characterapp "github.com/hayakawakaki/go-racp/internal/features/character/app"
 )
 
 const stubSessionTTL = 24 * time.Hour

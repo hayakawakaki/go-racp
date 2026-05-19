@@ -11,7 +11,7 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"fmt"
 
-	chardomain "github.com/hayakawakaki/go-racp/internal/character/domain"
+	chardomain "github.com/hayakawakaki/go-racp/internal/features/character/domain"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
 )
 
