@@ -11,9 +11,9 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/features/item/transport"
 	"github.com/hayakawakaki/go-racp/internal/features/mob"
 	coreinfra "github.com/hayakawakaki/go-racp/internal/infra"
+	"github.com/hayakawakaki/go-racp/internal/platform/plugin"
 	"github.com/hayakawakaki/go-racp/internal/platform/refdata"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
-	"github.com/hayakawakaki/go-racp/internal/plugin"
 )
 
 const itemCacheFileName = "item-snapshot.gob"

@@ -10,9 +10,9 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/features/mob/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/mob/transport"
 	coreinfra "github.com/hayakawakaki/go-racp/internal/infra"
+	"github.com/hayakawakaki/go-racp/internal/platform/plugin"
 	"github.com/hayakawakaki/go-racp/internal/platform/refdata"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
-	"github.com/hayakawakaki/go-racp/internal/plugin"
 )
 
 const mobCacheFileName = "mob-snapshot.gob"

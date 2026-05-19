@@ -10,8 +10,8 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/features/tickets/infra"
 	ticketstransport "github.com/hayakawakaki/go-racp/internal/features/tickets/transport"
 	coreinfra "github.com/hayakawakaki/go-racp/internal/infra"
+	"github.com/hayakawakaki/go-racp/internal/platform/plugin"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
-	"github.com/hayakawakaki/go-racp/internal/plugin"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 

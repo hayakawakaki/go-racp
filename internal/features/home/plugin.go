@@ -7,8 +7,8 @@ import (
 	accountinfra "github.com/hayakawakaki/go-racp/internal/features/account/infra"
 	"github.com/hayakawakaki/go-racp/internal/features/home/transport"
 	platinfra "github.com/hayakawakaki/go-racp/internal/infra"
+	"github.com/hayakawakaki/go-racp/internal/platform/plugin"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
-	"github.com/hayakawakaki/go-racp/internal/plugin"
 )
 
 // init registers the home plugin.

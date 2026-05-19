@@ -24,8 +24,8 @@ import (
 	actiontokeninfra "github.com/hayakawakaki/go-racp/internal/platform/actiontoken/infra"
 	"github.com/hayakawakaki/go-racp/internal/platform/health"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/plugin"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
-	"github.com/hayakawakaki/go-racp/internal/plugin"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 
