@@ -7,7 +7,7 @@ import (
 
 	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/tickets/domain"
-	"github.com/hayakawakaki/go-racp/internal/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
 func (h *Handler) staffReply(w http.ResponseWriter, r *http.Request) {

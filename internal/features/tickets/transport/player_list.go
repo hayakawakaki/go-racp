@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/hayakawakaki/go-racp/internal/features/tickets/domain"
-	"github.com/hayakawakaki/go-racp/internal/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
 func (h *Handler) playerList(w http.ResponseWriter, r *http.Request) {

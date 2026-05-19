@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/hayakawakaki/go-racp/internal/features/account/domain"
-	"github.com/hayakawakaki/go-racp/internal/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
 func newTierMiddleware(sess *stubSessionService, users *stubUserLookup, hidden bool, policy AuthPolicy, allowed ...domain.Role) func(http.Handler) http.Handler {

@@ -12,7 +12,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
 	ticketsapp "github.com/hayakawakaki/go-racp/internal/features/tickets/app"
 	domain2 "github.com/hayakawakaki/go-racp/internal/features/tickets/domain"
-	"github.com/hayakawakaki/go-racp/internal/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
 )

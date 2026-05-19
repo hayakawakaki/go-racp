@@ -9,7 +9,7 @@ import (
 
 	"github.com/hayakawakaki/go-racp/internal/features/item/domain"
 	mobdomain "github.com/hayakawakaki/go-racp/internal/features/mob/domain"
-	"github.com/hayakawakaki/go-racp/internal/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
 func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {

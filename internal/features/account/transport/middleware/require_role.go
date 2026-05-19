@@ -9,7 +9,7 @@ import (
 
 	"github.com/hayakawakaki/go-racp/internal/features/account/app"
 	"github.com/hayakawakaki/go-racp/internal/features/account/domain"
-	"github.com/hayakawakaki/go-racp/internal/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
 func roleAllowed(role domain.Role, anyAllowed bool, allowSet map[domain.Role]struct{}) bool {

@@ -12,7 +12,7 @@ import (
 	"html/template"
 
 	"github.com/hayakawakaki/go-racp/internal/features/news/domain"
-	"github.com/hayakawakaki/go-racp/internal/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
 type NewsFormState struct {

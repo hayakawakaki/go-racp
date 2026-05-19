@@ -6,7 +6,7 @@ import (
 
 	"github.com/a-h/templ"
 	actiontokendomain "github.com/hayakawakaki/go-racp/internal/actiontoken/domain"
-	"github.com/hayakawakaki/go-racp/internal/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
 func (h *Handler) validateTokenLink(w http.ResponseWriter, r *http.Request, kind actiontokendomain.Action, op string, expired templ.Component) (string, bool) {

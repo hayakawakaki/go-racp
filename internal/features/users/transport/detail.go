@@ -10,7 +10,7 @@ import (
 
 	"github.com/hayakawakaki/go-racp/internal/features/users/app"
 	domain2 "github.com/hayakawakaki/go-racp/internal/features/users/domain"
-	"github.com/hayakawakaki/go-racp/internal/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
 type roleOption struct {

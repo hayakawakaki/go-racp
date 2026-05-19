@@ -13,7 +13,7 @@ import (
 	"html/template"
 
 	"github.com/hayakawakaki/go-racp/internal/features/news/app"
-	"github.com/hayakawakaki/go-racp/internal/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
 type NewsDetailState struct {

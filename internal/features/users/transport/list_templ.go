@@ -12,7 +12,7 @@ import (
 	"fmt"
 
 	admintransport "github.com/hayakawakaki/go-racp/internal/features/admin/transport"
-	"github.com/hayakawakaki/go-racp/internal/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
 func listPage(layout httpx.Layout, state listState) templ.Component {

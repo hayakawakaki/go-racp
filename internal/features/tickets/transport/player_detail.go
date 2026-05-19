@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/hayakawakaki/go-racp/internal/features/tickets/domain"
-	"github.com/hayakawakaki/go-racp/internal/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
 const markViewedTimeout = 5 * time.Second

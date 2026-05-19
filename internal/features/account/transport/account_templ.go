@@ -13,7 +13,7 @@ import (
 
 	"github.com/hayakawakaki/go-racp/internal/features/account/app"
 	charapp "github.com/hayakawakaki/go-racp/internal/features/character/app"
-	"github.com/hayakawakaki/go-racp/internal/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
 type AccountState struct {

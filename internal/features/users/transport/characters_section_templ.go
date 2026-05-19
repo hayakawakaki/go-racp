@@ -12,7 +12,7 @@ import (
 	"fmt"
 
 	chardomain "github.com/hayakawakaki/go-racp/internal/features/character/domain"
-	"github.com/hayakawakaki/go-racp/internal/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
 func charactersSection(state detailState) templ.Component {

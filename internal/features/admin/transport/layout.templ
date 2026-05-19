@@ -1,6 +1,6 @@
 package transport
 
-import "github.com/hayakawakaki/go-racp/internal/httpx"
+import "github.com/hayakawakaki/go-racp/internal/platform/httpx"
 
 templ AdminLayout(layout httpx.Layout, pageTitle string, content templ.Component) {
 	@httpx.Base(layout, "Admin / "+pageTitle) {

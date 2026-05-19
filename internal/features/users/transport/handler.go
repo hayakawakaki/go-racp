@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/hayakawakaki/go-racp/internal/features/users/app"
-	"github.com/hayakawakaki/go-racp/internal/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
 )

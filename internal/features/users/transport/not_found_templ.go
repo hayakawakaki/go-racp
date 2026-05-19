@@ -8,7 +8,7 @@ package transport
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-import "github.com/hayakawakaki/go-racp/internal/httpx"
+import "github.com/hayakawakaki/go-racp/internal/platform/httpx"
 
 func notFoundPage(layout httpx.Layout, id string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {

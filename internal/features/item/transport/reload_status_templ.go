@@ -12,7 +12,7 @@ import (
 	"fmt"
 
 	"github.com/hayakawakaki/go-racp/internal/features/item/app"
-	"github.com/hayakawakaki/go-racp/internal/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
 func reloadSuccess(status app.ServiceStatus) templ.Component {

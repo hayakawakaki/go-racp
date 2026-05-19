@@ -12,7 +12,7 @@ import (
 	"fmt"
 
 	"github.com/hayakawakaki/go-racp/internal/features/tickets/app"
-	"github.com/hayakawakaki/go-racp/internal/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
 type PlayerListState struct {

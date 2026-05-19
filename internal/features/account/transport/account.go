@@ -5,7 +5,7 @@ import (
 
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
 	charapp "github.com/hayakawakaki/go-racp/internal/features/character/app"
-	"github.com/hayakawakaki/go-racp/internal/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
 const (

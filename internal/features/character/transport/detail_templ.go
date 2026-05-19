@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/hayakawakaki/go-racp/internal/features/character/app"
-	"github.com/hayakawakaki/go-racp/internal/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
 type DetailState struct {

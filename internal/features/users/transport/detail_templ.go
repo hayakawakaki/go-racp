@@ -10,7 +10,7 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	admintransport "github.com/hayakawakaki/go-racp/internal/features/admin/transport"
-	"github.com/hayakawakaki/go-racp/internal/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
 func detailPage(layout httpx.Layout, username string, state detailState) templ.Component {

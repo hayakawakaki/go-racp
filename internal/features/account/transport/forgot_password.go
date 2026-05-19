@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/hayakawakaki/go-racp/internal/features/account/domain"
-	"github.com/hayakawakaki/go-racp/internal/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
 const maxForgotPasswordFormBytes = 1 << 10

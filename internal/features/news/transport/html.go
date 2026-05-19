@@ -8,7 +8,7 @@ import (
 
 	"github.com/hayakawakaki/go-racp/internal/features/news/app"
 	"github.com/hayakawakaki/go-racp/internal/features/news/domain"
-	"github.com/hayakawakaki/go-racp/internal/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
 const (
