@@ -76,6 +76,11 @@ func TestValidateRolesConfig_RejectsInvalidValues(t *testing.T) {
 			wantContain: "UserRoles.Player is reserved",
 		},
 		{
+			name:        "reserved name Public",
+			cfg:         RolesConfig{"Public": 50},
+			wantContain: "UserRoles.Public is reserved",
+		},
+		{
 			name:        "duplicate group_id",
 			cfg:         RolesConfig{"Moderator": 10, "Enforcer": 10},
 			wantContain: "shares group_id 10",

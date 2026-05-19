@@ -51,8 +51,8 @@ func (h *Handler) layout() httpx.Layout {
 }
 
 func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
-	reg.Public(mux, "GET /items", http.HandlerFunc(h.showList))
-	reg.Public(mux, "GET /items/{id}", http.HandlerFunc(h.showDetail))
-	reg.Public(mux, "GET /api/items/{id}", http.HandlerFunc(h.apiDetail))
+	reg.Wrap(mux, "Item.View", "GET /items", http.HandlerFunc(h.showList))
+	reg.Wrap(mux, "Item.View", "GET /items/{id}", http.HandlerFunc(h.showDetail))
+	reg.Wrap(mux, "Item.API", "GET /api/items/{id}", http.HandlerFunc(h.apiDetail))
 	reg.Wrap(mux, "Admin.ItemsReload", "POST /admin/items/reload", http.HandlerFunc(h.doReload))
 }

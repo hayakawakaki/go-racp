@@ -112,6 +112,16 @@ func TestValidateAccessConfig_RejectsInvalid(t *testing.T) {
 			wantContain: "empty role name",
 			cfg:         AccessConfig{"News": ActionRoles{"Edit": Entry{Roles: RoleList{""}}}},
 		},
+		{
+			name:        "public mixed with other role",
+			wantContain: "Public",
+			cfg:         AccessConfig{"News": ActionRoles{"Edit": Entry{Roles: RoleList{"Public", "Moderator"}}}},
+		},
+		{
+			name:        "public combined with unrestricted",
+			wantContain: "Public",
+			cfg:         AccessConfig{"News": ActionRoles{"View": Entry{Roles: RoleList{"Public"}, Requires: []string{"Unrestricted"}}}},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -132,6 +142,9 @@ func TestValidateAccessConfig_AcceptsHappyPath(t *testing.T) {
 			"View":   Entry{},
 			"Create": Entry{Roles: RoleList{"Moderator"}},
 			"Edit":   Entry{Roles: RoleList{"*"}},
+		},
+		"Home": ActionRoles{
+			"View": Entry{Roles: RoleList{"Public"}},
 		},
 	}
 	validateAccessConfig(cfg)

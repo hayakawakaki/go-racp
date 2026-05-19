@@ -272,6 +272,7 @@ func validateTicketCategory(key string, category TicketCategoryConfig, roles Rol
 var reservedRoleNames = map[string]struct{}{
 	"Admin":  {},
 	"Player": {},
+	"Public": {},
 	"*":      {},
 }
 

@@ -15,6 +15,7 @@ func TestRole_String(t *testing.T) {
 		role Role
 	}{
 		{name: "authenticated sentinel", role: RoleAuthenticated, want: "*"},
+		{name: "public sentinel", role: RolePublic, want: "Public"},
 		{name: "player default", role: RolePlayer, want: "Player"},
 		{name: "admin floor", role: RoleAdmin, want: "Admin"},
 		{name: "custom role", role: Role{Name: "Moderator", GroupID: 20}, want: "Moderator"},
@@ -77,6 +78,7 @@ func TestRoleResolver_GetRole(t *testing.T) {
 		wantOk bool
 	}{
 		{name: "authenticated sentinel", query: "*", want: RoleAuthenticated, wantOk: true},
+		{name: "public sentinel", query: "Public", want: RolePublic, wantOk: true},
 		{name: "admin hardcoded", query: "Admin", want: RoleAdmin, wantOk: true},
 		{name: "configured moderator", query: "Moderator", want: Role{Name: "Moderator", GroupID: 20}, wantOk: true},
 		{name: "configured enforcer", query: "Enforcer", want: Role{Name: "Enforcer", GroupID: 10}, wantOk: true},

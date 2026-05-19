@@ -40,7 +40,7 @@ func (h *Handler) layout() httpx.Layout {
 }
 
 func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
-	reg.Public(mux, "GET /{$}", http.HandlerFunc(h.show))
+	reg.Wrap(mux, "Home.View", "GET /{$}", http.HandlerFunc(h.show))
 }
 
 func (h *Handler) show(w http.ResponseWriter, r *http.Request) {

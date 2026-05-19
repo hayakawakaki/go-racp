@@ -97,15 +97,15 @@ func (h *Handler) canManage(r *http.Request) bool {
 }
 
 func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
-	reg.Public(mux, "GET /news", http.HandlerFunc(h.htmlList))
+	reg.Wrap(mux, "News.View", "GET /news", http.HandlerFunc(h.htmlList))
 	reg.Wrap(mux, "News.Manage", "GET /news/create", http.HandlerFunc(h.htmlCreateForm))
 	reg.Wrap(mux, "News.Manage", "GET /news/{id}/edit", http.HandlerFunc(h.htmlEditForm))
-	reg.Public(mux, "GET /news/{id}", http.HandlerFunc(h.htmlDetail))
+	reg.Wrap(mux, "News.View", "GET /news/{id}", http.HandlerFunc(h.htmlDetail))
 	reg.Wrap(mux, "News.Manage", "POST /news", http.HandlerFunc(h.htmlCreate))
 	reg.Wrap(mux, "News.Manage", "POST /news/preview", http.HandlerFunc(h.htmlPreview))
 	reg.Wrap(mux, "News.Manage", "POST /news/{id}/edit", http.HandlerFunc(h.htmlUpdate))
 	reg.Wrap(mux, "News.Manage", "POST /news/{id}/delete", http.HandlerFunc(h.htmlDelete))
 
-	reg.Public(mux, "GET /api/v1/news", http.HandlerFunc(h.jsonList))
-	reg.Public(mux, "GET /api/v1/news/{id}", http.HandlerFunc(h.jsonGet))
+	reg.Wrap(mux, "News.View", "GET /api/v1/news", http.HandlerFunc(h.jsonList))
+	reg.Wrap(mux, "News.View", "GET /api/v1/news/{id}", http.HandlerFunc(h.jsonGet))
 }

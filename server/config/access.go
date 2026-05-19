@@ -14,6 +14,8 @@ type RoleList []string
 
 const RequireUnrestricted = "Unrestricted"
 
+const publicRoleName = "Public"
+
 type Entry struct {
 	Roles    RoleList
 	Requires []string
@@ -122,6 +124,13 @@ func validateAccessConfig(cfg AccessConfig) {
 			}
 			if len(entry.Roles) == 0 {
 				panic(fmt.Errorf("access.yml: Action '%s' has an empty roles list, would deny everyone. Use a non-empty list or remove the entry", fullName))
+			}
+			hasPublic := slices.Contains(entry.Roles, publicRoleName)
+			if hasPublic && len(entry.Roles) > 1 {
+				panic(fmt.Errorf("access.yml: Action '%s' lists 'Public' alongside other roles. Public bypasses auth and cannot be combined", fullName))
+			}
+			if hasPublic && entry.RequiresUnrestricted() {
+				panic(fmt.Errorf("access.yml: Action '%s' combines 'Public' with Requires: ['Unrestricted']. Public bypasses auth, there is no user to classify", fullName))
 			}
 			for _, role := range entry.Roles {
 				if role == adminRoleName {
