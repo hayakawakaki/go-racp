@@ -34,7 +34,7 @@ func TestRepository_CreateAndGet(t *testing.T) {
 	ctx := context.Background()
 
 	suf := randomizeSuffix(t)
-	wantBirthdate, err := time.Parse("2006-01-02", "1995-06-15")
+	wantBirthdate, err := time.Parse("2012-01-02", "2008-06-05")
 	if err != nil {
 		t.Fatalf("parse birthdate: %v", err)
 	}
@@ -60,8 +60,8 @@ func TestRepository_CreateAndGet(t *testing.T) {
 	if got.Username != u.Username || got.Email != u.Email {
 		t.Errorf("mismatch: %+v", got)
 	}
-	if got.Birthdate.Format("2006-01-02") != "1995-06-15" {
-		t.Errorf("Birthdate = %v; want 1995-06-15", got.Birthdate)
+	if got.Birthdate.Format("2012-01-02") != "2008-06-05" {
+		t.Errorf("Birthdate = %v; want 2008-06-05", got.Birthdate)
 	}
 
 	gotByU, err := repo.GetByUsername(ctx, u.Username)
@@ -95,7 +95,7 @@ func TestRepository_Authenticate(t *testing.T) {
 	ctx := context.Background()
 
 	suf := randomizeSuffix(t)
-	birthdate, _ := time.Parse("2006-01-02", "1995-06-15")
+	birthdate, _ := time.Parse("2012-01-02", "2008-06-05")
 	u := &domain.User{
 		Username:  "racp_test_" + suf,
 		Email:     "racp_test_" + suf + "@example.invalid",
@@ -324,7 +324,7 @@ func TestRepository_VerifyPassword(t *testing.T) {
 	ctx := context.Background()
 
 	suf := randomizeSuffix(t)
-	wantBirthdate, err := time.Parse("2006-01-02", "1995-06-15")
+	wantBirthdate, err := time.Parse("2012-01-02", "2008-06-05")
 	if err != nil {
 		t.Fatalf("parse birthdate: %v", err)
 	}
@@ -359,5 +359,132 @@ func TestRepository_VerifyPassword(t *testing.T) {
 	_, err = repo.VerifyPassword(ctx, 9999999, "anything")
 	if !errors.Is(err, domain.ErrUserNotFound) {
 		t.Fatalf("VerifyPassword missing: err = %v, want ErrUserNotFound", err)
+	}
+}
+
+func createSeedUser(t *testing.T, repo *Repository, username, email string) *domain.User {
+	t.Helper()
+	bd, err := time.Parse("2012-01-02", "2008-06-05")
+	if err != nil {
+		t.Fatalf("parse birthdate: %v", err)
+	}
+	u, err := repo.Create(context.Background(), &domain.User{
+		Username:  username,
+		Email:     email,
+		Gender:    "M",
+		Birthdate: bd,
+	}, "Test1234!")
+	if err != nil {
+		t.Fatalf("Create %s: %v", username, err)
+	}
+	cleanupUser(t, repo, u.ID)
+
+	return u
+}
+
+func TestRepository_List_PaginatesAndFiltersByQuery(t *testing.T) {
+	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
+	repo := NewRepository(db)
+	ctx := context.Background()
+
+	suf := randomizeSuffix(t)
+	wanted := createSeedUser(t, repo, "kaki_"+suf, "kaki_"+suf+"@example.invalid")
+	_ = createSeedUser(t, repo, "other_"+suf, "other_"+suf+"@example.invalid")
+
+	page, err := repo.List(ctx, ListQuery{Page: 1, PerPage: 20, Query: "kaki_" + suf})
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	if page.Total != 1 || len(page.Users) != 1 {
+		t.Fatalf("page total/len = %d/%d, want 1/1", page.Total, len(page.Users))
+	}
+	if page.Users[0].ID != wanted.ID {
+		t.Errorf("returned ID = %d, want %d", page.Users[0].ID, wanted.ID)
+	}
+}
+
+func TestRepository_List_ExcludesActor(t *testing.T) {
+	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
+	repo := NewRepository(db)
+	ctx := context.Background()
+
+	suf := randomizeSuffix(t)
+	actor := createSeedUser(t, repo, "actor_"+suf, "actor_"+suf+"@example.invalid")
+	other := createSeedUser(t, repo, "other_"+suf, "other_"+suf+"@example.invalid")
+
+	page, err := repo.List(ctx, ListQuery{Page: 1, PerPage: 20, Query: suf, ExcludeID: actor.ID})
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	if page.Total != 1 || len(page.Users) != 1 || page.Users[0].ID != other.ID {
+		t.Errorf("page = %+v, want exactly other (id=%d)", page, other.ID)
+	}
+}
+
+func TestRepository_UpdateBan_TempThenClear(t *testing.T) {
+	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
+	repo := NewRepository(db)
+	ctx := context.Background()
+
+	suf := randomizeSuffix(t)
+	u := createSeedUser(t, repo, "ban_"+suf, "ban_"+suf+"@example.invalid")
+
+	unbanAt := uint32(time.Now().Add(time.Hour).Unix()) //nolint:gosec // unban_time is uint32 in rAthena
+	if err := repo.UpdateBan(ctx, u.ID, 0, unbanAt); err != nil {
+		t.Fatalf("UpdateBan temp: %v", err)
+	}
+	got, err := repo.GetByID(ctx, u.ID)
+	if err != nil {
+		t.Fatalf("GetByID after temp ban: %v", err)
+	}
+	if got.UnbanTime.IsZero() {
+		t.Errorf("UnbanTime should be set after temp ban, got zero")
+	}
+
+	if err := repo.UpdateBan(ctx, u.ID, 0, 0); err != nil {
+		t.Fatalf("UpdateBan clear: %v", err)
+	}
+	got, err = repo.GetByID(ctx, u.ID)
+	if err != nil {
+		t.Fatalf("GetByID after clear: %v", err)
+	}
+	if !got.UnbanTime.IsZero() {
+		t.Errorf("UnbanTime should be zero after clear, got %v", got.UnbanTime)
+	}
+}
+
+func TestRepository_UpdateBan_Missing(t *testing.T) {
+	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
+	repo := NewRepository(db)
+	if err := repo.UpdateBan(context.Background(), -1, 0, 0); !errors.Is(err, domain.ErrUserNotFound) {
+		t.Errorf("got %v, want ErrUserNotFound", err)
+	}
+}
+
+func TestRepository_UpdateGroup(t *testing.T) {
+	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
+	repo := NewRepository(db)
+	ctx := context.Background()
+
+	suf := randomizeSuffix(t)
+	u := createSeedUser(t, repo, "grp_"+suf, "grp_"+suf+"@example.invalid")
+
+	if err := repo.UpdateGroup(ctx, u.ID, 20); err != nil {
+		t.Fatalf("UpdateGroup: %v", err)
+	}
+	got, err := repo.GetByID(ctx, u.ID)
+	if err != nil {
+		t.Fatalf("GetByID after UpdateGroup: %v", err)
+	}
+	if got.GroupID != 20 {
+		t.Errorf("GroupID = %d, want 20", got.GroupID)
+	}
+}
+
+func TestRepository_UpdateGroup_Missing(t *testing.T) {
+	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
+	repo := NewRepository(db)
+	if err := repo.UpdateGroup(context.Background(), -1, 20); !errors.Is(err, domain.ErrUserNotFound) {
+		t.Errorf("got %v, want ErrUserNotFound", err)
 	}
 }

@@ -486,3 +486,49 @@ func TestRoleNameFor(t *testing.T) {
 		})
 	}
 }
+
+func middlewareCtxWithActorGroup(ctx context.Context, userID, groupID int) context.Context {
+	return middleware.ContextWithSnapshot(ctx, &middleware.AccountSnapshot{UserID: userID, GroupID: groupID})
+}
+
+func TestHandler_DoBan_ThreadsActorIsAdminFromSnapshot(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name         string
+		actorGroupID int
+		wantIsAdmin  bool
+	}{
+		{"admin actor", accdomain.RoleAdmin.GroupID, true},
+		{"moderator actor", 20, false},
+		{"player actor", 0, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			var gotIsAdmin bool
+			svc := &stubService{
+				banFn: func(_ context.Context, cmd app.BanCommand) (app.UserDetail, error) {
+					gotIsAdmin = cmd.ActorIsAdmin
+					return app.UserDetail{User: &accdomain.User{ID: 7, Username: "kaki"}}, nil
+				},
+			}
+			h := NewHandler(svc, HandlerConfig{
+				Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
+				General: config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
+			})
+
+			rr := httptest.NewRecorder()
+			body := strings.NewReader("permanent=on&reason=spam")
+			req := httptest.NewRequest(http.MethodPost, "/users/7/ban", body)
+			req.SetPathValue("id", "7")
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			req = req.WithContext(middlewareCtxWithActorGroup(req.Context(), 1, tt.actorGroupID))
+			h.doBan(rr, req)
+
+			if gotIsAdmin != tt.wantIsAdmin {
+				t.Errorf("ActorIsAdmin = %v, want %v", gotIsAdmin, tt.wantIsAdmin)
+			}
+		})
+	}
+}
