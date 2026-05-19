@@ -61,6 +61,6 @@ func (h *Handler) layout() httpx.Layout {
 func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
 	reg.Wrap(mux, "Mob.View", "GET /mobs", http.HandlerFunc(h.showList))
 	reg.Wrap(mux, "Mob.View", "GET /mobs/{id}", http.HandlerFunc(h.showDetail))
-	reg.Wrap(mux, "Mob.APILookup", "GET /api/mobs/{id}", http.HandlerFunc(h.apiDetail))
+	reg.Wrap(mux, "Mob.API", "GET /api/mobs/{id}", http.HandlerFunc(h.apiDetail))
 	reg.Wrap(mux, "Admin.MobsReload", "POST /admin/mobs/reload", http.HandlerFunc(h.doReload))
 }

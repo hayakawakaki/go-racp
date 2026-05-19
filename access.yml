@@ -1,7 +1,7 @@
 # Every registered route must have an entry here. Missing entries panic at startup.
 # Admin is implicit on every gated entry and cannot be listed.
 # * means any authenticated user.
-# Public means no auth at all (anonymous) — cannot be combined with other roles or with Requires: [Unrestricted].
+# Public means no auth at all (anonymous) - cannot be combined with other roles or with Requires: [Unrestricted].
 #
 # Valid Roles: ["Public", "*", "Event", "Moderator", "Enforcer"]
 # Valid Requires:
@@ -65,11 +65,11 @@ Character:
 Item:
   View:
     Roles: ["*"]
-  APILookup:
+  API:
     Roles: ["Public"]
 
 Mob:
   View:
     Roles: ["*"]
-  APILookup:
+  API:
     Roles: ["Public"]
