@@ -1,0 +1,49 @@
+package transport
+
+import (
+	"fmt"
+
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+)
+
+templ accountSection(state detailState) {
+	<section class="rounded-2xl bg-white ring-1 ring-gray-200 p-5">
+		<h2 class="text-lg font-semibold text-gray-900 mb-3">Account</h2>
+		<dl class="divide-y divide-gray-100 text-sm">
+			<div class="grid grid-cols-[10rem_minmax(0,1fr)] gap-x-6 py-2">
+				<dt class="text-gray-500">ID</dt>
+				<dd class="font-mono text-gray-900">{ fmt.Sprintf("%d", state.Detail.User.ID) }</dd>
+			</div>
+			<div class="grid grid-cols-[10rem_minmax(0,1fr)] gap-x-6 py-2">
+				<dt class="text-gray-500">Username</dt>
+				<dd class="text-gray-900">{ state.Detail.User.Username }</dd>
+			</div>
+			<div class="grid grid-cols-[10rem_minmax(0,1fr)] gap-x-6 py-2">
+				<dt class="text-gray-500">Email</dt>
+				<dd class="text-gray-900">{ state.Detail.User.Email }</dd>
+			</div>
+			<div class="grid grid-cols-[10rem_minmax(0,1fr)] gap-x-6 py-2">
+				<dt class="text-gray-500">Role</dt>
+				<dd class="text-gray-900">{ roleNameFor(state, state.Detail.User.GroupID) }</dd>
+			</div>
+			<div class="grid grid-cols-[10rem_minmax(0,1fr)] gap-x-6 py-2">
+				<dt class="text-gray-500">Tier</dt>
+				<dd class="text-gray-900">@tierBadge(state.Detail.User, state.Now)</dd>
+			</div>
+			<div class="grid grid-cols-[10rem_minmax(0,1fr)] gap-x-6 py-2">
+				<dt class="text-gray-500">Last IP</dt>
+				<dd class="font-mono text-gray-900">{ state.Detail.User.LastIP }</dd>
+			</div>
+			<div class="grid grid-cols-[10rem_minmax(0,1fr)] gap-x-6 py-2">
+				<dt class="text-gray-500">Last login</dt>
+				<dd class="text-gray-900">
+					if state.Detail.User.LastLogin.IsZero() {
+						never
+					} else {
+						@httpx.LocalTime(state.Detail.User.LastLogin.Format("2006-01-02T15:04:05Z07:00"))
+					}
+				</dd>
+			</div>
+		</dl>
+	</section>
+}

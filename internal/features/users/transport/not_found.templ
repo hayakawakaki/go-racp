@@ -1,0 +1,18 @@
+package transport
+
+import "github.com/hayakawakaki/go-racp/internal/platform/httpx"
+
+templ notFoundPage(layout httpx.Layout, id string) {
+	@httpx.Base(layout, "Admin / Users") {
+		<div class="w-full max-w-md">
+			<section class="rounded-2xl bg-white ring-1 ring-gray-200 px-8 py-7 text-center">
+				<p class="text-xs uppercase tracking-[0.18em] text-gray-400">404</p>
+				<h1 class="mt-2 text-3xl font-semibold tracking-tight text-gray-900">User not found</h1>
+				<p class="mt-3 text-sm text-gray-500">No account exists with ID <span class="font-mono">{ id }</span>.</p>
+				<div class="mt-6">
+					<a href="/admin/users" class="inline-block rounded-full border border-gray-300 px-5 py-2 text-sm font-medium text-gray-700">Back to users</a>
+				</div>
+			</section>
+		</div>
+	}
+}

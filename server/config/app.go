@@ -7,8 +7,7 @@ import (
 	"time"
 
 	"github.com/goccy/go-yaml"
-
-	"github.com/hayakawakaki/go-racp/internal/refdata"
+	"github.com/hayakawakaki/go-racp/internal/platform/refdata"
 )
 
 // GeneralConfig holds UI/branding settings shared across every page.

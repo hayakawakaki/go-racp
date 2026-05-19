@@ -1,0 +1,223 @@
+package transport
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"log/slog"
+	"net/http"
+	"time"
+
+	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
+	ticketsapp "github.com/hayakawakaki/go-racp/internal/features/tickets/app"
+	domain2 "github.com/hayakawakaki/go-racp/internal/features/tickets/domain"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/routes"
+	"github.com/hayakawakaki/go-racp/server/config"
+)
+
+var errUnauthenticated = errors.New("transport: unauthenticated request")
+
+const (
+	maxOpenFormBytes    = 8 << 10
+	maxReplyFormBytes   = 8 << 10
+	maxNoteFormBytes    = 8 << 10
+	maxSubjectFormBytes = 1 << 10
+)
+
+const (
+	fieldCategory = "category"
+	fieldSubject  = "subject"
+	fieldBody     = "body"
+)
+
+type ticketService interface {
+	Now() time.Time
+	OpenTicket(ctx context.Context, accountID int, category, subject, body string) (int64, error)
+	PlayerReply(ctx context.Context, accountID int, ticketID int64, body string) error
+	StaffReply(ctx context.Context, staffID int, ticketID int64, body string) error
+	StaffNote(ctx context.Context, staffID int, ticketID int64, body string) error
+	StaffRecategorize(ctx context.Context, staffID int, ticketID int64, newCategory string) error
+	StaffEditSubject(ctx context.Context, staffID int, ticketID int64, newSubject string) error
+	StaffResolve(ctx context.Context, staffID int, ticketID int64) error
+	StaffClose(ctx context.Context, staffID int, ticketID int64) error
+	GetTicketForPlayer(ctx context.Context, accountID int, ticketID int64) (ticketsapp.TicketDetailDTO, error)
+	GetTicketForStaff(ctx context.Context, ticketID int64) (ticketsapp.TicketDetailDTO, error)
+	ListForPlayer(ctx context.Context, accountID, offset, limit int) ([]ticketsapp.TicketListItem, int, error)
+	ListForStaff(ctx context.Context, staffID int, tab domain2.StaffTab, categoryKeys []string, offset, limit int) ([]ticketsapp.TicketListItem, int, error)
+	MarkViewed(ctx context.Context, accountID int, ticketID int64)
+	UnreadCountForPlayer(ctx context.Context, accountID int) int
+	UnreadCountForStaff(ctx context.Context, accountID int, categoryKeys []string) int
+	Categories() domain2.CategoryResolver
+}
+
+type userLookup interface {
+	GetByID(ctx context.Context, id int) (*accdomain.User, error)
+}
+
+type HandlerConfig struct {
+	General      config.GeneralConfig
+	Roles        accdomain.RoleResolver
+	Logger       *slog.Logger
+	Users        userLookup
+	ManageRoles  []string
+	PollInterval time.Duration
+}
+
+type Handler struct {
+	svc         ticketService
+	users       userLookup
+	logger      *slog.Logger
+	manageRoles map[string]struct{}
+	roles       accdomain.RoleResolver
+	general     config.GeneralConfig
+	poll        time.Duration
+}
+
+func NewHandler(service ticketService, cfg HandlerConfig) *Handler {
+	manageRoles := make(map[string]struct{}, len(cfg.ManageRoles))
+	for _, name := range cfg.ManageRoles {
+		manageRoles[name] = struct{}{}
+	}
+
+	return &Handler{
+		svc:         service,
+		users:       cfg.Users,
+		logger:      cfg.Logger,
+		general:     cfg.General,
+		roles:       cfg.Roles,
+		poll:        cfg.PollInterval,
+		manageRoles: manageRoles,
+	}
+}
+
+func (h *Handler) layout() httpx.Layout {
+	return httpx.Layout{GeneralConfig: h.general}
+}
+
+func (h *Handler) currentUser(r *http.Request) (*accdomain.User, accdomain.Role, error) {
+	if snap, ok := middleware.SnapshotFromContext(r.Context()); ok {
+		user := &accdomain.User{
+			ID:        snap.UserID,
+			Username:  snap.Username,
+			GroupID:   snap.GroupID,
+			State:     snap.State,
+			UnbanTime: snap.UnbanTime,
+		}
+		return user, h.roles.Resolve(user.GroupID), nil
+	}
+
+	session, ok := middleware.SessionFromContext(r.Context())
+	if !ok {
+		return nil, accdomain.Role{}, errUnauthenticated
+	}
+	user, err := h.users.GetByID(r.Context(), session.UserID)
+	if err != nil {
+		return nil, accdomain.Role{}, fmt.Errorf("transport.Handler.currentUser: %w", err)
+	}
+
+	return user, h.roles.Resolve(user.GroupID), nil
+}
+
+func (h *Handler) resolveUser(w http.ResponseWriter, r *http.Request) (*accdomain.User, accdomain.Role, bool) {
+	user, role, err := h.currentUser(r)
+	if err == nil {
+		return user, role, true
+	}
+	if errors.Is(err, errUnauthenticated) {
+		httpx.Redirect(w, r, "/login")
+		return nil, accdomain.Role{}, false
+	}
+	h.logger.Error("tickets: load user", "err", err)
+	http.Error(w, "internal server error", http.StatusInternalServerError)
+
+	return nil, accdomain.Role{}, false
+}
+
+func (h *Handler) categoryAllowed(role accdomain.Role, categoryKey string) bool {
+	return h.svc.Categories().Permits(categoryKey, role.Name, role == accdomain.RoleAdmin)
+}
+
+func (h *Handler) isStaff(role accdomain.Role) bool {
+	if role == accdomain.RoleAdmin {
+		return true
+	}
+	_, ok := h.manageRoles[role.Name]
+
+	return ok
+}
+
+func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
+	reg.Wrap(mux, "Tickets.View", "GET /tickets", http.HandlerFunc(h.list))
+	reg.Wrap(mux, "Tickets.Open", "GET /tickets/new", http.HandlerFunc(h.newForm))
+	reg.Wrap(mux, "Tickets.Open", "POST /tickets/new", http.HandlerFunc(h.create))
+	reg.Wrap(mux, "Tickets.View", "GET /tickets/{id}", http.HandlerFunc(h.detail))
+	reg.Wrap(mux, "Tickets.Reply", "POST /tickets/{id}/reply", http.HandlerFunc(h.reply))
+
+	reg.Wrap(mux, "Tickets.Manage", "POST /tickets/{id}/note", http.HandlerFunc(h.staffNote))
+	reg.Wrap(mux, "Tickets.Manage", "POST /tickets/{id}/resolve", http.HandlerFunc(h.staffResolve))
+	reg.Wrap(mux, "Tickets.Manage", "POST /tickets/{id}/close", http.HandlerFunc(h.staffClose))
+	reg.Wrap(mux, "Tickets.Manage", "POST /tickets/{id}/category", http.HandlerFunc(h.staffRecategorize))
+	reg.Wrap(mux, "Tickets.Manage", "POST /tickets/{id}/subject", http.HandlerFunc(h.staffEditSubject))
+}
+
+func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
+	_, role, ok := h.resolveUser(w, r)
+	if !ok {
+		return
+	}
+	if h.isStaff(role) {
+		h.staffList(w, r)
+		return
+	}
+	h.playerList(w, r)
+}
+
+func (h *Handler) newForm(w http.ResponseWriter, r *http.Request) {
+	_, role, ok := h.resolveUser(w, r)
+	if !ok {
+		return
+	}
+	if h.isStaff(role) {
+		httpx.Redirect(w, r, "/tickets")
+		return
+	}
+	h.playerNewForm(w, r)
+}
+
+func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
+	_, role, ok := h.resolveUser(w, r)
+	if !ok {
+		return
+	}
+	if h.isStaff(role) {
+		httpx.Redirect(w, r, "/tickets")
+		return
+	}
+	h.playerCreate(w, r)
+}
+
+func (h *Handler) detail(w http.ResponseWriter, r *http.Request) {
+	_, role, ok := h.resolveUser(w, r)
+	if !ok {
+		return
+	}
+	if h.isStaff(role) {
+		h.staffDetail(w, r)
+		return
+	}
+	h.playerDetail(w, r)
+}
+
+func (h *Handler) reply(w http.ResponseWriter, r *http.Request) {
+	_, role, ok := h.resolveUser(w, r)
+	if !ok {
+		return
+	}
+	if h.isStaff(role) {
+		h.staffReply(w, r)
+		return
+	}
+	h.playerReply(w, r)
+}
