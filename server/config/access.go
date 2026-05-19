@@ -132,13 +132,17 @@ func validateAccessConfig(cfg AccessConfig) {
 			if hasPublic && entry.RequiresUnrestricted() {
 				panic(fmt.Errorf("access.yml: Action '%s' combines 'Public' with Requires: ['Unrestricted']. Public bypasses auth, there is no user to classify", fullName))
 			}
+			soleAdmin := len(entry.Roles) == 1 && entry.Roles[0] == adminRoleName
 			for _, role := range entry.Roles {
-				if role == adminRoleName {
-					panic(fmt.Errorf("access.yml: Action '%s' lists 'Admin'. Admin is implicit, remove it from the list", fullName))
+				if role == adminRoleName && !soleAdmin {
+					panic(fmt.Errorf("access.yml: Action '%s' lists 'Admin' alongside other roles. Admin is implicit, remove it from the list", fullName))
 				}
 				if role == "" {
 					panic(fmt.Errorf("access.yml: Action '%s' has an empty role name", fullName))
 				}
+			}
+			if soleAdmin && entry.RequiresUnrestricted() {
+				panic(fmt.Errorf("access.yml: Action '%s' combines sole 'Admin' role with Requires: ['Unrestricted']. Admin policy is always Unrestricted; remove the Requires tag", fullName))
 			}
 		}
 	}

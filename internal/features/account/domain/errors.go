@@ -46,6 +46,14 @@ var (
 	ErrRegPasswordNoUpper  = errors.New("password must contain an uppercase letter")
 	ErrRegPasswordNoDigit  = errors.New("password must contain a digit")
 	ErrRegPasswordNoSymbol = errors.New("password must contain a special character")
+
+	ErrInvalidDuration = errors.New("account: invalid ban duration")
+	ErrSelfAction      = errors.New("account: cannot perform action on own account")
+	ErrTargetIsAdmin   = errors.New("account: cannot act on another admin account through the UI")
+	ErrInvalidRole     = errors.New("account: invalid role / group_id")
+	ErrEmptyReason     = errors.New("account: reason is required")
+	ErrInvalidState    = errors.New("account: action not allowed in current state")
+	ErrTargetProtected = errors.New("account: cannot act on a role-bearing account without admin")
 )
 
 type FieldErrors map[string]string

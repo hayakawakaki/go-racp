@@ -12,7 +12,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/hayakawakaki/go-racp/internal/features/account/app"
+	app "github.com/hayakawakaki/go-racp/internal/features/account/app/self"
 	"github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	accinfra "github.com/hayakawakaki/go-racp/internal/features/account/infra"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"

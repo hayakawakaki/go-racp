@@ -3,9 +3,11 @@ package account
 import (
 	"net/http"
 
-	"github.com/hayakawakaki/go-racp/internal/features/account/app"
+	modapp "github.com/hayakawakaki/go-racp/internal/features/account/app/moderation"
+	app "github.com/hayakawakaki/go-racp/internal/features/account/app/self"
 	"github.com/hayakawakaki/go-racp/internal/features/account/infra"
-	"github.com/hayakawakaki/go-racp/internal/features/account/transport"
+	modtransport "github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation"
+	transport "github.com/hayakawakaki/go-racp/internal/features/account/transport/self"
 	"github.com/hayakawakaki/go-racp/internal/features/character"
 	coreinfra "github.com/hayakawakaki/go-racp/internal/infra"
 	"github.com/hayakawakaki/go-racp/internal/platform/plugin"
@@ -34,6 +36,13 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 		AllowTempBannedLogin: in.Config.App.Auth.AllowTempBannedLogin,
 	})
 	h.RegisterRoutes(reg, mux)
+
+	modSvc := buildModerationService(in, userRepo)
+	modH := modtransport.NewHandler(modSvc, modtransport.HandlerConfig{
+		Logger:  in.Logger,
+		General: in.Config.App.General,
+	})
+	modH.RegisterRoutes(reg, mux)
 }
 
 func buildServices(in *coreinfra.Infra) (*app.Service, *app.SessionService, *infra.Repository) {
@@ -70,4 +79,19 @@ func buildServices(in *coreinfra.Infra) (*app.Service, *app.SessionService, *inf
 	)
 
 	return svc, sessSvc, userRepo
+}
+
+func buildModerationService(in *coreinfra.Infra, userRepo *infra.Repository) *modapp.Service {
+	allowed := map[int]string{0: "Player"}
+	for name, groupID := range in.Config.App.UserRoles {
+		allowed[groupID] = name
+	}
+
+	return modapp.NewService(modapp.Sources{
+		Users:        userRepo,
+		Characters:   infra.NewCharRepository(in.MainDB),
+		Actions:      infra.NewActionRepository(in.DB),
+		AllowedRoles: allowed,
+		Logger:       in.Logger,
+	})
 }

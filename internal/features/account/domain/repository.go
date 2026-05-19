@@ -6,13 +6,14 @@ import (
 )
 
 type Repository interface {
-	Create(ctx context.Context, user *User) (*User, error)
+	Create(ctx context.Context, user *User, password string) (*User, error)
 	GetAll(ctx context.Context) ([]User, error)
 	GetByID(ctx context.Context, id int) (*User, error)
 	GetByUsername(ctx context.Context, username string) (*User, error)
 	GetByEmail(ctx context.Context, email string) (*User, error)
 	Delete(ctx context.Context, id int) error
 	Authenticate(ctx context.Context, username, password string) (*User, error)
+	VerifyPassword(ctx context.Context, id int, password string) (bool, error)
 	MarkVerified(ctx context.Context, accountID int) error
 	UpdatePassword(ctx context.Context, accountID int, newPassword string) error
 	UpdateEmail(ctx context.Context, accountID int, newEmail string) error

@@ -103,9 +103,18 @@ func TestValidateAccessConfig_RejectsInvalid(t *testing.T) {
 			cfg:         AccessConfig{"News": ActionRoles{"Edit": Entry{Roles: RoleList{}}}},
 		},
 		{
-			name:        "admin inside list",
+			name:        "admin alongside other roles",
 			wantContain: "Admin is implicit",
-			cfg:         AccessConfig{"News": ActionRoles{"Edit": Entry{Roles: RoleList{"Admin"}}}},
+			cfg:         AccessConfig{"News": ActionRoles{"Edit": Entry{Roles: RoleList{"Admin", "Moderator"}}}},
+		},
+		{
+			name:        "sole admin combined with unrestricted",
+			wantContain: "Admin",
+			cfg: AccessConfig{
+				"Users": ActionRoles{
+					"List": Entry{Roles: RoleList{"Admin"}, Requires: []string{"Unrestricted"}},
+				},
+			},
 		},
 		{
 			name:        "empty role name",
@@ -145,6 +154,10 @@ func TestValidateAccessConfig_AcceptsHappyPath(t *testing.T) {
 		},
 		"Home": ActionRoles{
 			"View": Entry{Roles: RoleList{"Public"}},
+		},
+		"Users": ActionRoles{
+			"List": Entry{Roles: RoleList{"Admin"}},
+			"Ban":  Entry{Roles: RoleList{"Moderator", "Enforcer"}, Requires: []string{"Unrestricted"}},
 		},
 	}
 	validateAccessConfig(cfg)

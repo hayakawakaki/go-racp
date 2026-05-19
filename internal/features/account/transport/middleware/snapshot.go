@@ -34,6 +34,10 @@ type AccountSnapshot struct {
 	State     int
 }
 
+func (s *AccountSnapshot) IsAdmin() bool {
+	return s.GroupID == domain.RoleAdmin.GroupID
+}
+
 func ContextWithSnapshot(ctx context.Context, snap *AccountSnapshot) context.Context {
 	return context.WithValue(ctx, accountSnapshotKey, snap)
 }

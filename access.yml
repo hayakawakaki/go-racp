@@ -1,11 +1,14 @@
 # Every registered route must have an entry here. Missing entries panic at startup.
-# Admin is implicit on every gated entry and cannot be listed.
+# Admin is implicit on every gated entry. It may only be listed by itself
+# (Roles: ["Admin"]) to mark a non-Admin.*-tagged route as admin-only-hidden;
+# it cannot be combined with other roles or with Requires: ["Unrestricted"].
 # * means any authenticated user.
 # Public means no auth at all (anonymous) - cannot be combined with other roles or with Requires: [Unrestricted].
 #
-# Valid Roles: ["Public", "*", "Event", "Moderator", "Enforcer"]
+# Valid Roles: ["Public", "*", "Admin", "Event", "Moderator", "Enforcer"]
 # Valid Requires:
 #  Unrestricted: Not permanently banned, Not temporarily banned, Email Verified and Exists in Database
+#
 # Declare Custom Roles in config.yml under UserRoles:
 
 
@@ -73,3 +76,17 @@ Mob:
     Roles: ["*"]
   API:
     Roles: ["Public"]
+
+Users:
+  List:
+    Roles: ["Admin"]
+  View:
+    Roles: ["Admin"]
+  Ban:
+    Roles: ["Moderator", "Enforcer"]
+    Requires: ["Unrestricted"]
+  Unban:
+    Roles: ["Moderator", "Enforcer"]
+    Requires: ["Unrestricted"]
+  SetRole:
+    Roles: ["Admin"]
