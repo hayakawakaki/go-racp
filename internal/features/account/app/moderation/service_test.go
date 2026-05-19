@@ -74,23 +74,23 @@ func (r *fakeCharRepo) ListByAccount(_ context.Context, accountID int) ([]accdom
 	return r.chars[accountID], nil
 }
 
-type fakeActionRepo struct {
+type fakeAuditRepo struct {
 	recordErr error
-	rows      []accdomain.Action
+	rows      []accdomain.AuditEntry
 }
 
-func (r *fakeActionRepo) Record(_ context.Context, a accdomain.Action) error {
+func (r *fakeAuditRepo) Record(_ context.Context, a accdomain.AuditEntry) error {
 	if r.recordErr != nil {
 		return r.recordErr
 	}
 	a.At = time.Now()
-	r.rows = append([]accdomain.Action{a}, r.rows...)
+	r.rows = append([]accdomain.AuditEntry{a}, r.rows...)
 
 	return nil
 }
 
-func (r *fakeActionRepo) ListByTarget(_ context.Context, targetID, limit int) ([]accdomain.Action, error) {
-	out := make([]accdomain.Action, 0, len(r.rows))
+func (r *fakeAuditRepo) ListByTarget(_ context.Context, targetID, limit int) ([]accdomain.AuditEntry, error) {
+	out := make([]accdomain.AuditEntry, 0, len(r.rows))
 	for _, a := range r.rows {
 		if a.TargetUserID == targetID {
 			out = append(out, a)
@@ -103,28 +103,28 @@ func (r *fakeActionRepo) ListByTarget(_ context.Context, targetID, limit int) ([
 	return out, nil
 }
 
-func newTestService(t *testing.T) (*Service, *fakeUserRepo, *fakeCharRepo, *fakeActionRepo) {
+func newTestService(t *testing.T) (*Service, *fakeUserRepo, *fakeCharRepo, *fakeAuditRepo) {
 	t.Helper()
 	users := newFakeUserRepo()
 	chars := &fakeCharRepo{chars: map[int][]accdomain.Character{}}
-	actions := &fakeActionRepo{}
+	audits := &fakeAuditRepo{}
 	svc := NewService(Sources{
 		Users:        users,
 		Characters:   chars,
-		Actions:      actions,
+		Audits:       audits,
 		AllowedRoles: map[int]string{0: "Player", 20: "Moderator"},
 		Logger:       slog.New(slog.NewTextHandler(io.Discard, nil)),
 	})
 
-	return svc, users, chars, actions
+	return svc, users, chars, audits
 }
 
 func TestService_Get_BundlesUserCharsAndActions(t *testing.T) {
 	t.Parallel()
-	svc, users, chars, actions := newTestService(t)
+	svc, users, chars, audits := newTestService(t)
 	users.users[7] = &accdomain.User{ID: 7, Username: "kaki"}
 	chars.chars[7] = []accdomain.Character{{ID: 1, Name: "Kaki1"}}
-	_ = actions.Record(context.Background(), accdomain.Action{ActorUserID: 1, TargetUserID: 7, Kind: accdomain.ActionBan})
+	_ = audits.Record(context.Background(), accdomain.AuditEntry{ActorUserID: 1, TargetUserID: 7, Kind: accdomain.AuditBan})
 
 	detail, err := svc.Get(context.Background(), 7)
 	if err != nil {
@@ -161,7 +161,7 @@ func TestService_List_ReturnsPage(t *testing.T) {
 
 func TestService_Ban_CustomTemp(t *testing.T) {
 	t.Parallel()
-	svc, users, _, actions := newTestService(t)
+	svc, users, _, audits := newTestService(t)
 	users.users[7] = &accdomain.User{ID: 7, Username: "kaki"}
 
 	detail, err := svc.Ban(context.Background(), BanCommand{
@@ -176,8 +176,8 @@ func TestService_Ban_CustomTemp(t *testing.T) {
 	if detail.User.UnbanTime.IsZero() {
 		t.Errorf("UnbanTime should be set for temp ban")
 	}
-	if len(actions.rows) != 1 || actions.rows[0].Kind != accdomain.ActionBan {
-		t.Errorf("audit not recorded: %+v", actions.rows)
+	if len(audits.rows) != 1 || audits.rows[0].Kind != accdomain.AuditBan {
+		t.Errorf("audit not recorded: %+v", audits.rows)
 	}
 }
 
@@ -359,9 +359,9 @@ func TestService_SetRole_NoOpRejected(t *testing.T) {
 
 func TestService_Ban_AuditFailureDoesNotRollBack(t *testing.T) {
 	t.Parallel()
-	svc, users, _, actions := newTestService(t)
+	svc, users, _, audits := newTestService(t)
 	users.users[7] = &accdomain.User{ID: 7, Username: "kaki"}
-	actions.recordErr = errors.New("postgres down")
+	audits.recordErr = errors.New("postgres down")
 
 	detail, err := svc.Ban(context.Background(), BanCommand{
 		ActorUserID:  1,

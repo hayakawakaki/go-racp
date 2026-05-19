@@ -10,32 +10,32 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/testutil"
 )
 
-func setupAuditRepo(t *testing.T) *ActionRepository {
+func setupAuditRepo(t *testing.T) *AuditRepository {
 	t.Helper()
 	pool := testutil.OpenPostgres(t, "DB_CP_TEST_URL")
-	testutil.TruncatePostgres(t, pool, "cp_user_actions")
+	testutil.TruncatePostgres(t, pool, "cp_audit_log")
 
-	return NewActionRepository(pool)
+	return NewAuditRepository(pool)
 }
 
-func TestActionRepository_RecordAndList(t *testing.T) {
+func TestAuditRepository_RecordAndList(t *testing.T) {
 	repo := setupAuditRepo(t)
 	ctx := context.Background()
 
-	if err := repo.Record(ctx, domain.Action{
+	if err := repo.Record(ctx, domain.AuditEntry{
 		ActorUserID:  10,
 		TargetUserID: 20,
-		Kind:         domain.ActionBan,
+		Kind:         domain.AuditBan,
 		Reason:       "spam",
 		BeforeValue:  "0,0",
 		AfterValue:   "5,0",
 	}); err != nil {
 		t.Fatalf("Record ban: %v", err)
 	}
-	if err := repo.Record(ctx, domain.Action{
+	if err := repo.Record(ctx, domain.AuditEntry{
 		ActorUserID:  10,
 		TargetUserID: 20,
-		Kind:         domain.ActionSetRole,
+		Kind:         domain.AuditSetRole,
 		Reason:       "demote",
 		BeforeValue:  "20",
 		AfterValue:   "0",
@@ -50,7 +50,7 @@ func TestActionRepository_RecordAndList(t *testing.T) {
 	if len(list) != 2 {
 		t.Fatalf("len = %d, want 2", len(list))
 	}
-	if list[0].Kind != domain.ActionSetRole {
+	if list[0].Kind != domain.AuditSetRole {
 		t.Errorf("first row should be most recent (set_role); got %s", list[0].Kind)
 	}
 	if list[0].At.IsZero() {

@@ -90,7 +90,7 @@ func buildModerationService(in *coreinfra.Infra, userRepo *infra.Repository) *mo
 	return modapp.NewService(modapp.Sources{
 		Users:        userRepo,
 		Characters:   infra.NewCharRepository(in.MainDB),
-		Actions:      infra.NewActionRepository(in.DB),
+		Audits:       infra.NewAuditRepository(in.DB),
 		AllowedRoles: allowed,
 		Logger:       in.Logger,
 	})

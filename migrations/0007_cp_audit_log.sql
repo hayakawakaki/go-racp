@@ -1,5 +1,5 @@
 -- +goose Up
-CREATE TABLE cp_user_actions (
+CREATE TABLE cp_audit_log (
     id             BIGINT      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     actor_user_id  INTEGER     NOT NULL,
     target_user_id INTEGER     NOT NULL,
@@ -10,7 +10,7 @@ CREATE TABLE cp_user_actions (
     created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_cp_user_actions_target ON cp_user_actions (target_user_id, created_at DESC);
+CREATE INDEX idx_cp_audit_log_target ON cp_audit_log (target_user_id, created_at DESC);
 
 -- +goose Down
-DROP TABLE IF EXISTS cp_user_actions;
+DROP TABLE IF EXISTS cp_audit_log;

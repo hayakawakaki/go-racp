@@ -24,15 +24,15 @@ type CharRepo interface {
 	ListByAccount(ctx context.Context, accountID int) ([]accdomain.Character, error)
 }
 
-type ActionRepo interface {
-	Record(ctx context.Context, a accdomain.Action) error
-	ListByTarget(ctx context.Context, targetID, limit int) ([]accdomain.Action, error)
+type AuditRepo interface {
+	Record(ctx context.Context, a accdomain.AuditEntry) error
+	ListByTarget(ctx context.Context, targetID, limit int) ([]accdomain.AuditEntry, error)
 }
 
 type Sources struct {
 	Users        UserRepo
 	Characters   CharRepo
-	Actions      ActionRepo
+	Audits       AuditRepo
 	AllowedRoles map[int]string
 	Logger       *slog.Logger
 }
@@ -40,7 +40,7 @@ type Sources struct {
 type Service struct {
 	users        UserRepo
 	characters   CharRepo
-	actions      ActionRepo
+	audits       AuditRepo
 	allowedRoles map[int]string
 	logger       *slog.Logger
 }
@@ -54,7 +54,7 @@ func NewService(in Sources) *Service {
 	return &Service{
 		users:        in.Users,
 		characters:   in.Characters,
-		actions:      in.Actions,
+		audits:       in.Audits,
 		allowedRoles: maps.Clone(in.AllowedRoles),
 		logger:       logger,
 	}
@@ -82,9 +82,9 @@ func (s *Service) Get(ctx context.Context, id int) (UserDetail, error) {
 	if err != nil {
 		return UserDetail{}, fmt.Errorf("app.Service.Get chars: %w", err)
 	}
-	recent, err := s.actions.ListByTarget(ctx, id, 10)
+	recent, err := s.audits.ListByTarget(ctx, id, 10)
 	if err != nil {
-		return UserDetail{}, fmt.Errorf("app.Service.Get actions: %w", err)
+		return UserDetail{}, fmt.Errorf("app.Service.Get audits: %w", err)
 	}
 
 	return UserDetail{User: user, Characters: chars, Recent: recent}, nil
@@ -145,10 +145,10 @@ func (s *Service) Ban(ctx context.Context, cmd BanCommand) (UserDetail, error) {
 		return UserDetail{}, fmt.Errorf("app.Service.Ban update: %w", err)
 	}
 
-	s.recordAudit(ctx, accdomain.Action{
+	s.recordAudit(ctx, accdomain.AuditEntry{
 		ActorUserID:  cmd.ActorUserID,
 		TargetUserID: cmd.TargetUserID,
-		Kind:         accdomain.ActionBan,
+		Kind:         accdomain.AuditBan,
 		Reason:       reason,
 		BeforeValue:  fmt.Sprintf("%d,%d", beforeState, beforeUnban),
 		AfterValue:   fmt.Sprintf("%d,%d", newState, newUnban),
@@ -176,10 +176,10 @@ func (s *Service) Unban(ctx context.Context, cmd UnbanCommand) (UserDetail, erro
 		return UserDetail{}, fmt.Errorf("app.Service.Unban update: %w", err)
 	}
 
-	s.recordAudit(ctx, accdomain.Action{
+	s.recordAudit(ctx, accdomain.AuditEntry{
 		ActorUserID:  cmd.ActorUserID,
 		TargetUserID: cmd.TargetUserID,
-		Kind:         accdomain.ActionUnban,
+		Kind:         accdomain.AuditUnban,
 		Reason:       strings.TrimSpace(cmd.Reason),
 		BeforeValue:  fmt.Sprintf("%d,%d", beforeState, beforeUnban),
 		AfterValue:   "0,0",
@@ -206,10 +206,10 @@ func (s *Service) SetRole(ctx context.Context, cmd SetRoleCommand) (UserDetail, 
 		return UserDetail{}, fmt.Errorf("app.Service.SetRole update: %w", err)
 	}
 
-	s.recordAudit(ctx, accdomain.Action{
+	s.recordAudit(ctx, accdomain.AuditEntry{
 		ActorUserID:  cmd.ActorUserID,
 		TargetUserID: cmd.TargetUserID,
-		Kind:         accdomain.ActionSetRole,
+		Kind:         accdomain.AuditSetRole,
 		Reason:       strings.TrimSpace(cmd.Reason),
 		BeforeValue:  strconv.Itoa(before),
 		AfterValue:   strconv.Itoa(cmd.NewGroupID),
@@ -218,8 +218,8 @@ func (s *Service) SetRole(ctx context.Context, cmd SetRoleCommand) (UserDetail, 
 	return s.Get(ctx, cmd.TargetUserID)
 }
 
-func (s *Service) recordAudit(ctx context.Context, a accdomain.Action) {
-	if err := s.actions.Record(ctx, a); err != nil {
+func (s *Service) recordAudit(ctx context.Context, a accdomain.AuditEntry) {
+	if err := s.audits.Record(ctx, a); err != nil {
 		s.logger.Error("users: audit insert failed",
 			"action", string(a.Kind),
 			"actor_user_id", a.ActorUserID,

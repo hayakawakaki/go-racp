@@ -12,7 +12,7 @@ type UserPage = infra.UserPage
 type UserDetail struct {
 	User       *accdomain.User
 	Characters []accdomain.Character
-	Recent     []accdomain.Action
+	Recent     []accdomain.AuditEntry
 }
 
 type BanCommand struct {
