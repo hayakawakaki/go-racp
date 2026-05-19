@@ -12,13 +12,13 @@ import (
 	"fmt"
 	"html/template"
 
+	"github.com/hayakawakaki/go-racp/internal/features/news/app"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
-	newsapp "github.com/hayakawakaki/go-racp/internal/news/app"
 )
 
 type NewsDetailState struct {
 	BodyHTML  template.HTML
-	Item      newsapp.NewsItem
+	Item      app.NewsItem
 	CanManage bool
 }
 
@@ -67,7 +67,7 @@ func newsDetailPage(layout httpx.Layout, state NewsDetailState) templ.Component 
 				var templ_7745c5c3_Var3 templ.SafeURL
 				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/news/%d/edit", state.Item.ID)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/news/transport/news_detail.templ`, Line: 23, Col: 69}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/news/transport/news_detail.templ`, Line: 23, Col: 69}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 				if templ_7745c5c3_Err != nil {
@@ -97,7 +97,7 @@ func newsDetailPage(layout httpx.Layout, state NewsDetailState) templ.Component 
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(state.Item.Title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/news/transport/news_detail.templ`, Line: 31, Col: 71}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/news/transport/news_detail.templ`, Line: 31, Col: 71}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {

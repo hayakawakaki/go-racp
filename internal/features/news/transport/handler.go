@@ -5,12 +5,12 @@ import (
 	"log/slog"
 	"net/http"
 
-	accountdomain "github.com/hayakawakaki/go-racp/internal/account/domain"
+	accdomain "github.com/hayakawakaki/go-racp/internal/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
+	"github.com/hayakawakaki/go-racp/internal/features/news/app"
+	"github.com/hayakawakaki/go-racp/internal/features/news/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/news/infra"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
-	newsapp "github.com/hayakawakaki/go-racp/internal/news/app"
-	"github.com/hayakawakaki/go-racp/internal/news/domain"
-	newsinfra "github.com/hayakawakaki/go-racp/internal/news/infra"
 	"github.com/hayakawakaki/go-racp/internal/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
@@ -20,19 +20,19 @@ type newsService interface {
 	Create(ctx context.Context, title, body, category string) (int64, error)
 	Update(ctx context.Context, id int64, title, body, category string) error
 	Delete(ctx context.Context, id int64) error
-	GetByID(ctx context.Context, id int64) (newsapp.NewsItem, error)
-	List(ctx context.Context) ([]newsapp.NewsItem, error)
-	ListByCategory(ctx context.Context, category string) ([]newsapp.NewsItem, error)
+	GetByID(ctx context.Context, id int64) (app.NewsItem, error)
+	List(ctx context.Context) ([]app.NewsItem, error)
+	ListByCategory(ctx context.Context, category string) ([]app.NewsItem, error)
 }
 
 type userLookup interface {
-	GetByID(ctx context.Context, id int) (*accountdomain.User, error)
+	GetByID(ctx context.Context, id int) (*accdomain.User, error)
 }
 
 type HandlerConfig struct {
 	Logger      *slog.Logger
 	Users       userLookup
-	Roles       accountdomain.RoleResolver
+	Roles       accdomain.RoleResolver
 	General     config.GeneralConfig
 	ManageRoles []string
 }
@@ -40,14 +40,14 @@ type HandlerConfig struct {
 type Handler struct {
 	svc         newsService
 	logger      *slog.Logger
-	renderer    *newsinfra.Renderer
+	renderer    *infra.Renderer
 	users       userLookup
-	roles       accountdomain.RoleResolver
+	roles       accdomain.RoleResolver
 	manageRoles map[string]struct{}
 	general     config.GeneralConfig
 }
 
-func NewHandler(service newsService, renderer *newsinfra.Renderer, cfg HandlerConfig) *Handler {
+func NewHandler(service newsService, renderer *infra.Renderer, cfg HandlerConfig) *Handler {
 	manageRoles := make(map[string]struct{}, len(cfg.ManageRoles))
 	for _, name := range cfg.ManageRoles {
 		manageRoles[name] = struct{}{}
@@ -88,7 +88,7 @@ func (h *Handler) canManage(r *http.Request) bool {
 	}
 
 	role := h.roles.Resolve(groupID)
-	if role == accountdomain.RoleAdmin {
+	if role == accdomain.RoleAdmin {
 		return true
 	}
 	_, ok := h.manageRoles[role.Name]
@@ -106,6 +106,7 @@ func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
 	reg.Wrap(mux, "News.Manage", "POST /news/{id}/edit", http.HandlerFunc(h.htmlUpdate))
 	reg.Wrap(mux, "News.Manage", "POST /news/{id}/delete", http.HandlerFunc(h.htmlDelete))
 
+	// Public API
 	reg.Wrap(mux, "News.View", "GET /api/v1/news", http.HandlerFunc(h.jsonList))
 	reg.Wrap(mux, "News.View", "GET /api/v1/news/{id}", http.HandlerFunc(h.jsonGet))
 }

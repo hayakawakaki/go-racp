@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/hayakawakaki/go-racp/internal/features/news/app"
+	"github.com/hayakawakaki/go-racp/internal/features/news/domain"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
-	newsapp "github.com/hayakawakaki/go-racp/internal/news/app"
-	"github.com/hayakawakaki/go-racp/internal/news/domain"
 )
 
 const (
@@ -235,7 +235,7 @@ func fieldFromErr(err error) (field, message string) {
 	return "", ""
 }
 
-func (h *Handler) fetchList(r *http.Request, category string) ([]newsapp.NewsItem, error) {
+func (h *Handler) fetchList(r *http.Request, category string) ([]app.NewsItem, error) {
 	if category != "" && h.svc.Categories().Has(category) {
 		items, err := h.svc.ListByCategory(r.Context(), category)
 		if err != nil {

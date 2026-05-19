@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/hayakawakaki/go-racp/internal/news/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/news/domain"
 )
 
 func TestParseID(t *testing.T) {

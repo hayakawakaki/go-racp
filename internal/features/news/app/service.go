@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/hayakawakaki/go-racp/internal/news/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/news/domain"
 )
 
 type Service struct {

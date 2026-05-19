@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hayakawakaki/go-racp/internal/news/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/news/domain"
 )
 
 type fakeRepo struct {

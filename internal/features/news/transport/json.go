@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/hayakawakaki/go-racp/internal/features/news/domain"
 	"github.com/hayakawakaki/go-racp/internal/httpx"
-	"github.com/hayakawakaki/go-racp/internal/news/domain"
 )
 
 const jsonErrorKey = "error"

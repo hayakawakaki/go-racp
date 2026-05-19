@@ -4,12 +4,12 @@ import (
 	"fmt"
 
 	"github.com/hayakawakaki/go-racp/internal/httpx"
-	newsapp "github.com/hayakawakaki/go-racp/internal/news/app"
-	"github.com/hayakawakaki/go-racp/internal/news/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/news/app"
+	"github.com/hayakawakaki/go-racp/internal/features/news/domain"
 )
 
 type NewsListState struct {
-	Items            []newsapp.NewsItem
+	Items            []app.NewsItem
 	Categories       []domain.Category
 	SelectedCategory string
 	CanManage        bool

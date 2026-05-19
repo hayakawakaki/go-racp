@@ -5,12 +5,12 @@ import (
 	"html/template"
 
 	"github.com/hayakawakaki/go-racp/internal/httpx"
-	newsapp "github.com/hayakawakaki/go-racp/internal/news/app"
+	"github.com/hayakawakaki/go-racp/internal/features/news/app"
 )
 
 type NewsDetailState struct {
 	BodyHTML  template.HTML
-	Item      newsapp.NewsItem
+	Item      app.NewsItem
 	CanManage bool
 }
 

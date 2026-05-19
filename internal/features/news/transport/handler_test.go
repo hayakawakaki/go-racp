@@ -12,22 +12,22 @@ import (
 	"testing"
 	"time"
 
-	accountdomain "github.com/hayakawakaki/go-racp/internal/account/domain"
+	accdomain "github.com/hayakawakaki/go-racp/internal/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/account/transport/middleware"
-	newsapp "github.com/hayakawakaki/go-racp/internal/news/app"
-	"github.com/hayakawakaki/go-racp/internal/news/domain"
-	newsinfra "github.com/hayakawakaki/go-racp/internal/news/infra"
+	"github.com/hayakawakaki/go-racp/internal/features/news/app"
+	"github.com/hayakawakaki/go-racp/internal/features/news/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/news/infra"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 
 type fakeService struct {
-	items      map[int64]newsapp.NewsItem
+	items      map[int64]app.NewsItem
 	categories domain.CategoryResolver
 }
 
 func newFakeService() *fakeService {
 	return &fakeService{
-		items: map[int64]newsapp.NewsItem{},
+		items: map[int64]app.NewsItem{},
 		categories: domain.NewCategoryResolver([]domain.Category{
 			{Key: "Announcement", Display: "Announcement"},
 			{Key: "Patch", Display: "Patch Notes"},
@@ -47,17 +47,17 @@ func (s *fakeService) Update(context.Context, int64, string, string, string) err
 
 func (s *fakeService) Delete(context.Context, int64) error { return nil }
 
-func (s *fakeService) GetByID(_ context.Context, id int64) (newsapp.NewsItem, error) {
+func (s *fakeService) GetByID(_ context.Context, id int64) (app.NewsItem, error) {
 	item, ok := s.items[id]
 	if !ok {
-		return newsapp.NewsItem{}, domain.ErrNotFound
+		return app.NewsItem{}, domain.ErrNotFound
 	}
 
 	return item, nil
 }
 
-func (s *fakeService) List(context.Context) ([]newsapp.NewsItem, error) {
-	out := make([]newsapp.NewsItem, 0, len(s.items))
+func (s *fakeService) List(context.Context) ([]app.NewsItem, error) {
+	out := make([]app.NewsItem, 0, len(s.items))
 	for _, item := range s.items {
 		out = append(out, item)
 	}
@@ -65,8 +65,8 @@ func (s *fakeService) List(context.Context) ([]newsapp.NewsItem, error) {
 	return out, nil
 }
 
-func (s *fakeService) ListByCategory(_ context.Context, category string) ([]newsapp.NewsItem, error) {
-	out := make([]newsapp.NewsItem, 0)
+func (s *fakeService) ListByCategory(_ context.Context, category string) ([]app.NewsItem, error) {
+	out := make([]app.NewsItem, 0)
 	for _, item := range s.items {
 		if item.Category == category {
 			out = append(out, item)
@@ -77,11 +77,11 @@ func (s *fakeService) ListByCategory(_ context.Context, category string) ([]news
 }
 
 type fakeUsers struct {
-	user *accountdomain.User
+	user *accdomain.User
 	err  error
 }
 
-func (f *fakeUsers) GetByID(context.Context, int) (*accountdomain.User, error) {
+func (f *fakeUsers) GetByID(context.Context, int) (*accdomain.User, error) {
 	return f.user, f.err
 }
 
@@ -90,12 +90,12 @@ func discardLogger() *slog.Logger {
 }
 
 func newCanManageHandler(users userLookup, manageRoles []string) *Handler {
-	resolver := accountdomain.NewRoleResolver(config.RolesConfig{
+	resolver := accdomain.NewRoleResolver(config.RolesConfig{
 		"Moderator": 20,
 		"Enforcer":  10,
 	})
 
-	return NewHandler(newFakeService(), newsinfra.NewRenderer(discardLogger()), HandlerConfig{
+	return NewHandler(newFakeService(), infra.NewRenderer(discardLogger()), HandlerConfig{
 		Logger:      discardLogger(),
 		Users:       users,
 		Roles:       resolver,
@@ -108,8 +108,8 @@ func TestHandler_CanManage(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		session     *accountdomain.Session
-		user        *accountdomain.User
+		session     *accdomain.Session
+		user        *accdomain.User
 		userErr     error
 		name        string
 		manageRoles []string
@@ -121,34 +121,34 @@ func TestHandler_CanManage(t *testing.T) {
 		},
 		{
 			name:    "user lookup fails",
-			session: &accountdomain.Session{UserID: 1},
+			session: &accdomain.Session{UserID: 1},
 			userErr: errors.New("db down"),
 			want:    false,
 		},
 		{
 			name:    "user nil without error",
-			session: &accountdomain.Session{UserID: 1},
+			session: &accdomain.Session{UserID: 1},
 			user:    nil,
 			want:    false,
 		},
 		{
 			name:        "admin group always wins",
-			session:     &accountdomain.Session{UserID: 1},
-			user:        &accountdomain.User{ID: 1, GroupID: 99},
+			session:     &accdomain.Session{UserID: 1},
+			user:        &accdomain.User{ID: 1, GroupID: 99},
 			manageRoles: nil,
 			want:        true,
 		},
 		{
 			name:        "role in manage list",
-			session:     &accountdomain.Session{UserID: 1},
-			user:        &accountdomain.User{ID: 1, GroupID: 20},
+			session:     &accdomain.Session{UserID: 1},
+			user:        &accdomain.User{ID: 1, GroupID: 20},
 			manageRoles: []string{"Moderator"},
 			want:        true,
 		},
 		{
 			name:        "role not in manage list",
-			session:     &accountdomain.Session{UserID: 1},
-			user:        &accountdomain.User{ID: 1, GroupID: 10},
+			session:     &accdomain.Session{UserID: 1},
+			user:        &accdomain.User{ID: 1, GroupID: 10},
 			manageRoles: []string{"Moderator"},
 			want:        false,
 		},
@@ -172,7 +172,7 @@ func TestHandler_CanManage(t *testing.T) {
 }
 
 func newJSONHandler(svc *fakeService) *Handler {
-	return NewHandler(svc, newsinfra.NewRenderer(discardLogger()), HandlerConfig{
+	return NewHandler(svc, infra.NewRenderer(discardLogger()), HandlerConfig{
 		Logger:  discardLogger(),
 		General: config.GeneralConfig{ServerName: "Test", Timezone: "UTC"},
 	})
@@ -181,7 +181,7 @@ func newJSONHandler(svc *fakeService) *Handler {
 func TestHandler_JSONList(t *testing.T) {
 	t.Parallel()
 	svc := newFakeService()
-	svc.items[1] = newsapp.NewsItem{
+	svc.items[1] = app.NewsItem{
 		ID:        1,
 		Title:     "Hello",
 		Body:      "## Body",
@@ -225,8 +225,8 @@ func TestHandler_JSONList_EmptyArrayNotNull(t *testing.T) {
 func TestHandler_JSONList_FiltersByCategory(t *testing.T) {
 	t.Parallel()
 	svc := newFakeService()
-	svc.items[1] = newsapp.NewsItem{ID: 1, Title: "A", Category: "Announcement"}
-	svc.items[2] = newsapp.NewsItem{ID: 2, Title: "B", Category: "Patch"}
+	svc.items[1] = app.NewsItem{ID: 1, Title: "A", Category: "Announcement"}
+	svc.items[2] = app.NewsItem{ID: 2, Title: "B", Category: "Patch"}
 	h := newJSONHandler(svc)
 
 	rr := httptest.NewRecorder()
@@ -247,7 +247,7 @@ func TestHandler_JSONList_FiltersByCategory(t *testing.T) {
 func TestHandler_JSONList_UnknownCategoryReturns400(t *testing.T) {
 	t.Parallel()
 	svc := newFakeService()
-	svc.items[1] = newsapp.NewsItem{ID: 1, Title: "A", Category: "Announcement"}
+	svc.items[1] = app.NewsItem{ID: 1, Title: "A", Category: "Announcement"}
 	h := newJSONHandler(svc)
 
 	rr := httptest.NewRecorder()
@@ -322,7 +322,7 @@ func TestHandler_JSONGet_InvalidIDReturns404(t *testing.T) {
 func TestHandler_JSONGet_Success(t *testing.T) {
 	t.Parallel()
 	svc := newFakeService()
-	svc.items[42] = newsapp.NewsItem{
+	svc.items[42] = app.NewsItem{
 		ID: 42, Title: "Hello", Body: "## Body", Category: "Announcement",
 		CreatedAt: time.Date(2026, 5, 16, 12, 0, 0, 0, time.UTC),
 	}

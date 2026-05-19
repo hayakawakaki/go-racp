@@ -4,12 +4,12 @@ import (
 	"net/http"
 	"sort"
 
-	accountinfra "github.com/hayakawakaki/go-racp/internal/account/infra"
-	platinfra "github.com/hayakawakaki/go-racp/internal/infra"
-	newsapp "github.com/hayakawakaki/go-racp/internal/news/app"
-	"github.com/hayakawakaki/go-racp/internal/news/domain"
-	newsinfra "github.com/hayakawakaki/go-racp/internal/news/infra"
-	newstransport "github.com/hayakawakaki/go-racp/internal/news/transport"
+	accinfra "github.com/hayakawakaki/go-racp/internal/account/infra"
+	"github.com/hayakawakaki/go-racp/internal/features/news/app"
+	"github.com/hayakawakaki/go-racp/internal/features/news/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/news/infra"
+	"github.com/hayakawakaki/go-racp/internal/features/news/transport"
+	coreinfra "github.com/hayakawakaki/go-racp/internal/infra"
 	"github.com/hayakawakaki/go-racp/internal/plugin"
 	"github.com/hayakawakaki/go-racp/internal/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
@@ -19,15 +19,15 @@ func init() {
 	plugin.Register(plugin.Plugin{Name: "news", Mount: mount})
 }
 
-func mount(reg *routes.Registry, mux *http.ServeMux, in *platinfra.Infra) {
+func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 	access := config.ProcessAccessConfig()
 	categories := buildCategoryResolver(in.Config.App.NewsCategories)
-	repo := newsinfra.NewRepository(in.DB)
-	service := newsapp.NewService(repo, categories, in.Logger)
-	renderer := newsinfra.NewRenderer(in.Logger)
-	userRepo := accountinfra.NewRepository(in.MainDB)
+	repo := infra.NewRepository(in.DB)
+	service := app.NewService(repo, categories, in.Logger)
+	renderer := infra.NewRenderer(in.Logger)
+	userRepo := accinfra.NewRepository(in.MainDB)
 
-	handler := newstransport.NewHandler(service, renderer, newstransport.HandlerConfig{
+	handler := transport.NewHandler(service, renderer, transport.HandlerConfig{
 		Logger:      in.Logger,
 		Users:       userRepo,
 		Roles:       in.Roles,
