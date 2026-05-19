@@ -16,7 +16,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/features/item/app"
 	"github.com/hayakawakaki/go-racp/internal/features/item/domain"
 	mobdomain "github.com/hayakawakaki/go-racp/internal/features/mob/domain"
-	"github.com/hayakawakaki/go-racp/internal/refdata"
+	"github.com/hayakawakaki/go-racp/internal/platform/refdata"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 

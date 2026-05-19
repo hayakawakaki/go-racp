@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/hayakawakaki/go-racp/internal/features/mob/domain"
-	"github.com/hayakawakaki/go-racp/internal/refdata"
+	"github.com/hayakawakaki/go-racp/internal/platform/refdata"
 )
 
 func newFixtureSnapshot(t *testing.T, mobs ...*domain.Mob) *domain.Snapshot {

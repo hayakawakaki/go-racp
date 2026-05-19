@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/hayakawakaki/go-racp/internal/features/item/domain"
-	"github.com/hayakawakaki/go-racp/internal/refdata"
+	"github.com/hayakawakaki/go-racp/internal/platform/refdata"
 )
 
 func yamlGroup(t *testing.T, relatives ...string) refdata.SourceGroup {

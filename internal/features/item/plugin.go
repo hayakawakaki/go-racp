@@ -11,8 +11,8 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/features/item/transport"
 	"github.com/hayakawakaki/go-racp/internal/features/mob"
 	coreinfra "github.com/hayakawakaki/go-racp/internal/infra"
+	"github.com/hayakawakaki/go-racp/internal/platform/refdata"
 	"github.com/hayakawakaki/go-racp/internal/plugin"
-	"github.com/hayakawakaki/go-racp/internal/refdata"
 	"github.com/hayakawakaki/go-racp/internal/routes"
 )
 

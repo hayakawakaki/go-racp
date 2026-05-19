@@ -12,7 +12,7 @@ import (
 
 	"github.com/hayakawakaki/go-racp/internal/features/mob/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/mob/infra"
-	"github.com/hayakawakaki/go-racp/internal/refdata"
+	refdata "github.com/hayakawakaki/go-racp/internal/platform/refdata"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 

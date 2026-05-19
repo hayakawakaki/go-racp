@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/hayakawakaki/go-racp/internal/httpx"
-	"github.com/hayakawakaki/go-racp/internal/refdata"
+	"github.com/hayakawakaki/go-racp/internal/platform/refdata"
 )
 
 func (h *Handler) doReload(w http.ResponseWriter, r *http.Request) {

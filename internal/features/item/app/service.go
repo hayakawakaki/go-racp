@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/hayakawakaki/go-racp/internal/features/item/domain"
-	"github.com/hayakawakaki/go-racp/internal/refdata"
+	"github.com/hayakawakaki/go-racp/internal/platform/refdata"
 )
 
 type LoaderFunc func() (*domain.Snapshot, error)
