@@ -108,3 +108,11 @@ Metrics:
   OnlinePollInterval: "1m"
   GeneralPollInterval: "1h"
   PeakWindows: ["daily", "weekly", "monthly", "all_time"]
+
+Security:
+  HSTSMaxAge: 604800
+  HSTSIncludeSubdomains: true
+  HSTSPreload: false
+  CSPExtraScriptSrc: []
+  CSPExtraStyleSrc: []
+  CSPExtraImgSrc: ["https://i.imgur.com"]

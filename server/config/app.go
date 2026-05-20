@@ -106,6 +106,15 @@ type MetricsConfig struct {
 	GeneralPollInterval time.Duration `yaml:"GeneralPollInterval"`
 }
 
+type SecurityConfig struct {
+	CSPExtraScriptSrc     []string `yaml:"CSPExtraScriptSrc"`
+	CSPExtraStyleSrc      []string `yaml:"CSPExtraStyleSrc"`
+	CSPExtraImgSrc        []string `yaml:"CSPExtraImgSrc"`
+	HSTSMaxAge            int      `yaml:"HSTSMaxAge"`
+	HSTSIncludeSubdomains bool     `yaml:"HSTSIncludeSubdomains"`
+	HSTSPreload           bool     `yaml:"HSTSPreload"`
+}
+
 const peakWindowAllTime = "all_time"
 
 var defaultPeakWindows = []string{"daily", "weekly", "monthly", peakWindowAllTime}
@@ -129,6 +138,7 @@ type AppConfig struct {
 	Auth             AuthConfig             `yaml:"Auth"`
 	Vendor           VendorConfig           `yaml:"Vendor"`
 	Metrics          MetricsConfig          `yaml:"Metrics"`
+	Security         SecurityConfig         `yaml:"Security"`
 }
 
 // appConfigDefaults apply default config in case of missing config file
@@ -170,6 +180,11 @@ func appConfigDefaults() *AppConfig {
 			OnlinePollInterval:  1 * time.Minute,
 			GeneralPollInterval: 1 * time.Hour,
 			PeakWindows:         defaultPeakWindows,
+		},
+		Security: SecurityConfig{
+			CSPExtraImgSrc:        []string{"https://i.imgur.com"},
+			HSTSMaxAge:            31536000,
+			HSTSIncludeSubdomains: true,
 		},
 	}
 }
