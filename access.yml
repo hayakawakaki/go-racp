@@ -94,3 +94,8 @@ Users:
     Requires: ["Unrestricted"]
   SetRole:
     Roles: ["Admin"]
+
+Vendor:
+  View:
+    Roles: ["*"]
+    Requires: ["Unrestricted"]
