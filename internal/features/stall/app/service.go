@@ -44,8 +44,12 @@ func (s *Service) List(_ context.Context, q domain.ListQuery) (domain.Page, erro
 		end = total
 	}
 
+	page := filtered[start:end]
+	out := make([]domain.Vendor, len(page))
+	copy(out, page)
+
 	return domain.Page{
-		Vendors:    filtered[start:end],
+		Vendors:    out,
 		Total:      total,
 		Page:       q.Page,
 		PerPage:    q.PerPage,
