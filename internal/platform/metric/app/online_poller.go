@@ -106,7 +106,7 @@ func (p *OnlinePoller) RefreshOnce(ctx context.Context) {
 }
 
 func (p *OnlinePoller) upsertPeaks(ctx context.Context, snap domain.OnlineSnapshot) {
-	nowInTZ := p.cfg.Now().In(p.cfg.Location)
+	nowInTZ := snap.UpdatedAt.In(p.cfg.Location)
 	peaks := []struct {
 		Metric domain.MetricName
 		Value  int

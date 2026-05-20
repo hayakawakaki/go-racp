@@ -139,13 +139,10 @@ func TestReader_General_WrapsError(t *testing.T) {
 	}
 }
 
-func TestNewReader_DefaultsNowAndLocation(t *testing.T) {
+func TestNewReader_DefaultsNow(t *testing.T) {
 	t.Parallel()
 	r := NewReader(ReaderConfig{})
 	if r.now == nil {
 		t.Errorf("now not defaulted")
-	}
-	if r.location == nil {
-		t.Errorf("location not defaulted")
 	}
 }

@@ -108,7 +108,7 @@ func TestHandler_Peaks_NilReturnsEmptyArrayNotNull(t *testing.T) {
 	}
 }
 
-func TestHandler_Peaks_ServiceErrorReturnsEmptyArray(t *testing.T) {
+func TestHandler_Peaks_ServiceErrorReturns500(t *testing.T) {
 	t.Parallel()
 	svc := &fakeReader{peaksErr: errors.New("boom")}
 	h := NewHandler(svc, discardLogger())
@@ -116,11 +116,15 @@ func TestHandler_Peaks_ServiceErrorReturnsEmptyArray(t *testing.T) {
 	rr := httptest.NewRecorder()
 	h.peaks(rr, httptest.NewRequest(http.MethodGet, "/api/v1/metrics/peaks", http.NoBody))
 
-	if rr.Code != http.StatusOK {
-		t.Errorf("status = %d, want 200 (error logged, not propagated)", rr.Code)
+	if rr.Code != http.StatusInternalServerError {
+		t.Errorf("status = %d, want 500", rr.Code)
 	}
-	if body := strings.TrimSpace(rr.Body.String()); body != "[]" {
-		t.Errorf("body = %q, want []", body)
+	var body map[string]string
+	if err := json.Unmarshal(rr.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if body["error"] == "" {
+		t.Errorf("expected error message in body, got %v", body)
 	}
 }
 
@@ -150,7 +154,7 @@ func TestHandler_General_ReturnsJSONSnapshot(t *testing.T) {
 	}
 }
 
-func TestHandler_General_ServiceErrorStillWritesSnapshot(t *testing.T) {
+func TestHandler_General_ServiceErrorReturns500(t *testing.T) {
 	t.Parallel()
 	svc := &fakeReader{generalErr: errors.New("db down")}
 	h := NewHandler(svc, discardLogger())
@@ -158,15 +162,15 @@ func TestHandler_General_ServiceErrorStillWritesSnapshot(t *testing.T) {
 	rr := httptest.NewRecorder()
 	h.general(rr, httptest.NewRequest(http.MethodGet, "/api/v1/metrics/general", http.NoBody))
 
-	if rr.Code != http.StatusOK {
-		t.Errorf("status = %d, want 200", rr.Code)
+	if rr.Code != http.StatusInternalServerError {
+		t.Errorf("status = %d, want 500", rr.Code)
 	}
-	var got domain.GeneralSnapshot
-	if err := json.Unmarshal(rr.Body.Bytes(), &got); err != nil {
+	var body map[string]string
+	if err := json.Unmarshal(rr.Body.Bytes(), &body); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if got != (domain.GeneralSnapshot{}) {
-		t.Errorf("body = %+v, want zero snapshot on error", got)
+	if body["error"] == "" {
+		t.Errorf("expected error message in body, got %v", body)
 	}
 }
 

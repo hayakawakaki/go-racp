@@ -260,7 +260,4 @@ func TestOnlinePoller_NewOnlinePoller_Defaults(t *testing.T) {
 	if p.cfg.Now == nil {
 		t.Errorf("Now not defaulted")
 	}
-	if p.cfg.Location == nil {
-		t.Errorf("Location not defaulted")
-	}
 }

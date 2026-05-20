@@ -42,8 +42,9 @@ func (h *Handler) online(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) peaks(w http.ResponseWriter, r *http.Request) {
 	rows, err := h.svc.Peaks(r.Context())
 	if err != nil {
-		h.logger.Warn("metric: peaks query failed", "err", err)
-		rows = nil
+		h.logger.Error("metric: peaks query failed", "err", err)
+		h.writeError(w, http.StatusInternalServerError, "peaks query failed")
+		return
 	}
 	if rows == nil {
 		rows = []domain.PeakRow{}
@@ -56,9 +57,17 @@ func (h *Handler) peaks(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) general(w http.ResponseWriter, r *http.Request) {
 	snap, err := h.svc.General(r.Context())
 	if err != nil {
-		h.logger.Warn("metric: general query failed", "err", err)
+		h.logger.Error("metric: general query failed", "err", err)
+		h.writeError(w, http.StatusInternalServerError, "general query failed")
+		return
 	}
 	if err := httpx.WriteJSON(w, http.StatusOK, snap); err != nil {
 		h.logger.Warn("metric: general encode failed", "err", err)
+	}
+}
+
+func (h *Handler) writeError(w http.ResponseWriter, status int, message string) {
+	if err := httpx.WriteJSON(w, status, map[string]string{"error": message}); err != nil {
+		h.logger.Warn("metric: error response encode failed", "err", err)
 	}
 }

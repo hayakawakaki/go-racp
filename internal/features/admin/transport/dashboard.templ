@@ -3,7 +3,7 @@ package transport
 import "strconv"
 
 templ dashboardContent(state dashboardState) {
-	<div class="space-y-4" x-data={ dashboardAlpineState(state) } x-init="startPolling()">
+	<div class="space-y-4" x-data={ dashboardAlpineState(state) }>
 		<header>
 			<h1 class="text-2xl font-semibold text-gray-900">Dashboard</h1>
 		</header>

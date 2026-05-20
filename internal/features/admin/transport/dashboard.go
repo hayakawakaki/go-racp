@@ -57,7 +57,9 @@ func dashboardAlpineState(state dashboardState) string {
 		return "{ online: {}, general: {} }"
 	}
 	const alpineMethods = `{
-		startPolling() {
+		_onlineInterval: null,
+		_generalInterval: null,
+		init() {
 			const onlineTick = async () => {
 				const o = await fetch('/api/v1/metrics/online').then(r => r.json());
 				this.online = o;
@@ -66,8 +68,12 @@ func dashboardAlpineState(state dashboardState) string {
 				const g = await fetch('/api/v1/metrics/general').then(r => r.json());
 				this.general = g;
 			};
-			setInterval(() => onlineTick().catch(() => {}), %d);
-			setInterval(() => generalTick().catch(() => {}), %d);
+			this._onlineInterval = setInterval(() => onlineTick().catch(() => {}), %d);
+			this._generalInterval = setInterval(() => generalTick().catch(() => {}), %d);
+		},
+		destroy() {
+			if (this._onlineInterval !== null) clearInterval(this._onlineInterval);
+			if (this._generalInterval !== null) clearInterval(this._generalInterval);
 		},
 	}`
 	return fmt.Sprintf("Object.assign(%s, %s)", encoded,
