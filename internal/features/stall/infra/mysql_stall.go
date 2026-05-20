@@ -82,34 +82,12 @@ func loadVendings(ctx context.Context, tx *sql.Tx) (map[int]*domain.Vendor, erro
 }
 
 func loadVendingItems(ctx context.Context, tx *sql.Tx, vendors map[int]*domain.Vendor) error {
-	rows, err := tx.QueryContext(ctx,
+	return loadItems(ctx, tx, "loadVendingItems", vendors,
 		"SELECT vi.vending_id, vi.`index`, ci.nameid, vi.amount, vi.price "+
 			"FROM vending_items vi "+
 			"JOIN cart_inventory ci ON ci.id = vi.cartinventory_id "+
 			"ORDER BY vi.vending_id, vi.`index`",
 	)
-	if err != nil {
-		return fmt.Errorf("infra.loadVendingItems query: %w", err)
-	}
-	defer func() { _ = rows.Close() }()
-
-	for rows.Next() {
-		var (
-			vendingID int
-			item      domain.VendorItem
-		)
-		if err := rows.Scan(&vendingID, &item.Index, &item.ItemID, &item.Amount, &item.Price); err != nil {
-			return fmt.Errorf("infra.loadVendingItems scan: %w", err)
-		}
-		if v, ok := vendors[vendingID]; ok {
-			v.Items = append(v.Items, item)
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return fmt.Errorf("infra.loadVendingItems rows: %w", err)
-	}
-
-	return nil
 }
 
 func loadBuyingstores(ctx context.Context, tx *sql.Tx) (map[int]*domain.Vendor, error) {
@@ -136,29 +114,33 @@ func loadBuyingstores(ctx context.Context, tx *sql.Tx) (map[int]*domain.Vendor, 
 }
 
 func loadBuyingstoreItems(ctx context.Context, tx *sql.Tx, vendors map[int]*domain.Vendor) error {
-	rows, err := tx.QueryContext(ctx,
+	return loadItems(ctx, tx, "loadBuyingstoreItems", vendors,
 		"SELECT buyingstore_id, `index`, item_id, amount, price FROM buyingstore_items "+
 			"ORDER BY buyingstore_id, `index`",
 	)
+}
+
+func loadItems(ctx context.Context, tx *sql.Tx, opName string, vendors map[int]*domain.Vendor, query string) error {
+	rows, err := tx.QueryContext(ctx, query)
 	if err != nil {
-		return fmt.Errorf("infra.loadBuyingstoreItems query: %w", err)
+		return fmt.Errorf("infra.%s query: %w", opName, err)
 	}
 	defer func() { _ = rows.Close() }()
 
 	for rows.Next() {
 		var (
-			buyingID int
+			parentID int
 			item     domain.VendorItem
 		)
-		if err := rows.Scan(&buyingID, &item.Index, &item.ItemID, &item.Amount, &item.Price); err != nil {
-			return fmt.Errorf("infra.loadBuyingstoreItems scan: %w", err)
+		if err := rows.Scan(&parentID, &item.Index, &item.ItemID, &item.Amount, &item.Price); err != nil {
+			return fmt.Errorf("infra.%s scan: %w", opName, err)
 		}
-		if v, ok := vendors[buyingID]; ok {
+		if v, ok := vendors[parentID]; ok {
 			v.Items = append(v.Items, item)
 		}
 	}
 	if err := rows.Err(); err != nil {
-		return fmt.Errorf("infra.loadBuyingstoreItems rows: %w", err)
+		return fmt.Errorf("infra.%s rows: %w", opName, err)
 	}
 
 	return nil

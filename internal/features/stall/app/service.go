@@ -85,7 +85,7 @@ func filterVendors(snap *domain.Snapshot, q domain.ListQuery) []domain.Vendor {
 	}
 
 	if q.Type == domain.VendorTypeUnknown {
-		return append([]domain.Vendor(nil), snap.Vendors...)
+		return snap.Vendors
 	}
 
 	out := make([]domain.Vendor, 0, len(snap.Vendors))

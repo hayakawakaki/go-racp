@@ -4,7 +4,6 @@ import (
 	"errors"
 	"net/http"
 
-	itemdomain "github.com/hayakawakaki/go-racp/internal/features/item/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/stall/domain"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
@@ -78,13 +77,7 @@ func (h *Handler) buildItemRows(r *http.Request, items []domain.VendorItem) []st
 
 func (h *Handler) resolveItemName(r *http.Request, itemID int) (name, aegis string, ok bool) {
 	lookedUp, err := h.itemLookup.Get(r.Context(), itemID)
-	if err != nil {
-		if errors.Is(err, itemdomain.ErrEmptySnapshot) {
-			return "", "", false
-		}
-		return "", "", false
-	}
-	if lookedUp == nil {
+	if err != nil || lookedUp == nil {
 		return "", "", false
 	}
 
