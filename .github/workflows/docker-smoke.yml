@@ -63,6 +63,7 @@ jobs:
             -e DB_MAIN_URL="root:testpassword@tcp(127.0.0.1:3306)/main" \
             -e DB_LOG_URL="root:testpassword@tcp(127.0.0.1:3306)/log" \
             -e DB_CP_URL="postgres://postgres:testpassword@127.0.0.1:5432/cp?sslmode=disable" \
+            -e CSRF_SECRET=ZGV2LW9ubHktZHVtbXktY3NyZi1zZWNyZXQtcmVwbGFjZS1pbi1wcm9k \
             -e SMTP_HOST=localhost \
             go-racp:pr
 
