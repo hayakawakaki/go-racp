@@ -7,6 +7,7 @@ import (
 
 	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	actiontokenapp "github.com/hayakawakaki/go-racp/internal/platform/actiontoken/app"
+	"github.com/hayakawakaki/go-racp/internal/platform/metric"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/hayakawakaki/go-racp/internal/infra/mailer"
@@ -22,5 +23,6 @@ type Infra struct {
 	TokenManager *actiontokenapp.Manager
 	Config       *config.Config
 	Roles        accdomain.RoleResolver
+	Metric       *metric.Reader
 	ShutdownCtx  context.Context
 }

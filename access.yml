@@ -99,3 +99,7 @@ Vendor:
   View:
     Roles: ["*"]
     Requires: ["Unrestricted"]
+
+Metric:
+  API:
+    Roles: ["Public"]

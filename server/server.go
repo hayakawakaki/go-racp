@@ -24,6 +24,7 @@ import (
 	actiontokeninfra "github.com/hayakawakaki/go-racp/internal/platform/actiontoken/infra"
 	"github.com/hayakawakaki/go-racp/internal/platform/health"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/metric"
 	"github.com/hayakawakaki/go-racp/internal/platform/plugin"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
@@ -84,6 +85,13 @@ func Start() error {
 		Roles:        domain.NewRoleResolver(cfg.App.UserRoles),
 		ShutdownCtx:  ctx,
 	}
+
+	in.Metric = metric.Start(ctx, metric.Deps{
+		MainDB: mainDB,
+		Pool:   cpPool,
+		Logger: logger,
+		Config: cfg.App,
+	})
 
 	sessSvc := app.NewSessionService(accinfra.NewSessionRepository(cpPool), cfg.App.TTL.Session)
 	secure := cfg.Env.Mode != "development"

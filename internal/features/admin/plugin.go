@@ -24,6 +24,7 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 		General:    in.Config.App.General,
 		ItemStatus: item.BuildService(in),
 		MobStatus:  mob.BuildService(in),
+		Metric:     in.Metric,
 	})
 	h.RegisterRoutes(reg, mux)
 }

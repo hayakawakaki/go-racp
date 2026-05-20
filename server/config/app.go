@@ -15,6 +15,7 @@ type GeneralConfig struct {
 	location   *time.Location
 	ServerName string `yaml:"ServerName"`
 	Timezone   string `yaml:"Timezone"`
+	Gepard     bool   `yaml:"Gepard"`
 }
 
 func (g GeneralConfig) Location() *time.Location {
@@ -99,6 +100,16 @@ type VendorConfig struct {
 	PollInterval time.Duration `yaml:"PollInterval"`
 }
 
+type MetricsConfig struct {
+	PeakWindows         []string      `yaml:"PeakWindows"`
+	OnlinePollInterval  time.Duration `yaml:"OnlinePollInterval"`
+	GeneralPollInterval time.Duration `yaml:"GeneralPollInterval"`
+}
+
+const peakWindowAllTime = "all_time"
+
+var defaultPeakWindows = []string{"daily", "weekly", "monthly", peakWindowAllTime}
+
 // AppConfig holds operator-tunable application settings loaded from config.yml.
 //
 //nolint:govet // fieldalignment: 8-byte gain inside a singleton config
@@ -117,6 +128,7 @@ type AppConfig struct {
 	TicketLimits     TicketLimitsConfig     `yaml:"TicketLimits"`
 	Auth             AuthConfig             `yaml:"Auth"`
 	Vendor           VendorConfig           `yaml:"Vendor"`
+	Metrics          MetricsConfig          `yaml:"Metrics"`
 }
 
 // appConfigDefaults apply default config in case of missing config file
@@ -154,6 +166,11 @@ func appConfigDefaults() *AppConfig {
 		ItemDB:          ItemDBConfig{},
 		MobDB:           MobDBConfig{},
 		Vendor:          VendorConfig{PollInterval: 30 * time.Second},
+		Metrics: MetricsConfig{
+			OnlinePollInterval:  1 * time.Minute,
+			GeneralPollInterval: 1 * time.Hour,
+			PeakWindows:         defaultPeakWindows,
+		},
 	}
 }
 
@@ -225,6 +242,49 @@ func validateAppConfig(cfg *AppConfig) {
 	validateTicketsConfig(cfg.TicketCategories, cfg.TicketLimits, cfg.Tickets, cfg.UserRoles)
 	validateNewsConfig(cfg.NewsCategories)
 	validateVendorConfig(&cfg.Vendor)
+	validateMetricsConfig(&cfg.Metrics)
+}
+
+func validateMetricsConfig(cfg *MetricsConfig) {
+	const (
+		minOnline  = 10 * time.Second
+		maxOnline  = 1 * time.Hour
+		minGeneral = 5 * time.Minute
+		maxGeneral = 24 * time.Hour
+	)
+
+	switch {
+	case cfg.OnlinePollInterval <= 0:
+		cfg.OnlinePollInterval = 1 * time.Minute
+	case cfg.OnlinePollInterval < minOnline:
+		cfg.OnlinePollInterval = minOnline
+	case cfg.OnlinePollInterval > maxOnline:
+		cfg.OnlinePollInterval = maxOnline
+	}
+
+	switch {
+	case cfg.GeneralPollInterval <= 0:
+		cfg.GeneralPollInterval = 1 * time.Hour
+	case cfg.GeneralPollInterval < minGeneral:
+		cfg.GeneralPollInterval = minGeneral
+	case cfg.GeneralPollInterval > maxGeneral:
+		cfg.GeneralPollInterval = maxGeneral
+	}
+
+	if cfg.PeakWindows == nil {
+		cfg.PeakWindows = defaultPeakWindows
+		return
+	}
+	allowed := map[string]struct{}{
+		"daily": {}, "weekly": {}, "monthly": {}, peakWindowAllTime: {},
+	}
+	filtered := make([]string, 0, len(cfg.PeakWindows))
+	for _, w := range cfg.PeakWindows {
+		if _, ok := allowed[w]; ok {
+			filtered = append(filtered, w)
+		}
+	}
+	cfg.PeakWindows = filtered
 }
 
 func validateVendorConfig(cfg *VendorConfig) {
