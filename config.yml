@@ -97,3 +97,7 @@ MobDB:
   YAML:
     Path: "data/"
     Files: ["mob_db.yml"]
+
+# Vendor polling cadence (clamped to [5s, 10m])
+Vendor:
+  PollInterval: "30s"

@@ -95,6 +95,10 @@ type MobDBConfig struct {
 	YAML refdata.SourceGroup `yaml:"YAML"`
 }
 
+type VendorConfig struct {
+	PollInterval time.Duration `yaml:"PollInterval"`
+}
+
 // AppConfig holds operator-tunable application settings loaded from config.yml.
 //
 //nolint:govet // fieldalignment: 8-byte gain inside a singleton config
@@ -112,6 +116,7 @@ type AppConfig struct {
 	Tickets          TicketsConfig          `yaml:"Tickets"`
 	TicketLimits     TicketLimitsConfig     `yaml:"TicketLimits"`
 	Auth             AuthConfig             `yaml:"Auth"`
+	Vendor           VendorConfig           `yaml:"Vendor"`
 }
 
 // appConfigDefaults apply default config in case of missing config file
@@ -148,6 +153,7 @@ func appConfigDefaults() *AppConfig {
 		DefaultLocation: DefaultLocationConfig{Map: "prontera", X: 156, Y: 191},
 		ItemDB:          ItemDBConfig{},
 		MobDB:           MobDBConfig{},
+		Vendor:          VendorConfig{PollInterval: 30 * time.Second},
 	}
 }
 
@@ -218,6 +224,25 @@ func validateAppConfig(cfg *AppConfig) {
 	validateRolesConfig(cfg.UserRoles)
 	validateTicketsConfig(cfg.TicketCategories, cfg.TicketLimits, cfg.Tickets, cfg.UserRoles)
 	validateNewsConfig(cfg.NewsCategories)
+	validateVendorConfig(&cfg.Vendor)
+}
+
+func validateVendorConfig(cfg *VendorConfig) {
+	const (
+		minInterval = 5 * time.Second
+		maxInterval = 10 * time.Minute
+	)
+	if cfg.PollInterval <= 0 {
+		cfg.PollInterval = 30 * time.Second
+		return
+	}
+	if cfg.PollInterval < minInterval {
+		cfg.PollInterval = minInterval
+		return
+	}
+	if cfg.PollInterval > maxInterval {
+		cfg.PollInterval = maxInterval
+	}
 }
 
 func validateNewsConfig(categories NewsCategoriesConfig) {
