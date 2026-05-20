@@ -11,6 +11,11 @@ import (
 const maxForgotPasswordFormBytes = 1 << 10
 
 func (h *Handler) showForgotPassword(w http.ResponseWriter, r *http.Request) {
+	if h.hasActiveSession(r) {
+		httpx.Redirect(w, r, "/")
+		return
+	}
+
 	httpx.RenderHTML(w, r, h.logger, forgotPasswordPage(h.layout(), ForgotPasswordState{}))
 }
 
