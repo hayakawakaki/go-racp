@@ -8,7 +8,10 @@ package self
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-import "github.com/hayakawakaki/go-racp/internal/platform/httpx"
+import (
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/security"
+)
 
 type VerifyConfirmState struct {
 	Token string
@@ -47,20 +50,28 @@ func verifyConfirmPage(layout httpx.Layout, state VerifyConfirmState) templ.Comp
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"w-full max-w-md bg-white rounded-lg shadow-md p-8\"><h1 class=\"text-2xl font-semibold mb-4 text-gray-900\">Confirm email verification</h1><p class=\"text-gray-700 mb-4\">Click the button below to verify your email and activate your account.</p><form method=\"post\" action=\"/verify\" class=\"space-y-4\"><input type=\"hidden\" name=\"token\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"w-full max-w-md bg-white rounded-lg shadow-md p-8\"><h1 class=\"text-2xl font-semibold mb-4 text-gray-900\">Confirm email verification</h1><p class=\"text-gray-700 mb-4\">Click the button below to verify your email and activate your account.</p><form method=\"post\" action=\"/verify\" class=\"space-y-4\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = security.HiddenField().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<input type=\"hidden\" name=\"token\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(state.Token)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/account/transport/self/verify_confirm.templ`, Line: 15, Col: 57}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/account/transport/self/verify_confirm.templ`, Line: 19, Col: 57}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\"> <button type=\"submit\" class=\"w-full rounded bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 transition\">Verify my email</button></form></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\"> <button type=\"submit\" class=\"w-full rounded bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 transition\">Verify my email</button></form></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

@@ -8,7 +8,10 @@ package self
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-import "github.com/hayakawakaki/go-racp/internal/platform/httpx"
+import (
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/security"
+)
 
 type VerifyAccountState struct {
 	Email  string
@@ -55,7 +58,7 @@ func verifyAccountPage(layout httpx.Layout, state VerifyAccountState) templ.Comp
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(state.Email)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/account/transport/self/verify_account.templ`, Line: 15, Col: 56}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/account/transport/self/verify_account.templ`, Line: 18, Col: 56}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
@@ -73,7 +76,7 @@ func verifyAccountPage(layout httpx.Layout, state VerifyAccountState) templ.Comp
 				var templ_7745c5c3_Var4 string
 				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(state.Notice)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/account/transport/self/verify_account.templ`, Line: 19, Col: 108}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/account/transport/self/verify_account.templ`, Line: 22, Col: 108}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 				if templ_7745c5c3_Err != nil {
@@ -84,7 +87,23 @@ func verifyAccountPage(layout httpx.Layout, state VerifyAccountState) templ.Comp
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<form hx-post=\"/verify/resend\" hx-swap=\"none\" method=\"post\" action=\"/verify/resend\"><button type=\"submit\" class=\"w-full rounded bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 transition\">Resend verification email</button></form><form hx-post=\"/logout\" method=\"post\" action=\"/logout\" class=\"mt-3\"><button type=\"submit\" class=\"w-full rounded border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-2 transition\">Log out</button></form></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<form hx-post=\"/verify/resend\" hx-swap=\"none\" method=\"post\" action=\"/verify/resend\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = security.HiddenField().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<button type=\"submit\" class=\"w-full rounded bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 transition\">Resend verification email</button></form><form hx-post=\"/logout\" method=\"post\" action=\"/logout\" class=\"mt-3\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = security.HiddenField().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<button type=\"submit\" class=\"w-full rounded border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-2 transition\">Log out</button></form></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

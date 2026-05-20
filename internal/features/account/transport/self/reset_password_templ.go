@@ -8,7 +8,10 @@ package self
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-import "github.com/hayakawakaki/go-racp/internal/platform/httpx"
+import (
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/security"
+)
 
 type ResetPasswordState struct {
 	Token  string
@@ -48,66 +51,74 @@ func resetPasswordPage(layout httpx.Layout, state ResetPasswordState) templ.Comp
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"w-full max-w-md bg-white rounded-lg shadow-md p-8\"><h1 class=\"text-2xl font-semibold mb-4 text-gray-900\">Set a new password</h1><form hx-post=\"/reset-password\" hx-swap=\"outerHTML\" method=\"post\" action=\"/reset-password\" class=\"space-y-4\"><input type=\"hidden\" name=\"token\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"w-full max-w-md bg-white rounded-lg shadow-md p-8\"><h1 class=\"text-2xl font-semibold mb-4 text-gray-900\">Set a new password</h1><form hx-post=\"/reset-password\" hx-swap=\"outerHTML\" method=\"post\" action=\"/reset-password\" class=\"space-y-4\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = security.HiddenField().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<input type=\"hidden\" name=\"token\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(state.Token)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/account/transport/self/reset_password.templ`, Line: 15, Col: 57}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/account/transport/self/reset_password.templ`, Line: 19, Col: 57}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\"><div><label for=\"password\" class=\"block text-sm font-medium text-gray-700 mb-1\">New password</label> <input type=\"password\" id=\"password\" name=\"password\" required autocomplete=\"new-password\" class=\"w-full rounded border border-gray-300 px-3 py-2\"> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\"><div><label for=\"password\" class=\"block text-sm font-medium text-gray-700 mb-1\">New password</label> <input type=\"password\" id=\"password\" name=\"password\" required autocomplete=\"new-password\" class=\"w-full rounded border border-gray-300 px-3 py-2\"> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if state.Errors["password"] != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<p class=\"text-sm text-red-600 mt-1\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<p class=\"text-sm text-red-600 mt-1\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var4 string
 				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(state.Errors["password"])
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/account/transport/self/reset_password.templ`, Line: 20, Col: 69}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/account/transport/self/reset_password.templ`, Line: 24, Col: 69}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</p>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</p>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div><div><label for=\"password_confirm\" class=\"block text-sm font-medium text-gray-700 mb-1\">Confirm new password</label> <input type=\"password\" id=\"password_confirm\" name=\"password_confirm\" required autocomplete=\"new-password\" class=\"w-full rounded border border-gray-300 px-3 py-2\"> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div><div><label for=\"password_confirm\" class=\"block text-sm font-medium text-gray-700 mb-1\">Confirm new password</label> <input type=\"password\" id=\"password_confirm\" name=\"password_confirm\" required autocomplete=\"new-password\" class=\"w-full rounded border border-gray-300 px-3 py-2\"> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if state.Errors["password_confirm"] != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<p class=\"text-sm text-red-600 mt-1\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<p class=\"text-sm text-red-600 mt-1\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var5 string
 				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(state.Errors["password_confirm"])
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/account/transport/self/reset_password.templ`, Line: 27, Col: 77}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/account/transport/self/reset_password.templ`, Line: 31, Col: 77}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</p>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</p>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</div><button type=\"submit\" class=\"w-full rounded bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 transition\">Reset password</button></form></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div><button type=\"submit\" class=\"w-full rounded bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 transition\">Reset password</button></form></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

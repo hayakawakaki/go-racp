@@ -1,6 +1,10 @@
 package moderation
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/hayakawakaki/go-racp/internal/platform/security"
+)
 
 templ actionsSection(state detailState) {
 	<section class="rounded-2xl bg-white ring-1 ring-gray-200 p-5 space-y-4">
@@ -34,6 +38,7 @@ templ banForm(targetID int) {
 			hx-target="#user-detail"
 			hx-swap="outerHTML"
 		>
+			@security.HiddenField()
 			<label class="block space-y-1">
 				@fieldLabel("Reason (required)")
 				<input
@@ -82,6 +87,7 @@ templ unbanForm(targetID int) {
 			hx-target="#user-detail"
 			hx-swap="outerHTML"
 		>
+			@security.HiddenField()
 			<label class="block space-y-1">
 				@fieldLabel("Reason (optional)")
 				<input
@@ -110,6 +116,7 @@ templ setRoleForm(state detailState) {
 			hx-target="#user-detail"
 			hx-swap="outerHTML"
 		>
+			@security.HiddenField()
 			<label class="block space-y-1">
 				@fieldLabel("Reason (optional)")
 				<input

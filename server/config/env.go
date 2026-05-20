@@ -29,6 +29,9 @@ type EnvConfig struct {
 	// Mailer
 	SMTPHost string `env:"SMTP_HOST" required:"true"`
 	SMTPPort int    `env:"SMTP_PORT" default:"587"`
+
+	// Security
+	CSRFSecret string `env:"CSRF_SECRET" required:"true"`
 }
 
 // ProcessEnv loads the project .env file when present and populates an EnvConfig from environment variables, terminating the process via log.Fatal on a missing required value or type mismatch.

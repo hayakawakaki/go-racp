@@ -17,6 +17,7 @@ services:
       - DB_CP_MAX_IDLE_CONN=4
       - SMTP_HOST=mailpit
       - SMTP_PORT=1025
+      - CSRF_SECRET=ZGV2LW9ubHktZHVtbXktY3NyZi1zZWNyZXQtcmVwbGFjZS1pbi1wcm9k
     volumes:
       - .:/app
       - /app/tmp

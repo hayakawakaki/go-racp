@@ -1,6 +1,9 @@
 package self
 
-import "github.com/hayakawakaki/go-racp/internal/platform/httpx"
+import (
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/security"
+)
 
 type LoginFormState struct {
 	Username string
@@ -30,6 +33,7 @@ templ loginForm(state LoginFormState) {
 		id="login-form"
 		class="space-y-4"
 	>
+		@security.HiddenField()
 		if state.Error != "" {
 			<p class="text-sm text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2">{ state.Error }</p>
 		}

@@ -1,6 +1,9 @@
 package transport
 
-import "github.com/hayakawakaki/go-racp/internal/platform/httpx"
+import (
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/security"
+)
 
 type HomeState struct {
 	Username string
@@ -23,6 +26,7 @@ templ homePage(layout httpx.Layout, state HomeState) {
 			} else {
 				<p class="text-lg text-gray-900">Welcome, { state.Username }.</p>
 				<form action="/logout" method="post" class="flex justify-center">
+					@security.HiddenField()
 					<button
 						type="submit"
 						class="rounded bg-gray-200 hover:bg-gray-300 text-gray-900 font-medium px-6 py-2.5 transition"
