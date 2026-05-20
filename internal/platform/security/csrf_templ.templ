@@ -1,0 +1,9 @@
+package security
+
+templ Meta() {
+	<meta name="csrf-token" content={ TokenFromContext(ctx) }/>
+}
+
+templ HiddenField() {
+	<input type="hidden" name="_csrf" value={ TokenFromContext(ctx) }/>
+}

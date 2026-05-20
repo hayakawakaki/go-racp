@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"log"
@@ -35,6 +36,14 @@ import (
 func Start() error {
 	// Config Creation
 	cfg := config.NewConfig()
+
+	csrfSecret, err := base64.StdEncoding.DecodeString(cfg.Env.CSRFSecret)
+	if err != nil {
+		log.Fatalf("CSRF_SECRET must be base64-encoded (generate via 'openssl rand -base64 32'): %v", err)
+	}
+	if len(csrfSecret) < 32 {
+		log.Fatalf("CSRF_SECRET must decode to >= 32 bytes (got %d)", len(csrfSecret))
+	}
 
 	// Logger
 	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
@@ -121,10 +130,24 @@ func Start() error {
 		httpx.Render404(w, r, logger, httpx.Layout{GeneralConfig: cfg.App.General})
 	})
 
+	sessionFinger := func(ctx context.Context) ([]byte, bool) {
+		sess, ok := middleware.SessionFromContext(ctx)
+		if !ok {
+			return nil, false
+		}
+		return sess.TokenHash[:], true
+	}
+
 	var handler http.Handler = mux
 	for _, p := range plugin.Middlewares() {
 		handler = p.Middleware(in, handler)
 	}
+
+	handler = security.CSRF(security.CSRFOptions{
+		Secret:           csrfSecret,
+		GetSessionFinger: sessionFinger,
+		Secure:           secure,
+	})(handler)
 	handler = http.HandlerFunc(withSession(handler.ServeHTTP))
 
 	// Security origin/referer check

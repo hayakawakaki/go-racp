@@ -26,6 +26,7 @@ func TestProcessEnv(t *testing.T) {
 				"APP_PORT":            "9090",
 				"SMTP_HOST":           "smtp.example.com",
 				"SMTP_PORT":           "2525",
+				"CSRF_SECRET":         "dGVzdC1jc3JmLXNlY3JldC1mb3ItdW5pdC10ZXN0cy0zMmJ5dGVzKw==",
 			},
 			expected: EnvConfig{
 				Mode:            "production",
@@ -40,6 +41,7 @@ func TestProcessEnv(t *testing.T) {
 				AppPort:         9090,
 				SMTPHost:        "smtp.example.com",
 				SMTPPort:        2525,
+				CSRFSecret:      "dGVzdC1jc3JmLXNlY3JldC1mb3ItdW5pdC10ZXN0cy0zMmJ5dGVzKw==",
 			},
 		},
 		{
@@ -50,6 +52,7 @@ func TestProcessEnv(t *testing.T) {
 				"DB_LOG_URL":  "user:pass@tcp(127.0.0.1:3306)/log",
 				"DB_CP_URL":   "postgres://dbuser:dbpass@db:5432/cp?sslmode=disable",
 				"SMTP_HOST":   "mailpit",
+				"CSRF_SECRET": "dGVzdC1jc3JmLXNlY3JldC1mb3ItdW5pdC10ZXN0cy0zMmJ5dGVzKw==",
 			},
 			expected: EnvConfig{
 				Mode:            "development",
@@ -64,6 +67,7 @@ func TestProcessEnv(t *testing.T) {
 				AppPort:         8080,
 				SMTPHost:        "mailpit",
 				SMTPPort:        587,
+				CSRFSecret:      "dGVzdC1jc3JmLXNlY3JldC1mb3ItdW5pdC10ZXN0cy0zMmJ5dGVzKw==",
 			},
 		},
 	}
