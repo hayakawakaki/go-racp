@@ -2,8 +2,14 @@ package transport
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/hayakawakaki/go-racp/internal/platform/metric/domain"
+)
+
+const (
+	dashboardOnlineRefreshMillis  = 60000
+	dashboardGeneralRefreshMillis = 3600000
 )
 
 type dashboardState struct {
@@ -50,7 +56,22 @@ func dashboardAlpineState(state dashboardState) string {
 	if err != nil {
 		return "{ online: {}, general: {} }"
 	}
-	return "Object.assign(" + string(encoded) + ", { startPolling() { const onlineTick = async () => { const o = await fetch('/api/v1/metrics/online').then(r => r.json()); this.online = o; }; const generalTick = async () => { const g = await fetch('/api/v1/metrics/general').then(r => r.json()); this.general = g; }; setInterval(() => onlineTick().catch(() => {}), 60000); setInterval(() => generalTick().catch(() => {}), 3600000); } })"
+	const alpineMethods = `{
+		startPolling() {
+			const onlineTick = async () => {
+				const o = await fetch('/api/v1/metrics/online').then(r => r.json());
+				this.online = o;
+			};
+			const generalTick = async () => {
+				const g = await fetch('/api/v1/metrics/general').then(r => r.json());
+				this.general = g;
+			};
+			setInterval(() => onlineTick().catch(() => {}), %d);
+			setInterval(() => generalTick().catch(() => {}), %d);
+		},
+	}`
+	return fmt.Sprintf("Object.assign(%s, %s)", encoded,
+		fmt.Sprintf(alpineMethods, dashboardOnlineRefreshMillis, dashboardGeneralRefreshMillis))
 }
 
 func buildPeakTable(peaks []domain.PeakRow) peakTable {

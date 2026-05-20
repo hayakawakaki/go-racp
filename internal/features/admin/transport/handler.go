@@ -11,6 +11,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/metric/domain"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
+	"golang.org/x/sync/errgroup"
 )
 
 type itemStatusProvider interface {
@@ -77,16 +78,31 @@ func (h *Handler) dashboardState(ctx context.Context) dashboardState {
 		return state
 	}
 	state.Online = h.metric.Online(ctx)
-	general, err := h.metric.General(ctx)
-	if err != nil {
-		h.logger.Warn("admin: general snapshot read failed", "err", err)
-	}
+
+	var general domain.GeneralSnapshot
+	var peaks []domain.PeakRow
+	g, gctx := errgroup.WithContext(ctx)
+	g.Go(func() error {
+		snap, err := h.metric.General(gctx)
+		if err != nil {
+			h.logger.Warn("admin: general snapshot read failed", "err", err)
+			return nil
+		}
+		general = snap
+		return nil
+	})
+	g.Go(func() error {
+		rows, err := h.metric.Peaks(gctx)
+		if err != nil {
+			h.logger.Warn("admin: peaks read failed", "err", err)
+			return nil
+		}
+		peaks = rows
+		return nil
+	})
+	_ = g.Wait()
+
 	state.General = general
-	peaks, err := h.metric.Peaks(ctx)
-	if err != nil {
-		h.logger.Warn("admin: peaks read failed", "err", err)
-		peaks = nil
-	}
 	state.PeakTable = buildPeakTable(peaks)
 	return state
 }

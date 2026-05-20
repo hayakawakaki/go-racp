@@ -1,11 +1,14 @@
 package app
 
 import (
+	"cmp"
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
 
 	"github.com/hayakawakaki/go-racp/internal/platform/metric/domain"
+	"golang.org/x/sync/errgroup"
 )
 
 type GeneralSource interface {
@@ -30,40 +33,43 @@ type GeneralPoller struct {
 }
 
 func NewGeneralPoller(cfg GeneralPollerConfig) *GeneralPoller {
-	if cfg.Logger == nil {
-		cfg.Logger = slog.Default()
-	}
+	cfg.Logger = cmp.Or(cfg.Logger, slog.Default())
 	return &GeneralPoller{cfg: cfg}
 }
 
 func (p *GeneralPoller) Run(ctx context.Context) {
-	p.RefreshOnce(ctx)
-	ticker := time.NewTicker(p.cfg.Interval)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			p.RefreshOnce(ctx)
-		}
-	}
+	runTicker(ctx, p.cfg.Interval, p.RefreshOnce)
 }
 
 func (p *GeneralPoller) RefreshOnce(ctx context.Context) {
-	accounts, err := p.cfg.Source.CountAccounts(ctx)
-	if err != nil {
-		p.cfg.Logger.Warn("metric: account count query failed", "err", err)
-		return
-	}
-	characters, err := p.cfg.Source.CountCharacters(ctx)
-	if err != nil {
-		p.cfg.Logger.Warn("metric: character count query failed", "err", err)
-		return
-	}
-	guilds, err := p.cfg.Source.CountGuilds(ctx)
-	if err != nil {
-		p.cfg.Logger.Warn("metric: guild count query failed", "err", err)
+	var accounts, characters, guilds int
+	g, gctx := errgroup.WithContext(ctx)
+	g.Go(func() error {
+		v, err := p.cfg.Source.CountAccounts(gctx)
+		if err != nil {
+			return fmt.Errorf("accounts: %w", err)
+		}
+		accounts = v
+		return nil
+	})
+	g.Go(func() error {
+		v, err := p.cfg.Source.CountCharacters(gctx)
+		if err != nil {
+			return fmt.Errorf("characters: %w", err)
+		}
+		characters = v
+		return nil
+	})
+	g.Go(func() error {
+		v, err := p.cfg.Source.CountGuilds(gctx)
+		if err != nil {
+			return fmt.Errorf("guilds: %w", err)
+		}
+		guilds = v
+		return nil
+	})
+	if err := g.Wait(); err != nil {
+		p.cfg.Logger.Warn("metric: general count query failed", "err", err)
 		return
 	}
 

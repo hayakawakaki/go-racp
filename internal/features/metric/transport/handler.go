@@ -1,11 +1,12 @@
 package transport
 
 import (
+	"cmp"
 	"context"
-	"encoding/json"
 	"log/slog"
 	"net/http"
 
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/metric/domain"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 )
@@ -22,10 +23,7 @@ type Handler struct {
 }
 
 func NewHandler(svc reader, logger *slog.Logger) *Handler {
-	if logger == nil {
-		logger = slog.Default()
-	}
-	return &Handler{svc: svc, logger: logger}
+	return &Handler{svc: svc, logger: cmp.Or(logger, slog.Default())}
 }
 
 func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
@@ -36,7 +34,9 @@ func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
 
 func (h *Handler) online(w http.ResponseWriter, r *http.Request) {
 	snap := h.svc.Online(r.Context())
-	h.writeJSON(w, snap)
+	if err := httpx.WriteJSON(w, http.StatusOK, snap); err != nil {
+		h.logger.Warn("metric: online encode failed", "err", err)
+	}
 }
 
 func (h *Handler) peaks(w http.ResponseWriter, r *http.Request) {
@@ -48,7 +48,9 @@ func (h *Handler) peaks(w http.ResponseWriter, r *http.Request) {
 	if rows == nil {
 		rows = []domain.PeakRow{}
 	}
-	h.writeJSON(w, rows)
+	if err := httpx.WriteJSON(w, http.StatusOK, rows); err != nil {
+		h.logger.Warn("metric: peaks encode failed", "err", err)
+	}
 }
 
 func (h *Handler) general(w http.ResponseWriter, r *http.Request) {
@@ -56,12 +58,7 @@ func (h *Handler) general(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.logger.Warn("metric: general query failed", "err", err)
 	}
-	h.writeJSON(w, snap)
-}
-
-func (h *Handler) writeJSON(w http.ResponseWriter, v any) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	if err := json.NewEncoder(w).Encode(v); err != nil {
-		h.logger.Warn("metric: json encode failed", "err", err)
+	if err := httpx.WriteJSON(w, http.StatusOK, snap); err != nil {
+		h.logger.Warn("metric: general encode failed", "err", err)
 	}
 }

@@ -18,10 +18,10 @@ templ dashboardContent(state dashboardState) {
 					<dt class="text-gray-500">Non-vendor</dt>
 					<dd class="font-medium" x-text="online.non_vendor"></dd>
 					<template x-if="online.has_unique">
-						<dt class="text-gray-500">Unique</dt>
-					</template>
-					<template x-if="online.has_unique">
-						<dd class="font-medium" x-text="online.unique"></dd>
+						<div class="contents">
+							<dt class="text-gray-500">Unique</dt>
+							<dd class="font-medium" x-text="online.unique"></dd>
+						</div>
 					</template>
 				</dl>
 			</div>
