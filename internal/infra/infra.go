@@ -8,7 +8,6 @@ import (
 	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	actiontokenapp "github.com/hayakawakaki/go-racp/internal/platform/actiontoken/app"
 	"github.com/hayakawakaki/go-racp/internal/platform/metric"
-	"github.com/hayakawakaki/go-racp/internal/platform/security"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/hayakawakaki/go-racp/internal/infra/mailer"
@@ -26,5 +25,4 @@ type Infra struct {
 	Roles        accdomain.RoleResolver
 	Metric       *metric.Reader
 	ShutdownCtx  context.Context
-	RateLimiters map[string]*security.RateLimiter
 }

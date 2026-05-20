@@ -108,24 +108,14 @@ type MetricsConfig struct {
 }
 
 type SecurityConfig struct {
-	RateLimit             RateLimitConfig `yaml:"RateLimit"`
-	CSPExtraScriptSrc     []string        `yaml:"CSPExtraScriptSrc"`
-	CSPExtraStyleSrc      []string        `yaml:"CSPExtraStyleSrc"`
-	CSPExtraImgSrc        []string        `yaml:"CSPExtraImgSrc"`
-	TrustedOrigins        []string        `yaml:"TrustedOrigins"`
-	HSTSMaxAge            int             `yaml:"HSTSMaxAge"`
-	HSTSIncludeSubdomains bool            `yaml:"HSTSIncludeSubdomains"`
-	HSTSPreload           bool            `yaml:"HSTSPreload"`
-}
-
-type RateLimitRule struct {
-	RatePerMinute int `yaml:"RatePerMinute"`
-	Burst         int `yaml:"Burst"`
-}
-
-type RateLimitConfig struct {
-	Rules             map[string]RateLimitRule `yaml:"Rules"`
-	TrustedProxyCIDRs []string                 `yaml:"TrustedProxyCIDRs"`
+	TrustedProxyCIDRs     []string `yaml:"TrustedProxyCIDRs"`
+	CSPExtraScriptSrc     []string `yaml:"CSPExtraScriptSrc"`
+	CSPExtraStyleSrc      []string `yaml:"CSPExtraStyleSrc"`
+	CSPExtraImgSrc        []string `yaml:"CSPExtraImgSrc"`
+	TrustedOrigins        []string `yaml:"TrustedOrigins"`
+	HSTSMaxAge            int      `yaml:"HSTSMaxAge"`
+	HSTSIncludeSubdomains bool     `yaml:"HSTSIncludeSubdomains"`
+	HSTSPreload           bool     `yaml:"HSTSPreload"`
 }
 
 const peakWindowAllTime = "all_time"
@@ -198,16 +188,6 @@ func appConfigDefaults() *AppConfig {
 			CSPExtraImgSrc:        []string{"https://i.imgur.com"},
 			HSTSMaxAge:            31536000,
 			HSTSIncludeSubdomains: true,
-			RateLimit: RateLimitConfig{
-				Rules: map[string]RateLimitRule{
-					"login":           {RatePerMinute: 10, Burst: 5},
-					"register":        {RatePerMinute: 5, Burst: 3},
-					"forgot_password": {RatePerMinute: 3, Burst: 2},
-					"reset_password":  {RatePerMinute: 5, Burst: 3},
-					"verify_resend":   {RatePerMinute: 3, Burst: 2},
-					"ticket_open":     {RatePerMinute: 5, Burst: 3},
-				},
-			},
 		},
 	}
 }
@@ -281,21 +261,13 @@ func validateAppConfig(cfg *AppConfig) {
 	validateNewsConfig(cfg.NewsCategories)
 	validateVendorConfig(&cfg.Vendor)
 	validateMetricsConfig(&cfg.Metrics)
-	validateRateLimitConfig(&cfg.Security.RateLimit)
+	validateTrustedProxyCIDRs(cfg.Security.TrustedProxyCIDRs)
 }
 
-func validateRateLimitConfig(cfg *RateLimitConfig) {
-	for _, c := range cfg.TrustedProxyCIDRs {
-		if _, _, err := net.ParseCIDR(c); err != nil {
-			panic(fmt.Errorf("Security.RateLimit.TrustedProxyCIDRs entry %q is not a valid CIDR: %w", c, err))
-		}
-	}
-	for name, rule := range cfg.Rules {
-		if rule.RatePerMinute <= 0 {
-			panic(fmt.Errorf("Security.RateLimit.Rules.%s.RatePerMinute must be > 0, got %d", name, rule.RatePerMinute))
-		}
-		if rule.Burst <= 0 {
-			panic(fmt.Errorf("Security.RateLimit.Rules.%s.Burst must be > 0, got %d", name, rule.Burst))
+func validateTrustedProxyCIDRs(cidrs []string) {
+	for _, cidr := range cidrs {
+		if _, _, err := net.ParseCIDR(cidr); err != nil {
+			panic(fmt.Errorf("Security.TrustedProxyCIDRs entry %q is not a valid CIDR: %w", cidr, err))
 		}
 	}
 }

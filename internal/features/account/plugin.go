@@ -31,7 +31,6 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 		Logger:               in.Logger,
 		Users:                userRepo,
 		Characters:           charSvc,
-		RateLimiters:         in.RateLimiters,
 		Secure:               secure,
 		General:              in.Config.App.General,
 		AllowTempBannedLogin: in.Config.App.Auth.AllowTempBannedLogin,

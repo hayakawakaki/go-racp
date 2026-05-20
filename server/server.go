@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"slices"
 	"strconv"
 	"syscall"
 	"time"
@@ -98,20 +99,21 @@ func Start() error {
 		Config: cfg.App,
 	})
 
-	limiters, err := buildRateLimiters(in.ShutdownCtx, cfg.App.Security.RateLimit, logger)
+	accessCfg := config.ProcessAccessConfig()
+
+	limiters, err := buildRateLimiters(in.ShutdownCtx, accessCfg, cfg.App.Security.TrustedProxyCIDRs, logger)
 	if err != nil {
 		return fmt.Errorf("server.Start: %w", err)
 	}
-	in.RateLimiters = limiters
 
 	sessSvc := app.NewSessionService(accinfra.NewSessionRepository(cpPool), cfg.App.TTL.Session)
 	secure := cfg.Env.Mode != "development"
 	withSession := middleware.WithSession(sessSvc, logger, secure)
 
-	accessCfg := config.ProcessAccessConfig()
 	userRepo := accinfra.NewRepository(mainDB)
 	reg := routes.NewRegistry(
 		accessCfg,
+		limiters,
 		in.Roles,
 		sessSvc,
 		userRepo,
@@ -193,33 +195,45 @@ func decodeCSRFSecret(raw string) []byte {
 	return secret
 }
 
-func buildRateLimiters(ctx context.Context, cfg config.RateLimitConfig, logger *slog.Logger) (map[string]*security.RateLimiter, error) {
-	limiters := make(map[string]*security.RateLimiter, len(cfg.Rules))
+func buildRateLimiters(ctx context.Context, accessCfg config.AccessConfig, trustedProxies []string, logger *slog.Logger) (map[string]*security.RateLimiter, error) {
+	limiters := map[string]*security.RateLimiter{}
 
-	for name, rule := range cfg.Rules {
-		opts := security.RateLimiterOptions{
-			Name:           name,
-			Rule:           rule,
-			TrustedProxies: cfg.TrustedProxyCIDRs,
-			Logger:         logger,
-		}
-		if name == "ticket_open" {
-			opts.KeyFunc = ticketOpenKey
-		}
+	for groupName, actions := range accessCfg {
+		for actionName, entry := range actions {
+			if entry.RateLimit == nil {
+				continue
+			}
 
-		limiter, err := security.NewRateLimiter(opts)
-		if err != nil {
-			return nil, fmt.Errorf("server.buildRateLimiters: %w", err)
-		}
+			tag := groupName + "." + actionName
 
-		go limiter.Run(ctx)
-		limiters[name] = limiter
+			opts := security.RateLimiterOptions{
+				Name:           tag,
+				Rule:           *entry.RateLimit,
+				TrustedProxies: trustedProxies,
+				Logger:         logger,
+			}
+			if !isPublicEntry(entry) {
+				opts.KeyFunc = sessionUserKey
+			}
+
+			limiter, err := security.NewRateLimiter(opts)
+			if err != nil {
+				return nil, fmt.Errorf("server.buildRateLimiters: %w", err)
+			}
+
+			go limiter.Run(ctx)
+			limiters[tag] = limiter
+		}
 	}
 
 	return limiters, nil
 }
 
-func ticketOpenKey(r *http.Request) string {
+func isPublicEntry(entry config.Entry) bool {
+	return slices.Contains(entry.Roles, "Public")
+}
+
+func sessionUserKey(r *http.Request) string {
 	session, ok := middleware.SessionFromContext(r.Context())
 	if !ok || session == nil {
 		return ""

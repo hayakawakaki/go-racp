@@ -9,6 +9,13 @@
 # Valid Requires:
 #  Unrestricted: Not permanently banned, Not temporarily banned, Email Verified and Exists in Database
 #
+# Entry shape: either a bare role list, or an object with:
+#   Roles:     required, list of role names (or ["Public"] / ["Admin"] / ["*"])
+#   Requires:  optional, list of policy tags. Currently only "Unrestricted".
+#   RateLimit: optional, { RatePerMinute, Burst }. When set, all routes under the tag
+#              share one token bucket. The bucket keys by session.UserID when Roles
+#              excludes "Public", otherwise by client IP.
+#
 # Declare Custom Roles in config.yml under UserRoles:
 
 
@@ -27,16 +34,31 @@ Account:
     Requires: ["Unrestricted"]
   Login:
     Roles: ["Public"]
+    RateLimit:
+      RatePerMinute: 10
+      Burst: 5
   Register:
     Roles: ["Public"]
+    RateLimit:
+      RatePerMinute: 5
+      Burst: 3
   Logout:
     Roles: ["Public"]
   ForgotPassword:
     Roles: ["Public"]
+    RateLimit:
+      RatePerMinute: 3
+      Burst: 2
   ResetPassword:
     Roles: ["Public"]
+    RateLimit:
+      RatePerMinute: 5
+      Burst: 3
   Verify:
     Roles: ["Public"]
+    RateLimit:
+      RatePerMinute: 5
+      Burst: 3
   VerifyEmailChange:
     Roles: ["Public"]
 
@@ -45,6 +67,9 @@ Tickets:
     Roles: ["*"]
   Open:
     Roles: ["*"]
+    RateLimit:
+      RatePerMinute: 5
+      Burst: 3
   Reply:
     Roles: ["*"]
   Manage:

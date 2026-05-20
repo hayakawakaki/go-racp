@@ -110,6 +110,7 @@ Metrics:
   PeakWindows: ["daily", "weekly", "monthly", "all_time"]
 
 Security:
+  TrustedProxyCIDRs: []
   HSTSMaxAge: 604800
   HSTSIncludeSubdomains: true
   HSTSPreload: false
@@ -117,12 +118,3 @@ Security:
   CSPExtraStyleSrc: []
   CSPExtraImgSrc: ["https://i.imgur.com"]
   TrustedOrigins: []
-  RateLimit:
-    TrustedProxyCIDRs: []
-    Rules:
-      login:           { RatePerMinute: 10, Burst: 5 }
-      register:        { RatePerMinute: 5,  Burst: 3 }
-      forgot_password: { RatePerMinute: 3,  Burst: 2 }
-      reset_password:  { RatePerMinute: 5,  Burst: 3 }
-      verify_resend:   { RatePerMinute: 3,  Burst: 2 }
-      ticket_open:     { RatePerMinute: 5,  Burst: 3 }

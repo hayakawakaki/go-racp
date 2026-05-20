@@ -14,7 +14,6 @@ import (
 	domain2 "github.com/hayakawakaki/go-racp/internal/features/tickets/domain"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
-	"github.com/hayakawakaki/go-racp/internal/platform/security"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 
@@ -62,20 +61,18 @@ type HandlerConfig struct {
 	Roles        accdomain.RoleResolver
 	Logger       *slog.Logger
 	Users        userLookup
-	RateLimiters map[string]*security.RateLimiter
 	ManageRoles  []string
 	PollInterval time.Duration
 }
 
 type Handler struct {
-	svc          ticketService
-	users        userLookup
-	logger       *slog.Logger
-	manageRoles  map[string]struct{}
-	rateLimiters map[string]*security.RateLimiter
-	roles        accdomain.RoleResolver
-	general      config.GeneralConfig
-	poll         time.Duration
+	svc         ticketService
+	users       userLookup
+	logger      *slog.Logger
+	manageRoles map[string]struct{}
+	roles       accdomain.RoleResolver
+	general     config.GeneralConfig
+	poll        time.Duration
 }
 
 func NewHandler(service ticketService, cfg HandlerConfig) *Handler {
@@ -85,14 +82,13 @@ func NewHandler(service ticketService, cfg HandlerConfig) *Handler {
 	}
 
 	return &Handler{
-		svc:          service,
-		users:        cfg.Users,
-		logger:       cfg.Logger,
-		general:      cfg.General,
-		roles:        cfg.Roles,
-		poll:         cfg.PollInterval,
-		manageRoles:  manageRoles,
-		rateLimiters: cfg.RateLimiters,
+		svc:         service,
+		users:       cfg.Users,
+		logger:      cfg.Logger,
+		general:     cfg.General,
+		roles:       cfg.Roles,
+		poll:        cfg.PollInterval,
+		manageRoles: manageRoles,
 	}
 }
 
@@ -155,7 +151,7 @@ func (h *Handler) isStaff(role accdomain.Role) bool {
 func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
 	reg.Wrap(mux, "Tickets.View", "GET /tickets", http.HandlerFunc(h.list))
 	reg.Wrap(mux, "Tickets.Open", "GET /tickets/new", http.HandlerFunc(h.newForm))
-	reg.Wrap(mux, "Tickets.Open", "POST /tickets/new", security.Wrap(h.rateLimiters, "ticket_open", http.HandlerFunc(h.create)))
+	reg.Wrap(mux, "Tickets.Open", "POST /tickets/new", http.HandlerFunc(h.create))
 	reg.Wrap(mux, "Tickets.View", "GET /tickets/{id}", http.HandlerFunc(h.detail))
 	reg.Wrap(mux, "Tickets.Reply", "POST /tickets/{id}/reply", http.HandlerFunc(h.reply))
 

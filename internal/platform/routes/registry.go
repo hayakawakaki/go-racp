@@ -9,6 +9,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/security"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 
@@ -20,6 +21,7 @@ type Registry struct {
 	users                middleware.UserLookup
 	resolver             domain.RoleResolver
 	cfg                  config.AccessConfig
+	limiters             map[string]*security.RateLimiter
 	logger               *slog.Logger
 	registered           map[string]struct{}
 	ungated              []ungatedRoute
@@ -34,6 +36,7 @@ type ungatedRoute struct {
 
 func NewRegistry(
 	cfg config.AccessConfig,
+	limiters map[string]*security.RateLimiter,
 	resolver domain.RoleResolver,
 	sessSvc middleware.SessionValidator,
 	users middleware.UserLookup,
@@ -44,6 +47,7 @@ func NewRegistry(
 ) *Registry {
 	return &Registry{
 		cfg:                  cfg,
+		limiters:             limiters,
 		resolver:             resolver,
 		sessSvc:              sessSvc,
 		users:                users,
@@ -59,6 +63,10 @@ func NewRegistry(
 func (r *Registry) Wrap(mux *http.ServeMux, tag, pattern string, handler http.Handler) {
 	group, action := parseTag(tag)
 	r.registered[tag] = struct{}{}
+
+	if limiter, ok := r.limiters[tag]; ok {
+		handler = limiter.Middleware(handler)
+	}
 
 	if group == adminGroup {
 		r.mountAdminOnly(mux, pattern, handler)
