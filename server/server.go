@@ -27,6 +27,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/metric"
 	"github.com/hayakawakaki/go-racp/internal/platform/plugin"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
+	"github.com/hayakawakaki/go-racp/internal/platform/security"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 
@@ -125,6 +126,10 @@ func Start() error {
 		handler = p.Middleware(in, handler)
 	}
 	handler = http.HandlerFunc(withSession(handler.ServeHTTP))
+	handler = security.Headers(security.HeadersOptions{
+		Cfg:    cfg.App.Security,
+		Secure: secure,
+	})(handler)
 
 	addr := fmt.Sprintf(":%d", cfg.Env.AppPort)
 	srv := &http.Server{
