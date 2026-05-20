@@ -85,7 +85,8 @@ func loadVendingItems(ctx context.Context, tx *sql.Tx, vendors map[int]*domain.V
 	rows, err := tx.QueryContext(ctx,
 		"SELECT vi.vending_id, vi.`index`, ci.nameid, vi.amount, vi.price "+
 			"FROM vending_items vi "+
-			"JOIN cart_inventory ci ON ci.id = vi.cartinventory_id",
+			"JOIN cart_inventory ci ON ci.id = vi.cartinventory_id "+
+			"ORDER BY vi.vending_id, vi.`index`",
 	)
 	if err != nil {
 		return fmt.Errorf("infra.loadVendingItems query: %w", err)
@@ -136,7 +137,8 @@ func loadBuyingstores(ctx context.Context, tx *sql.Tx) (map[int]*domain.Vendor, 
 
 func loadBuyingstoreItems(ctx context.Context, tx *sql.Tx, vendors map[int]*domain.Vendor) error {
 	rows, err := tx.QueryContext(ctx,
-		"SELECT buyingstore_id, `index`, item_id, amount, price FROM buyingstore_items",
+		"SELECT buyingstore_id, `index`, item_id, amount, price FROM buyingstore_items "+
+			"ORDER BY buyingstore_id, `index`",
 	)
 	if err != nil {
 		return fmt.Errorf("infra.loadBuyingstoreItems query: %w", err)

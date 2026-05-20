@@ -13,14 +13,14 @@ templ listPage(layout httpx.Layout, state listState) {
 	}
 }
 
-templ loadingPage(layout httpx.Layout) {
+templ loadingPage(layout httpx.Layout, refreshURL string) {
 	@httpx.Base(layout, "Vendors") {
-		@loadingContent()
+		@loadingContent(refreshURL)
 	}
 }
 
-templ loadingContent() {
-	<div class="space-y-4" hx-get="/vendors" hx-trigger="load delay:5s" hx-target="this" hx-swap="outerHTML">
+templ loadingContent(refreshURL string) {
+	<div class="space-y-4" hx-get={ refreshURL } hx-trigger="load delay:5s" hx-target="this" hx-swap="outerHTML">
 		<header class="flex items-center justify-between gap-4">
 			<h1 class="text-2xl font-semibold text-gray-900">Vendors</h1>
 		</header>

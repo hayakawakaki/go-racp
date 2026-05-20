@@ -52,7 +52,12 @@ func (h *Handler) showList(w http.ResponseWriter, r *http.Request) {
 		PerPage: 20,
 	})
 	if errors.Is(err, domain.ErrSnapshotNotReady) {
-		httpx.RenderHTML(w, r, h.logger, loadingPage(h.layout()))
+		refreshURL := r.URL.RequestURI()
+		if httpx.IsHTMX(r) {
+			httpx.RenderHTML(w, r, h.logger, loadingContent(refreshURL))
+			return
+		}
+		httpx.RenderHTML(w, r, h.logger, loadingPage(h.layout(), refreshURL))
 		return
 	}
 	if err != nil {
