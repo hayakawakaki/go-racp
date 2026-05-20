@@ -103,6 +103,7 @@ func TestHandler_RegisterRoutes_GatesListBehindAdmin(t *testing.T) {
 	}
 	reg := routes.NewRegistry(
 		cfg,
+		nil,
 		accdomain.NewRoleResolver(config.RolesConfig{"Moderator": 20, "Enforcer": 10}),
 		&stubSession{},
 		&stubUsers{},

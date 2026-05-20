@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"slices"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -37,13 +39,7 @@ func Start() error {
 	// Config Creation
 	cfg := config.NewConfig()
 
-	csrfSecret, err := base64.StdEncoding.DecodeString(cfg.Env.CSRFSecret)
-	if err != nil {
-		log.Fatalf("CSRF_SECRET must be base64-encoded (generate via 'openssl rand -base64 32'): %v", err)
-	}
-	if len(csrfSecret) < 32 {
-		log.Fatalf("CSRF_SECRET must decode to >= 32 bytes (got %d)", len(csrfSecret))
-	}
+	csrfSecret := decodeCSRFSecret(cfg.Env.CSRFSecret)
 
 	// Logger
 	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
@@ -62,13 +58,13 @@ func Start() error {
 	// MySQL Connection
 	mainDB, logsDB := mysql.Connect(cfg.Env)
 	defer func() {
-		if err := mainDB.Close(); err != nil {
-			log.Printf("close main db: %v", err)
+		if closeErr := mainDB.Close(); closeErr != nil {
+			log.Printf("close main db: %v", closeErr)
 		}
 	}()
 	defer func() {
-		if err := logsDB.Close(); err != nil {
-			log.Printf("close logs db: %v", err)
+		if closeErr := logsDB.Close(); closeErr != nil {
+			log.Printf("close logs db: %v", closeErr)
 		}
 	}()
 
@@ -76,8 +72,8 @@ func Start() error {
 	defer cpPool.Close()
 
 	defer func() {
-		if err := smtpMailer.Close(); err != nil {
-			log.Printf("close mailer: %v", err)
+		if closeErr := smtpMailer.Close(); closeErr != nil {
+			log.Printf("close mailer: %v", closeErr)
 		}
 	}()
 
@@ -103,21 +99,29 @@ func Start() error {
 		Config: cfg.App,
 	})
 
+	accessCfg := config.ProcessAccessConfig()
+	layout := httpx.Layout{GeneralConfig: cfg.App.General}
+
+	limiters, err := buildRateLimiters(in.ShutdownCtx, accessCfg, cfg.App.Security.TrustedProxyCIDRs, logger, layout)
+	if err != nil {
+		return fmt.Errorf("server.Start: %w", err)
+	}
+
 	sessSvc := app.NewSessionService(accinfra.NewSessionRepository(cpPool), cfg.App.TTL.Session)
 	secure := cfg.Env.Mode != "development"
 	withSession := middleware.WithSession(sessSvc, logger, secure)
 
-	accessCfg := config.ProcessAccessConfig()
 	userRepo := accinfra.NewRepository(mainDB)
 	reg := routes.NewRegistry(
 		accessCfg,
+		limiters,
 		in.Roles,
 		sessSvc,
 		userRepo,
 		logger,
 		secure,
 		cfg.App.Auth.AllowTempBannedLogin,
-		httpx.Layout{GeneralConfig: cfg.App.General},
+		layout,
 	)
 
 	// Plugin Mounting
@@ -127,7 +131,7 @@ func Start() error {
 	plugin.MountAll(reg, mux, in)
 	reg.Finalize()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		httpx.Render404(w, r, logger, httpx.Layout{GeneralConfig: cfg.App.General})
+		httpx.Render404(w, r, logger, layout)
 	})
 
 	sessionFingerprint := func(ctx context.Context) ([]byte, bool) {
@@ -178,6 +182,78 @@ func Start() error {
 	}
 	logger.Info("server stopped")
 	return nil
+}
+
+func decodeCSRFSecret(raw string) []byte {
+	secret, err := base64.StdEncoding.DecodeString(raw)
+	if err != nil {
+		log.Fatalf("CSRF_SECRET must be base64-encoded (generate via 'openssl rand -base64 32'): %v", err)
+	}
+	if len(secret) < 32 {
+		log.Fatalf("CSRF_SECRET must decode to >= 32 bytes (got %d)", len(secret))
+	}
+
+	return secret
+}
+
+func buildRateLimiters(ctx context.Context, accessCfg config.AccessConfig, trustedProxies []string, logger *slog.Logger, layout httpx.Layout) (map[string]*security.RateLimiter, error) {
+	limiters := map[string]*security.RateLimiter{}
+	reject := rateLimitRejectFunc(layout, logger)
+
+	for groupName, actions := range accessCfg {
+		for actionName, entry := range actions {
+			if entry.RateLimit == nil {
+				continue
+			}
+
+			tag := groupName + "." + actionName
+
+			opts := security.RateLimiterOptions{
+				Name:           tag,
+				Rule:           *entry.RateLimit,
+				TrustedProxies: trustedProxies,
+				Logger:         logger,
+				Reject:         reject,
+			}
+			if !isPublicEntry(entry) {
+				opts.KeyFunc = sessionUserKey
+			}
+
+			limiter, err := security.NewRateLimiter(opts)
+			if err != nil {
+				return nil, fmt.Errorf("server.buildRateLimiters: %w", err)
+			}
+
+			go limiter.Run(ctx)
+			limiters[tag] = limiter
+		}
+	}
+
+	return limiters, nil
+}
+
+func rateLimitRejectFunc(layout httpx.Layout, logger *slog.Logger) security.RejectFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet || r.Method == http.MethodHead {
+			httpx.Render429(w, r, logger, layout)
+			return
+		}
+
+		http.Error(w, "you are being rate limited", http.StatusTooManyRequests)
+	}
+}
+
+func isPublicEntry(entry config.Entry) bool {
+	return slices.Contains(entry.Roles, domain.RolePublic.Name)
+}
+
+func sessionUserKey(r *http.Request) string {
+	session, ok := middleware.SessionFromContext(r.Context())
+	if !ok || session == nil {
+		return ""
+	}
+
+	return strconv.Itoa(session.UserID)
 }
 
 func runHTTP(ctx context.Context, srv *http.Server, stop func(), logger *slog.Logger) error {

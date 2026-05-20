@@ -17,8 +17,14 @@ const RequireUnrestricted = "Unrestricted"
 const publicRoleName = "Public"
 
 type Entry struct {
-	Roles    RoleList
-	Requires []string
+	Roles     RoleList
+	RateLimit *RateLimitRule
+	Requires  []string
+}
+
+type RateLimitRule struct {
+	RatePerMinute int `yaml:"RatePerMinute"`
+	Burst         int `yaml:"Burst"`
 }
 
 type ActionRoles map[string]Entry
@@ -29,6 +35,12 @@ func (e Entry) RequiresUnrestricted() bool {
 	return slices.Contains(e.Requires, RequireUnrestricted)
 }
 
+var entryAllowedKeys = map[string]struct{}{
+	"Roles":     {},
+	"Requires":  {},
+	"RateLimit": {},
+}
+
 func (e *Entry) UnmarshalYAML(unmarshal func(any) error) error {
 	var asList RoleList
 	if err := unmarshal(&asList); err == nil {
@@ -37,15 +49,28 @@ func (e *Entry) UnmarshalYAML(unmarshal func(any) error) error {
 		return nil
 	}
 
+	var raw map[string]any
+	if err := unmarshal(&raw); err != nil {
+		return fmt.Errorf("access.yml entry: expected list of roles or { Roles, Requires, RateLimit }: %w", err)
+	}
+	for key := range raw {
+		if _, ok := entryAllowedKeys[key]; !ok {
+			return fmt.Errorf("access.yml entry: unknown field %q (allowed: Roles, Requires, RateLimit)", key)
+		}
+	}
+
 	var asStruct struct {
-		Roles    RoleList `yaml:"Roles"`
-		Requires []string `yaml:"Requires"`
+		Roles     RoleList       `yaml:"Roles"`
+		RateLimit *RateLimitRule `yaml:"RateLimit"`
+		Requires  []string       `yaml:"Requires"`
 	}
 	if err := unmarshal(&asStruct); err != nil {
-		return fmt.Errorf("access.yml entry: expected list of roles or { Roles, Requires }: %w", err)
+		return fmt.Errorf("access.yml entry: expected list of roles or { Roles, Requires, RateLimit }: %w", err)
 	}
 	e.Roles = asStruct.Roles
 	e.Requires = asStruct.Requires
+	e.RateLimit = asStruct.RateLimit
+
 	return nil
 }
 
@@ -119,6 +144,16 @@ func validateAccessConfig(cfg AccessConfig) {
 					panic(fmt.Errorf("access.yml: Action '%s' has unknown requires tag '%s'. Known tags: [%s]", fullName, tag, RequireUnrestricted))
 				}
 			}
+
+			if entry.RateLimit != nil {
+				if entry.RateLimit.RatePerMinute <= 0 {
+					panic(fmt.Errorf("access.yml: Action '%s' has RateLimit.RatePerMinute %d, must be > 0", fullName, entry.RateLimit.RatePerMinute))
+				}
+				if entry.RateLimit.Burst <= 0 {
+					panic(fmt.Errorf("access.yml: Action '%s' has RateLimit.Burst %d, must be > 0", fullName, entry.RateLimit.Burst))
+				}
+			}
+
 			if entry.Roles == nil {
 				continue
 			}

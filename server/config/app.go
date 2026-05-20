@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"strings"
 	"time"
@@ -107,6 +108,7 @@ type MetricsConfig struct {
 }
 
 type SecurityConfig struct {
+	TrustedProxyCIDRs     []string `yaml:"TrustedProxyCIDRs"`
 	CSPExtraScriptSrc     []string `yaml:"CSPExtraScriptSrc"`
 	CSPExtraStyleSrc      []string `yaml:"CSPExtraStyleSrc"`
 	CSPExtraImgSrc        []string `yaml:"CSPExtraImgSrc"`
@@ -259,6 +261,15 @@ func validateAppConfig(cfg *AppConfig) {
 	validateNewsConfig(cfg.NewsCategories)
 	validateVendorConfig(&cfg.Vendor)
 	validateMetricsConfig(&cfg.Metrics)
+	validateTrustedProxyCIDRs(cfg.Security.TrustedProxyCIDRs)
+}
+
+func validateTrustedProxyCIDRs(cidrs []string) {
+	for _, cidr := range cidrs {
+		if _, _, err := net.ParseCIDR(cidr); err != nil {
+			panic(fmt.Errorf("Security.TrustedProxyCIDRs entry %q is not a valid CIDR: %w", cidr, err))
+		}
+	}
 }
 
 func validateMetricsConfig(cfg *MetricsConfig) {

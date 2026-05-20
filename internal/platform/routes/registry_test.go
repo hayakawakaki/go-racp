@@ -49,7 +49,7 @@ func newRegistry(t *testing.T, cfg config.AccessConfig) (*Registry, *bytes.Buffe
 	buf := &bytes.Buffer{}
 	resolver := accdomain.NewRoleResolver(config.RolesConfig{"Moderator": 20, "Enforcer": 10, "Event": 2})
 	logger := slog.New(slog.NewTextHandler(buf, nil))
-	return NewRegistry(cfg, resolver, &stubSession{}, &stubUsers{}, logger, false, true, httpx.Layout{}), buf
+	return NewRegistry(cfg, nil, resolver, &stubSession{}, &stubUsers{}, logger, false, true, httpx.Layout{}), buf
 }
 
 func okHandler() http.Handler {
@@ -203,7 +203,7 @@ func TestRegistry_Wrap_AdminTagBlocksTempBanned(t *testing.T) {
 			return &accdomain.User{ID: 1, State: 0, UnbanTime: time.Now().Add(time.Hour)}, nil
 		},
 	}
-	reg := NewRegistry(config.AccessConfig{}, resolver, sess, users, logger, false, true, httpx.Layout{})
+	reg := NewRegistry(config.AccessConfig{}, nil, resolver, sess, users, logger, false, true, httpx.Layout{})
 
 	reg.Wrap(mux, "Admin.Dashboard", "GET /admin", okHandler())
 
@@ -238,7 +238,7 @@ func TestRegistry_Wrap_UnrestrictedRouteSoftBlocksTempBanned(t *testing.T) {
 			"ChangePassword": config.Entry{Roles: config.RoleList{"*"}, Requires: []string{"Unrestricted"}},
 		},
 	}
-	reg := NewRegistry(cfg, resolver, sess, users, logger, false, true, httpx.Layout{})
+	reg := NewRegistry(cfg, nil, resolver, sess, users, logger, false, true, httpx.Layout{})
 
 	reg.Wrap(mux, "Account.ChangePassword", "POST /account/password", okHandler())
 
@@ -276,7 +276,7 @@ func TestRegistry_Wrap_NonUnrestrictedRouteAllowsTempBanned(t *testing.T) {
 			"View": config.Entry{Roles: config.RoleList{"*"}},
 		},
 	}
-	reg := NewRegistry(cfg, resolver, sess, users, logger, false, true, httpx.Layout{})
+	reg := NewRegistry(cfg, nil, resolver, sess, users, logger, false, true, httpx.Layout{})
 
 	reg.Wrap(mux, "Account.View", "GET /account", okHandler())
 
@@ -359,7 +359,7 @@ func TestRegistry_Wrap_SoleAdminEntryIs404ForNonAdmin(t *testing.T) {
 			"List": config.Entry{Roles: config.RoleList{"Admin"}},
 		},
 	}
-	reg := NewRegistry(cfg, resolver, sess, users, logger, false, true, httpx.Layout{})
+	reg := NewRegistry(cfg, nil, resolver, sess, users, logger, false, true, httpx.Layout{})
 
 	reg.Wrap(mux, "Users.List", "GET /users", okHandler())
 
