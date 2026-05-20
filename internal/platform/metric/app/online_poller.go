@@ -43,9 +43,6 @@ func NewOnlinePoller(cfg OnlinePollerConfig) *OnlinePoller {
 	if cfg.Now == nil {
 		cfg.Now = time.Now
 	}
-	if cfg.Location == nil {
-		cfg.Location = time.UTC
-	}
 	return &OnlinePoller{cfg: cfg}
 }
 

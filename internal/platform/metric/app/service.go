@@ -38,9 +38,6 @@ func NewReader(cfg ReaderConfig) *Reader {
 	if cfg.Now == nil {
 		cfg.Now = time.Now
 	}
-	if cfg.Location == nil {
-		cfg.Location = time.UTC
-	}
 	return &Reader{
 		online:   cfg.Online,
 		peaks:    cfg.Peaks,
