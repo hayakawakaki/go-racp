@@ -3,8 +3,9 @@ package transport
 import (
 	"fmt"
 
-	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/features/tickets/domain"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/security"
 )
 
 type PlayerNewState struct {
@@ -40,6 +41,7 @@ templ playerNewPage(layout httpx.Layout, state PlayerNewState) {
 					@submit="submitting = true"
 					class="px-6 py-5 space-y-4"
 				>
+					@security.HiddenField()
 					<label class="block">
 						<span class="block text-sm font-medium text-gray-700 mb-1">Category</span>
 						<select name="category" required class="block w-full rounded border border-gray-300 px-3 py-2 text-gray-900 bg-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">

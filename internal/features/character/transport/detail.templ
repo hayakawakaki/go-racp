@@ -6,6 +6,7 @@ import (
 
 	"github.com/hayakawakaki/go-racp/internal/features/character/app"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/security"
 )
 
 type DetailState struct {
@@ -48,9 +49,11 @@ templ detailPage(layout httpx.Layout, state DetailState) {
 					</div>
 					<div class="flex flex-wrap gap-2">
 						<form method="post" action={ templ.SafeURL(fmt.Sprintf("/characters/%d/look", state.Char.ID)) }>
+							@security.HiddenField()
 							<button type="submit" disabled?={ state.Char.Online || state.Char.LookOnCooldown(state.Now) } class="rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-900 hover:text-gray-900 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400 disabled:hover:border-gray-200 disabled:hover:text-gray-400">Reset look</button>
 						</form>
 						<form method="post" action={ templ.SafeURL(fmt.Sprintf("/characters/%d/location", state.Char.ID)) }>
+							@security.HiddenField()
 							<button type="submit" disabled?={ state.Char.Online || state.Char.LocationOnCooldown(state.Now) } class="rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-900 hover:text-gray-900 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400 disabled:hover:border-gray-200 disabled:hover:text-gray-400">Reset location</button>
 						</form>
 					</div>

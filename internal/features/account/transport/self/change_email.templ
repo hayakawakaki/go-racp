@@ -1,6 +1,9 @@
 package self
 
-import "github.com/hayakawakaki/go-racp/internal/platform/httpx"
+import (
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/security"
+)
 
 type ChangeEmailState struct {
 	NewEmail string
@@ -21,6 +24,7 @@ templ changeEmailModal(state ChangeEmailState) {
 
 templ changeEmailForm(state ChangeEmailState) {
 	<form hx-post="/account/email" hx-swap="outerHTML" method="post" action="/account/email" class="space-y-4">
+		@security.HiddenField()
 		<div>
 			<label for="current_password" class="block text-sm font-medium text-gray-700 mb-1">Current password</label>
 			<input type="password" id="current_password" name="current_password" required autocomplete="current-password" class="w-full rounded border border-gray-300 px-3 py-2"/>
