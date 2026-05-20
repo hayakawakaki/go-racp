@@ -126,6 +126,13 @@ func Start() error {
 		handler = p.Middleware(in, handler)
 	}
 	handler = http.HandlerFunc(withSession(handler.ServeHTTP))
+
+	// Security origin/referer check
+	handler = security.Origin(security.OriginOptions{
+		TrustedOrigins: cfg.App.Security.TrustedOrigins,
+	})(handler)
+
+	// Security headers check
 	handler = security.Headers(security.HeadersOptions{
 		Cfg:    cfg.App.Security,
 		Secure: secure,

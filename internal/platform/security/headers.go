@@ -17,6 +17,7 @@ type HeadersOptions struct {
 func Headers(opts HeadersOptions) func(http.Handler) http.Handler {
 	csp := buildCSP(opts.Cfg)
 	hsts := buildHSTS(opts.Cfg)
+
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			h := w.Header()
@@ -54,6 +55,7 @@ func buildCSP(cfg config.SecurityConfig) string {
 		"object-src 'none'",
 		"upgrade-insecure-requests",
 	}
+
 	return strings.Join(parts, "; ")
 }
 
@@ -68,5 +70,6 @@ func buildHSTS(cfg config.SecurityConfig) string {
 	if cfg.HSTSPreload {
 		out += "; preload"
 	}
+
 	return out
 }
