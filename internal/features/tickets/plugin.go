@@ -48,6 +48,7 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 		Logger:       in.Logger,
 		Users:        userRepo,
 		Roles:        in.Roles,
+		RateLimiters: in.RateLimiters,
 		ManageRoles:  access.ManageRoles("Tickets"),
 		General:      in.Config.App.General,
 		PollInterval: in.Config.App.Tickets.StaffPollInterval,

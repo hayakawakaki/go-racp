@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -37,13 +38,7 @@ func Start() error {
 	// Config Creation
 	cfg := config.NewConfig()
 
-	csrfSecret, err := base64.StdEncoding.DecodeString(cfg.Env.CSRFSecret)
-	if err != nil {
-		log.Fatalf("CSRF_SECRET must be base64-encoded (generate via 'openssl rand -base64 32'): %v", err)
-	}
-	if len(csrfSecret) < 32 {
-		log.Fatalf("CSRF_SECRET must decode to >= 32 bytes (got %d)", len(csrfSecret))
-	}
+	csrfSecret := decodeCSRFSecret(cfg.Env.CSRFSecret)
 
 	// Logger
 	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
@@ -62,13 +57,13 @@ func Start() error {
 	// MySQL Connection
 	mainDB, logsDB := mysql.Connect(cfg.Env)
 	defer func() {
-		if err := mainDB.Close(); err != nil {
-			log.Printf("close main db: %v", err)
+		if closeErr := mainDB.Close(); closeErr != nil {
+			log.Printf("close main db: %v", closeErr)
 		}
 	}()
 	defer func() {
-		if err := logsDB.Close(); err != nil {
-			log.Printf("close logs db: %v", err)
+		if closeErr := logsDB.Close(); closeErr != nil {
+			log.Printf("close logs db: %v", closeErr)
 		}
 	}()
 
@@ -76,8 +71,8 @@ func Start() error {
 	defer cpPool.Close()
 
 	defer func() {
-		if err := smtpMailer.Close(); err != nil {
-			log.Printf("close mailer: %v", err)
+		if closeErr := smtpMailer.Close(); closeErr != nil {
+			log.Printf("close mailer: %v", closeErr)
 		}
 	}()
 
@@ -102,6 +97,12 @@ func Start() error {
 		Logger: logger,
 		Config: cfg.App,
 	})
+
+	limiters, err := buildRateLimiters(in.ShutdownCtx, cfg.App.Security.RateLimit, logger)
+	if err != nil {
+		return fmt.Errorf("server.Start: %w", err)
+	}
+	in.RateLimiters = limiters
 
 	sessSvc := app.NewSessionService(accinfra.NewSessionRepository(cpPool), cfg.App.TTL.Session)
 	secure := cfg.Env.Mode != "development"
@@ -178,6 +179,53 @@ func Start() error {
 	}
 	logger.Info("server stopped")
 	return nil
+}
+
+func decodeCSRFSecret(raw string) []byte {
+	secret, err := base64.StdEncoding.DecodeString(raw)
+	if err != nil {
+		log.Fatalf("CSRF_SECRET must be base64-encoded (generate via 'openssl rand -base64 32'): %v", err)
+	}
+	if len(secret) < 32 {
+		log.Fatalf("CSRF_SECRET must decode to >= 32 bytes (got %d)", len(secret))
+	}
+
+	return secret
+}
+
+func buildRateLimiters(ctx context.Context, cfg config.RateLimitConfig, logger *slog.Logger) (map[string]*security.RateLimiter, error) {
+	limiters := make(map[string]*security.RateLimiter, len(cfg.Rules))
+
+	for name, rule := range cfg.Rules {
+		opts := security.RateLimiterOptions{
+			Name:           name,
+			Rule:           rule,
+			TrustedProxies: cfg.TrustedProxyCIDRs,
+			Logger:         logger,
+		}
+		if name == "ticket_open" {
+			opts.KeyFunc = ticketOpenKey
+		}
+
+		limiter, err := security.NewRateLimiter(opts)
+		if err != nil {
+			return nil, fmt.Errorf("server.buildRateLimiters: %w", err)
+		}
+
+		go limiter.Run(ctx)
+		limiters[name] = limiter
+	}
+
+	return limiters, nil
+}
+
+func ticketOpenKey(r *http.Request) string {
+	session, ok := middleware.SessionFromContext(r.Context())
+	if !ok || session == nil {
+		return ""
+	}
+
+	return strconv.Itoa(session.UserID)
 }
 
 func runHTTP(ctx context.Context, srv *http.Server, stop func(), logger *slog.Logger) error {

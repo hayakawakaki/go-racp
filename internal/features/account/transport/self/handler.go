@@ -14,6 +14,7 @@ import (
 	actiontokendomain "github.com/hayakawakaki/go-racp/internal/platform/actiontoken/domain"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
+	"github.com/hayakawakaki/go-racp/internal/platform/security"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 
@@ -69,6 +70,7 @@ type HandlerConfig struct {
 	Logger               *slog.Logger
 	Users                userLookup
 	Characters           characterLister
+	RateLimiters         map[string]*security.RateLimiter
 	General              config.GeneralConfig
 	Secure               bool
 	AllowTempBannedLogin bool
@@ -80,6 +82,7 @@ type Handler struct {
 	users                userLookup
 	characters           characterLister
 	logger               *slog.Logger
+	rateLimiters         map[string]*security.RateLimiter
 	general              config.GeneralConfig
 	secure               bool
 	allowTempBannedLogin bool
@@ -96,6 +99,7 @@ func NewHandler(svc accountService, sessSvc sessionService, cfg HandlerConfig) *
 		users:                cfg.Users,
 		characters:           cfg.Characters,
 		logger:               logger,
+		rateLimiters:         cfg.RateLimiters,
 		general:              cfg.General,
 		secure:               cfg.Secure,
 		allowTempBannedLogin: cfg.AllowTempBannedLogin,
@@ -108,18 +112,18 @@ func (h *Handler) layout() httpx.Layout {
 
 func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
 	reg.Wrap(mux, "Account.Register", "GET /register", http.HandlerFunc(h.showRegister))
-	reg.Wrap(mux, "Account.Register", "POST /register", http.HandlerFunc(h.doRegister))
+	reg.Wrap(mux, "Account.Register", "POST /register", security.Wrap(h.rateLimiters, "register", http.HandlerFunc(h.doRegister)))
 	reg.Wrap(mux, "Account.Login", "GET /login", http.HandlerFunc(h.showLogin))
-	reg.Wrap(mux, "Account.Login", "POST /login", http.HandlerFunc(h.doLogin))
+	reg.Wrap(mux, "Account.Login", "POST /login", security.Wrap(h.rateLimiters, "login", http.HandlerFunc(h.doLogin)))
 	reg.Wrap(mux, "Account.Logout", "POST /logout", http.HandlerFunc(h.doLogout))
 	reg.Wrap(mux, "Account.ForgotPassword", "GET /forgot-password", http.HandlerFunc(h.showForgotPassword))
-	reg.Wrap(mux, "Account.ForgotPassword", "POST /forgot-password", http.HandlerFunc(h.doForgotPassword))
+	reg.Wrap(mux, "Account.ForgotPassword", "POST /forgot-password", security.Wrap(h.rateLimiters, "forgot_password", http.HandlerFunc(h.doForgotPassword)))
 	reg.Wrap(mux, "Account.ResetPassword", "GET /reset-password", http.HandlerFunc(h.showResetPassword))
-	reg.Wrap(mux, "Account.ResetPassword", "POST /reset-password", http.HandlerFunc(h.doResetPassword))
+	reg.Wrap(mux, "Account.ResetPassword", "POST /reset-password", security.Wrap(h.rateLimiters, "reset_password", http.HandlerFunc(h.doResetPassword)))
 	reg.Wrap(mux, "Account.Verify", "GET /verify-account", http.HandlerFunc(h.showVerifyAccount))
 	reg.Wrap(mux, "Account.Verify", "GET /verify", http.HandlerFunc(h.showVerify))
 	reg.Wrap(mux, "Account.Verify", "POST /verify", http.HandlerFunc(h.doVerify))
-	reg.Wrap(mux, "Account.Verify", "POST /verify/resend", http.HandlerFunc(h.doResendVerification))
+	reg.Wrap(mux, "Account.Verify", "POST /verify/resend", security.Wrap(h.rateLimiters, "verify_resend", http.HandlerFunc(h.doResendVerification)))
 	reg.Wrap(mux, "Account.VerifyEmailChange", "GET /verify-email-change", http.HandlerFunc(h.showVerifyEmailChange))
 	reg.Wrap(mux, "Account.VerifyEmailChange", "POST /verify-email-change", http.HandlerFunc(h.doVerifyEmailChange))
 
