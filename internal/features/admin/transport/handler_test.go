@@ -88,7 +88,7 @@ func TestHandler_ShowDashboard_FullPage(t *testing.T) {
 	if !strings.Contains(body, "<title>Test CP / Admin / Dashboard</title>") {
 		t.Errorf("full page must include layout title; body:\n%s", body)
 	}
-	if !strings.Contains(body, "Server metrics will appear here.") {
+	if !strings.Contains(body, `_onlineInterval`) {
 		t.Errorf("full page must include dashboard content; body:\n%s", body)
 	}
 	if !strings.Contains(body, `id="admin-shell"`) {
@@ -109,7 +109,7 @@ func TestHandler_ShowDashboard_HTMXFragment(t *testing.T) {
 		t.Errorf("status = %d, want 200", rr.Code)
 	}
 	body := rr.Body.String()
-	if !strings.Contains(body, "Server metrics will appear here.") {
+	if !strings.Contains(body, `_onlineInterval`) {
 		t.Errorf("HTMX fragment must include dashboard content; body:\n%s", body)
 	}
 	if strings.Contains(body, "<title>") {

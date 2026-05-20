@@ -1,0 +1,60 @@
+package metric
+
+import (
+	"context"
+	"database/sql"
+	"log/slog"
+
+	"github.com/hayakawakaki/go-racp/internal/platform/metric/app"
+	"github.com/hayakawakaki/go-racp/internal/platform/metric/domain"
+	"github.com/hayakawakaki/go-racp/internal/platform/metric/infra"
+	"github.com/hayakawakaki/go-racp/server/config"
+	"github.com/jackc/pgx/v5/pgxpool"
+)
+
+type Reader = app.Reader
+
+type Deps struct {
+	MainDB *sql.DB
+	Pool   *pgxpool.Pool
+	Logger *slog.Logger
+	Config *config.AppConfig
+}
+
+func Start(ctx context.Context, deps Deps) *Reader {
+	source := infra.NewMariaSource(deps.MainDB)
+	peakRepo := infra.NewPeakRepository(deps.Pool)
+	generalRepo := infra.NewGeneralRepository(deps.Pool)
+
+	windows := make([]domain.Window, 0, len(deps.Config.Metrics.PeakWindows))
+	for _, w := range deps.Config.Metrics.PeakWindows {
+		windows = append(windows, domain.Window(w))
+	}
+
+	online := app.NewOnlinePoller(app.OnlinePollerConfig{
+		Source:   source,
+		PeakSink: peakRepo,
+		Logger:   deps.Logger,
+		Location: deps.Config.General.Location(),
+		Windows:  windows,
+		Interval: deps.Config.Metrics.OnlinePollInterval,
+		Gepard:   deps.Config.General.Gepard,
+	})
+	go online.Run(ctx)
+
+	general := app.NewGeneralPoller(app.GeneralPollerConfig{
+		Source:   source,
+		Sink:     generalRepo,
+		Logger:   deps.Logger,
+		Interval: deps.Config.Metrics.GeneralPollInterval,
+	})
+	go general.Run(ctx)
+
+	return app.NewReader(app.ReaderConfig{
+		Online:   online,
+		Peaks:    peakRepo,
+		General:  generalRepo,
+		Location: deps.Config.General.Location(),
+		Windows:  windows,
+	})
+}
