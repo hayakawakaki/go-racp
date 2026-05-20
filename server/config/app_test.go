@@ -3,6 +3,7 @@ package config
 import (
 	"strings"
 	"testing"
+	"time"
 )
 
 func mustPanic(t *testing.T, fn func()) string {
@@ -93,6 +94,35 @@ func TestValidateRolesConfig_RejectsInvalidValues(t *testing.T) {
 			msg := mustPanic(t, func() { validateRolesConfig(cfg) })
 			if !strings.Contains(msg, tt.wantContain) {
 				t.Errorf("panic message = %q, want substring %q", msg, tt.wantContain)
+			}
+		})
+	}
+}
+
+func TestValidateVendorConfig_Clamps(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		in   time.Duration
+		want time.Duration
+	}{
+		{name: "zero defaults to 30s", in: 0, want: 30 * time.Second},
+		{name: "negative defaults to 30s", in: -1 * time.Second, want: 30 * time.Second},
+		{name: "below min clamps to 5s", in: 1 * time.Second, want: 5 * time.Second},
+		{name: "exactly min stays", in: 5 * time.Second, want: 5 * time.Second},
+		{name: "in range stays", in: 45 * time.Second, want: 45 * time.Second},
+		{name: "exactly max stays", in: 10 * time.Minute, want: 10 * time.Minute},
+		{name: "above max clamps to 10m", in: 1 * time.Hour, want: 10 * time.Minute},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			cfg := VendorConfig{PollInterval: tt.in}
+			validateVendorConfig(&cfg)
+			if cfg.PollInterval != tt.want {
+				t.Errorf("PollInterval = %v, want %v", cfg.PollInterval, tt.want)
 			}
 		})
 	}

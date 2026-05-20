@@ -131,6 +131,74 @@ func TestPoller_ErrorKeepsPreviousSnapshot(t *testing.T) {
 	<-done
 }
 
+func TestBuildSnapshot_EmptyInput(t *testing.T) {
+	t.Parallel()
+	snap := buildSnapshot(nil)
+	if snap == nil {
+		t.Fatalf("snap is nil")
+	}
+	if len(snap.Vendors) != 0 {
+		t.Errorf("Vendors = %d, want 0", len(snap.Vendors))
+	}
+	if len(snap.ByKey) != 0 {
+		t.Errorf("ByKey = %d, want 0", len(snap.ByKey))
+	}
+	if len(snap.ByItem) != 0 {
+		t.Errorf("ByItem = %d, want 0", len(snap.ByItem))
+	}
+}
+
+func TestBuildSnapshot_SortDescByID(t *testing.T) {
+	t.Parallel()
+	snap := buildSnapshot([]domain.Vendor{
+		{ID: 1, Type: domain.VendorTypeSelling},
+		{ID: 99, Type: domain.VendorTypeSelling},
+		{ID: 50, Type: domain.VendorTypeSelling},
+	})
+	if got := []int{snap.Vendors[0].ID, snap.Vendors[1].ID, snap.Vendors[2].ID}; got[0] != 99 || got[1] != 50 || got[2] != 1 {
+		t.Errorf("ID order = %v, want [99 50 1]", got)
+	}
+}
+
+func TestBuildSnapshot_CrossTypeIDCollisionStaysDistinctInByKey(t *testing.T) {
+	t.Parallel()
+	snap := buildSnapshot([]domain.Vendor{
+		{ID: 1, Type: domain.VendorTypeSelling, StallName: "sells"},
+		{ID: 1, Type: domain.VendorTypeBuying, StallName: "buys"},
+	})
+
+	sell, sellOK := snap.ByKey[domain.VendorKey{Type: domain.VendorTypeSelling, ID: 1}]
+	buy, buyOK := snap.ByKey[domain.VendorKey{Type: domain.VendorTypeBuying, ID: 1}]
+	if !sellOK || !buyOK {
+		t.Fatalf("missing keys: sell=%v buy=%v", sellOK, buyOK)
+	}
+	if sell.StallName != "sells" || buy.StallName != "buys" {
+		t.Errorf("entries crossed: sell=%q buy=%q", sell.StallName, buy.StallName)
+	}
+}
+
+func TestBuildSnapshot_ByItemIndexesAllOccurrences(t *testing.T) {
+	t.Parallel()
+	snap := buildSnapshot([]domain.Vendor{
+		{ID: 1, Type: domain.VendorTypeSelling, Items: []domain.VendorItem{{ItemID: 501}, {ItemID: 502}}},
+		{ID: 2, Type: domain.VendorTypeBuying, Items: []domain.VendorItem{{ItemID: 501}}},
+		{ID: 3, Type: domain.VendorTypeSelling, Items: []domain.VendorItem{{ItemID: 999}}},
+	})
+
+	if got := len(snap.ByItem[501]); got != 2 {
+		t.Errorf("ByItem[501] = %d, want 2", got)
+	}
+	if got := len(snap.ByItem[502]); got != 1 {
+		t.Errorf("ByItem[502] = %d, want 1", got)
+	}
+	if got := len(snap.ByItem[999]); got != 1 {
+		t.Errorf("ByItem[999] = %d, want 1", got)
+	}
+	if got := len(snap.ByItem[0]); got != 0 {
+		t.Errorf("ByItem[unknown] = %d, want 0", got)
+	}
+}
+
 func TestPoller_ContextCancellationStopsRun(t *testing.T) {
 	t.Parallel()
 	p := NewPoller(&fakeRepo{}, time.Hour, discardLogger())

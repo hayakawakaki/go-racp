@@ -103,6 +103,46 @@ func TestHandler_ShowList_SnapshotNotReadyRendersLoading(t *testing.T) {
 	if !strings.Contains(strings.ToLower(body), "loading") {
 		t.Errorf("body missing loading indicator: %s", body)
 	}
+	if !strings.Contains(body, "<html") && !strings.Contains(body, "<!doctype") {
+		t.Errorf("non-HTMX request should return a full page; got fragment: %s", body[:min(len(body), 200)])
+	}
+}
+
+func TestHandler_ShowList_SnapshotNotReadyHTMXReturnsFragment(t *testing.T) {
+	t.Parallel()
+	svc := &fakeService{listErr: domain.ErrSnapshotNotReady}
+	h := newTestHandler(svc, &fakeItemLookup{})
+
+	r := httptest.NewRequest(http.MethodGet, "/vendors", http.NoBody)
+	r.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+	h.showList(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", w.Code)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<html") || strings.Contains(body, "<!doctype") {
+		t.Errorf("HTMX request should return a fragment, got full page: %s", body[:min(len(body), 200)])
+	}
+	if !strings.Contains(strings.ToLower(body), "loading") {
+		t.Errorf("body missing loading indicator: %s", body)
+	}
+}
+
+func TestHandler_ShowList_SnapshotNotReadyPreservesFiltersInRefreshURL(t *testing.T) {
+	t.Parallel()
+	svc := &fakeService{listErr: domain.ErrSnapshotNotReady}
+	h := newTestHandler(svc, &fakeItemLookup{})
+
+	r := httptest.NewRequest(http.MethodGet, "/vendors?type=selling&item=501&page=2", http.NoBody)
+	w := httptest.NewRecorder()
+	h.showList(w, r)
+
+	body := w.Body.String()
+	if !strings.Contains(body, "type=selling") || !strings.Contains(body, "item=501") || !strings.Contains(body, "page=2") {
+		t.Errorf("loading body should embed current query in refresh URL; got: %s", body)
+	}
 }
 
 func TestHandler_ShowList_ServiceErrorReturns500(t *testing.T) {
