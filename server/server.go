@@ -101,7 +101,7 @@ func Start() error {
 
 	accessCfg := config.ProcessAccessConfig()
 
-	limiters, err := buildRateLimiters(in.ShutdownCtx, accessCfg, cfg.App.Security.TrustedProxyCIDRs, logger)
+	limiters, err := buildRateLimiters(in.ShutdownCtx, accessCfg, cfg.App.Security.TrustedProxyCIDRs, logger, httpx.Layout{GeneralConfig: cfg.App.General})
 	if err != nil {
 		return fmt.Errorf("server.Start: %w", err)
 	}
@@ -195,8 +195,9 @@ func decodeCSRFSecret(raw string) []byte {
 	return secret
 }
 
-func buildRateLimiters(ctx context.Context, accessCfg config.AccessConfig, trustedProxies []string, logger *slog.Logger) (map[string]*security.RateLimiter, error) {
+func buildRateLimiters(ctx context.Context, accessCfg config.AccessConfig, trustedProxies []string, logger *slog.Logger, layout httpx.Layout) (map[string]*security.RateLimiter, error) {
 	limiters := map[string]*security.RateLimiter{}
+	reject := rateLimitRejectFunc(layout, logger)
 
 	for groupName, actions := range accessCfg {
 		for actionName, entry := range actions {
@@ -211,6 +212,7 @@ func buildRateLimiters(ctx context.Context, accessCfg config.AccessConfig, trust
 				Rule:           *entry.RateLimit,
 				TrustedProxies: trustedProxies,
 				Logger:         logger,
+				Reject:         reject,
 			}
 			if !isPublicEntry(entry) {
 				opts.KeyFunc = sessionUserKey
@@ -227,6 +229,17 @@ func buildRateLimiters(ctx context.Context, accessCfg config.AccessConfig, trust
 	}
 
 	return limiters, nil
+}
+
+func rateLimitRejectFunc(layout httpx.Layout, logger *slog.Logger) security.RejectFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet || r.Method == http.MethodHead {
+			httpx.Render429(w, r, logger, layout)
+			return
+		}
+
+		http.Error(w, "you are being rate limited", http.StatusTooManyRequests)
+	}
 }
 
 func isPublicEntry(entry config.Entry) bool {

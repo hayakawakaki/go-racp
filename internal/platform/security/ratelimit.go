@@ -26,23 +26,27 @@ const (
 
 type KeyFunc func(*http.Request) string
 
+type RejectFunc func(w http.ResponseWriter, r *http.Request)
+
 type RateLimiterOptions struct {
 	Logger         *slog.Logger
 	KeyFunc        KeyFunc
+	Reject         RejectFunc
 	Name           string
 	TrustedProxies []string
 	Rule           config.RateLimitRule
 }
 
 type RateLimiter struct {
-	logger  *slog.Logger
-	keyFn   KeyFunc
-	buckets map[string]*bucketEntry
-	name    string
-	trusted []*net.IPNet
-	limit   rate.Limit
-	burst   int
-	mu      sync.Mutex
+	logger   *slog.Logger
+	keyFn    KeyFunc
+	rejectFn RejectFunc
+	buckets  map[string]*bucketEntry
+	name     string
+	trusted  []*net.IPNet
+	limit    rate.Limit
+	burst    int
+	mu       sync.Mutex
 }
 
 type bucketEntry struct {
@@ -60,12 +64,13 @@ func NewRateLimiter(opts RateLimiterOptions) (*RateLimiter, error) {
 	}
 
 	limiter := &RateLimiter{
-		name:    opts.Name,
-		limit:   rate.Limit(float64(opts.Rule.RatePerMinute) / 60.0),
-		burst:   opts.Rule.Burst,
-		logger:  opts.Logger,
-		keyFn:   opts.KeyFunc,
-		buckets: make(map[string]*bucketEntry),
+		name:     opts.Name,
+		limit:    rate.Limit(float64(opts.Rule.RatePerMinute) / 60.0),
+		burst:    opts.Rule.Burst,
+		logger:   opts.Logger,
+		keyFn:    opts.KeyFunc,
+		rejectFn: opts.Reject,
+		buckets:  make(map[string]*bucketEntry),
 	}
 
 	for _, cidr := range opts.TrustedProxies {
@@ -117,7 +122,13 @@ func (rl *RateLimiter) reject(w http.ResponseWriter, r *http.Request, key string
 	}
 
 	w.Header().Set("Retry-After", strconv.Itoa(seconds))
-	http.Error(w, "too many requests", http.StatusTooManyRequests)
+
+	if rl.rejectFn != nil {
+		rl.rejectFn(w, r)
+		return
+	}
+
+	http.Error(w, "you are being rate limited", http.StatusTooManyRequests)
 }
 
 func (rl *RateLimiter) bucket(key string) *bucketEntry {
