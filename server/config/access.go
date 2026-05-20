@@ -35,12 +35,28 @@ func (e Entry) RequiresUnrestricted() bool {
 	return slices.Contains(e.Requires, RequireUnrestricted)
 }
 
+var entryAllowedKeys = map[string]struct{}{
+	"Roles":     {},
+	"Requires":  {},
+	"RateLimit": {},
+}
+
 func (e *Entry) UnmarshalYAML(unmarshal func(any) error) error {
 	var asList RoleList
 	if err := unmarshal(&asList); err == nil {
 		e.Roles = asList
 		e.Requires = nil
 		return nil
+	}
+
+	var raw map[string]any
+	if err := unmarshal(&raw); err != nil {
+		return fmt.Errorf("access.yml entry: expected list of roles or { Roles, Requires, RateLimit }: %w", err)
+	}
+	for key := range raw {
+		if _, ok := entryAllowedKeys[key]; !ok {
+			return fmt.Errorf("access.yml entry: unknown field %q (allowed: Roles, Requires, RateLimit)", key)
+		}
 	}
 
 	var asStruct struct {

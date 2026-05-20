@@ -100,8 +100,9 @@ func Start() error {
 	})
 
 	accessCfg := config.ProcessAccessConfig()
+	layout := httpx.Layout{GeneralConfig: cfg.App.General}
 
-	limiters, err := buildRateLimiters(in.ShutdownCtx, accessCfg, cfg.App.Security.TrustedProxyCIDRs, logger, httpx.Layout{GeneralConfig: cfg.App.General})
+	limiters, err := buildRateLimiters(in.ShutdownCtx, accessCfg, cfg.App.Security.TrustedProxyCIDRs, logger, layout)
 	if err != nil {
 		return fmt.Errorf("server.Start: %w", err)
 	}
@@ -120,7 +121,7 @@ func Start() error {
 		logger,
 		secure,
 		cfg.App.Auth.AllowTempBannedLogin,
-		httpx.Layout{GeneralConfig: cfg.App.General},
+		layout,
 	)
 
 	// Plugin Mounting
@@ -130,7 +131,7 @@ func Start() error {
 	plugin.MountAll(reg, mux, in)
 	reg.Finalize()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		httpx.Render404(w, r, logger, httpx.Layout{GeneralConfig: cfg.App.General})
+		httpx.Render404(w, r, logger, layout)
 	})
 
 	sessionFingerprint := func(ctx context.Context) ([]byte, bool) {
@@ -243,7 +244,7 @@ func rateLimitRejectFunc(layout httpx.Layout, logger *slog.Logger) security.Reje
 }
 
 func isPublicEntry(entry config.Entry) bool {
-	return slices.Contains(entry.Roles, "Public")
+	return slices.Contains(entry.Roles, domain.RolePublic.Name)
 }
 
 func sessionUserKey(r *http.Request) string {

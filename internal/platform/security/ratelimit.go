@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	defaultMaxEntries = 50_000
+	defaultMaxEntries = 2000
 	defaultIdle       = 10 * time.Minute
 	defaultGCInterval = 1 * time.Minute
 )
@@ -42,6 +42,8 @@ type RateLimiter struct {
 	keyFn    KeyFunc
 	rejectFn RejectFunc
 	buckets  map[string]*bucketEntry
+	head     *bucketEntry
+	tail     *bucketEntry
 	name     string
 	trusted  []*net.IPNet
 	limit    rate.Limit
@@ -51,6 +53,9 @@ type RateLimiter struct {
 
 type bucketEntry struct {
 	limiter  *rate.Limiter
+	prev     *bucketEntry
+	next     *bucketEntry
+	key      string
 	lastSeen atomic.Int64
 }
 
@@ -122,6 +127,7 @@ func (rl *RateLimiter) reject(w http.ResponseWriter, r *http.Request, key string
 	}
 
 	w.Header().Set("Retry-After", strconv.Itoa(seconds))
+	w.Header().Set("Cache-Control", "no-store")
 
 	if rl.rejectFn != nil {
 		rl.rejectFn(w, r)
@@ -138,6 +144,7 @@ func (rl *RateLimiter) bucket(key string) *bucketEntry {
 	now := time.Now().UnixNano()
 	if existing, ok := rl.buckets[key]; ok {
 		existing.lastSeen.Store(now)
+		rl.moveToFrontLocked(existing)
 		return existing
 	}
 
@@ -145,29 +152,56 @@ func (rl *RateLimiter) bucket(key string) *bucketEntry {
 		rl.evictOldestLocked()
 	}
 
-	entry := &bucketEntry{limiter: rate.NewLimiter(rl.limit, rl.burst)}
+	entry := &bucketEntry{limiter: rate.NewLimiter(rl.limit, rl.burst), key: key}
 	entry.lastSeen.Store(now)
 	rl.buckets[key] = entry
+	rl.pushFrontLocked(entry)
 
 	return entry
 }
 
-func (rl *RateLimiter) evictOldestLocked() {
-	var (
-		oldestKey string
-		oldestAt  int64
-	)
-	for key, entry := range rl.buckets {
-		lastSeen := entry.lastSeen.Load()
-		if oldestKey == "" || lastSeen < oldestAt {
-			oldestAt = lastSeen
-			oldestKey = key
-		}
+func (rl *RateLimiter) pushFrontLocked(entry *bucketEntry) {
+	entry.prev = nil
+	entry.next = rl.head
+	if rl.head != nil {
+		rl.head.prev = entry
 	}
+	rl.head = entry
+	if rl.tail == nil {
+		rl.tail = entry
+	}
+}
 
-	if oldestKey != "" {
-		delete(rl.buckets, oldestKey)
+func (rl *RateLimiter) unlinkLocked(entry *bucketEntry) {
+	if entry.prev != nil {
+		entry.prev.next = entry.next
+	} else {
+		rl.head = entry.next
 	}
+	if entry.next != nil {
+		entry.next.prev = entry.prev
+	} else {
+		rl.tail = entry.prev
+	}
+	entry.prev = nil
+	entry.next = nil
+}
+
+func (rl *RateLimiter) moveToFrontLocked(entry *bucketEntry) {
+	if rl.head == entry {
+		return
+	}
+	rl.unlinkLocked(entry)
+	rl.pushFrontLocked(entry)
+}
+
+func (rl *RateLimiter) evictOldestLocked() {
+	if rl.tail == nil {
+		return
+	}
+	oldest := rl.tail
+	rl.unlinkLocked(oldest)
+	delete(rl.buckets, oldest.key)
 }
 
 func (rl *RateLimiter) Run(ctx context.Context) {
@@ -188,10 +222,10 @@ func (rl *RateLimiter) gcOnce(cutoff int64) {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
 
-	for key, entry := range rl.buckets {
-		if entry.lastSeen.Load() < cutoff {
-			delete(rl.buckets, key)
-		}
+	for rl.tail != nil && rl.tail.lastSeen.Load() < cutoff {
+		stale := rl.tail
+		rl.unlinkLocked(stale)
+		delete(rl.buckets, stale.key)
 	}
 }
 
@@ -210,37 +244,37 @@ func (rl *RateLimiter) clientIPKey(r *http.Request) string {
 }
 
 func (rl *RateLimiter) realClientIP(r *http.Request) net.IP {
-	remote := remoteIP(r.RemoteAddr)
-	if remote == nil || !rl.isTrusted(remote) {
-		return remote
+	ip := remoteIP(r.RemoteAddr)
+	if ip == nil || !rl.isTrusted(ip) {
+		return ip
 	}
 
 	forwardedFor := r.Header.Get("X-Forwarded-For")
 	if forwardedFor == "" {
-		return remote
+		return ip
 	}
 
 	hops := strings.Split(forwardedFor, ",")
 	for _, hop := range slices.Backward(hops) {
 		candidate := net.ParseIP(strings.TrimSpace(hop))
 		if candidate == nil {
-			return remote
+			return ip
 		}
 		if !rl.isTrusted(candidate) {
 			return candidate
 		}
 	}
 
-	return remote
+	return ip
 }
 
-func (rl *RateLimiter) isTrusted(address net.IP) bool {
-	if address == nil {
+func (rl *RateLimiter) isTrusted(ip net.IP) bool {
+	if ip == nil {
 		return false
 	}
 
 	for _, network := range rl.trusted {
-		if network.Contains(address) {
+		if network.Contains(ip) {
 			return true
 		}
 	}
@@ -248,24 +282,24 @@ func (rl *RateLimiter) isTrusted(address net.IP) bool {
 	return false
 }
 
-func remoteIP(remoteAddr string) net.IP {
-	host, _, err := net.SplitHostPort(remoteAddr)
+func remoteIP(ip string) net.IP {
+	host, _, err := net.SplitHostPort(ip)
 	if err != nil {
-		host = remoteAddr
+		host = ip
 	}
 
 	return net.ParseIP(host)
 }
 
-func normalizeIP(address net.IP) string {
-	if address == nil {
+func normalizeIP(ip net.IP) string {
+	if ip == nil {
 		return "unknown"
 	}
-	if v4 := address.To4(); v4 != nil {
+	if v4 := ip.To4(); v4 != nil {
 		return v4.String()
 	}
 
-	masked := address.Mask(net.CIDRMask(64, 128))
+	masked := ip.Mask(net.CIDRMask(64, 128))
 
 	return masked.String() + "/64"
 }
