@@ -149,11 +149,12 @@ type recordedAttempt struct {
 
 //nolint:govet // test-only struct
 type fakeLoginAttempts struct {
-	err      error
-	records  []recordedAttempt
-	lastFail time.Time
-	mu       sync.Mutex
-	failures int
+	err       error
+	recordErr error
+	records   []recordedAttempt
+	lastFail  time.Time
+	mu        sync.Mutex
+	failures  int
 }
 
 func (f *fakeLoginAttempts) Record(_ context.Context, username string, accountID sql.NullInt64, ip net.IP, success bool, userAgent string) error {
@@ -166,7 +167,7 @@ func (f *fakeLoginAttempts) Record(_ context.Context, username string, accountID
 		accountID: accountID,
 		success:   success,
 	})
-	return nil
+	return f.recordErr
 }
 
 func (f *fakeLoginAttempts) ConsecutiveFailures(_ context.Context, _ string, _ time.Duration) (int, time.Time, error) {
@@ -644,6 +645,257 @@ func TestService_Authenticate(t *testing.T) {
 
 	})
 
+}
+
+func TestService_Authenticate_LockoutActive_ReturnsErrAccountLocked(t *testing.T) {
+	t.Parallel()
+	repo := newFakeUserRepo()
+	_, _ = repo.Create(context.Background(), &domain.User{
+		Username: "testuser",
+		Email:    "test@example.com",
+	}, "Test1234!")
+	repo.getCredentialsHook = func(string) (*domain.User, string, error) {
+		t.Fatal("GetCredentials must not be called when lockout is active")
+		return nil, "", nil
+	}
+	attempts := &fakeLoginAttempts{
+		failures: 6,
+		lastFail: time.Now(),
+	}
+	svc := NewService(repo, WithLoginAttempts(attempts))
+
+	_, _, err := svc.Authenticate(context.Background(), LoginCommand{
+		Username:  "testuser",
+		Password:  "Test1234!",
+		UserAgent: "test",
+		IP:        net.IPv4(127, 0, 0, 1),
+	})
+	if !errors.Is(err, domain.ErrAccountLocked) {
+		t.Fatalf("got %v, want ErrAccountLocked", err)
+	}
+	if len(attempts.records) != 0 {
+		t.Errorf("lockout branch must not record extra failure rows, got %d", len(attempts.records))
+	}
+}
+
+func TestService_Authenticate_LockoutExpired_ProceedsToCompare(t *testing.T) {
+	t.Parallel()
+	repo := newFakeUserRepo()
+	_, _ = repo.Create(context.Background(), &domain.User{
+		Username: "testuser",
+		Email:    "test@example.com",
+	}, "Test1234!")
+	attempts := &fakeLoginAttempts{
+		failures: 6,
+		lastFail: time.Now().Add(-10 * time.Minute),
+	}
+	svc := NewService(repo, WithLoginAttempts(attempts))
+
+	dto, _, err := svc.Authenticate(context.Background(), LoginCommand{
+		Username:  "testuser",
+		Password:  "Test1234!",
+		UserAgent: "test",
+		IP:        net.IPv4(127, 0, 0, 1),
+	})
+	if err != nil {
+		t.Fatalf("Authenticate: %v", err)
+	}
+	if dto.Username != "testuser" {
+		t.Errorf("dto.Username = %q, want testuser", dto.Username)
+	}
+	if len(attempts.records) != 1 || !attempts.records[0].success {
+		t.Errorf("expected one success record, got %+v", attempts.records)
+	}
+}
+
+func TestService_Authenticate_TrimsUsernameWhitespace(t *testing.T) {
+	t.Parallel()
+	repo := newFakeUserRepo()
+	_, _ = repo.Create(context.Background(), &domain.User{
+		Username: "testuser",
+		Email:    "test@example.com",
+	}, "Test1234!")
+	attempts := &fakeLoginAttempts{}
+	svc := NewService(repo, WithLoginAttempts(attempts))
+
+	dto, _, err := svc.Authenticate(context.Background(), LoginCommand{
+		Username:  "   testuser   ",
+		Password:  "Test1234!",
+		UserAgent: "test",
+		IP:        net.IPv4(127, 0, 0, 1),
+	})
+	if err != nil {
+		t.Fatalf("Authenticate: %v", err)
+	}
+	if dto.Username != "testuser" {
+		t.Errorf("dto.Username = %q, want testuser", dto.Username)
+	}
+	if attempts.records[0].username != "testuser" {
+		t.Errorf("recorded username = %q, want trimmed testuser", attempts.records[0].username)
+	}
+}
+
+func TestService_Authenticate_RejectsOverlongUsernameWithoutRepoHit(t *testing.T) {
+	t.Parallel()
+	repo := newFakeUserRepo()
+	repo.getCredentialsHook = func(string) (*domain.User, string, error) {
+		t.Fatal("GetCredentials must not be called for an overlong username")
+		return nil, "", nil
+	}
+	attempts := &fakeLoginAttempts{}
+	svc := NewService(repo, WithLoginAttempts(attempts))
+
+	longName := strings.Repeat("a", 24)
+	_, _, err := svc.Authenticate(context.Background(), LoginCommand{
+		Username:  longName,
+		Password:  "anything",
+		UserAgent: "test",
+		IP:        net.IPv4(127, 0, 0, 1),
+	})
+	if !errors.Is(err, domain.ErrInvalidCredentials) {
+		t.Errorf("got %v, want ErrInvalidCredentials", err)
+	}
+	if len(attempts.records) != 0 {
+		t.Errorf("must not record an attempt for invalid-shape input, got %+v", attempts.records)
+	}
+}
+
+func TestService_Authenticate_RejectsEmptyUsernameAfterTrim(t *testing.T) {
+	t.Parallel()
+	repo := newFakeUserRepo()
+	repo.getCredentialsHook = func(string) (*domain.User, string, error) {
+		t.Fatal("GetCredentials must not be called for blank username")
+		return nil, "", nil
+	}
+	svc := NewService(repo, WithLoginAttempts(&fakeLoginAttempts{}))
+
+	_, _, err := svc.Authenticate(context.Background(), LoginCommand{
+		Username:  "   ",
+		Password:  "Test1234!",
+		UserAgent: "test",
+		IP:        net.IPv4(127, 0, 0, 1),
+	})
+	if !errors.Is(err, domain.ErrInvalidCredentials) {
+		t.Errorf("got %v, want ErrInvalidCredentials", err)
+	}
+}
+
+func TestService_Authenticate_SuccessRecordFailureDoesNotDenyLogin(t *testing.T) {
+	t.Parallel()
+	repo := newFakeUserRepo()
+	_, _ = repo.Create(context.Background(), &domain.User{
+		Username: "testuser",
+		Email:    "test@example.com",
+	}, "Test1234!")
+	attempts := &fakeLoginAttempts{recordErr: errors.New("audit db down")}
+	svc := NewService(repo, WithLoginAttempts(attempts))
+
+	dto, _, err := svc.Authenticate(context.Background(), LoginCommand{
+		Username:  "testuser",
+		Password:  "Test1234!",
+		UserAgent: "test",
+		IP:        net.IPv4(127, 0, 0, 1),
+	})
+	if err != nil {
+		t.Fatalf("Authenticate denied login on audit-record error: %v", err)
+	}
+	if dto.Username != "testuser" {
+		t.Errorf("dto.Username = %q, want testuser", dto.Username)
+	}
+}
+
+func TestService_Authenticate_WrongPasswordRecordsFailureWithAccountID(t *testing.T) {
+	t.Parallel()
+	repo := newFakeUserRepo()
+	user, _ := repo.Create(context.Background(), &domain.User{
+		Username: "testuser",
+		Email:    "test@example.com",
+	}, "Test1234!")
+	attempts := &fakeLoginAttempts{}
+	svc := NewService(repo, WithLoginAttempts(attempts))
+
+	_, _, err := svc.Authenticate(context.Background(), LoginCommand{
+		Username:  "testuser",
+		Password:  "WrongPassword",
+		UserAgent: "test",
+		IP:        net.IPv4(127, 0, 0, 1),
+	})
+	if !errors.Is(err, domain.ErrInvalidCredentials) {
+		t.Fatalf("got %v, want ErrInvalidCredentials", err)
+	}
+	if len(attempts.records) != 1 {
+		t.Fatalf("len(records) = %d, want 1", len(attempts.records))
+	}
+	rec := attempts.records[0]
+	if rec.success {
+		t.Errorf("recorded success=true, want false")
+	}
+	if !rec.accountID.Valid || rec.accountID.Int64 != int64(user.ID) {
+		t.Errorf("recorded accountID = %+v, want valid %d", rec.accountID, user.ID)
+	}
+}
+
+func TestService_Authenticate_UnknownUserRecordsFailureWithoutAccountID(t *testing.T) {
+	t.Parallel()
+	attempts := &fakeLoginAttempts{}
+	svc := NewService(newFakeUserRepo(), WithLoginAttempts(attempts))
+
+	_, _, err := svc.Authenticate(context.Background(), LoginCommand{
+		Username:  "ghost",
+		Password:  "anything",
+		UserAgent: "test",
+		IP:        net.IPv4(127, 0, 0, 1),
+	})
+	if !errors.Is(err, domain.ErrInvalidCredentials) {
+		t.Fatalf("got %v, want ErrInvalidCredentials", err)
+	}
+	if len(attempts.records) != 1 {
+		t.Fatalf("len(records) = %d, want 1", len(attempts.records))
+	}
+	if attempts.records[0].accountID.Valid {
+		t.Errorf("recorded accountID = %+v, want NULL for unknown user", attempts.records[0].accountID)
+	}
+}
+
+func TestService_Authenticate_PanicsWithoutLoginAttempts(t *testing.T) {
+	t.Parallel()
+	repo := newFakeUserRepo()
+	_, _ = repo.Create(context.Background(), &domain.User{
+		Username: "testuser",
+		Email:    "test@example.com",
+	}, "Test1234!")
+	svc := NewService(repo)
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("expected panic when Authenticate runs without WithLoginAttempts")
+		}
+	}()
+
+	_, _, _ = svc.Authenticate(context.Background(), LoginCommand{
+		Username: "testuser",
+		Password: "Test1234!",
+	})
+}
+
+func TestWithLoginAttempts_PanicsOnNil(t *testing.T) {
+	t.Parallel()
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("expected panic for nil LoginAttempts")
+		}
+	}()
+	WithLoginAttempts(nil)
+}
+
+func TestWithAuthLogger_PanicsOnNil(t *testing.T) {
+	t.Parallel()
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("expected panic for nil logger")
+		}
+	}()
+	WithAuthLogger(nil)
 }
 
 func newEmailChangeConfig() EmailChangeConfig {
