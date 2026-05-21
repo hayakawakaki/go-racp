@@ -18,19 +18,21 @@ RUN apk add --no-cache libstdc++ libgcc \
     && chmod +x /usr/local/bin/tailwindcss \
     && rm sha256sums.txt
 
+RUN mkdir -p /app && chown app:app /app /go
+
+USER app
+WORKDIR /app
+
 # Live reloading for Go
 RUN go install github.com/air-verse/air@latest
 
-WORKDIR /app
-COPY go.mod go.sum* ./
+COPY --chown=app:app go.mod go.sum* ./
 RUN go mod download
 
-COPY . .
+COPY --chown=app:app . .
 
-RUN mkdir -p /app/tmp \
-    && chmod +x /app/scripts/*.sh \
-    && chown -R app:app /app /go
+RUN mkdir -p /app/tmp && chmod +x /app/scripts/*.sh
 
-USER app
+ENV PATH=/go/bin:$PATH
 
 CMD ["./scripts/entrypoint.dev.sh"]
