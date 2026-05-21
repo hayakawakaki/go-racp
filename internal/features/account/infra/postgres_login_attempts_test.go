@@ -183,6 +183,77 @@ func TestLoginAttemptsRepository_Record_SuccessClearsPriorFailures(t *testing.T)
 	}
 }
 
+func TestLoginAttemptsRepository_DeleteOlderThan_RemovesOnlyOldRows(t *testing.T) {
+	pool := testutil.OpenPostgres(t, "DB_CP_TEST_URL")
+	testutil.TruncatePostgres(t, pool, "cp_login_attempts")
+	ctx := context.Background()
+
+	if _, err := pool.Exec(ctx,
+		`INSERT INTO cp_login_attempts (username, ip, success, attempted_at) VALUES
+		 ('old1',   '0.0.0.0'::inet, FALSE, NOW() - INTERVAL '40 days'),
+		 ('old2',   '0.0.0.0'::inet, TRUE,  NOW() - INTERVAL '35 days'),
+		 ('recent', '0.0.0.0'::inet, FALSE, NOW() - INTERVAL '1 day'),
+		 ('now',    '0.0.0.0'::inet, FALSE, NOW())`,
+	); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	repo := NewLoginAttemptsRepository(pool)
+	cutoff := time.Now().Add(-30 * 24 * time.Hour)
+	deleted, err := repo.DeleteOlderThan(ctx, cutoff)
+	if err != nil {
+		t.Fatalf("DeleteOlderThan: %v", err)
+	}
+	if deleted != 2 {
+		t.Errorf("deleted = %d, want 2 (old1, old2)", deleted)
+	}
+
+	var remaining int
+	if err := pool.QueryRow(ctx, "SELECT COUNT(*) FROM cp_login_attempts").Scan(&remaining); err != nil {
+		t.Fatalf("count: %v", err)
+	}
+	if remaining != 2 {
+		t.Errorf("remaining = %d, want 2 (recent, now)", remaining)
+	}
+}
+
+func TestLoginAttemptsRepository_DeleteOlderThan_EmptyTable(t *testing.T) {
+	pool := testutil.OpenPostgres(t, "DB_CP_TEST_URL")
+	testutil.TruncatePostgres(t, pool, "cp_login_attempts")
+	repo := NewLoginAttemptsRepository(pool)
+
+	deleted, err := repo.DeleteOlderThan(context.Background(), time.Now())
+	if err != nil {
+		t.Fatalf("DeleteOlderThan: %v", err)
+	}
+	if deleted != 0 {
+		t.Errorf("deleted = %d, want 0", deleted)
+	}
+}
+
+func TestLoginAttemptsRepository_DeleteOlderThan_PreservesSuccessRows(t *testing.T) {
+	pool := testutil.OpenPostgres(t, "DB_CP_TEST_URL")
+	testutil.TruncatePostgres(t, pool, "cp_login_attempts")
+	ctx := context.Background()
+
+	if _, err := pool.Exec(ctx,
+		`INSERT INTO cp_login_attempts (username, ip, success, attempted_at) VALUES
+		 ('testuser', '0.0.0.0'::inet, TRUE,  NOW() - INTERVAL '1 hour'),
+		 ('testuser', '0.0.0.0'::inet, FALSE, NOW() - INTERVAL '1 hour')`,
+	); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	repo := NewLoginAttemptsRepository(pool)
+	deleted, err := repo.DeleteOlderThan(ctx, time.Now())
+	if err != nil {
+		t.Fatalf("DeleteOlderThan: %v", err)
+	}
+	if deleted != 2 {
+		t.Errorf("deleted = %d, want 2 (cutoff in the future deletes both)", deleted)
+	}
+}
+
 func TestLoginAttemptsRepository_ConsecutiveFailures_ReturnsLastFailTimestamp(t *testing.T) {
 	pool := testutil.OpenPostgres(t, "DB_CP_TEST_URL")
 	testutil.TruncatePostgres(t, pool, "cp_login_attempts")

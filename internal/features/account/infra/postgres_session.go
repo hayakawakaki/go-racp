@@ -106,3 +106,12 @@ func (r *SessionRepository) DeleteByUserIDExcept(ctx context.Context, userID int
 
 	return nil
 }
+
+func (r *SessionRepository) DeleteExpired(ctx context.Context) (int64, error) {
+	tag, err := r.Pool.Exec(ctx, `DELETE FROM cp_sessions WHERE expires_at < NOW()`)
+	if err != nil {
+		return 0, fmt.Errorf("infra.SessionRepository.DeleteExpired: %w", err)
+	}
+
+	return tag.RowsAffected(), nil
+}

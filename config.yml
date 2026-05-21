@@ -26,6 +26,13 @@ Cooldown:
   CharacterLookReset: "24h"
   CharacterLocationReset: "1h"
 
+# Background cleanup of rolling-history tables
+#   LoginAttempts: how long failed-login audit rows are kept before purging
+#   SweepInterval: how often the background sweeper runs
+Retention:
+  LoginAttempts: "720h"
+  SweepInterval: "1h"
+
 # Default save location used by /characters/{id}/location
 DefaultLocation:
   Map: "prontera"

@@ -31,6 +31,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/plugin"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 	"github.com/hayakawakaki/go-racp/internal/platform/security"
+	"github.com/hayakawakaki/go-racp/internal/platform/worker"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 
@@ -107,7 +108,11 @@ func Start() error {
 		return fmt.Errorf("server.Start: %w", err)
 	}
 
-	sessSvc := app.NewSessionService(accinfra.NewSessionRepository(cpPool), cfg.App.TTL.Session)
+	sessionRepo := accinfra.NewSessionRepository(cpPool)
+	loginAttemptsRepo := accinfra.NewLoginAttemptsRepository(cpPool)
+	go worker.Run(ctx, logger, buildWorkerJobs(cfg.App.Retention, sessionRepo, loginAttemptsRepo)...)
+
+	sessSvc := app.NewSessionService(sessionRepo, cfg.App.TTL.Session)
 	secure := cfg.Env.Mode != "development"
 	withSession := middleware.WithSession(sessSvc, logger, secure)
 
@@ -194,6 +199,23 @@ func decodeCSRFSecret(raw string) []byte {
 	}
 
 	return secret
+}
+
+func buildWorkerJobs(cfg config.RetentionConfig, sessions *accinfra.SessionRepository, loginAttempts *accinfra.LoginAttemptsRepository) []worker.Job {
+	return []worker.Job{
+		{
+			Name:     "cp_sessions",
+			Interval: cfg.SweepInterval,
+			Fn:       sessions.DeleteExpired,
+		},
+		{
+			Name:     "cp_login_attempts",
+			Interval: cfg.SweepInterval,
+			Fn: func(ctx context.Context) (int64, error) {
+				return loginAttempts.DeleteOlderThan(ctx, time.Now().Add(-cfg.LoginAttempts))
+			},
+		},
+	}
 }
 
 func buildRateLimiters(ctx context.Context, accessCfg config.AccessConfig, trustedProxies []string, logger *slog.Logger, layout httpx.Layout) (map[string]*security.RateLimiter, error) {

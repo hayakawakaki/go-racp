@@ -46,6 +46,18 @@ func (r *LoginAttemptsRepository) Record(ctx context.Context, username string, a
 	return nil
 }
 
+func (r *LoginAttemptsRepository) DeleteOlderThan(ctx context.Context, cutoff time.Time) (int64, error) {
+	tag, err := r.Pool.Exec(ctx,
+		`DELETE FROM cp_login_attempts WHERE attempted_at < $1`,
+		cutoff,
+	)
+	if err != nil {
+		return 0, fmt.Errorf("infra.LoginAttemptsRepository.DeleteOlderThan: %w", err)
+	}
+
+	return tag.RowsAffected(), nil
+}
+
 func (r *LoginAttemptsRepository) ConsecutiveFailures(ctx context.Context, username string, window time.Duration) (int, time.Time, error) {
 	key := strings.ToLower(username)
 	cutoff := time.Now().Add(-window)

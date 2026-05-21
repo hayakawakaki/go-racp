@@ -55,6 +55,11 @@ type CooldownConfig struct {
 	CharacterLocationReset time.Duration `yaml:"CharacterLocationReset"`
 }
 
+type RetentionConfig struct {
+	LoginAttempts time.Duration `yaml:"LoginAttempts"`
+	SweepInterval time.Duration `yaml:"SweepInterval"`
+}
+
 type DefaultLocationConfig struct {
 	Map string `yaml:"Map"`
 	X   int    `yaml:"X"`
@@ -135,6 +140,7 @@ type AppConfig struct {
 	ItemDB           ItemDBConfig           `yaml:"ItemDB"`
 	MobDB            MobDBConfig            `yaml:"MobDB"`
 	Cooldown         CooldownConfig         `yaml:"Cooldown"`
+	Retention        RetentionConfig        `yaml:"Retention"`
 	TTL              TTLConfig              `yaml:"TTL"`
 	Tickets          TicketsConfig          `yaml:"Tickets"`
 	TicketLimits     TicketLimitsConfig     `yaml:"TicketLimits"`
@@ -164,6 +170,10 @@ func appConfigDefaults() *AppConfig {
 			TicketOpen:             5 * time.Minute,
 			CharacterLookReset:     24 * time.Hour,
 			CharacterLocationReset: 1 * time.Hour,
+		},
+		Retention: RetentionConfig{
+			LoginAttempts: 30 * 24 * time.Hour,
+			SweepInterval: 1 * time.Hour,
 		},
 		UserRoles:    RolesConfig{"Moderator": 20, "Enforcer": 10, "Event": 2},
 		TicketLimits: TicketLimitsConfig{MaxOpenPerPlayer: 5},
@@ -232,6 +242,8 @@ func validateAppConfig(cfg *AppConfig) {
 		"Cooldown.TicketOpen":             cfg.Cooldown.TicketOpen,
 		"Cooldown.CharacterLookReset":     cfg.Cooldown.CharacterLookReset,
 		"Cooldown.CharacterLocationReset": cfg.Cooldown.CharacterLocationReset,
+		"Retention.LoginAttempts":         cfg.Retention.LoginAttempts,
+		"Retention.SweepInterval":         cfg.Retention.SweepInterval,
 	}
 	for name, value := range durations {
 		if value <= 0 {
