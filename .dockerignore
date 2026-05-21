@@ -20,3 +20,9 @@ build-errors.log
 *_test.go
 *.test
 coverage.*
+
+# Assets
+static/collection
+static/item
+static/mob
+data
