@@ -228,6 +228,7 @@ func (h *Handler) showLogin(w http.ResponseWriter, r *http.Request) {
 	httpx.RenderHTML(w, r, h.logger, loginPage(h.layout(), state))
 }
 
+//nolint:cyclop // sequential checks
 func (h *Handler) doLogin(w http.ResponseWriter, r *http.Request) {
 	if err := httpx.ParseForm(w, r, maxLoginFormBytes); err != nil {
 		h.renderLogin(w, r, LoginFormState{Error: invalidFormDataMsg})
@@ -244,9 +245,12 @@ func (h *Handler) doLogin(w http.ResponseWriter, r *http.Request) {
 	user, tier, err := h.svc.Authenticate(r.Context(), cmd)
 	if err != nil {
 		state := LoginFormState{Username: cmd.Username}
-		if errors.Is(err, domain.ErrInvalidCredentials) || errors.Is(err, domain.ErrAccountLocked) {
+		switch {
+		case errors.Is(err, domain.ErrAccountLocked):
+			state.Error = "Too many recent attempts. Please try again later."
+		case errors.Is(err, domain.ErrInvalidCredentials):
 			state.Error = "Invalid username or password."
-		} else {
+		default:
 			h.logger.Error("login", "err", err)
 			state.Error = genericErrorMessage
 		}

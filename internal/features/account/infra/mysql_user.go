@@ -65,7 +65,7 @@ func (r *Repository) GetAll(ctx context.Context) ([]domain.User, error) {
 		userList = append(userList, u)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("infra.Repository.GetAll.Test: %w", err)
+		return nil, fmt.Errorf("infra.Repository.GetAll: %w", err)
 	}
 
 	return userList, nil

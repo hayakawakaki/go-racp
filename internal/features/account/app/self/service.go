@@ -571,6 +571,11 @@ func (s *Service) Authenticate(ctx context.Context, cmd LoginCommand) (*GetDTO, 
 		panic("account: Authenticate requires WithLoginAttempts")
 	}
 
+	cmd.Username = strings.TrimSpace(cmd.Username)
+	if cmd.Username == "" || len(cmd.Username) > domain.UsernameMaxLen {
+		return nil, TierActive, domain.ErrInvalidCredentials
+	}
+
 	policy := domain.DefaultLockoutPolicy()
 
 	failures, lastFail, err := s.attempts.ConsecutiveFailures(ctx, cmd.Username, policy.Window)
@@ -579,9 +584,6 @@ func (s *Service) Authenticate(ctx context.Context, cmd LoginCommand) (*GetDTO, 
 	}
 
 	if backoff := policy.Backoff(failures); backoff > 0 && time.Since(lastFail) < backoff {
-		if recErr := s.attempts.Record(ctx, cmd.Username, sql.NullInt64{}, cmd.IP, false, cmd.UserAgent); recErr != nil {
-			s.logger.Error("login attempt record failed", "err", recErr)
-		}
 		return nil, TierActive, domain.ErrAccountLocked
 	}
 
@@ -603,7 +605,7 @@ func (s *Service) Authenticate(ctx context.Context, cmd LoginCommand) (*GetDTO, 
 	}
 
 	if recErr := s.attempts.Record(ctx, cmd.Username, sql.NullInt64{Int64: int64(user.ID), Valid: true}, cmd.IP, true, cmd.UserAgent); recErr != nil {
-		return nil, TierActive, fmt.Errorf("app.Service.Authenticate: %w", recErr)
+		s.logger.Error("login attempt record failed", "err", recErr)
 	}
 
 	tier := ClassifyTier(user.State, user.UnbanTime, s.now())

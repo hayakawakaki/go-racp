@@ -34,6 +34,15 @@ func (r *LoginAttemptsRepository) Record(ctx context.Context, username string, a
 		return fmt.Errorf("infra.LoginAttemptsRepository.Record: %w", err)
 	}
 
+	if success {
+		if _, err := r.Pool.Exec(ctx,
+			`DELETE FROM cp_login_attempts WHERE LOWER(username) = $1 AND success = FALSE`,
+			strings.ToLower(username),
+		); err != nil {
+			return fmt.Errorf("infra.LoginAttemptsRepository.Record: clear failures: %w", err)
+		}
+	}
+
 	return nil
 }
 
