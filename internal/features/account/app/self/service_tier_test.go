@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"errors"
+	"net"
 	"strings"
 	"testing"
 	"time"
@@ -41,11 +42,14 @@ func TestService_Authenticate_ReturnsTier(t *testing.T) {
 				Username: "testuser",
 				State:    tt.state, UnbanTime: tt.unbanTime,
 			}, "Test1234!")
-			svc := NewService(repo)
+			svc := NewService(repo, WithLoginAttempts(&fakeLoginAttempts{}))
 			svc.now = func() time.Time { return fixed }
 
 			_, gotTier, err := svc.Authenticate(context.Background(), LoginCommand{
-				Username: "testuser", Password: "Test1234!",
+				Username:  "testuser",
+				Password:  "Test1234!",
+				UserAgent: "test",
+				IP:        net.IPv4(127, 0, 0, 1),
 			})
 			if err != nil {
 				t.Fatalf("Authenticate: %v", err)
@@ -108,7 +112,7 @@ func TestService_AssertUnrestricted(t *testing.T) {
 			t.Parallel()
 			repo := newFakeUserRepo()
 			id := tt.setup(repo)
-			svc := NewService(repo)
+			svc := NewService(repo, WithLoginAttempts(&fakeLoginAttempts{}))
 			svc.now = func() time.Time { return fixed }
 
 			err := svc.assertUnrestricted(context.Background(), id)
@@ -129,7 +133,7 @@ func TestService_AssertUnrestricted_RepoError_Wraps(t *testing.T) {
 	t.Parallel()
 	repo := newFakeUserRepo()
 	repo.getByIDHook = func(int) (*domain.User, error) { return nil, errors.New("db boom") }
-	svc := NewService(repo)
+	svc := NewService(repo, WithLoginAttempts(&fakeLoginAttempts{}))
 
 	err := svc.assertUnrestricted(context.Background(), 1)
 	if err == nil {

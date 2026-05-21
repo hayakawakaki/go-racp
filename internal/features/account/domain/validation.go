@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	usernameMaxLen = 23
+	UsernameMaxLen = 23
 	emailMaxLen    = 39
 	passwordMaxLen = 32
 )
@@ -21,7 +21,7 @@ func ValidateUsername(s string) error {
 		return ErrUsernameEmpty
 	}
 
-	if utf8.RuneCountInString(s) > usernameMaxLen {
+	if utf8.RuneCountInString(s) > UsernameMaxLen {
 		return ErrUsernameTooLong
 	}
 

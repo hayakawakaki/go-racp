@@ -2,7 +2,9 @@ package self
 
 import (
 	"context"
+	"database/sql"
 	"errors"
+	"net"
 	"strings"
 	"sync"
 	"testing"
@@ -24,7 +26,7 @@ type fakeUserRepo struct {
 	getByUsernameHook  func(string) (*domain.User, error)
 	getByEmailHook     func(string) (*domain.User, error)
 	deleteHook         func(int) error
-	authenticateHook   func(string, string) (*domain.User, error)
+	getCredentialsHook func(string) (*domain.User, string, error)
 	verifyPasswordHook func(int, string) (bool, error)
 	markVerifiedHook   func(int) error
 	updatePasswordHook func(int, string) error
@@ -121,19 +123,57 @@ func (f *fakeUserRepo) Delete(_ context.Context, id int) error {
 	return nil
 }
 
-func (f *fakeUserRepo) Authenticate(_ context.Context, username, password string) (*domain.User, error) {
-	if f.authenticateHook != nil {
-		return f.authenticateHook(username, password)
+func (f *fakeUserRepo) GetCredentials(_ context.Context, username string) (*domain.User, string, error) {
+	if f.getCredentialsHook != nil {
+		return f.getCredentialsHook(username)
 	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	for _, u := range f.byID {
-		if u.Username == username && f.passwords[u.ID] == password {
+		if u.Username == username {
 			cp := *u
-			return &cp, nil
+			return &cp, f.passwords[u.ID], nil
 		}
 	}
-	return nil, domain.ErrInvalidCredentials
+	return nil, "", domain.ErrInvalidCredentials
+}
+
+//nolint:govet // test-only struct
+type recordedAttempt struct {
+	ip        net.IP
+	username  string
+	userAgent string
+	accountID sql.NullInt64
+	success   bool
+}
+
+//nolint:govet // test-only struct
+type fakeLoginAttempts struct {
+	err       error
+	recordErr error
+	records   []recordedAttempt
+	lastFail  time.Time
+	mu        sync.Mutex
+	failures  int
+}
+
+func (f *fakeLoginAttempts) Record(_ context.Context, username string, accountID sql.NullInt64, ip net.IP, success bool, userAgent string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.records = append(f.records, recordedAttempt{
+		ip:        ip,
+		username:  username,
+		userAgent: userAgent,
+		accountID: accountID,
+		success:   success,
+	})
+	return f.recordErr
+}
+
+func (f *fakeLoginAttempts) ConsecutiveFailures(_ context.Context, _ string, _ time.Duration) (int, time.Time, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.failures, f.lastFail, f.err
 }
 
 func (f *fakeUserRepo) VerifyPassword(_ context.Context, id int, password string) (bool, error) {
@@ -205,7 +245,7 @@ func TestService_Create(t *testing.T) {
 	t.Run("happy", func(t *testing.T) {
 		t.Parallel()
 		repo := newFakeUserRepo()
-		svc := NewService(repo)
+		svc := NewService(repo, WithLoginAttempts(&fakeLoginAttempts{}))
 
 		dto, err := svc.Create(context.Background(), validCmd)
 		if err != nil {
@@ -219,7 +259,7 @@ func TestService_Create(t *testing.T) {
 	t.Run("field validation collects errors", func(t *testing.T) {
 		t.Parallel()
 		repo := newFakeUserRepo()
-		svc := NewService(repo)
+		svc := NewService(repo, WithLoginAttempts(&fakeLoginAttempts{}))
 
 		bad := CreateCommand{
 			Username:        "abc",
@@ -242,7 +282,7 @@ func TestService_Create(t *testing.T) {
 
 	t.Run("password confirm mismatch alone", func(t *testing.T) {
 		t.Parallel()
-		svc := NewService(newFakeUserRepo())
+		svc := NewService(newFakeUserRepo(), WithLoginAttempts(&fakeLoginAttempts{}))
 		bad := validCmd
 		bad.PasswordConfirm = "Different1!"
 		_, err := svc.Create(context.Background(), bad)
@@ -261,7 +301,7 @@ func TestService_Create(t *testing.T) {
 		_, _ = repo.Create(context.Background(), &domain.User{
 			Username: "testuser", Email: "other@example.com",
 		}, "")
-		svc := NewService(repo)
+		svc := NewService(repo, WithLoginAttempts(&fakeLoginAttempts{}))
 
 		_, err := svc.Create(context.Background(), validCmd)
 		var ve *domain.ValidationError
@@ -279,7 +319,7 @@ func TestService_Create(t *testing.T) {
 		_, _ = repo.Create(context.Background(), &domain.User{
 			Username: "otheruser", Email: "test@example.com",
 		}, "")
-		svc := NewService(repo)
+		svc := NewService(repo, WithLoginAttempts(&fakeLoginAttempts{}))
 
 		_, err := svc.Create(context.Background(), validCmd)
 		var ve *domain.ValidationError
@@ -300,7 +340,7 @@ func TestService_Create(t *testing.T) {
 		_, _ = repo.Create(context.Background(), &domain.User{
 			Username: "otheruser", Email: "test@example.com",
 		}, "")
-		svc := NewService(repo)
+		svc := NewService(repo, WithLoginAttempts(&fakeLoginAttempts{}))
 
 		_, err := svc.Create(context.Background(), validCmd)
 		var ve *domain.ValidationError
@@ -319,7 +359,7 @@ func TestService_Create(t *testing.T) {
 		t.Parallel()
 		repo := newFakeUserRepo()
 		repo.getByUsernameHook = func(string) (*domain.User, error) { return nil, errors.New("boom") }
-		svc := NewService(repo)
+		svc := NewService(repo, WithLoginAttempts(&fakeLoginAttempts{}))
 
 		_, err := svc.Create(context.Background(), validCmd)
 		if err == nil {
@@ -338,7 +378,7 @@ func TestService_Create(t *testing.T) {
 		t.Parallel()
 		repo := newFakeUserRepo()
 		repo.createHook = func(*domain.User, string) (*domain.User, error) { return nil, errors.New("boom") }
-		svc := NewService(repo)
+		svc := NewService(repo, WithLoginAttempts(&fakeLoginAttempts{}))
 
 		_, err := svc.Create(context.Background(), validCmd)
 		if err == nil || !strings.Contains(err.Error(), "app.Service.Create") {
@@ -350,7 +390,7 @@ func TestService_Create(t *testing.T) {
 func TestService_Create_StoresBirthdate(t *testing.T) {
 	t.Parallel()
 	repo := newFakeUserRepo()
-	svc := NewService(repo)
+	svc := NewService(repo, WithLoginAttempts(&fakeLoginAttempts{}))
 	svc.now = func() time.Time { return time.Date(2026, 5, 12, 12, 0, 0, 0, time.UTC) }
 
 	dto, err := svc.Create(context.Background(), CreateCommand{
@@ -377,7 +417,7 @@ func TestService_Create_StoresBirthdate(t *testing.T) {
 func TestService_Create_RejectsInvalidBirthdate(t *testing.T) {
 	t.Parallel()
 	repo := newFakeUserRepo()
-	svc := NewService(repo)
+	svc := NewService(repo, WithLoginAttempts(&fakeLoginAttempts{}))
 	svc.now = func() time.Time { return time.Date(2026, 5, 12, 12, 0, 0, 0, time.UTC) }
 
 	_, err := svc.Create(context.Background(), CreateCommand{
@@ -404,7 +444,7 @@ func TestService_Create_BirthdateRespectsLocation(t *testing.T) {
 		t.Skipf("LoadLocation Asia/Tokyo: %v (likely missing tzdata)", err)
 	}
 	repo := newFakeUserRepo()
-	svc := NewService(repo, WithLocation(tokyo))
+	svc := NewService(repo, WithLocation(tokyo), WithLoginAttempts(&fakeLoginAttempts{}))
 	svc.now = func() time.Time { return time.Date(2026, 5, 12, 16, 0, 0, 0, time.UTC) }
 
 	_, err = svc.Create(context.Background(), CreateCommand{
@@ -428,7 +468,7 @@ func TestService_GetAll(t *testing.T) {
 		repo := newFakeUserRepo()
 		_, _ = repo.Create(context.Background(), &domain.User{Username: "a", Email: "a@x"}, "")
 		_, _ = repo.Create(context.Background(), &domain.User{Username: "b", Email: "b@x"}, "")
-		svc := NewService(repo)
+		svc := NewService(repo, WithLoginAttempts(&fakeLoginAttempts{}))
 
 		out, err := svc.GetAll(context.Background())
 		if err != nil {
@@ -441,7 +481,7 @@ func TestService_GetAll(t *testing.T) {
 
 	t.Run("empty", func(t *testing.T) {
 		t.Parallel()
-		svc := NewService(newFakeUserRepo())
+		svc := NewService(newFakeUserRepo(), WithLoginAttempts(&fakeLoginAttempts{}))
 		out, err := svc.GetAll(context.Background())
 		if err != nil {
 			t.Fatal(err)
@@ -455,7 +495,7 @@ func TestService_GetAll(t *testing.T) {
 		t.Parallel()
 		repo := newFakeUserRepo()
 		repo.getAllHook = func() ([]domain.User, error) { return nil, errors.New("boom") }
-		svc := NewService(repo)
+		svc := NewService(repo, WithLoginAttempts(&fakeLoginAttempts{}))
 
 		_, err := svc.GetAll(context.Background())
 		if err == nil || !strings.Contains(err.Error(), "app.Service.GetAll") {
@@ -471,7 +511,7 @@ func TestService_GetByID(t *testing.T) {
 		t.Parallel()
 		repo := newFakeUserRepo()
 		u, _ := repo.Create(context.Background(), &domain.User{Username: "a", Email: "a@x"}, "")
-		svc := NewService(repo)
+		svc := NewService(repo, WithLoginAttempts(&fakeLoginAttempts{}))
 
 		dto, err := svc.GetByID(context.Background(), u.ID)
 		if err != nil {
@@ -484,7 +524,7 @@ func TestService_GetByID(t *testing.T) {
 
 	t.Run("repo error wraps", func(t *testing.T) {
 		t.Parallel()
-		svc := NewService(newFakeUserRepo())
+		svc := NewService(newFakeUserRepo(), WithLoginAttempts(&fakeLoginAttempts{}))
 		_, err := svc.GetByID(context.Background(), 999)
 		if err == nil || !strings.Contains(err.Error(), "app.Service.GetByID") {
 			t.Errorf("not wrapped: %v", err)
@@ -499,7 +539,7 @@ func TestService_GetByEmail(t *testing.T) {
 		t.Parallel()
 		repo := newFakeUserRepo()
 		u, _ := repo.Create(context.Background(), &domain.User{Username: "a", Email: "a@x"}, "")
-		svc := NewService(repo)
+		svc := NewService(repo, WithLoginAttempts(&fakeLoginAttempts{}))
 
 		dto, err := svc.GetByEmail(context.Background(), u.Email)
 		if err != nil {
@@ -512,7 +552,7 @@ func TestService_GetByEmail(t *testing.T) {
 
 	t.Run("repo error wraps", func(t *testing.T) {
 		t.Parallel()
-		svc := NewService(newFakeUserRepo())
+		svc := NewService(newFakeUserRepo(), WithLoginAttempts(&fakeLoginAttempts{}))
 		_, err := svc.GetByEmail(context.Background(), "missing@x")
 		if err == nil || !strings.Contains(err.Error(), "app.Service.GetByEmail") {
 			t.Errorf("not wrapped: %v", err)
@@ -527,7 +567,7 @@ func TestService_Delete(t *testing.T) {
 		t.Parallel()
 		repo := newFakeUserRepo()
 		u, _ := repo.Create(context.Background(), &domain.User{Username: "a", Email: "a@x"}, "")
-		svc := NewService(repo)
+		svc := NewService(repo, WithLoginAttempts(&fakeLoginAttempts{}))
 
 		if err := svc.Delete(context.Background(), u.ID); err != nil {
 			t.Fatal(err)
@@ -539,7 +579,7 @@ func TestService_Delete(t *testing.T) {
 
 	t.Run("repo error wraps", func(t *testing.T) {
 		t.Parallel()
-		svc := NewService(newFakeUserRepo())
+		svc := NewService(newFakeUserRepo(), WithLoginAttempts(&fakeLoginAttempts{}))
 		err := svc.Delete(context.Background(), 999)
 		if err == nil || !strings.Contains(err.Error(), "app.Service.Delete") {
 			t.Errorf("not wrapped: %v", err)
@@ -550,7 +590,12 @@ func TestService_Delete(t *testing.T) {
 func TestService_Authenticate(t *testing.T) {
 	t.Parallel()
 
-	validLogin := LoginCommand{Username: "testuser", Password: "Test1234!"}
+	validLogin := LoginCommand{
+		Username:  "testuser",
+		Password:  "Test1234!",
+		UserAgent: "test",
+		IP:        net.IPv4(127, 0, 0, 1),
+	}
 
 	t.Run("happy", func(t *testing.T) {
 		t.Parallel()
@@ -559,7 +604,7 @@ func TestService_Authenticate(t *testing.T) {
 			Username: validLogin.Username,
 			Email:    "test@example.com",
 		}, validLogin.Password)
-		svc := NewService(repo)
+		svc := NewService(repo, WithLoginAttempts(&fakeLoginAttempts{}))
 
 		dto, _, err := svc.Authenticate(context.Background(), validLogin)
 		if err != nil {
@@ -572,7 +617,7 @@ func TestService_Authenticate(t *testing.T) {
 
 	t.Run("invalid credentials passes through unwrapped", func(t *testing.T) {
 		t.Parallel()
-		svc := NewService(newFakeUserRepo())
+		svc := NewService(newFakeUserRepo(), WithLoginAttempts(&fakeLoginAttempts{}))
 
 		// Shape passes, repo lookup fails. The Authenticate error must reach
 		// the caller as ErrInvalidCredentials without app-layer wrapping.
@@ -588,10 +633,10 @@ func TestService_Authenticate(t *testing.T) {
 	t.Run("generic error wraps", func(t *testing.T) {
 		t.Parallel()
 		repo := newFakeUserRepo()
-		repo.authenticateHook = func(string, string) (*domain.User, error) {
-			return nil, errors.New("boom")
+		repo.getCredentialsHook = func(string) (*domain.User, string, error) {
+			return nil, "", errors.New("boom")
 		}
-		svc := NewService(repo)
+		svc := NewService(repo, WithLoginAttempts(&fakeLoginAttempts{}))
 
 		_, _, err := svc.Authenticate(context.Background(), validLogin)
 		if err == nil || !strings.Contains(err.Error(), "app.Service.Authenticate") {
@@ -600,6 +645,257 @@ func TestService_Authenticate(t *testing.T) {
 
 	})
 
+}
+
+func TestService_Authenticate_LockoutActive_ReturnsErrAccountLocked(t *testing.T) {
+	t.Parallel()
+	repo := newFakeUserRepo()
+	_, _ = repo.Create(context.Background(), &domain.User{
+		Username: "testuser",
+		Email:    "test@example.com",
+	}, "Test1234!")
+	repo.getCredentialsHook = func(string) (*domain.User, string, error) {
+		t.Fatal("GetCredentials must not be called when lockout is active")
+		return nil, "", nil
+	}
+	attempts := &fakeLoginAttempts{
+		failures: 6,
+		lastFail: time.Now(),
+	}
+	svc := NewService(repo, WithLoginAttempts(attempts))
+
+	_, _, err := svc.Authenticate(context.Background(), LoginCommand{
+		Username:  "testuser",
+		Password:  "Test1234!",
+		UserAgent: "test",
+		IP:        net.IPv4(127, 0, 0, 1),
+	})
+	if !errors.Is(err, domain.ErrAccountLocked) {
+		t.Fatalf("got %v, want ErrAccountLocked", err)
+	}
+	if len(attempts.records) != 0 {
+		t.Errorf("lockout branch must not record extra failure rows, got %d", len(attempts.records))
+	}
+}
+
+func TestService_Authenticate_LockoutExpired_ProceedsToCompare(t *testing.T) {
+	t.Parallel()
+	repo := newFakeUserRepo()
+	_, _ = repo.Create(context.Background(), &domain.User{
+		Username: "testuser",
+		Email:    "test@example.com",
+	}, "Test1234!")
+	attempts := &fakeLoginAttempts{
+		failures: 6,
+		lastFail: time.Now().Add(-10 * time.Minute),
+	}
+	svc := NewService(repo, WithLoginAttempts(attempts))
+
+	dto, _, err := svc.Authenticate(context.Background(), LoginCommand{
+		Username:  "testuser",
+		Password:  "Test1234!",
+		UserAgent: "test",
+		IP:        net.IPv4(127, 0, 0, 1),
+	})
+	if err != nil {
+		t.Fatalf("Authenticate: %v", err)
+	}
+	if dto.Username != "testuser" {
+		t.Errorf("dto.Username = %q, want testuser", dto.Username)
+	}
+	if len(attempts.records) != 1 || !attempts.records[0].success {
+		t.Errorf("expected one success record, got %+v", attempts.records)
+	}
+}
+
+func TestService_Authenticate_TrimsUsernameWhitespace(t *testing.T) {
+	t.Parallel()
+	repo := newFakeUserRepo()
+	_, _ = repo.Create(context.Background(), &domain.User{
+		Username: "testuser",
+		Email:    "test@example.com",
+	}, "Test1234!")
+	attempts := &fakeLoginAttempts{}
+	svc := NewService(repo, WithLoginAttempts(attempts))
+
+	dto, _, err := svc.Authenticate(context.Background(), LoginCommand{
+		Username:  "   testuser   ",
+		Password:  "Test1234!",
+		UserAgent: "test",
+		IP:        net.IPv4(127, 0, 0, 1),
+	})
+	if err != nil {
+		t.Fatalf("Authenticate: %v", err)
+	}
+	if dto.Username != "testuser" {
+		t.Errorf("dto.Username = %q, want testuser", dto.Username)
+	}
+	if attempts.records[0].username != "testuser" {
+		t.Errorf("recorded username = %q, want trimmed testuser", attempts.records[0].username)
+	}
+}
+
+func TestService_Authenticate_RejectsOverlongUsernameWithoutRepoHit(t *testing.T) {
+	t.Parallel()
+	repo := newFakeUserRepo()
+	repo.getCredentialsHook = func(string) (*domain.User, string, error) {
+		t.Fatal("GetCredentials must not be called for an overlong username")
+		return nil, "", nil
+	}
+	attempts := &fakeLoginAttempts{}
+	svc := NewService(repo, WithLoginAttempts(attempts))
+
+	longName := strings.Repeat("a", 24)
+	_, _, err := svc.Authenticate(context.Background(), LoginCommand{
+		Username:  longName,
+		Password:  "anything",
+		UserAgent: "test",
+		IP:        net.IPv4(127, 0, 0, 1),
+	})
+	if !errors.Is(err, domain.ErrInvalidCredentials) {
+		t.Errorf("got %v, want ErrInvalidCredentials", err)
+	}
+	if len(attempts.records) != 0 {
+		t.Errorf("must not record an attempt for invalid-shape input, got %+v", attempts.records)
+	}
+}
+
+func TestService_Authenticate_RejectsEmptyUsernameAfterTrim(t *testing.T) {
+	t.Parallel()
+	repo := newFakeUserRepo()
+	repo.getCredentialsHook = func(string) (*domain.User, string, error) {
+		t.Fatal("GetCredentials must not be called for blank username")
+		return nil, "", nil
+	}
+	svc := NewService(repo, WithLoginAttempts(&fakeLoginAttempts{}))
+
+	_, _, err := svc.Authenticate(context.Background(), LoginCommand{
+		Username:  "   ",
+		Password:  "Test1234!",
+		UserAgent: "test",
+		IP:        net.IPv4(127, 0, 0, 1),
+	})
+	if !errors.Is(err, domain.ErrInvalidCredentials) {
+		t.Errorf("got %v, want ErrInvalidCredentials", err)
+	}
+}
+
+func TestService_Authenticate_SuccessRecordFailureDoesNotDenyLogin(t *testing.T) {
+	t.Parallel()
+	repo := newFakeUserRepo()
+	_, _ = repo.Create(context.Background(), &domain.User{
+		Username: "testuser",
+		Email:    "test@example.com",
+	}, "Test1234!")
+	attempts := &fakeLoginAttempts{recordErr: errors.New("audit db down")}
+	svc := NewService(repo, WithLoginAttempts(attempts))
+
+	dto, _, err := svc.Authenticate(context.Background(), LoginCommand{
+		Username:  "testuser",
+		Password:  "Test1234!",
+		UserAgent: "test",
+		IP:        net.IPv4(127, 0, 0, 1),
+	})
+	if err != nil {
+		t.Fatalf("Authenticate denied login on audit-record error: %v", err)
+	}
+	if dto.Username != "testuser" {
+		t.Errorf("dto.Username = %q, want testuser", dto.Username)
+	}
+}
+
+func TestService_Authenticate_WrongPasswordRecordsFailureWithAccountID(t *testing.T) {
+	t.Parallel()
+	repo := newFakeUserRepo()
+	user, _ := repo.Create(context.Background(), &domain.User{
+		Username: "testuser",
+		Email:    "test@example.com",
+	}, "Test1234!")
+	attempts := &fakeLoginAttempts{}
+	svc := NewService(repo, WithLoginAttempts(attempts))
+
+	_, _, err := svc.Authenticate(context.Background(), LoginCommand{
+		Username:  "testuser",
+		Password:  "WrongPassword",
+		UserAgent: "test",
+		IP:        net.IPv4(127, 0, 0, 1),
+	})
+	if !errors.Is(err, domain.ErrInvalidCredentials) {
+		t.Fatalf("got %v, want ErrInvalidCredentials", err)
+	}
+	if len(attempts.records) != 1 {
+		t.Fatalf("len(records) = %d, want 1", len(attempts.records))
+	}
+	rec := attempts.records[0]
+	if rec.success {
+		t.Errorf("recorded success=true, want false")
+	}
+	if !rec.accountID.Valid || rec.accountID.Int64 != int64(user.ID) {
+		t.Errorf("recorded accountID = %+v, want valid %d", rec.accountID, user.ID)
+	}
+}
+
+func TestService_Authenticate_UnknownUserRecordsFailureWithoutAccountID(t *testing.T) {
+	t.Parallel()
+	attempts := &fakeLoginAttempts{}
+	svc := NewService(newFakeUserRepo(), WithLoginAttempts(attempts))
+
+	_, _, err := svc.Authenticate(context.Background(), LoginCommand{
+		Username:  "ghost",
+		Password:  "anything",
+		UserAgent: "test",
+		IP:        net.IPv4(127, 0, 0, 1),
+	})
+	if !errors.Is(err, domain.ErrInvalidCredentials) {
+		t.Fatalf("got %v, want ErrInvalidCredentials", err)
+	}
+	if len(attempts.records) != 1 {
+		t.Fatalf("len(records) = %d, want 1", len(attempts.records))
+	}
+	if attempts.records[0].accountID.Valid {
+		t.Errorf("recorded accountID = %+v, want NULL for unknown user", attempts.records[0].accountID)
+	}
+}
+
+func TestService_Authenticate_PanicsWithoutLoginAttempts(t *testing.T) {
+	t.Parallel()
+	repo := newFakeUserRepo()
+	_, _ = repo.Create(context.Background(), &domain.User{
+		Username: "testuser",
+		Email:    "test@example.com",
+	}, "Test1234!")
+	svc := NewService(repo)
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("expected panic when Authenticate runs without WithLoginAttempts")
+		}
+	}()
+
+	_, _, _ = svc.Authenticate(context.Background(), LoginCommand{
+		Username: "testuser",
+		Password: "Test1234!",
+	})
+}
+
+func TestWithLoginAttempts_PanicsOnNil(t *testing.T) {
+	t.Parallel()
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("expected panic for nil LoginAttempts")
+		}
+	}()
+	WithLoginAttempts(nil)
+}
+
+func TestWithAuthLogger_PanicsOnNil(t *testing.T) {
+	t.Parallel()
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("expected panic for nil logger")
+		}
+	}()
+	WithAuthLogger(nil)
 }
 
 func newEmailChangeConfig() EmailChangeConfig {
@@ -634,6 +930,7 @@ func newEmailChangeFixture(t *testing.T) *emailChangeFixture {
 		WithEmailChange(manager, mailer, newEmailChangeConfig()),
 		WithChangeLog(changeLog),
 		WithSessionInvalidator(invalidator),
+		WithLoginAttempts(&fakeLoginAttempts{}),
 	)
 	return &emailChangeFixture{
 		svc:         svc,

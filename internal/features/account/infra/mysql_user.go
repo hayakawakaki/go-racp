@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	domain2 "github.com/hayakawakaki/go-racp/internal/features/account/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/account/domain"
 )
 
 type Repository struct {
@@ -21,7 +21,7 @@ func NewRepository(client *sql.DB) *Repository {
 	}
 }
 
-func (r *Repository) Create(ctx context.Context, user *domain2.User, password string) (*domain2.User, error) {
+func (r *Repository) Create(ctx context.Context, user *domain.User, password string) (*domain.User, error) {
 	res, err := r.Client.ExecContext(ctx,
 		"INSERT INTO login (userid, email, user_pass, sex, birthdate, state) VALUES (?, ?, ?, ?, ?, 1)",
 		user.Username, user.Email, password, user.Gender, user.Birthdate)
@@ -38,7 +38,7 @@ func (r *Repository) Create(ctx context.Context, user *domain2.User, password st
 	return user, nil
 }
 
-func (r *Repository) GetAll(ctx context.Context) ([]domain2.User, error) {
+func (r *Repository) GetAll(ctx context.Context) ([]domain.User, error) {
 	rows, err := r.Client.QueryContext(ctx,
 		"SELECT account_id, userid, email, birthdate, state, group_id, unban_time, last_ip, lastlogin FROM login")
 	if err != nil {
@@ -46,10 +46,10 @@ func (r *Repository) GetAll(ctx context.Context) ([]domain2.User, error) {
 	}
 	defer func() { _ = rows.Close() }()
 
-	var userList []domain2.User
+	var userList []domain.User
 	for rows.Next() {
 		var (
-			u         domain2.User
+			u         domain.User
 			unbanSecs uint32
 			lastIP    sql.NullString
 			lastLogin sql.NullTime
@@ -73,9 +73,9 @@ func (r *Repository) GetAll(ctx context.Context) ([]domain2.User, error) {
 
 const selectLoginColumns = "account_id, userid, email, birthdate, state, group_id, unban_time, last_ip, lastlogin"
 
-func (r *Repository) selectLoginRow(ctx context.Context, op, where string, args ...any) (*domain2.User, error) {
+func (r *Repository) selectLoginRow(ctx context.Context, op, where string, args ...any) (*domain.User, error) {
 	var (
-		u         domain2.User
+		u         domain.User
 		unbanSecs uint32
 		lastIP    sql.NullString
 		lastLogin sql.NullTime
@@ -84,7 +84,7 @@ func (r *Repository) selectLoginRow(ctx context.Context, op, where string, args 
 		"SELECT "+selectLoginColumns+" FROM login WHERE "+where, args...,
 	).Scan(&u.ID, &u.Username, &u.Email, &u.Birthdate, &u.State, &u.GroupID, &unbanSecs, &lastIP, &lastLogin)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, domain2.ErrUserNotFound
+		return nil, domain.ErrUserNotFound
 	}
 	if err != nil {
 		return nil, fmt.Errorf("infra.Repository.%s: %w", op, err)
@@ -98,15 +98,15 @@ func (r *Repository) selectLoginRow(ctx context.Context, op, where string, args 
 	return &u, nil
 }
 
-func (r *Repository) GetByID(ctx context.Context, id int) (*domain2.User, error) {
+func (r *Repository) GetByID(ctx context.Context, id int) (*domain.User, error) {
 	return r.selectLoginRow(ctx, "GetByID", "account_id = ?", id)
 }
 
-func (r *Repository) GetByUsername(ctx context.Context, username string) (*domain2.User, error) {
+func (r *Repository) GetByUsername(ctx context.Context, username string) (*domain.User, error) {
 	return r.selectLoginRow(ctx, "GetByUsername", "userid = ?", username)
 }
 
-func (r *Repository) GetByEmail(ctx context.Context, email string) (*domain2.User, error) {
+func (r *Repository) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
 	return r.selectLoginRow(ctx, "GetByEmail", "email = ?", email)
 }
 
@@ -116,7 +116,7 @@ func (r *Repository) VerifyPassword(ctx context.Context, id int, password string
 		"SELECT user_pass FROM login WHERE account_id = ?", id,
 	).Scan(&stored)
 	if errors.Is(err, sql.ErrNoRows) {
-		return false, domain2.ErrUserNotFound
+		return false, domain.ErrUserNotFound
 	}
 	if err != nil {
 		return false, fmt.Errorf("infra.Repository.VerifyPassword: %w", err)
@@ -125,30 +125,32 @@ func (r *Repository) VerifyPassword(ctx context.Context, id int, password string
 	return stored == password, nil
 }
 
-func (r *Repository) Authenticate(ctx context.Context, username, password string) (*domain2.User, error) {
+func (r *Repository) GetCredentials(ctx context.Context, username string) (*domain.User, string, error) {
 	var (
-		u         domain2.User
+		u         domain.User
+		password  string
 		unbanSecs uint32
 		lastIP    sql.NullString
 		lastLogin sql.NullTime
 	)
 	err := r.Client.QueryRowContext(ctx,
-		"SELECT account_id, userid, email, birthdate, state, group_id, unban_time, last_ip, lastlogin FROM login WHERE userid = ? AND user_pass = ?",
-		username, password,
-	).Scan(&u.ID, &u.Username, &u.Email, &u.Birthdate, &u.State, &u.GroupID, &unbanSecs, &lastIP, &lastLogin)
+		"SELECT account_id, userid, user_pass, email, birthdate, state, group_id, unban_time, last_ip, lastlogin FROM login WHERE userid = ?",
+		username,
+	).Scan(&u.ID, &u.Username, &password, &u.Email, &u.Birthdate, &u.State, &u.GroupID, &unbanSecs, &lastIP, &lastLogin)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, domain2.ErrInvalidCredentials
+		return nil, "", domain.ErrInvalidCredentials
 	}
 	if err != nil {
-		return nil, fmt.Errorf("infra.Repository.Authenticate: %w", err)
+		return nil, "", fmt.Errorf("infra.Repository.GetCredentials: %w", err)
 	}
+
 	u.UnbanTime = unbanTimeFromSeconds(unbanSecs)
 	u.LastIP = lastIP.String
 	if lastLogin.Valid {
 		u.LastLogin = lastLogin.Time
 	}
 
-	return &u, nil
+	return &u, password, nil
 }
 
 func (r *Repository) MarkVerified(ctx context.Context, accountID int) error {
@@ -158,7 +160,7 @@ func (r *Repository) MarkVerified(ctx context.Context, accountID int) error {
 		accountID,
 	).Scan(&exists)
 	if errors.Is(err, sql.ErrNoRows) {
-		return domain2.ErrUserNotFound
+		return domain.ErrUserNotFound
 	}
 	if err != nil {
 		return fmt.Errorf("infra.Repository.MarkVerified: %w", err)
@@ -187,7 +189,7 @@ func (r *Repository) UpdatePassword(ctx context.Context, accountID int, newPassw
 		return fmt.Errorf("infra.Repository.UpdatePassword: %w", err)
 	}
 	if rows == 0 {
-		return domain2.ErrUserNotFound
+		return domain.ErrUserNotFound
 	}
 
 	return nil
@@ -206,7 +208,7 @@ func (r *Repository) UpdateEmail(ctx context.Context, accountID int, newEmail st
 		return fmt.Errorf("infra.Repository.UpdateEmail: %w", err)
 	}
 	if rows == 0 {
-		return domain2.ErrUserNotFound
+		return domain.ErrUserNotFound
 	}
 
 	return nil
@@ -223,7 +225,7 @@ func (r *Repository) Delete(ctx context.Context, id int) error {
 		return fmt.Errorf("infra.Repository.Delete: %w", err)
 	}
 	if rows == 0 {
-		return domain2.ErrUserNotFound
+		return domain.ErrUserNotFound
 	}
 
 	return nil
@@ -242,7 +244,7 @@ type ListQuery struct {
 }
 
 type UserPage struct {
-	Users      []domain2.User
+	Users      []domain.User
 	Total      int
 	Page       int
 	PerPage    int
@@ -282,10 +284,10 @@ func (r *Repository) List(ctx context.Context, q ListQuery) (UserPage, error) {
 	}
 	defer func() { _ = rows.Close() }()
 
-	users := make([]domain2.User, 0, q.PerPage)
+	users := make([]domain.User, 0, q.PerPage)
 	for rows.Next() {
 		var (
-			u         domain2.User
+			u         domain.User
 			unbanSecs uint32
 			lastIP    sql.NullString
 			lastLogin sql.NullTime
@@ -340,7 +342,7 @@ func (r *Repository) UpdateBan(ctx context.Context, id, state int, unbanTime uin
 		return fmt.Errorf("infra.Repository.UpdateBan rows: %w", err)
 	}
 	if rows == 0 {
-		return domain2.ErrUserNotFound
+		return domain.ErrUserNotFound
 	}
 
 	return nil
@@ -359,7 +361,7 @@ func (r *Repository) UpdateGroup(ctx context.Context, id, groupID int) error {
 		return fmt.Errorf("infra.Repository.UpdateGroup rows: %w", err)
 	}
 	if rows == 0 {
-		return domain2.ErrUserNotFound
+		return domain.ErrUserNotFound
 	}
 
 	return nil

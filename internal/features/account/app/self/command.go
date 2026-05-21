@@ -1,5 +1,7 @@
 package self
 
+import "net"
+
 type CreateCommand struct {
 	Username        string
 	Password        string
@@ -10,6 +12,8 @@ type CreateCommand struct {
 }
 
 type LoginCommand struct {
-	Username string
-	Password string
+	Username  string
+	Password  string
+	UserAgent string
+	IP        net.IP
 }

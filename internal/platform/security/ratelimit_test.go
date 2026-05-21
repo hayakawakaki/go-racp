@@ -48,7 +48,7 @@ func TestNewRateLimiter_Validation(t *testing.T) {
 			name:           "invalid CIDR rejected",
 			rule:           config.RateLimitRule{RatePerMinute: 10, Burst: 5},
 			trustedProxies: []string{"not-a-cidr"},
-			wantErr:        `invalid trusted CIDR "not-a-cidr"`,
+			wantErr:        `invalid CIDR "not-a-cidr"`,
 		},
 		{
 			name: "valid options succeed",

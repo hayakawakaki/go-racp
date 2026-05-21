@@ -9,6 +9,7 @@ import (
 var (
 	ErrUserNotFound       = errors.New("user not found")
 	ErrInvalidCredentials = errors.New("invalid credentials")
+	ErrAccountLocked      = errors.New("account: temporarily locked due to repeated failed login attempts")
 
 	ErrSessionNotFound = errors.New("session not found")
 	ErrSessionExpired  = errors.New("session expired")

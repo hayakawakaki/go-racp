@@ -300,6 +300,31 @@ func TestDoLogin_InvalidCredentials(t *testing.T) {
 	}
 }
 
+func TestDoLogin_AccountLocked_DistinctMessage(t *testing.T) {
+	t.Parallel()
+	auth := &stubAccountService{
+		authNFn: func(context.Context, app.LoginCommand) (*app.GetDTO, app.Tier, error) {
+			return nil, app.TierActive, domain.ErrAccountLocked
+		},
+	}
+	h := newAuthHandler(auth, &stubSessionService{})
+
+	rr := httptest.NewRecorder()
+	req := postForm("/login", map[string]string{"username": "testuser", "password": "Test1234!"})
+	h.doLogin(rr, req)
+
+	body := rr.Body.String()
+	if !strings.Contains(body, "Too many recent attempts") {
+		t.Errorf("body missing lockout-specific message: %s", body)
+	}
+	if strings.Contains(body, "Invalid username or password") {
+		t.Errorf("lockout response must not show the invalid-credentials message: %s", body)
+	}
+	if findSetCookie(rr, middleware.SessionCookieName) != nil {
+		t.Errorf("cookie must not be set on lockout")
+	}
+}
+
 func TestDoLogin_SessionCreateFails(t *testing.T) {
 	t.Parallel()
 	auth := &stubAccountService{}

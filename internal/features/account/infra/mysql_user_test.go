@@ -89,7 +89,7 @@ func TestRepository_GetUnknown(t *testing.T) {
 	}
 }
 
-func TestRepository_Authenticate(t *testing.T) {
+func TestRepository_GetCredentials(t *testing.T) {
 	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
 	repo := NewRepository(db)
 	ctx := context.Background()
@@ -109,24 +109,20 @@ func TestRepository_Authenticate(t *testing.T) {
 	cleanupUser(t, repo, created.ID)
 
 	t.Run("happy", func(t *testing.T) {
-		got, err := repo.Authenticate(ctx, u.Username, "secret")
+		got, password, err := repo.GetCredentials(ctx, u.Username)
 		if err != nil {
-			t.Fatalf("Authenticate: %v", err)
+			t.Fatalf("GetCredentials: %v", err)
 		}
 		if got.ID != created.ID {
 			t.Errorf("ID mismatch")
 		}
-	})
-
-	t.Run("wrong password", func(t *testing.T) {
-		_, err := repo.Authenticate(ctx, u.Username, "wrong")
-		if !errors.Is(err, domain.ErrInvalidCredentials) {
-			t.Errorf("got %v, want ErrInvalidCredentials", err)
+		if password != "secret" {
+			t.Errorf("password = %q, want %q", password, "secret")
 		}
 	})
 
 	t.Run("unknown user", func(t *testing.T) {
-		_, err := repo.Authenticate(ctx, "ghost_"+suf, "anything")
+		_, _, err := repo.GetCredentials(ctx, "ghost_"+suf)
 		if !errors.Is(err, domain.ErrInvalidCredentials) {
 			t.Errorf("got %v, want ErrInvalidCredentials", err)
 		}
@@ -239,15 +235,15 @@ func TestRepository_UpdatePassword(t *testing.T) {
 		if err := repo.UpdatePassword(ctx, u.ID, "New1234!"); err != nil {
 			t.Fatalf("UpdatePassword: %v", err)
 		}
-		got, authErr := repo.Authenticate(ctx, u.Username, "New1234!")
+		got, password, authErr := repo.GetCredentials(ctx, u.Username)
 		if authErr != nil {
-			t.Fatalf("Authenticate with new password: %v", authErr)
+			t.Fatalf("GetCredentials: %v", authErr)
 		}
 		if got.ID != u.ID {
 			t.Errorf("ID = %d, want %d", got.ID, u.ID)
 		}
-		if _, oldErr := repo.Authenticate(ctx, u.Username, "Old1234!"); !errors.Is(oldErr, domain.ErrInvalidCredentials) {
-			t.Errorf("old password should fail: got %v", oldErr)
+		if password != "New1234!" {
+			t.Errorf("stored password = %q, want %q", password, "New1234!")
 		}
 	})
 

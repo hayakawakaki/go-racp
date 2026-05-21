@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"net"
 	"net/http"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	actiontokendomain "github.com/hayakawakaki/go-racp/internal/platform/actiontoken/domain"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
+	"github.com/hayakawakaki/go-racp/internal/platform/security"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 
@@ -69,6 +71,7 @@ type HandlerConfig struct {
 	Logger               *slog.Logger
 	Users                userLookup
 	Characters           characterLister
+	TrustedProxies       []*net.IPNet
 	General              config.GeneralConfig
 	Secure               bool
 	AllowTempBannedLogin bool
@@ -80,6 +83,7 @@ type Handler struct {
 	users                userLookup
 	characters           characterLister
 	logger               *slog.Logger
+	trustedProxies       []*net.IPNet
 	general              config.GeneralConfig
 	secure               bool
 	allowTempBannedLogin bool
@@ -96,6 +100,7 @@ func NewHandler(svc accountService, sessSvc sessionService, cfg HandlerConfig) *
 		users:                cfg.Users,
 		characters:           cfg.Characters,
 		logger:               logger,
+		trustedProxies:       cfg.TrustedProxies,
 		general:              cfg.General,
 		secure:               cfg.Secure,
 		allowTempBannedLogin: cfg.AllowTempBannedLogin,
@@ -223,6 +228,7 @@ func (h *Handler) showLogin(w http.ResponseWriter, r *http.Request) {
 	httpx.RenderHTML(w, r, h.logger, loginPage(h.layout(), state))
 }
 
+//nolint:cyclop // sequential checks
 func (h *Handler) doLogin(w http.ResponseWriter, r *http.Request) {
 	if err := httpx.ParseForm(w, r, maxLoginFormBytes); err != nil {
 		h.renderLogin(w, r, LoginFormState{Error: invalidFormDataMsg})
@@ -230,16 +236,21 @@ func (h *Handler) doLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cmd := app.LoginCommand{
-		Username: r.PostFormValue(fieldUsername),
-		Password: r.PostFormValue(fieldPassword),
+		Username:  r.PostFormValue(fieldUsername),
+		Password:  r.PostFormValue(fieldPassword),
+		UserAgent: r.Header.Get("User-Agent"),
+		IP:        security.ClientIP(r, h.trustedProxies),
 	}
 
 	user, tier, err := h.svc.Authenticate(r.Context(), cmd)
 	if err != nil {
 		state := LoginFormState{Username: cmd.Username}
-		if errors.Is(err, domain.ErrInvalidCredentials) {
+		switch {
+		case errors.Is(err, domain.ErrAccountLocked):
+			state.Error = "Too many recent attempts. Please try again later."
+		case errors.Is(err, domain.ErrInvalidCredentials):
 			state.Error = "Invalid username or password."
-		} else {
+		default:
 			h.logger.Error("login", "err", err)
 			state.Error = genericErrorMessage
 		}
