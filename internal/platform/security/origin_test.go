@@ -45,6 +45,7 @@ func TestOrigin_StateChangingMethods(t *testing.T) {
 		host           string
 		originHeader   string
 		refererHeader  string
+		secFetchSite   string
 		trustedOrigins []string
 		wantStatus     int
 	}{
@@ -155,6 +156,44 @@ func TestOrigin_StateChangingMethods(t *testing.T) {
 			originHeader: "https://",
 			wantStatus:   http.StatusForbidden,
 		},
+		{
+			name:         "Sec-Fetch-Site same-origin short-circuits with null Origin",
+			method:       http.MethodPost,
+			host:         "panel.example",
+			originHeader: "null",
+			secFetchSite: "same-origin",
+			wantStatus:   http.StatusOK,
+		},
+		{
+			name:         "Sec-Fetch-Site same-origin short-circuits with no Origin or Referer",
+			method:       http.MethodPost,
+			host:         "panel.example",
+			secFetchSite: "same-origin",
+			wantStatus:   http.StatusOK,
+		},
+		{
+			name:         "Sec-Fetch-Site cross-site does not short-circuit",
+			method:       http.MethodPost,
+			host:         "panel.example",
+			originHeader: "https://attacker.example",
+			secFetchSite: "cross-site",
+			wantStatus:   http.StatusForbidden,
+		},
+		{
+			name:         "Sec-Fetch-Site same-site does not short-circuit",
+			method:       http.MethodPost,
+			host:         "panel.example",
+			originHeader: "https://sub.attacker.example",
+			secFetchSite: "same-site",
+			wantStatus:   http.StatusForbidden,
+		},
+		{
+			name:         "null Origin without Sec-Fetch-Site rejected",
+			method:       http.MethodPost,
+			host:         "panel.example",
+			originHeader: "null",
+			wantStatus:   http.StatusForbidden,
+		},
 	}
 
 	for _, tt := range tests {
@@ -173,6 +212,9 @@ func TestOrigin_StateChangingMethods(t *testing.T) {
 			}
 			if tt.refererHeader != "" {
 				req.Header.Set("Referer", tt.refererHeader)
+			}
+			if tt.secFetchSite != "" {
+				req.Header.Set("Sec-Fetch-Site", tt.secFetchSite)
 			}
 
 			rr := httptest.NewRecorder()

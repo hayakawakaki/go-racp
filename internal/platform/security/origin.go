@@ -37,8 +37,11 @@ func isSafeMethod(m string) bool {
 }
 
 func originMatches(r *http.Request, trusted map[string]struct{}) bool {
+	if r.Header.Get("Sec-Fetch-Site") == "same-origin" {
+		return true
+	}
 	expectedHost := strings.ToLower(r.Host)
-	if origin := r.Header.Get("Origin"); origin != "" {
+	if origin := r.Header.Get("Origin"); origin != "" && origin != "null" {
 		return hostMatches(origin, expectedHost, trusted)
 	}
 	if ref := r.Header.Get("Referer"); ref != "" {
