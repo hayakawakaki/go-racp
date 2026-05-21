@@ -121,10 +121,15 @@ func verifyAnonymousToken(value string, secret []byte) bool {
 func shouldMintAnonymousToken(r *http.Request) bool {
 	switch r.Header.Get("Sec-Fetch-Site") {
 	case "cross-site", "same-site":
-		return false
+		return isTopLevelNavigation(r)
 	}
 
 	return true
+}
+
+func isTopLevelNavigation(r *http.Request) bool {
+	return r.Header.Get("Sec-Fetch-Mode") == "navigate" &&
+		r.Header.Get("Sec-Fetch-Dest") == "document"
 }
 
 func cookieName(secure bool) string {

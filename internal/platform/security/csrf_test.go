@@ -108,13 +108,19 @@ func TestCSRF_ShouldMintAnonymousToken(t *testing.T) {
 	tests := []struct {
 		name     string
 		secFetch string
+		mode     string
+		dest     string
 		wantMint bool
 	}{
-		{name: "absent header allows mint", secFetch: "", wantMint: true},
+		{name: "absent header allows mint", wantMint: true},
 		{name: "none allows mint", secFetch: "none", wantMint: true},
 		{name: "same-origin allows mint", secFetch: "same-origin", wantMint: true},
-		{name: "same-site blocks mint", secFetch: "same-site", wantMint: false},
-		{name: "cross-site blocks mint", secFetch: "cross-site", wantMint: false},
+		{name: "same-site subresource blocks mint", secFetch: "same-site", wantMint: false},
+		{name: "cross-site subresource blocks mint", secFetch: "cross-site", wantMint: false},
+		{name: "cross-site top-level navigation allows mint", secFetch: "cross-site", mode: "navigate", dest: "document", wantMint: true},
+		{name: "same-site top-level navigation allows mint", secFetch: "same-site", mode: "navigate", dest: "document", wantMint: true},
+		{name: "cross-site iframe navigation blocks mint", secFetch: "cross-site", mode: "navigate", dest: "iframe", wantMint: false},
+		{name: "cross-site image subresource blocks mint", secFetch: "cross-site", mode: "no-cors", dest: "image", wantMint: false},
 	}
 
 	for _, tt := range tests {
@@ -123,6 +129,12 @@ func TestCSRF_ShouldMintAnonymousToken(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 			if tt.secFetch != "" {
 				req.Header.Set("Sec-Fetch-Site", tt.secFetch)
+			}
+			if tt.mode != "" {
+				req.Header.Set("Sec-Fetch-Mode", tt.mode)
+			}
+			if tt.dest != "" {
+				req.Header.Set("Sec-Fetch-Dest", tt.dest)
 			}
 			if got := shouldMintAnonymousToken(req); got != tt.wantMint {
 				t.Errorf("shouldMintAnonymousToken = %v, want %v", got, tt.wantMint)
