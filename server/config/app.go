@@ -185,6 +185,7 @@ func appConfigDefaults() *AppConfig {
 			PeakWindows:         defaultPeakWindows,
 		},
 		Security: SecurityConfig{
+			TrustedProxyCIDRs:     []string{"127.0.0.1/32", "::1/128", "172.16.0.0/12"},
 			CSPExtraImgSrc:        []string{"https://i.imgur.com"},
 			HSTSMaxAge:            31536000,
 			HSTSIncludeSubdomains: true,
