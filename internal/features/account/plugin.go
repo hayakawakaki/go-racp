@@ -1,6 +1,7 @@
 package account
 
 import (
+	"fmt"
 	"net/http"
 
 	modapp "github.com/hayakawakaki/go-racp/internal/features/account/app/moderation"
@@ -12,6 +13,7 @@ import (
 	coreinfra "github.com/hayakawakaki/go-racp/internal/infra"
 	"github.com/hayakawakaki/go-racp/internal/platform/plugin"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
+	"github.com/hayakawakaki/go-racp/internal/platform/security"
 )
 
 func init() {
@@ -27,6 +29,11 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 
 	charSvc := character.BuildService(in)
 
+	trustedProxies, err := security.ParseTrustedProxies(in.Config.App.Security.TrustedProxyCIDRs)
+	if err != nil {
+		panic(fmt.Errorf("account/plugin: %w", err))
+	}
+
 	h := transport.NewHandler(svc, sessSvc, transport.HandlerConfig{
 		Logger:               in.Logger,
 		Users:                userRepo,
@@ -34,6 +41,7 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 		Secure:               secure,
 		General:              in.Config.App.General,
 		AllowTempBannedLogin: in.Config.App.Auth.AllowTempBannedLogin,
+		TrustedProxies:       trustedProxies,
 	})
 	h.RegisterRoutes(reg, mux)
 
@@ -49,12 +57,15 @@ func buildServices(in *coreinfra.Infra) (*app.Service, *app.SessionService, *inf
 	userRepo := infra.NewRepository(in.MainDB)
 	sessRepo := infra.NewSessionRepository(in.DB)
 	changeLog := infra.NewChangeLogRepository(in.DB)
+	loginAttempts := infra.NewLoginAttemptsRepository(in.DB)
 	sessSvc := app.NewSessionService(sessRepo, in.Config.App.TTL.Session)
 
 	svc := app.NewService(userRepo,
 		app.WithLocation(in.Config.App.General.Location()),
 		app.WithSessionInvalidator(sessSvc),
 		app.WithChangeLog(changeLog),
+		app.WithLoginAttempts(loginAttempts),
+		app.WithAuthLogger(in.Logger),
 		app.WithVerification(in.TokenManager, in.Mailer, app.VerificationConfig{
 			AppURL:         in.Config.Env.AppURL,
 			ServerName:     in.Config.App.General.ServerName,

@@ -6,9 +6,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
-	"slices"
 	"strconv"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -78,13 +76,11 @@ func NewRateLimiter(opts RateLimiterOptions) (*RateLimiter, error) {
 		buckets:  make(map[string]*bucketEntry),
 	}
 
-	for _, cidr := range opts.TrustedProxies {
-		_, network, err := net.ParseCIDR(cidr)
-		if err != nil {
-			return nil, fmt.Errorf("security.NewRateLimiter: rate limiter %q: invalid trusted CIDR %q: %w", opts.Name, cidr, err)
-		}
-		limiter.trusted = append(limiter.trusted, network)
+	trusted, err := ParseTrustedProxies(opts.TrustedProxies)
+	if err != nil {
+		return nil, fmt.Errorf("security.NewRateLimiter: rate limiter %q: %w", opts.Name, err)
 	}
+	limiter.trusted = trusted
 
 	return limiter, nil
 }
@@ -244,51 +240,7 @@ func (rl *RateLimiter) clientIPKey(r *http.Request) string {
 }
 
 func (rl *RateLimiter) realClientIP(r *http.Request) net.IP {
-	ip := remoteIP(r.RemoteAddr)
-	if ip == nil || !rl.isTrusted(ip) {
-		return ip
-	}
-
-	forwardedFor := r.Header.Get("X-Forwarded-For")
-	if forwardedFor == "" {
-		return ip
-	}
-
-	hops := strings.Split(forwardedFor, ",")
-	for _, hop := range slices.Backward(hops) {
-		candidate := net.ParseIP(strings.TrimSpace(hop))
-		if candidate == nil {
-			return ip
-		}
-		if !rl.isTrusted(candidate) {
-			return candidate
-		}
-	}
-
-	return ip
-}
-
-func (rl *RateLimiter) isTrusted(ip net.IP) bool {
-	if ip == nil {
-		return false
-	}
-
-	for _, network := range rl.trusted {
-		if network.Contains(ip) {
-			return true
-		}
-	}
-
-	return false
-}
-
-func remoteIP(ip string) net.IP {
-	host, _, err := net.SplitHostPort(ip)
-	if err != nil {
-		host = ip
-	}
-
-	return net.ParseIP(host)
+	return ClientIP(r, rl.trusted)
 }
 
 func normalizeIP(ip net.IP) string {

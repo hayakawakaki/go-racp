@@ -12,7 +12,7 @@ type Repository interface {
 	GetByUsername(ctx context.Context, username string) (*User, error)
 	GetByEmail(ctx context.Context, email string) (*User, error)
 	Delete(ctx context.Context, id int) error
-	Authenticate(ctx context.Context, username, password string) (*User, error)
+	FindByUsernameForAuth(ctx context.Context, username string) (*User, string, error)
 	VerifyPassword(ctx context.Context, id int, password string) (bool, error)
 	MarkVerified(ctx context.Context, accountID int) error
 	UpdatePassword(ctx context.Context, accountID int, newPassword string) error

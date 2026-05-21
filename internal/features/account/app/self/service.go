@@ -2,8 +2,12 @@ package self
 
 import (
 	"context"
+	"crypto/subtle"
+	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
+	"net"
 	"strings"
 	"sync"
 	"time"
@@ -28,6 +32,11 @@ type Mailer interface {
 type SessionInvalidator interface {
 	InvalidateAll(ctx context.Context, userID int) error
 	InvalidateOthers(ctx context.Context, userID int, currentRawToken string) error
+}
+
+type LoginAttempts interface {
+	Record(ctx context.Context, username string, accountID sql.NullInt64, ip net.IP, success bool, userAgent string) error
+	ConsecutiveFailures(ctx context.Context, username string, window time.Duration) (int, time.Time, error)
 }
 
 type VerificationConfig struct {
@@ -62,6 +71,8 @@ type Service struct {
 	ChangeLog          domain.ChangeLog
 	Mail               Mailer
 	SessionInvalidator SessionInvalidator
+	attempts           LoginAttempts
+	logger             *slog.Logger
 	verifyCfg          VerificationConfig
 	resetCfg           PasswordResetConfig
 	emailCfg           EmailChangeConfig
@@ -146,6 +157,20 @@ func WithSessionInvalidator(invalidator SessionInvalidator) Option {
 	return func(s *Service) { s.SessionInvalidator = invalidator }
 }
 
+func WithLoginAttempts(attempts LoginAttempts) Option {
+	if attempts == nil {
+		panic("account: WithLoginAttempts: attempts must not be nil")
+	}
+	return func(s *Service) { s.attempts = attempts }
+}
+
+func WithAuthLogger(logger *slog.Logger) Option {
+	if logger == nil {
+		panic("account: WithAuthLogger: logger must not be nil")
+	}
+	return func(s *Service) { s.logger = logger }
+}
+
 //nolint:cyclop // linear nil-check would flag this, splitting would not improve readability
 func NewService(repo domain.Repository, opts ...Option) *Service {
 	if repo == nil {
@@ -193,6 +218,9 @@ func NewService(repo domain.Repository, opts ...Option) *Service {
 		if s.SessionInvalidator == nil {
 			panic("account: WithEmailChange requires WithSessionInvalidator")
 		}
+	}
+	if s.logger == nil {
+		s.logger = slog.Default()
 	}
 
 	return s
@@ -537,13 +565,45 @@ func (s *Service) assertUnrestricted(ctx context.Context, accountID int) error {
 	return nil
 }
 
+//nolint:cyclop // sequential lockout, lookup, compare, and record steps, splitting would break the flow
 func (s *Service) Authenticate(ctx context.Context, cmd LoginCommand) (*GetDTO, Tier, error) {
-	user, err := s.Repo.Authenticate(ctx, cmd.Username, cmd.Password)
-	if errors.Is(err, domain.ErrInvalidCredentials) {
-		return nil, TierActive, domain.ErrInvalidCredentials
+	if s.attempts == nil {
+		panic("account: Authenticate requires WithLoginAttempts")
 	}
+
+	policy := domain.DefaultLockoutPolicy()
+
+	failures, lastFail, err := s.attempts.ConsecutiveFailures(ctx, cmd.Username, policy.Window)
 	if err != nil {
 		return nil, TierActive, fmt.Errorf("app.Service.Authenticate: %w", err)
+	}
+
+	if backoff := policy.Backoff(failures); backoff > 0 && time.Since(lastFail) < backoff {
+		if recErr := s.attempts.Record(ctx, cmd.Username, sql.NullInt64{}, cmd.IP, false, cmd.UserAgent); recErr != nil {
+			s.logger.Error("login attempt record failed", "err", recErr)
+		}
+		return nil, TierActive, domain.ErrAccountLocked
+	}
+
+	user, storedPassword, lookupErr := s.Repo.FindByUsernameForAuth(ctx, cmd.Username)
+	if lookupErr != nil && !errors.Is(lookupErr, domain.ErrInvalidCredentials) {
+		return nil, TierActive, fmt.Errorf("app.Service.Authenticate: %w", lookupErr)
+	}
+
+	passwordOK := lookupErr == nil && subtle.ConstantTimeCompare([]byte(storedPassword), []byte(cmd.Password)) == 1
+	if !passwordOK {
+		var accountID sql.NullInt64
+		if user != nil {
+			accountID = sql.NullInt64{Int64: int64(user.ID), Valid: true}
+		}
+		if recErr := s.attempts.Record(ctx, cmd.Username, accountID, cmd.IP, false, cmd.UserAgent); recErr != nil {
+			s.logger.Error("login attempt record failed", "err", recErr)
+		}
+		return nil, TierActive, domain.ErrInvalidCredentials
+	}
+
+	if recErr := s.attempts.Record(ctx, cmd.Username, sql.NullInt64{Int64: int64(user.ID), Valid: true}, cmd.IP, true, cmd.UserAgent); recErr != nil {
+		return nil, TierActive, fmt.Errorf("app.Service.Authenticate: %w", recErr)
 	}
 
 	tier := ClassifyTier(user.State, user.UnbanTime, s.now())
