@@ -5,8 +5,8 @@ COPY go.mod go.sum* ./
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o main ./cmd/main.go \
-    && CGO_ENABLED=0 GOOS=linux go build -o /out/goose github.com/pressly/goose/v3/cmd/goose
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -o main ./cmd/main.go \
+    && CGO_ENABLED=0 GOOS=linux go build -trimpath -o /out/goose github.com/pressly/goose/v3/cmd/goose
 
 FROM alpine:3.23
 RUN apk --no-cache add ca-certificates \
