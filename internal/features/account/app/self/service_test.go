@@ -18,21 +18,21 @@ import (
 // fakeUserRepo implements domain.Repository in memory. Hooks override
 // individual methods for error-path tests.
 type fakeUserRepo struct {
-	byID                      map[int]*domain.User
-	passwords                 map[int]string
-	createHook                func(*domain.User, string) (*domain.User, error)
-	getAllHook                func() ([]domain.User, error)
-	getByIDHook               func(int) (*domain.User, error)
-	getByUsernameHook         func(string) (*domain.User, error)
-	getByEmailHook            func(string) (*domain.User, error)
-	deleteHook                func(int) error
-	findByUsernameForAuthHook func(string) (*domain.User, string, error)
-	verifyPasswordHook        func(int, string) (bool, error)
-	markVerifiedHook          func(int) error
-	updatePasswordHook        func(int, string) error
-	updateEmailHook           func(int, string) error
-	mu                        sync.Mutex
-	nextID                    int
+	byID               map[int]*domain.User
+	passwords          map[int]string
+	createHook         func(*domain.User, string) (*domain.User, error)
+	getAllHook         func() ([]domain.User, error)
+	getByIDHook        func(int) (*domain.User, error)
+	getByUsernameHook  func(string) (*domain.User, error)
+	getByEmailHook     func(string) (*domain.User, error)
+	deleteHook         func(int) error
+	getCredentialsHook func(string) (*domain.User, string, error)
+	verifyPasswordHook func(int, string) (bool, error)
+	markVerifiedHook   func(int) error
+	updatePasswordHook func(int, string) error
+	updateEmailHook    func(int, string) error
+	mu                 sync.Mutex
+	nextID             int
 }
 
 func newFakeUserRepo() *fakeUserRepo {
@@ -123,9 +123,9 @@ func (f *fakeUserRepo) Delete(_ context.Context, id int) error {
 	return nil
 }
 
-func (f *fakeUserRepo) FindByUsernameForAuth(_ context.Context, username string) (*domain.User, string, error) {
-	if f.findByUsernameForAuthHook != nil {
-		return f.findByUsernameForAuthHook(username)
+func (f *fakeUserRepo) GetCredentials(_ context.Context, username string) (*domain.User, string, error) {
+	if f.getCredentialsHook != nil {
+		return f.getCredentialsHook(username)
 	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -632,7 +632,7 @@ func TestService_Authenticate(t *testing.T) {
 	t.Run("generic error wraps", func(t *testing.T) {
 		t.Parallel()
 		repo := newFakeUserRepo()
-		repo.findByUsernameForAuthHook = func(string) (*domain.User, string, error) {
+		repo.getCredentialsHook = func(string) (*domain.User, string, error) {
 			return nil, "", errors.New("boom")
 		}
 		svc := NewService(repo, WithLoginAttempts(&fakeLoginAttempts{}))

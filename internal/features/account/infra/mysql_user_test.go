@@ -89,7 +89,7 @@ func TestRepository_GetUnknown(t *testing.T) {
 	}
 }
 
-func TestRepository_FindByUsernameForAuth(t *testing.T) {
+func TestRepository_GetCredentials(t *testing.T) {
 	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
 	repo := NewRepository(db)
 	ctx := context.Background()
@@ -109,9 +109,9 @@ func TestRepository_FindByUsernameForAuth(t *testing.T) {
 	cleanupUser(t, repo, created.ID)
 
 	t.Run("happy", func(t *testing.T) {
-		got, password, err := repo.FindByUsernameForAuth(ctx, u.Username)
+		got, password, err := repo.GetCredentials(ctx, u.Username)
 		if err != nil {
-			t.Fatalf("FindByUsernameForAuth: %v", err)
+			t.Fatalf("GetCredentials: %v", err)
 		}
 		if got.ID != created.ID {
 			t.Errorf("ID mismatch")
@@ -122,7 +122,7 @@ func TestRepository_FindByUsernameForAuth(t *testing.T) {
 	})
 
 	t.Run("unknown user", func(t *testing.T) {
-		_, _, err := repo.FindByUsernameForAuth(ctx, "ghost_"+suf)
+		_, _, err := repo.GetCredentials(ctx, "ghost_"+suf)
 		if !errors.Is(err, domain.ErrInvalidCredentials) {
 			t.Errorf("got %v, want ErrInvalidCredentials", err)
 		}
@@ -235,9 +235,9 @@ func TestRepository_UpdatePassword(t *testing.T) {
 		if err := repo.UpdatePassword(ctx, u.ID, "New1234!"); err != nil {
 			t.Fatalf("UpdatePassword: %v", err)
 		}
-		got, password, authErr := repo.FindByUsernameForAuth(ctx, u.Username)
+		got, password, authErr := repo.GetCredentials(ctx, u.Username)
 		if authErr != nil {
-			t.Fatalf("FindByUsernameForAuth: %v", authErr)
+			t.Fatalf("GetCredentials: %v", authErr)
 		}
 		if got.ID != u.ID {
 			t.Errorf("ID = %d, want %d", got.ID, u.ID)

@@ -125,7 +125,7 @@ func (r *Repository) VerifyPassword(ctx context.Context, id int, password string
 	return stored == password, nil
 }
 
-func (r *Repository) FindByUsernameForAuth(ctx context.Context, username string) (*domain.User, string, error) {
+func (r *Repository) GetCredentials(ctx context.Context, username string) (*domain.User, string, error) {
 	var (
 		u         domain.User
 		password  string
@@ -141,7 +141,7 @@ func (r *Repository) FindByUsernameForAuth(ctx context.Context, username string)
 		return nil, "", domain.ErrInvalidCredentials
 	}
 	if err != nil {
-		return nil, "", fmt.Errorf("infra.Repository.FindByUsernameForAuth: %w", err)
+		return nil, "", fmt.Errorf("infra.Repository.GetCredentials: %w", err)
 	}
 
 	u.UnbanTime = unbanTimeFromSeconds(unbanSecs)

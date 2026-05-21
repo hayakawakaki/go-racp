@@ -585,7 +585,7 @@ func (s *Service) Authenticate(ctx context.Context, cmd LoginCommand) (*GetDTO, 
 		return nil, TierActive, domain.ErrAccountLocked
 	}
 
-	user, storedPassword, lookupErr := s.Repo.FindByUsernameForAuth(ctx, cmd.Username)
+	user, storedPassword, lookupErr := s.Repo.GetCredentials(ctx, cmd.Username)
 	if lookupErr != nil && !errors.Is(lookupErr, domain.ErrInvalidCredentials) {
 		return nil, TierActive, fmt.Errorf("app.Service.Authenticate: %w", lookupErr)
 	}
