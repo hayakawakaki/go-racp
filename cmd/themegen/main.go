@@ -2,12 +2,14 @@ package main
 
 import (
 	"bytes"
+	"cmp"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -262,6 +264,9 @@ func uniqueImports(comps []Component) ([]importEntry, error) {
 	for alias, path := range seen {
 		out = append(out, importEntry{Alias: alias, Path: path})
 	}
+	slices.SortFunc(out, func(a, b importEntry) int {
+		return cmp.Compare(a.Path, b.Path)
+	})
 
 	return out, nil
 }
