@@ -55,30 +55,30 @@ func (h *Handler) showVerifyAccount(w http.ResponseWriter, r *http.Request) {
 	if notice, ok := resendNoticeText[r.URL.Query().Get("notice")]; ok {
 		state.Notice = notice
 	}
-	httpx.RenderHTML(w, r, h.logger, verifyAccountPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.AccountVerifyAccountPage(h.layout(), state))
 }
 
 func (h *Handler) showVerify(w http.ResponseWriter, r *http.Request) {
-	expired := verifyResultPage(h.layout(), VerifyResultState{Kind: VerifyResultExpired})
+	expired := h.theme.AccountVerifyResultPage(h.layout(), VerifyResultState{Kind: VerifyResultExpired})
 	token, ok := h.validateTokenLink(w, r, actiontokendomain.EmailVerification, "verify peek", expired)
 	if !ok {
 		return
 	}
 
-	httpx.RenderHTML(w, r, h.logger, verifyConfirmPage(h.layout(), VerifyConfirmState{Token: token}))
+	httpx.RenderHTML(w, r, h.logger, h.theme.AccountVerifyConfirmPage(h.layout(), VerifyConfirmState{Token: token}))
 }
 
 //nolint:cyclop // splitting would obscure the flow
 func (h *Handler) doVerify(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Referrer-Policy", "no-referrer")
 	if err := httpx.ParseForm(w, r, maxVerifyFormBytes); err != nil {
-		httpx.RenderHTML(w, r, h.logger, verifyResultPage(h.layout(), VerifyResultState{Kind: VerifyResultInvalid}))
+		httpx.RenderHTML(w, r, h.logger, h.theme.AccountVerifyResultPage(h.layout(), VerifyResultState{Kind: VerifyResultInvalid}))
 		return
 	}
 
 	token := r.PostFormValue(fieldToken)
 	if token == "" {
-		httpx.RenderHTML(w, r, h.logger, verifyResultPage(h.layout(), VerifyResultState{Kind: VerifyResultInvalid}))
+		httpx.RenderHTML(w, r, h.logger, h.theme.AccountVerifyResultPage(h.layout(), VerifyResultState{Kind: VerifyResultInvalid}))
 		return
 	}
 
@@ -100,7 +100,7 @@ func (h *Handler) doVerify(w http.ResponseWriter, r *http.Request) {
 		}
 		state.Kind = VerifyResultInvalid
 	}
-	httpx.RenderHTML(w, r, h.logger, verifyResultPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.AccountVerifyResultPage(h.layout(), state))
 }
 
 func (h *Handler) hasActiveSession(r *http.Request) bool {

@@ -10,7 +10,7 @@ type VerifyAccountState struct {
 	Notice string
 }
 
-templ verifyAccountPage(layout httpx.Layout, state VerifyAccountState) {
+templ AccountVerifyAccountPage(layout httpx.Layout, state VerifyAccountState) {
 	@httpx.Base(layout, "Verify your email") {
 		<div class="w-full max-w-md bg-white rounded-lg shadow-md p-8">
 			<h1 class="text-2xl font-semibold mb-4 text-gray-900">Verify your email</h1>

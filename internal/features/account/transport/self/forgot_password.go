@@ -16,7 +16,7 @@ func (h *Handler) showForgotPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RenderHTML(w, r, h.logger, forgotPasswordPage(h.layout(), ForgotPasswordState{}))
+	httpx.RenderHTML(w, r, h.logger, h.theme.AccountForgotPasswordPage(h.layout(), ForgotPasswordState{}))
 }
 
 func (h *Handler) doForgotPassword(w http.ResponseWriter, r *http.Request) {
@@ -45,8 +45,8 @@ func (h *Handler) doForgotPassword(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) renderForgotPassword(w http.ResponseWriter, r *http.Request, state ForgotPasswordState) {
 	if httpx.IsHTMX(r) {
-		httpx.RenderHTML(w, r, h.logger, forgotPasswordForm(state))
+		httpx.RenderHTML(w, r, h.logger, h.theme.AccountForgotPasswordForm(state))
 		return
 	}
-	httpx.RenderHTML(w, r, h.logger, forgotPasswordPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.AccountForgotPasswordPage(h.layout(), state))
 }

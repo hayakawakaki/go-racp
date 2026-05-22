@@ -61,13 +61,13 @@ func (h *Handler) doChangeEmail(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) renderChangeEmail(w http.ResponseWriter, r *http.Request, state ChangeEmailState, modalOnInitial bool) {
 	if httpx.IsHTMX(r) {
 		if modalOnInitial {
-			httpx.RenderHTML(w, r, h.logger, changeEmailModal(state))
+			httpx.RenderHTML(w, r, h.logger, h.theme.AccountChangeEmailModal(state))
 			return
 		}
-		httpx.RenderHTML(w, r, h.logger, changeEmailForm(state))
+		httpx.RenderHTML(w, r, h.logger, h.theme.AccountChangeEmailForm(state))
 		return
 	}
-	httpx.RenderHTML(w, r, h.logger, changeEmailPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.AccountChangeEmailPage(h.layout(), state))
 }
 
 func (h *Handler) redirectWithNotice(w http.ResponseWriter, r *http.Request, notice string) {

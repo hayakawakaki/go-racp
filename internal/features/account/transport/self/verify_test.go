@@ -24,6 +24,7 @@ func newVerifyHandler(users *stubUserLookup, sess *stubSessionService, verify *s
 		users:   users,
 		sessSvc: sess,
 		svc:     verify,
+		theme:   stubTheme{},
 		logger:  slog.New(slog.NewTextHandler(logBuffer, nil)),
 	}
 }

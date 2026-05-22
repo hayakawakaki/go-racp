@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/a-h/templ"
 	app "github.com/hayakawakaki/go-racp/internal/features/account/app/self"
 	"github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
@@ -67,21 +68,48 @@ type characterLister interface {
 	List(ctx context.Context, accountID int) ([]charapp.CharacterDTO, error)
 }
 
+type Renderer interface {
+	AccountPage(layout httpx.Layout, state AccountState) templ.Component
+	AccountChangeEmailModal(state ChangeEmailState) templ.Component
+	AccountChangeEmailForm(state ChangeEmailState) templ.Component
+	AccountChangeEmailPage(layout httpx.Layout, state ChangeEmailState) templ.Component
+	AccountChangePasswordModal(state ChangePasswordState) templ.Component
+	AccountChangePasswordForm(state ChangePasswordState) templ.Component
+	AccountChangePasswordPage(layout httpx.Layout, state ChangePasswordState) templ.Component
+	AccountEmailChangeResultPage(layout httpx.Layout, state EmailChangeResultState) templ.Component
+	AccountForgotPasswordPage(layout httpx.Layout, state ForgotPasswordState) templ.Component
+	AccountForgotPasswordForm(state ForgotPasswordState) templ.Component
+	AccountLoginPage(layout httpx.Layout, state LoginFormState) templ.Component
+	AccountLoginForm(state LoginFormState) templ.Component
+	AccountRegisterPage(layout httpx.Layout, state RegisterFormState) templ.Component
+	AccountRegisterForm(state RegisterFormState) templ.Component
+	AccountResetPasswordPage(layout httpx.Layout, state ResetPasswordState) templ.Component
+	AccountResetResultPage(layout httpx.Layout, state ResetResultState) templ.Component
+	AccountVerifyAccountPage(layout httpx.Layout, state VerifyAccountState) templ.Component
+	AccountVerifyConfirmPage(layout httpx.Layout, state VerifyConfirmState) templ.Component
+	AccountVerifyEmailChangeConfirmPage(layout httpx.Layout, state VerifyEmailChangeConfirmState) templ.Component
+	AccountVerifyResultPage(layout httpx.Layout, state VerifyResultState) templ.Component
+}
+
+//nolint:govet // GeneralConfig trailing bool forces alignment cost
 type HandlerConfig struct {
 	Logger               *slog.Logger
 	Users                userLookup
 	Characters           characterLister
+	Theme                Renderer
 	TrustedProxies       []*net.IPNet
 	General              config.GeneralConfig
 	Secure               bool
 	AllowTempBannedLogin bool
 }
 
+//nolint:govet // GeneralConfig trailing bool forces alignment cost
 type Handler struct {
 	svc                  accountService
 	sessSvc              sessionService
 	users                userLookup
 	characters           characterLister
+	theme                Renderer
 	logger               *slog.Logger
 	trustedProxies       []*net.IPNet
 	general              config.GeneralConfig
@@ -94,11 +122,13 @@ func NewHandler(svc accountService, sessSvc sessionService, cfg HandlerConfig) *
 	if logger == nil {
 		logger = slog.Default()
 	}
+
 	return &Handler{
 		svc:                  svc,
 		sessSvc:              sessSvc,
 		users:                cfg.Users,
 		characters:           cfg.Characters,
+		theme:                cfg.Theme,
 		logger:               logger,
 		trustedProxies:       cfg.TrustedProxies,
 		general:              cfg.General,
@@ -150,7 +180,7 @@ func (h *Handler) showRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	minDate, maxDate := h.birthdateBounds()
-	httpx.RenderHTML(w, r, h.logger, registerPage(h.layout(), RegisterFormState{
+	httpx.RenderHTML(w, r, h.logger, h.theme.AccountRegisterPage(h.layout(), RegisterFormState{
 		BirthdateMin: minDate,
 		BirthdateMax: maxDate,
 	}))
@@ -203,10 +233,10 @@ func (h *Handler) doRegister(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) renderRegister(w http.ResponseWriter, r *http.Request, state RegisterFormState) {
 	if httpx.IsHTMX(r) {
-		httpx.RenderHTML(w, r, h.logger, registerForm(state))
+		httpx.RenderHTML(w, r, h.logger, h.theme.AccountRegisterForm(state))
 		return
 	}
-	httpx.RenderHTML(w, r, h.logger, registerPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.AccountRegisterPage(h.layout(), state))
 }
 
 var loginNoticeText = map[string]string{
@@ -225,7 +255,7 @@ func (h *Handler) showLogin(w http.ResponseWriter, r *http.Request) {
 		state.Notice = notice
 	}
 
-	httpx.RenderHTML(w, r, h.logger, loginPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.AccountLoginPage(h.layout(), state))
 }
 
 //nolint:cyclop // sequential checks
@@ -295,10 +325,10 @@ func (h *Handler) doLogin(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) renderLogin(w http.ResponseWriter, r *http.Request, state LoginFormState) {
 	if httpx.IsHTMX(r) {
-		httpx.RenderHTML(w, r, h.logger, loginForm(state))
+		httpx.RenderHTML(w, r, h.logger, h.theme.AccountLoginForm(state))
 		return
 	}
-	httpx.RenderHTML(w, r, h.logger, loginPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.AccountLoginPage(h.layout(), state))
 }
 
 func (h *Handler) doLogout(w http.ResponseWriter, r *http.Request) {

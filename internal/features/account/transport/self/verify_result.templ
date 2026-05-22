@@ -14,7 +14,7 @@ type VerifyResultState struct {
 	Kind VerifyResultKind
 }
 
-templ verifyResultPage(layout httpx.Layout, state VerifyResultState) {
+templ AccountVerifyResultPage(layout httpx.Layout, state VerifyResultState) {
 	@httpx.Base(layout, "Verification") {
 		<div class="w-full max-w-md bg-white rounded-lg shadow-md p-8">
 			switch state.Kind {

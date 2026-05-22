@@ -28,6 +28,7 @@ func newAuthHandler(auth *stubAccountService, sess *stubSessionService) *Handler
 	return &Handler{
 		svc:     auth,
 		sessSvc: sess,
+		theme:   stubTheme{},
 		logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
 		secure:  false,
 	}

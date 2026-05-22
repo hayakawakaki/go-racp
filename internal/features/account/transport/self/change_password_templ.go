@@ -17,7 +17,7 @@ type ChangePasswordState struct {
 	Errors map[string]string
 }
 
-func changePasswordModal(state ChangePasswordState) templ.Component {
+func AccountChangePasswordModal(state ChangePasswordState) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -42,7 +42,7 @@ func changePasswordModal(state ChangePasswordState) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = changePasswordForm(state).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = AccountChangePasswordForm(state).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -54,7 +54,7 @@ func changePasswordModal(state ChangePasswordState) templ.Component {
 	})
 }
 
-func changePasswordForm(state ChangePasswordState) templ.Component {
+func AccountChangePasswordForm(state ChangePasswordState) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -160,7 +160,7 @@ func changePasswordForm(state ChangePasswordState) templ.Component {
 	})
 }
 
-func changePasswordPage(layout httpx.Layout, state ChangePasswordState) templ.Component {
+func AccountChangePasswordPage(layout httpx.Layout, state ChangePasswordState) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -197,7 +197,7 @@ func changePasswordPage(layout httpx.Layout, state ChangePasswordState) templ.Co
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = changePasswordForm(state).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = AccountChangePasswordForm(state).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

@@ -12,19 +12,19 @@ import (
 const maxResetPasswordFormBytes = 2 << 10
 
 func (h *Handler) showResetPassword(w http.ResponseWriter, r *http.Request) {
-	expired := resetResultPage(h.layout(), ResetResultState{Kind: ResetResultExpired})
+	expired := h.theme.AccountResetResultPage(h.layout(), ResetResultState{Kind: ResetResultExpired})
 	token, ok := h.validateTokenLink(w, r, actiontokendomain.PasswordReset, "reset_password peek", expired)
 	if !ok {
 		return
 	}
 
-	httpx.RenderHTML(w, r, h.logger, resetPasswordPage(h.layout(), ResetPasswordState{Token: token}))
+	httpx.RenderHTML(w, r, h.logger, h.theme.AccountResetPasswordPage(h.layout(), ResetPasswordState{Token: token}))
 }
 
 func (h *Handler) doResetPassword(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Referrer-Policy", "no-referrer")
 	if err := httpx.ParseForm(w, r, maxResetPasswordFormBytes); err != nil {
-		httpx.RenderHTML(w, r, h.logger, resetResultPage(h.layout(), ResetResultState{Kind: ResetResultInvalid}))
+		httpx.RenderHTML(w, r, h.logger, h.theme.AccountResetResultPage(h.layout(), ResetResultState{Kind: ResetResultInvalid}))
 		return
 	}
 
@@ -32,7 +32,7 @@ func (h *Handler) doResetPassword(w http.ResponseWriter, r *http.Request) {
 	password := r.PostFormValue(fieldPassword)
 	confirm := r.PostFormValue(fieldPasswordConfirm)
 	if password != confirm {
-		httpx.RenderHTML(w, r, h.logger, resetPasswordPage(h.layout(), ResetPasswordState{
+		httpx.RenderHTML(w, r, h.logger, h.theme.AccountResetPasswordPage(h.layout(), ResetPasswordState{
 			Token:  token,
 			Errors: map[string]string{fieldPasswordConfirm: "passwords do not match"},
 		}))
@@ -43,7 +43,7 @@ func (h *Handler) doResetPassword(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		var ve *domain.ValidationError
 		if errors.As(err, &ve) {
-			httpx.RenderHTML(w, r, h.logger, resetPasswordPage(h.layout(), ResetPasswordState{
+			httpx.RenderHTML(w, r, h.logger, h.theme.AccountResetPasswordPage(h.layout(), ResetPasswordState{
 				Token:  token,
 				Errors: ve.Fields,
 			}))
@@ -66,9 +66,9 @@ func (h *Handler) doResetPassword(w http.ResponseWriter, r *http.Request) {
 			h.logger.Error("reset_password consume", "err", err)
 			state.Kind = ResetResultInvalid
 		}
-		httpx.RenderHTML(w, r, h.logger, resetResultPage(h.layout(), state))
+		httpx.RenderHTML(w, r, h.logger, h.theme.AccountResetResultPage(h.layout(), state))
 		return
 	}
 
-	httpx.RenderHTML(w, r, h.logger, resetResultPage(h.layout(), ResetResultState{Kind: ResetResultSuccess}))
+	httpx.RenderHTML(w, r, h.logger, h.theme.AccountResetResultPage(h.layout(), ResetResultState{Kind: ResetResultSuccess}))
 }

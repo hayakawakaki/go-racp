@@ -9,22 +9,89 @@ import (
 	"strings"
 	"time"
 
+	"github.com/a-h/templ"
 	app "github.com/hayakawakaki/go-racp/internal/features/account/app/self"
 	"github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
 	characterapp "github.com/hayakawakaki/go-racp/internal/features/character/app"
 	actiontokendomain "github.com/hayakawakaki/go-racp/internal/platform/actiontoken/domain"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
 const stubSessionTTL = 24 * time.Hour
+
+type stubTheme struct{}
+
+func (stubTheme) AccountPage(layout httpx.Layout, state AccountState) templ.Component {
+	return AccountPage(layout, state)
+}
+func (stubTheme) AccountChangeEmailModal(state ChangeEmailState) templ.Component {
+	return AccountChangeEmailModal(state)
+}
+func (stubTheme) AccountChangeEmailForm(state ChangeEmailState) templ.Component {
+	return AccountChangeEmailForm(state)
+}
+func (stubTheme) AccountChangeEmailPage(layout httpx.Layout, state ChangeEmailState) templ.Component {
+	return AccountChangeEmailPage(layout, state)
+}
+func (stubTheme) AccountChangePasswordModal(state ChangePasswordState) templ.Component {
+	return AccountChangePasswordModal(state)
+}
+func (stubTheme) AccountChangePasswordForm(state ChangePasswordState) templ.Component {
+	return AccountChangePasswordForm(state)
+}
+func (stubTheme) AccountChangePasswordPage(layout httpx.Layout, state ChangePasswordState) templ.Component {
+	return AccountChangePasswordPage(layout, state)
+}
+func (stubTheme) AccountEmailChangeResultPage(layout httpx.Layout, state EmailChangeResultState) templ.Component {
+	return AccountEmailChangeResultPage(layout, state)
+}
+func (stubTheme) AccountForgotPasswordPage(layout httpx.Layout, state ForgotPasswordState) templ.Component {
+	return AccountForgotPasswordPage(layout, state)
+}
+func (stubTheme) AccountForgotPasswordForm(state ForgotPasswordState) templ.Component {
+	return AccountForgotPasswordForm(state)
+}
+func (stubTheme) AccountLoginPage(layout httpx.Layout, state LoginFormState) templ.Component {
+	return AccountLoginPage(layout, state)
+}
+func (stubTheme) AccountLoginForm(state LoginFormState) templ.Component {
+	return AccountLoginForm(state)
+}
+func (stubTheme) AccountRegisterPage(layout httpx.Layout, state RegisterFormState) templ.Component {
+	return AccountRegisterPage(layout, state)
+}
+func (stubTheme) AccountRegisterForm(state RegisterFormState) templ.Component {
+	return AccountRegisterForm(state)
+}
+func (stubTheme) AccountResetPasswordPage(layout httpx.Layout, state ResetPasswordState) templ.Component {
+	return AccountResetPasswordPage(layout, state)
+}
+func (stubTheme) AccountResetResultPage(layout httpx.Layout, state ResetResultState) templ.Component {
+	return AccountResetResultPage(layout, state)
+}
+func (stubTheme) AccountVerifyAccountPage(layout httpx.Layout, state VerifyAccountState) templ.Component {
+	return AccountVerifyAccountPage(layout, state)
+}
+func (stubTheme) AccountVerifyConfirmPage(layout httpx.Layout, state VerifyConfirmState) templ.Component {
+	return AccountVerifyConfirmPage(layout, state)
+}
+func (stubTheme) AccountVerifyEmailChangeConfirmPage(layout httpx.Layout, state VerifyEmailChangeConfirmState) templ.Component {
+	return AccountVerifyEmailChangeConfirmPage(layout, state)
+}
+func (stubTheme) AccountVerifyResultPage(layout httpx.Layout, state VerifyResultState) templ.Component {
+	return AccountVerifyResultPage(layout, state)
+}
 
 func newTestHandler(svc accountService, sess sessionService, logBuffer io.Writer) *Handler {
 	if logBuffer == nil {
 		logBuffer = io.Discard
 	}
+
 	return &Handler{
 		svc:        svc,
 		sessSvc:    sess,
+		theme:      stubTheme{},
 		logger:     slog.New(slog.NewTextHandler(logBuffer, nil)),
 		characters: &stubCharacterLister{},
 	}

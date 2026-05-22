@@ -64,11 +64,11 @@ func (h *Handler) doChangePassword(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) renderChangePassword(w http.ResponseWriter, r *http.Request, state ChangePasswordState, modalOnInitial bool) {
 	if httpx.IsHTMX(r) {
 		if modalOnInitial {
-			httpx.RenderHTML(w, r, h.logger, changePasswordModal(state))
+			httpx.RenderHTML(w, r, h.logger, h.theme.AccountChangePasswordModal(state))
 			return
 		}
-		httpx.RenderHTML(w, r, h.logger, changePasswordForm(state))
+		httpx.RenderHTML(w, r, h.logger, h.theme.AccountChangePasswordForm(state))
 		return
 	}
-	httpx.RenderHTML(w, r, h.logger, changePasswordPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.AccountChangePasswordPage(h.layout(), state))
 }

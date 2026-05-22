@@ -5,6 +5,7 @@ package theme
 import (
 	"github.com/a-h/templ"
 	accountmoderation "github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation"
+	accountself "github.com/hayakawakaki/go-racp/internal/features/account/transport/self"
 	admin "github.com/hayakawakaki/go-racp/internal/features/admin/transport"
 	character "github.com/hayakawakaki/go-racp/internal/features/character/transport"
 	guild "github.com/hayakawakaki/go-racp/internal/features/guild/transport"
@@ -47,6 +48,86 @@ func (DefaultTheme) UsersNotFoundPage(layout httpx.Layout, id string) templ.Comp
 
 func (DefaultTheme) UsersActionError(message string) templ.Component {
 	return accountmoderation.UsersActionError(message)
+}
+
+func (DefaultTheme) AccountPage(layout httpx.Layout, state accountself.AccountState) templ.Component {
+	return accountself.AccountPage(layout, state)
+}
+
+func (DefaultTheme) AccountChangeEmailModal(state accountself.ChangeEmailState) templ.Component {
+	return accountself.AccountChangeEmailModal(state)
+}
+
+func (DefaultTheme) AccountChangeEmailForm(state accountself.ChangeEmailState) templ.Component {
+	return accountself.AccountChangeEmailForm(state)
+}
+
+func (DefaultTheme) AccountChangeEmailPage(layout httpx.Layout, state accountself.ChangeEmailState) templ.Component {
+	return accountself.AccountChangeEmailPage(layout, state)
+}
+
+func (DefaultTheme) AccountChangePasswordModal(state accountself.ChangePasswordState) templ.Component {
+	return accountself.AccountChangePasswordModal(state)
+}
+
+func (DefaultTheme) AccountChangePasswordForm(state accountself.ChangePasswordState) templ.Component {
+	return accountself.AccountChangePasswordForm(state)
+}
+
+func (DefaultTheme) AccountChangePasswordPage(layout httpx.Layout, state accountself.ChangePasswordState) templ.Component {
+	return accountself.AccountChangePasswordPage(layout, state)
+}
+
+func (DefaultTheme) AccountEmailChangeResultPage(layout httpx.Layout, state accountself.EmailChangeResultState) templ.Component {
+	return accountself.AccountEmailChangeResultPage(layout, state)
+}
+
+func (DefaultTheme) AccountForgotPasswordPage(layout httpx.Layout, state accountself.ForgotPasswordState) templ.Component {
+	return accountself.AccountForgotPasswordPage(layout, state)
+}
+
+func (DefaultTheme) AccountForgotPasswordForm(state accountself.ForgotPasswordState) templ.Component {
+	return accountself.AccountForgotPasswordForm(state)
+}
+
+func (DefaultTheme) AccountLoginPage(layout httpx.Layout, state accountself.LoginFormState) templ.Component {
+	return accountself.AccountLoginPage(layout, state)
+}
+
+func (DefaultTheme) AccountLoginForm(state accountself.LoginFormState) templ.Component {
+	return accountself.AccountLoginForm(state)
+}
+
+func (DefaultTheme) AccountRegisterPage(layout httpx.Layout, state accountself.RegisterFormState) templ.Component {
+	return accountself.AccountRegisterPage(layout, state)
+}
+
+func (DefaultTheme) AccountRegisterForm(state accountself.RegisterFormState) templ.Component {
+	return accountself.AccountRegisterForm(state)
+}
+
+func (DefaultTheme) AccountResetPasswordPage(layout httpx.Layout, state accountself.ResetPasswordState) templ.Component {
+	return accountself.AccountResetPasswordPage(layout, state)
+}
+
+func (DefaultTheme) AccountResetResultPage(layout httpx.Layout, state accountself.ResetResultState) templ.Component {
+	return accountself.AccountResetResultPage(layout, state)
+}
+
+func (DefaultTheme) AccountVerifyAccountPage(layout httpx.Layout, state accountself.VerifyAccountState) templ.Component {
+	return accountself.AccountVerifyAccountPage(layout, state)
+}
+
+func (DefaultTheme) AccountVerifyConfirmPage(layout httpx.Layout, state accountself.VerifyConfirmState) templ.Component {
+	return accountself.AccountVerifyConfirmPage(layout, state)
+}
+
+func (DefaultTheme) AccountVerifyEmailChangeConfirmPage(layout httpx.Layout, state accountself.VerifyEmailChangeConfirmState) templ.Component {
+	return accountself.AccountVerifyEmailChangeConfirmPage(layout, state)
+}
+
+func (DefaultTheme) AccountVerifyResultPage(layout httpx.Layout, state accountself.VerifyResultState) templ.Component {
+	return accountself.AccountVerifyResultPage(layout, state)
 }
 
 func (DefaultTheme) DashboardContent(state admin.DashboardState) templ.Component {

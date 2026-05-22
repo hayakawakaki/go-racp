@@ -5,6 +5,7 @@ package theme
 import (
 	"github.com/a-h/templ"
 	accountmoderation "github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation"
+	accountself "github.com/hayakawakaki/go-racp/internal/features/account/transport/self"
 	admin "github.com/hayakawakaki/go-racp/internal/features/admin/transport"
 	character "github.com/hayakawakaki/go-racp/internal/features/character/transport"
 	guild "github.com/hayakawakaki/go-racp/internal/features/guild/transport"
@@ -28,6 +29,26 @@ type Theme interface {
 	UsersListContent(state accountmoderation.ListState) templ.Component
 	UsersNotFoundPage(layout httpx.Layout, id string) templ.Component
 	UsersActionError(message string) templ.Component
+	AccountPage(layout httpx.Layout, state accountself.AccountState) templ.Component
+	AccountChangeEmailModal(state accountself.ChangeEmailState) templ.Component
+	AccountChangeEmailForm(state accountself.ChangeEmailState) templ.Component
+	AccountChangeEmailPage(layout httpx.Layout, state accountself.ChangeEmailState) templ.Component
+	AccountChangePasswordModal(state accountself.ChangePasswordState) templ.Component
+	AccountChangePasswordForm(state accountself.ChangePasswordState) templ.Component
+	AccountChangePasswordPage(layout httpx.Layout, state accountself.ChangePasswordState) templ.Component
+	AccountEmailChangeResultPage(layout httpx.Layout, state accountself.EmailChangeResultState) templ.Component
+	AccountForgotPasswordPage(layout httpx.Layout, state accountself.ForgotPasswordState) templ.Component
+	AccountForgotPasswordForm(state accountself.ForgotPasswordState) templ.Component
+	AccountLoginPage(layout httpx.Layout, state accountself.LoginFormState) templ.Component
+	AccountLoginForm(state accountself.LoginFormState) templ.Component
+	AccountRegisterPage(layout httpx.Layout, state accountself.RegisterFormState) templ.Component
+	AccountRegisterForm(state accountself.RegisterFormState) templ.Component
+	AccountResetPasswordPage(layout httpx.Layout, state accountself.ResetPasswordState) templ.Component
+	AccountResetResultPage(layout httpx.Layout, state accountself.ResetResultState) templ.Component
+	AccountVerifyAccountPage(layout httpx.Layout, state accountself.VerifyAccountState) templ.Component
+	AccountVerifyConfirmPage(layout httpx.Layout, state accountself.VerifyConfirmState) templ.Component
+	AccountVerifyEmailChangeConfirmPage(layout httpx.Layout, state accountself.VerifyEmailChangeConfirmState) templ.Component
+	AccountVerifyResultPage(layout httpx.Layout, state accountself.VerifyResultState) templ.Component
 	DashboardContent(state admin.DashboardState) templ.Component
 	DatabaseContent(state admin.DatabaseState) templ.Component
 	AdminLayout(layout httpx.Layout, pageTitle string, content templ.Component) templ.Component

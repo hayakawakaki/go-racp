@@ -18,7 +18,7 @@ type ChangeEmailState struct {
 	Errors   map[string]string
 }
 
-func changeEmailModal(state ChangeEmailState) templ.Component {
+func AccountChangeEmailModal(state ChangeEmailState) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -43,7 +43,7 @@ func changeEmailModal(state ChangeEmailState) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = changeEmailForm(state).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = AccountChangeEmailForm(state).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -55,7 +55,7 @@ func changeEmailModal(state ChangeEmailState) templ.Component {
 	})
 }
 
-func changeEmailForm(state ChangeEmailState) templ.Component {
+func AccountChangeEmailForm(state ChangeEmailState) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -151,7 +151,7 @@ func changeEmailForm(state ChangeEmailState) templ.Component {
 	})
 }
 
-func changeEmailPage(layout httpx.Layout, state ChangeEmailState) templ.Component {
+func AccountChangeEmailPage(layout httpx.Layout, state ChangeEmailState) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -188,7 +188,7 @@ func changeEmailPage(layout httpx.Layout, state ChangeEmailState) templ.Componen
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = changeEmailForm(state).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = AccountChangeEmailForm(state).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

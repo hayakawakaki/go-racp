@@ -18,7 +18,7 @@ type EmailChangeResultState struct {
 	NewEmail string
 }
 
-templ emailChangeResultPage(layout httpx.Layout, state EmailChangeResultState) {
+templ AccountEmailChangeResultPage(layout httpx.Layout, state EmailChangeResultState) {
 	@httpx.Base(layout, "Email change") {
 		<div class="w-full max-w-md bg-white rounded-lg shadow-md p-8">
 			switch state.Kind {

@@ -16,16 +16,16 @@ type RegisterFormState struct {
 	FormError    string
 }
 
-templ registerPage(layout httpx.Layout, state RegisterFormState) {
+templ AccountRegisterPage(layout httpx.Layout, state RegisterFormState) {
 	@httpx.Base(layout, "Register") {
 		<div class="w-full max-w-md bg-white rounded-lg shadow-md p-8">
 			<h1 class="text-2xl font-semibold mb-6 text-center text-gray-900">Create account</h1>
-			@registerForm(state)
+			@AccountRegisterForm(state)
 		</div>
 	}
 }
 
-templ registerForm(state RegisterFormState) {
+templ AccountRegisterForm(state RegisterFormState) {
 	<form
 		hx-post="/register"
 		hx-target="this"

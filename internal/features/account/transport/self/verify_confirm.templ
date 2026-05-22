@@ -9,7 +9,7 @@ type VerifyConfirmState struct {
 	Token string
 }
 
-templ verifyConfirmPage(layout httpx.Layout, state VerifyConfirmState) {
+templ AccountVerifyConfirmPage(layout httpx.Layout, state VerifyConfirmState) {
 	@httpx.Base(layout, "Verify your email") {
 		<div class="w-full max-w-md bg-white rounded-lg shadow-md p-8">
 			<h1 class="text-2xl font-semibold mb-4 text-gray-900">Confirm email verification</h1>

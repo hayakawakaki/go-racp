@@ -64,5 +64,5 @@ func (h *Handler) showAccount(w http.ResponseWriter, r *http.Request) {
 		state.BanBlocked = "Account changes are disabled while restricted."
 	}
 
-	httpx.RenderHTML(w, r, h.logger, accountPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.AccountPage(h.layout(), state))
 }

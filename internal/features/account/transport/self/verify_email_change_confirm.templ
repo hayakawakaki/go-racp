@@ -10,7 +10,7 @@ type VerifyEmailChangeConfirmState struct {
 	NewEmail string
 }
 
-templ verifyEmailChangeConfirmPage(layout httpx.Layout, state VerifyEmailChangeConfirmState) {
+templ AccountVerifyEmailChangeConfirmPage(layout httpx.Layout, state VerifyEmailChangeConfirmState) {
 	@httpx.Base(layout, "Confirm email change") {
 		<div class="w-full max-w-md bg-white rounded-lg shadow-md p-8">
 			<h1 class="text-2xl font-semibold mb-4 text-gray-900">Confirm email change</h1>

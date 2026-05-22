@@ -14,7 +14,7 @@ func (h *Handler) showVerifyEmailChange(w http.ResponseWriter, r *http.Request) 
 
 	token := r.URL.Query().Get("token")
 	if token == "" {
-		httpx.RenderHTML(w, r, h.logger, emailChangeResultPage(h.layout(), EmailChangeResultState{Kind: EmailChangeResultInvalid}))
+		httpx.RenderHTML(w, r, h.logger, h.theme.AccountEmailChangeResultPage(h.layout(), EmailChangeResultState{Kind: EmailChangeResultInvalid}))
 		return
 	}
 
@@ -32,11 +32,11 @@ func (h *Handler) showVerifyEmailChange(w http.ResponseWriter, r *http.Request) 
 			h.logger.Error("verify email change peek", "err", err)
 			state.Kind = EmailChangeResultInvalid
 		}
-		httpx.RenderHTML(w, r, h.logger, emailChangeResultPage(h.layout(), state))
+		httpx.RenderHTML(w, r, h.logger, h.theme.AccountEmailChangeResultPage(h.layout(), state))
 		return
 	}
 
-	httpx.RenderHTML(w, r, h.logger, verifyEmailChangeConfirmPage(h.layout(), VerifyEmailChangeConfirmState{
+	httpx.RenderHTML(w, r, h.logger, h.theme.AccountVerifyEmailChangeConfirmPage(h.layout(), VerifyEmailChangeConfirmState{
 		Token:    token,
 		NewEmail: string(peeked.Payload),
 	}))
@@ -45,13 +45,13 @@ func (h *Handler) showVerifyEmailChange(w http.ResponseWriter, r *http.Request) 
 func (h *Handler) doVerifyEmailChange(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Referrer-Policy", "no-referrer")
 	if err := httpx.ParseForm(w, r, maxVerifyFormBytes); err != nil {
-		httpx.RenderHTML(w, r, h.logger, emailChangeResultPage(h.layout(), EmailChangeResultState{Kind: EmailChangeResultInvalid}))
+		httpx.RenderHTML(w, r, h.logger, h.theme.AccountEmailChangeResultPage(h.layout(), EmailChangeResultState{Kind: EmailChangeResultInvalid}))
 		return
 	}
 
 	token := r.PostFormValue(fieldToken)
 	if token == "" {
-		httpx.RenderHTML(w, r, h.logger, emailChangeResultPage(h.layout(), EmailChangeResultState{Kind: EmailChangeResultInvalid}))
+		httpx.RenderHTML(w, r, h.logger, h.theme.AccountEmailChangeResultPage(h.layout(), EmailChangeResultState{Kind: EmailChangeResultInvalid}))
 		return
 	}
 
@@ -75,11 +75,11 @@ func (h *Handler) doVerifyEmailChange(w http.ResponseWriter, r *http.Request) {
 			h.logger.Error("verify email change", "err", err)
 			state.Kind = EmailChangeResultInvalid
 		}
-		httpx.RenderHTML(w, r, h.logger, emailChangeResultPage(h.layout(), state))
+		httpx.RenderHTML(w, r, h.logger, h.theme.AccountEmailChangeResultPage(h.layout(), state))
 		return
 	}
 
-	httpx.RenderHTML(w, r, h.logger, emailChangeResultPage(h.layout(), EmailChangeResultState{
+	httpx.RenderHTML(w, r, h.logger, h.theme.AccountEmailChangeResultPage(h.layout(), EmailChangeResultState{
 		Kind:     EmailChangeResultSuccess,
 		NewEmail: user.Email,
 	}))

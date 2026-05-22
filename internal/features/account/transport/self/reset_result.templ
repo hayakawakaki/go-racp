@@ -16,7 +16,7 @@ type ResetResultState struct {
 	Kind ResetResultKind
 }
 
-templ resetResultPage(layout httpx.Layout, state ResetResultState) {
+templ AccountResetResultPage(layout httpx.Layout, state ResetResultState) {
 	@httpx.Base(layout, "Password reset") {
 		<div class="w-full max-w-md bg-white rounded-lg shadow-md p-8">
 			switch state.Kind {
