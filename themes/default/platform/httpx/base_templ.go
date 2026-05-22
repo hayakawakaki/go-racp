@@ -69,7 +69,7 @@ func Base(layout platformhttpx.Layout, title string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</title><link rel=\"stylesheet\" href=\"/static/css/app.css\"><script src=\"/static/vendor/htmx-2.0.9.min.js\" defer></script><script src=\"/static/vendor/alpine-3.15.12.min.js\" defer></script></head><body class=\"min-h-screen bg-gray-100 text-gray-900 font-sans antialiased\" hx-headers=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</title><link rel=\"stylesheet\" href=\"/static/css/app.css\"><script src=\"/themes/default/static/vendor/htmx-2.0.9.min.js\" defer></script><script src=\"/themes/default/static/vendor/alpine-3.15.12.min.js\" defer></script></head><body class=\"min-h-screen bg-gray-100 text-gray-900 font-sans antialiased\" hx-headers=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
