@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/a-h/templ"
 	app "github.com/hayakawakaki/go-racp/internal/features/account/app/self"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
@@ -16,15 +17,23 @@ type userService interface {
 	GetByID(ctx context.Context, id int) (*app.GetDTO, error)
 }
 
-type HandlerConfig struct {
-	Logger  *slog.Logger
-	General config.GeneralConfig
+type Renderer interface {
+	HomePage(layout httpx.Layout, state HomeState) templ.Component
 }
 
+//nolint:govet // GeneralConfig trailing bool forces alignment cost
+type HandlerConfig struct {
+	General config.GeneralConfig
+	Theme   Renderer
+	Logger  *slog.Logger
+}
+
+//nolint:govet // GeneralConfig trailing bool forces alignment cost
 type Handler struct {
-	userSvc userService
-	logger  *slog.Logger
 	general config.GeneralConfig
+	userSvc userService
+	theme   Renderer
+	logger  *slog.Logger
 }
 
 func NewHandler(userSvc userService, cfg HandlerConfig) *Handler {
@@ -32,6 +41,7 @@ func NewHandler(userSvc userService, cfg HandlerConfig) *Handler {
 		userSvc: userSvc,
 		logger:  cfg.Logger,
 		general: cfg.General,
+		theme:   cfg.Theme,
 	}
 }
 
@@ -54,5 +64,5 @@ func (h *Handler) show(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	httpx.RenderHTML(w, r, h.logger, homePage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.HomePage(h.layout(), state))
 }

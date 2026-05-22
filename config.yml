@@ -2,6 +2,7 @@
 GeneralConfig:
   ServerName: "GoCP"
   Timezone: "UTC"
+  Theme: "default"
   Gepard: false
 
 # Authentication behavior

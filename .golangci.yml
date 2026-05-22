@@ -4,6 +4,8 @@ version: "2"
 
 run:
   timeout: 3m
+  build-tags:
+    - theme_default
 
 linters:
   enable:

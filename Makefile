@@ -1,9 +1,11 @@
-.PHONY: help dev dev-build dev-down dev-logs app-logs app-shell psql mysql lint test migrate-up migrate-down migrate-status prod-up prod-down prod-logs
+.PHONY: help dev dev-build dev-down dev-logs app-logs app-shell psql mysql lint test theme-gen migrate-up migrate-down migrate-status prod-up prod-down prod-logs
 
-DEV         := docker compose -f docker-compose.dev.yml
-PROD        := docker compose -f docker-compose.yml
-APP         := $(DEV) exec app
-DEV_CP_URL  := postgres://dbuser:dbpass@db:5432/cp?sslmode=disable
+DEV          := docker compose -f docker-compose.dev.yml
+PROD         := docker compose -f docker-compose.yml
+APP          := $(DEV) exec app
+DEV_CP_URL   := postgres://dbuser:dbpass@db:5432/cp?sslmode=disable
+ACTIVE_THEME := $(shell $(APP) go run ./cmd/read_theme)
+THEME_TAG    := theme_$(ACTIVE_THEME)
 
 CYAN   := [0;36m
 GREEN  := [0;32m
@@ -63,10 +65,13 @@ mysql:
 	$(DEV) exec mock-ra-db mariadb -udbuser -pdbpass main
 
 lint:
-	$(APP) go tool golangci-lint run ./...
+	$(APP) go tool golangci-lint run --build-tags=$(THEME_TAG) ./...
 
 test:
-	$(APP) go test ./...
+	$(APP) go test -tags $(THEME_TAG) ./...
+
+theme-gen:
+	$(APP) go run ./cmd/themegen
 
 migrate-up:
 	$(APP) sh scripts/migrate.sh

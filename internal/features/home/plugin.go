@@ -9,6 +9,7 @@ import (
 	platinfra "github.com/hayakawakaki/go-racp/internal/infra"
 	"github.com/hayakawakaki/go-racp/internal/platform/plugin"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
+	"github.com/hayakawakaki/go-racp/internal/platform/theme"
 )
 
 // init registers the home plugin.
@@ -24,6 +25,7 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *platinfra.Infra) {
 	homeH := transport.NewHandler(userSvc, transport.HandlerConfig{
 		Logger:  in.Logger,
 		General: in.Config.App.General,
+		Theme:   theme.Active,
 	})
 	homeH.RegisterRoutes(reg, mux)
 }
