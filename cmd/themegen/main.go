@@ -350,9 +350,7 @@ func writeDefault(outDir string, comps []Component) error {
 }
 
 func writeActiveDefault(outDir string) error {
-	body := generatedHeader + `//go:build theme_default
-
-package theme
+	body := generatedHeader + `package theme
 
 var Active Theme = DefaultTheme{}
 `
