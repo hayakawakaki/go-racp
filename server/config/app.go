@@ -280,10 +280,13 @@ func validateAppConfig(cfg *AppConfig) {
 	validateVendorConfig(&cfg.Vendor)
 	validateMetricsConfig(&cfg.Metrics)
 	validateTrustedProxyCIDRs(cfg.Security.TrustedProxyCIDRs)
+	validateTheme(&cfg.General)
+}
 
-	cfg.General.Theme = cmp.Or(cfg.General.Theme, "default")
-	if !themeNameRe.MatchString(cfg.General.Theme) {
-		panic(fmt.Errorf("GeneralConfig.Theme %q must match %s", cfg.General.Theme, themeNameRe))
+func validateTheme(cfg *GeneralConfig) {
+	cfg.Theme = cmp.Or(cfg.Theme, "default")
+	if !themeNameRe.MatchString(cfg.Theme) {
+		panic(fmt.Errorf("GeneralConfig.Theme %q must match %s", cfg.Theme, themeNameRe))
 	}
 }
 

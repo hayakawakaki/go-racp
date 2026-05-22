@@ -279,6 +279,16 @@ func writeIfChanged(path string, content []byte) error {
 	return nil
 }
 
+func formatImport(imp importEntry) string {
+	parts := strings.Split(imp.Path, "/")
+	last := parts[len(parts)-1]
+	if imp.Alias == last {
+		return fmt.Sprintf("\t%q\n", imp.Path)
+	}
+
+	return fmt.Sprintf("\t%s %q\n", imp.Alias, imp.Path)
+}
+
 func writeInterface(outDir string, comps []Component) error {
 	imports, err := uniqueImports(comps)
 	if err != nil {
@@ -301,7 +311,7 @@ func writeInterface(outDir string, comps []Component) error {
 		if !strings.Contains(used, imp.Alias+".") {
 			continue
 		}
-		fmt.Fprintf(&b, "\t%s %q\n", imp.Alias, imp.Path)
+		b.WriteString(formatImport(imp))
 	}
 	b.WriteString(")\n\n")
 	b.WriteString("type Theme interface {\n")
@@ -325,7 +335,7 @@ func writeDefault(outDir string, comps []Component) error {
 	b.WriteString("import (\n")
 	b.WriteString("\t\"github.com/a-h/templ\"\n")
 	for _, imp := range imports {
-		fmt.Fprintf(&b, "\t%s %q\n", imp.Alias, imp.Path)
+		b.WriteString(formatImport(imp))
 	}
 	b.WriteString(")\n\n")
 	b.WriteString("type DefaultTheme struct{}\n\n")
