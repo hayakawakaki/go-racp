@@ -13,18 +13,28 @@ import (
 	"github.com/a-h/templ"
 	"github.com/hayakawakaki/go-racp/internal/features/guild/app"
 	"github.com/hayakawakaki/go-racp/internal/features/guild/domain"
+	guildstate "github.com/hayakawakaki/go-racp/internal/features/guild/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	guildtpl "github.com/hayakawakaki/go-racp/themes/default/features/guild/transport"
 	_ "github.com/hayakawakaki/go-racp/themes/default/platform/httpx"
 )
 
 type stubTheme struct{}
 
-func (stubTheme) GuildDetailPage(layout httpx.Layout, guildName string, state DetailState) templ.Component {
-	return GuildDetailPage(layout, guildName, state)
+func (stubTheme) GuildDetailPage(layout httpx.Layout, guildName string, state guildstate.DetailState) templ.Component {
+	return guildtpl.GuildDetailPage(layout, guildName, state)
 }
 
-func (stubTheme) GuildListPage(layout httpx.Layout, state ListState) templ.Component {
-	return GuildListPage(layout, state)
+func (stubTheme) GuildDetailContent(state guildstate.DetailState) templ.Component {
+	return guildtpl.GuildDetailContent(state)
+}
+
+func (stubTheme) GuildListPage(layout httpx.Layout, state guildstate.ListState) templ.Component {
+	return guildtpl.GuildListPage(layout, state)
+}
+
+func (stubTheme) GuildListContent(state guildstate.ListState) templ.Component {
+	return guildtpl.GuildListContent(state)
 }
 
 type fakeService struct {

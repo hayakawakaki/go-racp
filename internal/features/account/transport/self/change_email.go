@@ -7,11 +7,12 @@ import (
 	app "github.com/hayakawakaki/go-racp/internal/features/account/app/self"
 	"github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
+	selfstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/self/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
 func (h *Handler) showChangeEmail(w http.ResponseWriter, r *http.Request) {
-	h.renderChangeEmail(w, r, ChangeEmailState{}, true)
+	h.renderChangeEmail(w, r, selfstate.ChangeEmailState{}, true)
 }
 
 //nolint:cyclop // splitting would obscure the flow
@@ -23,7 +24,7 @@ func (h *Handler) doChangeEmail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := httpx.ParseForm(w, r, maxAccountFormBytes); err != nil {
-		h.renderChangeEmail(w, r, ChangeEmailState{
+		h.renderChangeEmail(w, r, selfstate.ChangeEmailState{
 			Errors: map[string]string{fieldNewEmail: invalidFormDataMsg},
 		}, false)
 		return
@@ -42,7 +43,7 @@ func (h *Handler) doChangeEmail(w http.ResponseWriter, r *http.Request) {
 		}
 		var ve *domain.ValidationError
 		if errors.As(err, &ve) {
-			h.renderChangeEmail(w, r, ChangeEmailState{
+			h.renderChangeEmail(w, r, selfstate.ChangeEmailState{
 				NewEmail: newEmail,
 				Errors:   ve.Fields,
 			}, false)
@@ -58,7 +59,7 @@ func (h *Handler) doChangeEmail(w http.ResponseWriter, r *http.Request) {
 
 // renderChangeEmail renders the modal/form for HTMX requests and the full page for direct navigation.
 // modalOnInitial selects between the modal wrapper (for initial GET) and the bare form (for re-renders after POST).
-func (h *Handler) renderChangeEmail(w http.ResponseWriter, r *http.Request, state ChangeEmailState, modalOnInitial bool) {
+func (h *Handler) renderChangeEmail(w http.ResponseWriter, r *http.Request, state selfstate.ChangeEmailState, modalOnInitial bool) {
 	if httpx.IsHTMX(r) {
 		if modalOnInitial {
 			httpx.RenderHTML(w, r, h.logger, h.theme.AccountChangeEmailModal(state))

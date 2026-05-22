@@ -6,6 +6,7 @@ import (
 
 	"github.com/hayakawakaki/go-racp/internal/features/mob/app"
 	"github.com/hayakawakaki/go-racp/internal/features/mob/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/mob/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
@@ -27,6 +28,6 @@ func (h *Handler) showList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	state := ListState{Page: page, Query: query.Query, BaseURL: "/mobs"}
-	httpx.RenderHTML(w, r, h.logger, h.theme.MobListPage(h.layout(), state))
+	s := state.ListState{Page: page, Query: query.Query, BaseURL: "/mobs"}
+	httpx.RenderHTML(w, r, h.logger, h.theme.MobListPage(h.layout(), s))
 }

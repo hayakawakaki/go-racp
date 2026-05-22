@@ -4,87 +4,89 @@ package theme
 
 import (
 	"github.com/a-h/templ"
-	accountmoderation "github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation"
-	accountself "github.com/hayakawakaki/go-racp/internal/features/account/transport/self"
-	admin "github.com/hayakawakaki/go-racp/internal/features/admin/transport"
-	character "github.com/hayakawakaki/go-racp/internal/features/character/transport"
-	guild "github.com/hayakawakaki/go-racp/internal/features/guild/transport"
-	home "github.com/hayakawakaki/go-racp/internal/features/home/transport"
+	accountmoderationstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation/state"
+	accountselfstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/self/state"
+	adminstate "github.com/hayakawakaki/go-racp/internal/features/admin/transport/state"
+	characterstate "github.com/hayakawakaki/go-racp/internal/features/character/transport/state"
+	guildstate "github.com/hayakawakaki/go-racp/internal/features/guild/transport/state"
+	homestate "github.com/hayakawakaki/go-racp/internal/features/home/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/features/item/app"
-	item "github.com/hayakawakaki/go-racp/internal/features/item/transport"
+	itemstate "github.com/hayakawakaki/go-racp/internal/features/item/transport/state"
 	mobapp "github.com/hayakawakaki/go-racp/internal/features/mob/app"
-	mob "github.com/hayakawakaki/go-racp/internal/features/mob/transport"
-	news "github.com/hayakawakaki/go-racp/internal/features/news/transport"
-	stall "github.com/hayakawakaki/go-racp/internal/features/stall/transport"
+	mobstate "github.com/hayakawakaki/go-racp/internal/features/mob/transport/state"
+	newsstate "github.com/hayakawakaki/go-racp/internal/features/news/transport/state"
+	stallstate "github.com/hayakawakaki/go-racp/internal/features/stall/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/features/tickets/domain"
-	tickets "github.com/hayakawakaki/go-racp/internal/features/tickets/transport"
+	ticketsstate "github.com/hayakawakaki/go-racp/internal/features/tickets/transport"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"time"
 )
 
 type Theme interface {
-	UsersDetailPage(layout httpx.Layout, username string, state accountmoderation.DetailState) templ.Component
-	UsersDetailContent(state accountmoderation.DetailState) templ.Component
-	UsersListPage(layout httpx.Layout, state accountmoderation.ListState) templ.Component
-	UsersListContent(state accountmoderation.ListState) templ.Component
+	UsersDetailPage(layout httpx.Layout, username string, state accountmoderationstate.DetailState) templ.Component
+	UsersDetailContent(state accountmoderationstate.DetailState) templ.Component
+	UsersListPage(layout httpx.Layout, state accountmoderationstate.ListState) templ.Component
+	UsersListContent(state accountmoderationstate.ListState) templ.Component
 	UsersNotFoundPage(layout httpx.Layout, id string) templ.Component
 	UsersActionError(message string) templ.Component
-	AccountPage(layout httpx.Layout, state accountself.AccountState) templ.Component
-	AccountChangeEmailModal(state accountself.ChangeEmailState) templ.Component
-	AccountChangeEmailForm(state accountself.ChangeEmailState) templ.Component
-	AccountChangeEmailPage(layout httpx.Layout, state accountself.ChangeEmailState) templ.Component
-	AccountChangePasswordModal(state accountself.ChangePasswordState) templ.Component
-	AccountChangePasswordForm(state accountself.ChangePasswordState) templ.Component
-	AccountChangePasswordPage(layout httpx.Layout, state accountself.ChangePasswordState) templ.Component
-	AccountEmailChangeResultPage(layout httpx.Layout, state accountself.EmailChangeResultState) templ.Component
-	AccountForgotPasswordPage(layout httpx.Layout, state accountself.ForgotPasswordState) templ.Component
-	AccountForgotPasswordForm(state accountself.ForgotPasswordState) templ.Component
-	AccountLoginPage(layout httpx.Layout, state accountself.LoginFormState) templ.Component
-	AccountLoginForm(state accountself.LoginFormState) templ.Component
-	AccountRegisterPage(layout httpx.Layout, state accountself.RegisterFormState) templ.Component
-	AccountRegisterForm(state accountself.RegisterFormState) templ.Component
-	AccountResetPasswordPage(layout httpx.Layout, state accountself.ResetPasswordState) templ.Component
-	AccountResetResultPage(layout httpx.Layout, state accountself.ResetResultState) templ.Component
-	AccountVerifyAccountPage(layout httpx.Layout, state accountself.VerifyAccountState) templ.Component
-	AccountVerifyConfirmPage(layout httpx.Layout, state accountself.VerifyConfirmState) templ.Component
-	AccountVerifyEmailChangeConfirmPage(layout httpx.Layout, state accountself.VerifyEmailChangeConfirmState) templ.Component
-	AccountVerifyResultPage(layout httpx.Layout, state accountself.VerifyResultState) templ.Component
-	DashboardContent(state admin.DashboardState) templ.Component
-	DatabaseContent(state admin.DatabaseState) templ.Component
+	AccountPage(layout httpx.Layout, state accountselfstate.AccountState) templ.Component
+	AccountChangeEmailModal(state accountselfstate.ChangeEmailState) templ.Component
+	AccountChangeEmailForm(state accountselfstate.ChangeEmailState) templ.Component
+	AccountChangeEmailPage(layout httpx.Layout, state accountselfstate.ChangeEmailState) templ.Component
+	AccountChangePasswordModal(state accountselfstate.ChangePasswordState) templ.Component
+	AccountChangePasswordForm(state accountselfstate.ChangePasswordState) templ.Component
+	AccountChangePasswordPage(layout httpx.Layout, state accountselfstate.ChangePasswordState) templ.Component
+	AccountEmailChangeResultPage(layout httpx.Layout, state accountselfstate.EmailChangeResultState) templ.Component
+	AccountForgotPasswordPage(layout httpx.Layout, state accountselfstate.ForgotPasswordState) templ.Component
+	AccountForgotPasswordForm(state accountselfstate.ForgotPasswordState) templ.Component
+	AccountLoginPage(layout httpx.Layout, state accountselfstate.LoginFormState) templ.Component
+	AccountLoginForm(state accountselfstate.LoginFormState) templ.Component
+	AccountRegisterPage(layout httpx.Layout, state accountselfstate.RegisterFormState) templ.Component
+	AccountRegisterForm(state accountselfstate.RegisterFormState) templ.Component
+	AccountResetPasswordPage(layout httpx.Layout, state accountselfstate.ResetPasswordState) templ.Component
+	AccountResetResultPage(layout httpx.Layout, state accountselfstate.ResetResultState) templ.Component
+	AccountVerifyAccountPage(layout httpx.Layout, state accountselfstate.VerifyAccountState) templ.Component
+	AccountVerifyConfirmPage(layout httpx.Layout, state accountselfstate.VerifyConfirmState) templ.Component
+	AccountVerifyEmailChangeConfirmPage(layout httpx.Layout, state accountselfstate.VerifyEmailChangeConfirmState) templ.Component
+	AccountVerifyResultPage(layout httpx.Layout, state accountselfstate.VerifyResultState) templ.Component
+	DashboardContent(state adminstate.DashboardState) templ.Component
+	DatabaseContent(state adminstate.DatabaseState) templ.Component
 	AdminLayout(layout httpx.Layout, pageTitle string, content templ.Component) templ.Component
-	CharacterDetailPage(layout httpx.Layout, state character.DetailState) templ.Component
-	GuildDetailPage(layout httpx.Layout, guildName string, state guild.DetailState) templ.Component
-	GuildListPage(layout httpx.Layout, state guild.ListState) templ.Component
-	HomePage(layout httpx.Layout, state home.HomeState) templ.Component
-	ItemDetailPage(layout httpx.Layout, state item.DetailState) templ.Component
-	ItemListPage(layout httpx.Layout, state item.ListState) templ.Component
+	CharacterDetailPage(layout httpx.Layout, state characterstate.DetailState) templ.Component
+	GuildDetailPage(layout httpx.Layout, guildName string, state guildstate.DetailState) templ.Component
+	GuildDetailContent(state guildstate.DetailState) templ.Component
+	GuildListPage(layout httpx.Layout, state guildstate.ListState) templ.Component
+	GuildListContent(state guildstate.ListState) templ.Component
+	HomePage(layout httpx.Layout, state homestate.HomeState) templ.Component
+	ItemDetailPage(layout httpx.Layout, state itemstate.DetailState) templ.Component
+	ItemListPage(layout httpx.Layout, state itemstate.ListState) templ.Component
 	ItemNotFoundPage(layout httpx.Layout, id string) templ.Component
 	ItemEmptyDatabasePage(layout httpx.Layout) templ.Component
 	ItemReloadSuccess(status app.ServiceStatus) templ.Component
 	ItemReloadFailure(message string) templ.Component
 	ItemReloadConflict() templ.Component
-	MobDetailPage(layout httpx.Layout, state mob.DetailState) templ.Component
-	MobListPage(layout httpx.Layout, state mob.ListState) templ.Component
+	MobDetailPage(layout httpx.Layout, state mobstate.DetailState) templ.Component
+	MobListPage(layout httpx.Layout, state mobstate.ListState) templ.Component
 	MobNotFoundPage(layout httpx.Layout, id string) templ.Component
 	MobEmptyDatabasePage(layout httpx.Layout) templ.Component
 	MobReloadSuccess(status mobapp.ServiceStatus) templ.Component
 	MobReloadFailure(message string) templ.Component
 	MobReloadConflict() templ.Component
-	NewsDetailPage(layout httpx.Layout, state news.NewsDetailState) templ.Component
-	NewsFormPage(layout httpx.Layout, state news.NewsFormState) templ.Component
-	NewsListPage(layout httpx.Layout, state news.NewsListState) templ.Component
-	StallListPage(layout httpx.Layout, state stall.ListState) templ.Component
+	NewsDetailPage(layout httpx.Layout, state newsstate.NewsDetailState) templ.Component
+	NewsFormPage(layout httpx.Layout, state newsstate.NewsFormState) templ.Component
+	NewsListPage(layout httpx.Layout, state newsstate.NewsListState) templ.Component
+	StallListPage(layout httpx.Layout, state stallstate.ListState) templ.Component
 	StallLoadingPage(layout httpx.Layout, refreshURL string) templ.Component
 	StallLoadingContent(refreshURL string) templ.Component
-	StallListContent(state stall.ListState) templ.Component
-	StallVendingBox(state stall.StallState) templ.Component
+	StallListContent(state stallstate.ListState) templ.Component
+	StallVendingBox(state stallstate.StallState) templ.Component
 	TicketsThread(messages []domain.Message, isStaff bool, otherSeenAt time.Time) templ.Component
 	TicketsPlayerReplyResponse(ticket domain.Ticket, messages []domain.Message, otherSeenAt time.Time) templ.Component
-	TicketsPlayerDetailPage(layout httpx.Layout, state tickets.PlayerDetailState) templ.Component
-	TicketsPlayerListPage(layout httpx.Layout, state tickets.PlayerListState) templ.Component
-	TicketsPlayerNewPage(layout httpx.Layout, state tickets.PlayerNewState) templ.Component
-	TicketsStaffDetailPage(layout httpx.Layout, state tickets.StaffDetailState) templ.Component
-	TicketsStaffListPage(layout httpx.Layout, state tickets.StaffListState) templ.Component
-	TicketsStaffListBody(state tickets.StaffListState) templ.Component
+	TicketsPlayerDetailPage(layout httpx.Layout, state ticketsstate.PlayerDetailState) templ.Component
+	TicketsPlayerListPage(layout httpx.Layout, state ticketsstate.PlayerListState) templ.Component
+	TicketsPlayerNewPage(layout httpx.Layout, state ticketsstate.PlayerNewState) templ.Component
+	TicketsStaffDetailPage(layout httpx.Layout, state ticketsstate.StaffDetailState) templ.Component
+	TicketsStaffListPage(layout httpx.Layout, state ticketsstate.StaffListState) templ.Component
+	TicketsStaffListBody(state ticketsstate.StaffListState) templ.Component
 	LocalTime(iso string) templ.Component
 }

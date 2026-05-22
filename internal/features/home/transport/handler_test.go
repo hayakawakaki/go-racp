@@ -14,7 +14,9 @@ import (
 	app "github.com/hayakawakaki/go-racp/internal/features/account/app/self"
 	"github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
+	homestate "github.com/hayakawakaki/go-racp/internal/features/home/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	home "github.com/hayakawakaki/go-racp/themes/default/features/home/transport"
 	_ "github.com/hayakawakaki/go-racp/themes/default/platform/httpx"
 )
 
@@ -31,8 +33,8 @@ func (s *stubUserService) GetByID(ctx context.Context, id int) (*app.GetDTO, err
 
 type stubTheme struct{}
 
-func (stubTheme) HomePage(layout httpx.Layout, state HomeState) templ.Component {
-	return HomePage(layout, state)
+func (stubTheme) HomePage(layout httpx.Layout, state homestate.HomeState) templ.Component {
+	return home.HomePage(layout, state)
 }
 
 func newTestHandler(svc *stubUserService, logBuf io.Writer) *Handler {

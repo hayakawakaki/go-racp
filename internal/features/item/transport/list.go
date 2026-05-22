@@ -6,6 +6,7 @@ import (
 
 	"github.com/hayakawakaki/go-racp/internal/features/item/app"
 	"github.com/hayakawakaki/go-racp/internal/features/item/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/item/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
@@ -33,6 +34,6 @@ func (h *Handler) showList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	state := ListState{Page: page, Query: query.Query, Type: typeName, BaseURL: "/items"}
-	httpx.RenderHTML(w, r, h.logger, h.theme.ItemListPage(h.layout(), state))
+	s := state.ListState{Page: page, Query: query.Query, Type: typeName, BaseURL: "/items"}
+	httpx.RenderHTML(w, r, h.logger, h.theme.ItemListPage(h.layout(), s))
 }

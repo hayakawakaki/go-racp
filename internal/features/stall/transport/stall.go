@@ -5,21 +5,9 @@ import (
 	"net/http"
 
 	"github.com/hayakawakaki/go-racp/internal/features/stall/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/stall/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
-
-type stallItemRow struct {
-	ItemName string
-	Aegis    string
-	ItemID   int
-	Amount   int
-	Price    int
-}
-
-type StallState struct {
-	Items  []stallItemRow
-	Vendor domain.Vendor
-}
 
 func (h *Handler) showStallItems(w http.ResponseWriter, r *http.Request) {
 	vendorType, ok := domain.VendorTypeFromString(r.PathValue("type"))
@@ -38,7 +26,7 @@ func (h *Handler) showStallItems(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RenderHTML(w, r, h.logger, h.theme.StallVendingBox(StallState{Vendor: v, Items: h.buildItemRows(r, v.Items)}))
+	httpx.RenderHTML(w, r, h.logger, h.theme.StallVendingBox(state.StallState{Vendor: v, Items: h.buildItemRows(r, v.Items)}))
 }
 
 func (h *Handler) resolveStallError(w http.ResponseWriter, r *http.Request, err error, vendorType domain.VendorType, id int) bool {
@@ -59,10 +47,10 @@ func (h *Handler) resolveStallError(w http.ResponseWriter, r *http.Request, err 
 	return true
 }
 
-func (h *Handler) buildItemRows(r *http.Request, items []domain.VendorItem) []stallItemRow {
-	rows := make([]stallItemRow, 0, len(items))
+func (h *Handler) buildItemRows(r *http.Request, items []domain.VendorItem) []state.StallItemRow {
+	rows := make([]state.StallItemRow, 0, len(items))
 	for _, item := range items {
-		row := stallItemRow{ItemID: item.ItemID, Amount: item.Amount, Price: item.Price}
+		row := state.StallItemRow{ItemID: item.ItemID, Amount: item.Amount, Price: item.Price}
 		if h.itemLookup != nil {
 			if name, aegis, ok := h.resolveItemName(r, item.ItemID); ok {
 				row.ItemName = name

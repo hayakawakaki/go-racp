@@ -7,6 +7,7 @@ import (
 
 	"github.com/a-h/templ"
 	"github.com/hayakawakaki/go-racp/internal/features/character/app"
+	"github.com/hayakawakaki/go-racp/internal/features/character/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
@@ -19,7 +20,7 @@ type characterService interface {
 }
 
 type Renderer interface {
-	CharacterDetailPage(layout httpx.Layout, state DetailState) templ.Component
+	CharacterDetailPage(layout httpx.Layout, state state.DetailState) templ.Component
 }
 
 //nolint:govet // GeneralConfig trailing bool forces alignment cost

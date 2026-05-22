@@ -4,21 +4,32 @@ package theme
 
 import (
 	"github.com/a-h/templ"
-	accountmoderation "github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation"
-	accountself "github.com/hayakawakaki/go-racp/internal/features/account/transport/self"
-	admin "github.com/hayakawakaki/go-racp/internal/features/admin/transport"
-	character "github.com/hayakawakaki/go-racp/internal/features/character/transport"
-	guild "github.com/hayakawakaki/go-racp/internal/features/guild/transport"
-	home "github.com/hayakawakaki/go-racp/internal/features/home/transport"
+	accountmoderationstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation/state"
+	accountselfstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/self/state"
+	adminstate "github.com/hayakawakaki/go-racp/internal/features/admin/transport/state"
+	characterstate "github.com/hayakawakaki/go-racp/internal/features/character/transport/state"
+	guildstate "github.com/hayakawakaki/go-racp/internal/features/guild/transport/state"
+	homestate "github.com/hayakawakaki/go-racp/internal/features/home/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/features/item/app"
-	item "github.com/hayakawakaki/go-racp/internal/features/item/transport"
+	itemstate "github.com/hayakawakaki/go-racp/internal/features/item/transport/state"
 	mobapp "github.com/hayakawakaki/go-racp/internal/features/mob/app"
-	mob "github.com/hayakawakaki/go-racp/internal/features/mob/transport"
-	news "github.com/hayakawakaki/go-racp/internal/features/news/transport"
-	stall "github.com/hayakawakaki/go-racp/internal/features/stall/transport"
+	mobstate "github.com/hayakawakaki/go-racp/internal/features/mob/transport/state"
+	newsstate "github.com/hayakawakaki/go-racp/internal/features/news/transport/state"
+	stallstate "github.com/hayakawakaki/go-racp/internal/features/stall/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/features/tickets/domain"
-	tickets "github.com/hayakawakaki/go-racp/internal/features/tickets/transport"
+	ticketsstate "github.com/hayakawakaki/go-racp/internal/features/tickets/transport"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	accountmoderation "github.com/hayakawakaki/go-racp/themes/default/features/account/transport/moderation"
+	accountself "github.com/hayakawakaki/go-racp/themes/default/features/account/transport/self"
+	admin "github.com/hayakawakaki/go-racp/themes/default/features/admin/transport"
+	character "github.com/hayakawakaki/go-racp/themes/default/features/character/transport"
+	guild "github.com/hayakawakaki/go-racp/themes/default/features/guild/transport"
+	home "github.com/hayakawakaki/go-racp/themes/default/features/home/transport"
+	item "github.com/hayakawakaki/go-racp/themes/default/features/item/transport"
+	mob "github.com/hayakawakaki/go-racp/themes/default/features/mob/transport"
+	news "github.com/hayakawakaki/go-racp/themes/default/features/news/transport"
+	stall "github.com/hayakawakaki/go-racp/themes/default/features/stall/transport"
+	tickets "github.com/hayakawakaki/go-racp/themes/default/features/tickets/transport"
 	"time"
 )
 
@@ -26,19 +37,19 @@ type DefaultTheme struct{}
 
 var _ Theme = DefaultTheme{}
 
-func (DefaultTheme) UsersDetailPage(layout httpx.Layout, username string, state accountmoderation.DetailState) templ.Component {
+func (DefaultTheme) UsersDetailPage(layout httpx.Layout, username string, state accountmoderationstate.DetailState) templ.Component {
 	return accountmoderation.UsersDetailPage(layout, username, state)
 }
 
-func (DefaultTheme) UsersDetailContent(state accountmoderation.DetailState) templ.Component {
+func (DefaultTheme) UsersDetailContent(state accountmoderationstate.DetailState) templ.Component {
 	return accountmoderation.UsersDetailContent(state)
 }
 
-func (DefaultTheme) UsersListPage(layout httpx.Layout, state accountmoderation.ListState) templ.Component {
+func (DefaultTheme) UsersListPage(layout httpx.Layout, state accountmoderationstate.ListState) templ.Component {
 	return accountmoderation.UsersListPage(layout, state)
 }
 
-func (DefaultTheme) UsersListContent(state accountmoderation.ListState) templ.Component {
+func (DefaultTheme) UsersListContent(state accountmoderationstate.ListState) templ.Component {
 	return accountmoderation.UsersListContent(state)
 }
 
@@ -50,91 +61,91 @@ func (DefaultTheme) UsersActionError(message string) templ.Component {
 	return accountmoderation.UsersActionError(message)
 }
 
-func (DefaultTheme) AccountPage(layout httpx.Layout, state accountself.AccountState) templ.Component {
+func (DefaultTheme) AccountPage(layout httpx.Layout, state accountselfstate.AccountState) templ.Component {
 	return accountself.AccountPage(layout, state)
 }
 
-func (DefaultTheme) AccountChangeEmailModal(state accountself.ChangeEmailState) templ.Component {
+func (DefaultTheme) AccountChangeEmailModal(state accountselfstate.ChangeEmailState) templ.Component {
 	return accountself.AccountChangeEmailModal(state)
 }
 
-func (DefaultTheme) AccountChangeEmailForm(state accountself.ChangeEmailState) templ.Component {
+func (DefaultTheme) AccountChangeEmailForm(state accountselfstate.ChangeEmailState) templ.Component {
 	return accountself.AccountChangeEmailForm(state)
 }
 
-func (DefaultTheme) AccountChangeEmailPage(layout httpx.Layout, state accountself.ChangeEmailState) templ.Component {
+func (DefaultTheme) AccountChangeEmailPage(layout httpx.Layout, state accountselfstate.ChangeEmailState) templ.Component {
 	return accountself.AccountChangeEmailPage(layout, state)
 }
 
-func (DefaultTheme) AccountChangePasswordModal(state accountself.ChangePasswordState) templ.Component {
+func (DefaultTheme) AccountChangePasswordModal(state accountselfstate.ChangePasswordState) templ.Component {
 	return accountself.AccountChangePasswordModal(state)
 }
 
-func (DefaultTheme) AccountChangePasswordForm(state accountself.ChangePasswordState) templ.Component {
+func (DefaultTheme) AccountChangePasswordForm(state accountselfstate.ChangePasswordState) templ.Component {
 	return accountself.AccountChangePasswordForm(state)
 }
 
-func (DefaultTheme) AccountChangePasswordPage(layout httpx.Layout, state accountself.ChangePasswordState) templ.Component {
+func (DefaultTheme) AccountChangePasswordPage(layout httpx.Layout, state accountselfstate.ChangePasswordState) templ.Component {
 	return accountself.AccountChangePasswordPage(layout, state)
 }
 
-func (DefaultTheme) AccountEmailChangeResultPage(layout httpx.Layout, state accountself.EmailChangeResultState) templ.Component {
+func (DefaultTheme) AccountEmailChangeResultPage(layout httpx.Layout, state accountselfstate.EmailChangeResultState) templ.Component {
 	return accountself.AccountEmailChangeResultPage(layout, state)
 }
 
-func (DefaultTheme) AccountForgotPasswordPage(layout httpx.Layout, state accountself.ForgotPasswordState) templ.Component {
+func (DefaultTheme) AccountForgotPasswordPage(layout httpx.Layout, state accountselfstate.ForgotPasswordState) templ.Component {
 	return accountself.AccountForgotPasswordPage(layout, state)
 }
 
-func (DefaultTheme) AccountForgotPasswordForm(state accountself.ForgotPasswordState) templ.Component {
+func (DefaultTheme) AccountForgotPasswordForm(state accountselfstate.ForgotPasswordState) templ.Component {
 	return accountself.AccountForgotPasswordForm(state)
 }
 
-func (DefaultTheme) AccountLoginPage(layout httpx.Layout, state accountself.LoginFormState) templ.Component {
+func (DefaultTheme) AccountLoginPage(layout httpx.Layout, state accountselfstate.LoginFormState) templ.Component {
 	return accountself.AccountLoginPage(layout, state)
 }
 
-func (DefaultTheme) AccountLoginForm(state accountself.LoginFormState) templ.Component {
+func (DefaultTheme) AccountLoginForm(state accountselfstate.LoginFormState) templ.Component {
 	return accountself.AccountLoginForm(state)
 }
 
-func (DefaultTheme) AccountRegisterPage(layout httpx.Layout, state accountself.RegisterFormState) templ.Component {
+func (DefaultTheme) AccountRegisterPage(layout httpx.Layout, state accountselfstate.RegisterFormState) templ.Component {
 	return accountself.AccountRegisterPage(layout, state)
 }
 
-func (DefaultTheme) AccountRegisterForm(state accountself.RegisterFormState) templ.Component {
+func (DefaultTheme) AccountRegisterForm(state accountselfstate.RegisterFormState) templ.Component {
 	return accountself.AccountRegisterForm(state)
 }
 
-func (DefaultTheme) AccountResetPasswordPage(layout httpx.Layout, state accountself.ResetPasswordState) templ.Component {
+func (DefaultTheme) AccountResetPasswordPage(layout httpx.Layout, state accountselfstate.ResetPasswordState) templ.Component {
 	return accountself.AccountResetPasswordPage(layout, state)
 }
 
-func (DefaultTheme) AccountResetResultPage(layout httpx.Layout, state accountself.ResetResultState) templ.Component {
+func (DefaultTheme) AccountResetResultPage(layout httpx.Layout, state accountselfstate.ResetResultState) templ.Component {
 	return accountself.AccountResetResultPage(layout, state)
 }
 
-func (DefaultTheme) AccountVerifyAccountPage(layout httpx.Layout, state accountself.VerifyAccountState) templ.Component {
+func (DefaultTheme) AccountVerifyAccountPage(layout httpx.Layout, state accountselfstate.VerifyAccountState) templ.Component {
 	return accountself.AccountVerifyAccountPage(layout, state)
 }
 
-func (DefaultTheme) AccountVerifyConfirmPage(layout httpx.Layout, state accountself.VerifyConfirmState) templ.Component {
+func (DefaultTheme) AccountVerifyConfirmPage(layout httpx.Layout, state accountselfstate.VerifyConfirmState) templ.Component {
 	return accountself.AccountVerifyConfirmPage(layout, state)
 }
 
-func (DefaultTheme) AccountVerifyEmailChangeConfirmPage(layout httpx.Layout, state accountself.VerifyEmailChangeConfirmState) templ.Component {
+func (DefaultTheme) AccountVerifyEmailChangeConfirmPage(layout httpx.Layout, state accountselfstate.VerifyEmailChangeConfirmState) templ.Component {
 	return accountself.AccountVerifyEmailChangeConfirmPage(layout, state)
 }
 
-func (DefaultTheme) AccountVerifyResultPage(layout httpx.Layout, state accountself.VerifyResultState) templ.Component {
+func (DefaultTheme) AccountVerifyResultPage(layout httpx.Layout, state accountselfstate.VerifyResultState) templ.Component {
 	return accountself.AccountVerifyResultPage(layout, state)
 }
 
-func (DefaultTheme) DashboardContent(state admin.DashboardState) templ.Component {
+func (DefaultTheme) DashboardContent(state adminstate.DashboardState) templ.Component {
 	return admin.DashboardContent(state)
 }
 
-func (DefaultTheme) DatabaseContent(state admin.DatabaseState) templ.Component {
+func (DefaultTheme) DatabaseContent(state adminstate.DatabaseState) templ.Component {
 	return admin.DatabaseContent(state)
 }
 
@@ -142,27 +153,35 @@ func (DefaultTheme) AdminLayout(layout httpx.Layout, pageTitle string, content t
 	return admin.AdminLayout(layout, pageTitle, content)
 }
 
-func (DefaultTheme) CharacterDetailPage(layout httpx.Layout, state character.DetailState) templ.Component {
+func (DefaultTheme) CharacterDetailPage(layout httpx.Layout, state characterstate.DetailState) templ.Component {
 	return character.CharacterDetailPage(layout, state)
 }
 
-func (DefaultTheme) GuildDetailPage(layout httpx.Layout, guildName string, state guild.DetailState) templ.Component {
+func (DefaultTheme) GuildDetailPage(layout httpx.Layout, guildName string, state guildstate.DetailState) templ.Component {
 	return guild.GuildDetailPage(layout, guildName, state)
 }
 
-func (DefaultTheme) GuildListPage(layout httpx.Layout, state guild.ListState) templ.Component {
+func (DefaultTheme) GuildDetailContent(state guildstate.DetailState) templ.Component {
+	return guild.GuildDetailContent(state)
+}
+
+func (DefaultTheme) GuildListPage(layout httpx.Layout, state guildstate.ListState) templ.Component {
 	return guild.GuildListPage(layout, state)
 }
 
-func (DefaultTheme) HomePage(layout httpx.Layout, state home.HomeState) templ.Component {
+func (DefaultTheme) GuildListContent(state guildstate.ListState) templ.Component {
+	return guild.GuildListContent(state)
+}
+
+func (DefaultTheme) HomePage(layout httpx.Layout, state homestate.HomeState) templ.Component {
 	return home.HomePage(layout, state)
 }
 
-func (DefaultTheme) ItemDetailPage(layout httpx.Layout, state item.DetailState) templ.Component {
+func (DefaultTheme) ItemDetailPage(layout httpx.Layout, state itemstate.DetailState) templ.Component {
 	return item.ItemDetailPage(layout, state)
 }
 
-func (DefaultTheme) ItemListPage(layout httpx.Layout, state item.ListState) templ.Component {
+func (DefaultTheme) ItemListPage(layout httpx.Layout, state itemstate.ListState) templ.Component {
 	return item.ItemListPage(layout, state)
 }
 
@@ -186,11 +205,11 @@ func (DefaultTheme) ItemReloadConflict() templ.Component {
 	return item.ItemReloadConflict()
 }
 
-func (DefaultTheme) MobDetailPage(layout httpx.Layout, state mob.DetailState) templ.Component {
+func (DefaultTheme) MobDetailPage(layout httpx.Layout, state mobstate.DetailState) templ.Component {
 	return mob.MobDetailPage(layout, state)
 }
 
-func (DefaultTheme) MobListPage(layout httpx.Layout, state mob.ListState) templ.Component {
+func (DefaultTheme) MobListPage(layout httpx.Layout, state mobstate.ListState) templ.Component {
 	return mob.MobListPage(layout, state)
 }
 
@@ -214,19 +233,19 @@ func (DefaultTheme) MobReloadConflict() templ.Component {
 	return mob.MobReloadConflict()
 }
 
-func (DefaultTheme) NewsDetailPage(layout httpx.Layout, state news.NewsDetailState) templ.Component {
+func (DefaultTheme) NewsDetailPage(layout httpx.Layout, state newsstate.NewsDetailState) templ.Component {
 	return news.NewsDetailPage(layout, state)
 }
 
-func (DefaultTheme) NewsFormPage(layout httpx.Layout, state news.NewsFormState) templ.Component {
+func (DefaultTheme) NewsFormPage(layout httpx.Layout, state newsstate.NewsFormState) templ.Component {
 	return news.NewsFormPage(layout, state)
 }
 
-func (DefaultTheme) NewsListPage(layout httpx.Layout, state news.NewsListState) templ.Component {
+func (DefaultTheme) NewsListPage(layout httpx.Layout, state newsstate.NewsListState) templ.Component {
 	return news.NewsListPage(layout, state)
 }
 
-func (DefaultTheme) StallListPage(layout httpx.Layout, state stall.ListState) templ.Component {
+func (DefaultTheme) StallListPage(layout httpx.Layout, state stallstate.ListState) templ.Component {
 	return stall.StallListPage(layout, state)
 }
 
@@ -238,11 +257,11 @@ func (DefaultTheme) StallLoadingContent(refreshURL string) templ.Component {
 	return stall.StallLoadingContent(refreshURL)
 }
 
-func (DefaultTheme) StallListContent(state stall.ListState) templ.Component {
+func (DefaultTheme) StallListContent(state stallstate.ListState) templ.Component {
 	return stall.StallListContent(state)
 }
 
-func (DefaultTheme) StallVendingBox(state stall.StallState) templ.Component {
+func (DefaultTheme) StallVendingBox(state stallstate.StallState) templ.Component {
 	return stall.StallVendingBox(state)
 }
 
@@ -254,27 +273,27 @@ func (DefaultTheme) TicketsPlayerReplyResponse(ticket domain.Ticket, messages []
 	return tickets.TicketsPlayerReplyResponse(ticket, messages, otherSeenAt)
 }
 
-func (DefaultTheme) TicketsPlayerDetailPage(layout httpx.Layout, state tickets.PlayerDetailState) templ.Component {
+func (DefaultTheme) TicketsPlayerDetailPage(layout httpx.Layout, state ticketsstate.PlayerDetailState) templ.Component {
 	return tickets.TicketsPlayerDetailPage(layout, state)
 }
 
-func (DefaultTheme) TicketsPlayerListPage(layout httpx.Layout, state tickets.PlayerListState) templ.Component {
+func (DefaultTheme) TicketsPlayerListPage(layout httpx.Layout, state ticketsstate.PlayerListState) templ.Component {
 	return tickets.TicketsPlayerListPage(layout, state)
 }
 
-func (DefaultTheme) TicketsPlayerNewPage(layout httpx.Layout, state tickets.PlayerNewState) templ.Component {
+func (DefaultTheme) TicketsPlayerNewPage(layout httpx.Layout, state ticketsstate.PlayerNewState) templ.Component {
 	return tickets.TicketsPlayerNewPage(layout, state)
 }
 
-func (DefaultTheme) TicketsStaffDetailPage(layout httpx.Layout, state tickets.StaffDetailState) templ.Component {
+func (DefaultTheme) TicketsStaffDetailPage(layout httpx.Layout, state ticketsstate.StaffDetailState) templ.Component {
 	return tickets.TicketsStaffDetailPage(layout, state)
 }
 
-func (DefaultTheme) TicketsStaffListPage(layout httpx.Layout, state tickets.StaffListState) templ.Component {
+func (DefaultTheme) TicketsStaffListPage(layout httpx.Layout, state ticketsstate.StaffListState) templ.Component {
 	return tickets.TicketsStaffListPage(layout, state)
 }
 
-func (DefaultTheme) TicketsStaffListBody(state tickets.StaffListState) templ.Component {
+func (DefaultTheme) TicketsStaffListBody(state ticketsstate.StaffListState) templ.Component {
 	return tickets.TicketsStaffListBody(state)
 }
 

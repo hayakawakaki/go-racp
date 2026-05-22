@@ -7,6 +7,7 @@ import (
 
 	"github.com/a-h/templ"
 	app "github.com/hayakawakaki/go-racp/internal/features/account/app/moderation"
+	"github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
@@ -22,10 +23,10 @@ type userService interface {
 }
 
 type Renderer interface {
-	UsersListPage(layout httpx.Layout, state ListState) templ.Component
-	UsersListContent(state ListState) templ.Component
-	UsersDetailPage(layout httpx.Layout, username string, state DetailState) templ.Component
-	UsersDetailContent(state DetailState) templ.Component
+	UsersListPage(layout httpx.Layout, state state.ListState) templ.Component
+	UsersListContent(state state.ListState) templ.Component
+	UsersDetailPage(layout httpx.Layout, username string, state state.DetailState) templ.Component
+	UsersDetailContent(state state.DetailState) templ.Component
 	UsersNotFoundPage(layout httpx.Layout, id string) templ.Component
 	UsersActionError(message string) templ.Component
 }

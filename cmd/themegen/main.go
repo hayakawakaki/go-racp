@@ -59,7 +59,7 @@ type importEntry struct {
 }
 
 func main() {
-	roots := flag.String("roots", "internal/features,internal/platform/httpx", "comma-separated directories to scan for .templ files")
+	roots := flag.String("roots", "themes/default/features,internal/platform/httpx", "comma-separated directories to scan for .templ files")
 	out := flag.String("out", "internal/platform/theme", "output directory for generated files")
 	themesDir := flag.String("themes", "themes", "directory containing theme subdirectories")
 	module := flag.String("module", "github.com/hayakawakaki/go-racp", "Go module path used to build import paths")
@@ -117,7 +117,7 @@ func scan(roots []string, module string) ([]Component, error) {
 			}
 
 			norm := filepath.ToSlash(path)
-			if strings.HasPrefix(norm, "internal/features/") && !strings.Contains(norm, "/transport/") {
+			if strings.HasPrefix(norm, "themes/default/features/") && !strings.Contains(norm, "/transport/") {
 				return nil
 			}
 
@@ -226,6 +226,10 @@ func qualifyTypes(params, localAlias string) string {
 
 func aliasFor(dir string) string {
 	parts := strings.Split(dir, "/")
+
+	if len(parts) >= 2 && parts[0] == "themes" {
+		parts = parts[2:]
+	}
 
 	var keep []string
 	for _, p := range parts {

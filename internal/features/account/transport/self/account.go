@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
+	selfstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/self/state"
 	charapp "github.com/hayakawakaki/go-racp/internal/features/character/app"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
@@ -51,7 +52,7 @@ func (h *Handler) showAccount(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	state := AccountState{Account: account, Characters: chars}
+	state := selfstate.AccountState{Account: account, Characters: chars}
 	noticeParam := r.URL.Query().Get("notice")
 	if notice, ok := accountNoticeText[noticeParam]; ok {
 		state.Notice = notice

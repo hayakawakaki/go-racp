@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/hayakawakaki/go-racp/internal/features/mob/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/mob/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
@@ -30,23 +31,23 @@ func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	lookup := h.currentItemLookup()
-	state := DetailState{
+	s := state.DetailState{
 		Mob:      mob,
 		Stats:    buildStats(mob),
 		Exp:      buildExp(mob),
 		Drops:    resolveDrops(mob.Drops, lookup),
 		MvpDrops: resolveDrops(mob.MvpDrops, lookup),
 	}
-	httpx.RenderHTML(w, r, h.logger, h.theme.MobDetailPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.MobDetailPage(h.layout(), s))
 }
 
-func resolveDrops(drops []domain.MobDrop, lookup ItemLookup) []dropRow {
+func resolveDrops(drops []domain.MobDrop, lookup ItemLookup) []state.DropRow {
 	if len(drops) == 0 {
 		return nil
 	}
-	out := make([]dropRow, 0, len(drops))
+	out := make([]state.DropRow, 0, len(drops))
 	for _, drop := range drops {
-		row := dropRow{Aegis: drop.ItemAegis, Rate: drop.Rate}
+		row := state.DropRow{Aegis: drop.ItemAegis, Rate: drop.Rate}
 		if lookup != nil {
 			if item := lookup.LookupByAegis(drop.ItemAegis); item != nil {
 				row.ItemID = item.ID
@@ -65,8 +66,8 @@ func (h *Handler) renderNotFound(w http.ResponseWriter, r *http.Request, idText 
 	httpx.RenderComponent404(w, r, h.logger, h.theme.MobNotFoundPage(h.layout(), idText))
 }
 
-func buildStats(mob *domain.Mob) []labeledRow {
-	return []labeledRow{
+func buildStats(mob *domain.Mob) []state.LabeledRow {
+	return []state.LabeledRow{
 		intRow("HP", mob.HP),
 		{Label: "Attack", Value: fmt.Sprintf("%d - %d", mob.Attack, mob.Attack2)},
 		intRow("Defense", mob.Defense),
@@ -84,11 +85,11 @@ func buildStats(mob *domain.Mob) []labeledRow {
 	}
 }
 
-func buildExp(mob *domain.Mob) []labeledRow {
+func buildExp(mob *domain.Mob) []state.LabeledRow {
 	if mob.BaseExp == 0 && mob.JobExp == 0 {
 		return nil
 	}
-	rows := []labeledRow{
+	rows := []state.LabeledRow{
 		intRow("Base Exp", mob.BaseExp),
 		intRow("Job Exp", mob.JobExp),
 	}
@@ -99,6 +100,6 @@ func buildExp(mob *domain.Mob) []labeledRow {
 	return rows
 }
 
-func intRow(label string, value int) labeledRow {
-	return labeledRow{Label: label, Value: fmt.Sprintf("%d", value)}
+func intRow(label string, value int) state.LabeledRow {
+	return state.LabeledRow{Label: label, Value: fmt.Sprintf("%d", value)}
 }

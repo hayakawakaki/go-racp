@@ -8,6 +8,7 @@ import (
 	"github.com/a-h/templ"
 	"github.com/hayakawakaki/go-racp/internal/features/item/app"
 	"github.com/hayakawakaki/go-racp/internal/features/item/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/item/transport/state"
 	mobdomain "github.com/hayakawakaki/go-racp/internal/features/mob/domain"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
@@ -26,8 +27,8 @@ type dropLookup interface {
 }
 
 type Renderer interface {
-	ItemDetailPage(layout httpx.Layout, state DetailState) templ.Component
-	ItemListPage(layout httpx.Layout, state ListState) templ.Component
+	ItemDetailPage(layout httpx.Layout, state state.DetailState) templ.Component
+	ItemListPage(layout httpx.Layout, state state.ListState) templ.Component
 	ItemNotFoundPage(layout httpx.Layout, id string) templ.Component
 	ItemEmptyDatabasePage(layout httpx.Layout) templ.Component
 	ItemReloadSuccess(status app.ServiceStatus) templ.Component

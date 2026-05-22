@@ -7,6 +7,7 @@ import (
 
 	"github.com/a-h/templ"
 	"github.com/hayakawakaki/go-racp/internal/features/guild/app"
+	"github.com/hayakawakaki/go-racp/internal/features/guild/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
@@ -19,8 +20,10 @@ type guildService interface {
 }
 
 type Renderer interface {
-	GuildDetailPage(layout httpx.Layout, guildName string, state DetailState) templ.Component
-	GuildListPage(layout httpx.Layout, state ListState) templ.Component
+	GuildDetailPage(layout httpx.Layout, guildName string, state state.DetailState) templ.Component
+	GuildDetailContent(state state.DetailState) templ.Component
+	GuildListPage(layout httpx.Layout, state state.ListState) templ.Component
+	GuildListContent(state state.ListState) templ.Component
 }
 
 //nolint:govet // GeneralConfig trailing bool forces alignment cost

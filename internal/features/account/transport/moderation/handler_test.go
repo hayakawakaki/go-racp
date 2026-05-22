@@ -14,9 +14,11 @@ import (
 	app "github.com/hayakawakaki/go-racp/internal/features/account/app/moderation"
 	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
+	accountmoderationstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
+	accountmoderation "github.com/hayakawakaki/go-racp/themes/default/features/account/transport/moderation"
 	_ "github.com/hayakawakaki/go-racp/themes/default/platform/httpx"
 )
 
@@ -86,23 +88,23 @@ func (s *stubUsers) GetByID(_ context.Context, id int) (*accdomain.User, error) 
 
 type stubTheme struct{}
 
-func (stubTheme) UsersListPage(layout httpx.Layout, state ListState) templ.Component {
-	return UsersListPage(layout, state)
+func (stubTheme) UsersListPage(layout httpx.Layout, state accountmoderationstate.ListState) templ.Component {
+	return accountmoderation.UsersListPage(layout, state)
 }
-func (stubTheme) UsersListContent(state ListState) templ.Component {
-	return UsersListContent(state)
+func (stubTheme) UsersListContent(state accountmoderationstate.ListState) templ.Component {
+	return accountmoderation.UsersListContent(state)
 }
-func (stubTheme) UsersDetailPage(layout httpx.Layout, username string, state DetailState) templ.Component {
-	return UsersDetailPage(layout, username, state)
+func (stubTheme) UsersDetailPage(layout httpx.Layout, username string, state accountmoderationstate.DetailState) templ.Component {
+	return accountmoderation.UsersDetailPage(layout, username, state)
 }
-func (stubTheme) UsersDetailContent(state DetailState) templ.Component {
-	return UsersDetailContent(state)
+func (stubTheme) UsersDetailContent(state accountmoderationstate.DetailState) templ.Component {
+	return accountmoderation.UsersDetailContent(state)
 }
 func (stubTheme) UsersNotFoundPage(layout httpx.Layout, id string) templ.Component {
-	return UsersNotFoundPage(layout, id)
+	return accountmoderation.UsersNotFoundPage(layout, id)
 }
 func (stubTheme) UsersActionError(message string) templ.Component {
-	return UsersActionError(message)
+	return accountmoderation.UsersActionError(message)
 }
 
 func newTestHandler() *Handler {
@@ -414,58 +416,28 @@ func TestHandler_DoSetRole_Calls(t *testing.T) {
 	}
 }
 
-func TestTierBadge_LabelsForEachTier(t *testing.T) {
-	t.Parallel()
-	now := time.Date(2026, 5, 18, 12, 0, 0, 0, time.UTC)
-
-	cases := []struct {
-		unban    time.Time
-		expected string
-		state    int
-	}{
-		{time.Time{}, "Active", 0},
-		{time.Time{}, "Unverified", 1},
-		{time.Time{}, "Permanent Ban", 5},
-		{now.Add(time.Hour), "Temporary Ban", 0},
-	}
-	for _, tc := range cases {
-		t.Run(tc.expected, func(t *testing.T) {
-			t.Parallel()
-			w := httptest.NewRecorder()
-			req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
-			user := &accdomain.User{State: tc.state, UnbanTime: tc.unban}
-			if err := tierBadge(user, now).Render(req.Context(), w); err != nil {
-				t.Fatalf("render: %v", err)
-			}
-			if !strings.Contains(w.Body.String(), tc.expected) {
-				t.Errorf("body=%q want %q", w.Body.String(), tc.expected)
-			}
-		})
-	}
-}
-
 func TestBuildRoleOptions(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name    string
 		allowed map[int]string
-		want    []roleOption
+		want    []accountmoderationstate.RoleOption
 	}{
 		{
 			name:    "empty input returns empty slice",
 			allowed: map[int]string{},
-			want:    []roleOption{},
+			want:    []accountmoderationstate.RoleOption{},
 		},
 		{
 			name:    "single role",
 			allowed: map[int]string{0: "Player"},
-			want:    []roleOption{{GroupID: 0, Name: "Player"}},
+			want:    []accountmoderationstate.RoleOption{{GroupID: 0, Name: "Player"}},
 		},
 		{
 			name:    "sorted ascending by group_id",
 			allowed: map[int]string{20: "Moderator", 0: "Player", 10: "Enforcer", 2: "Event"},
-			want: []roleOption{
+			want: []accountmoderationstate.RoleOption{
 				{GroupID: 0, Name: "Player"},
 				{GroupID: 2, Name: "Event"},
 				{GroupID: 10, Name: "Enforcer"},
@@ -477,7 +449,7 @@ func TestBuildRoleOptions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got := buildRoleOptions(tt.allowed)
+			got := accountmoderationstate.BuildRoleOptions(tt.allowed)
 			if len(got) != len(tt.want) {
 				t.Fatalf("len = %d, want %d (%+v)", len(got), len(tt.want), got)
 			}
@@ -493,8 +465,8 @@ func TestBuildRoleOptions(t *testing.T) {
 func TestRoleNameFor(t *testing.T) {
 	t.Parallel()
 
-	state := DetailState{
-		AllowedRoles: []roleOption{
+	state := accountmoderationstate.DetailState{
+		AllowedRoles: []accountmoderationstate.RoleOption{
 			{GroupID: 0, Name: "Player"},
 			{GroupID: 20, Name: "Moderator"},
 		},
@@ -514,8 +486,8 @@ func TestRoleNameFor(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if got := roleNameFor(state, tt.groupID); got != tt.want {
-				t.Errorf("roleNameFor(%d) = %q, want %q", tt.groupID, got, tt.want)
+			if got := accountmoderationstate.RoleNameFor(state, tt.groupID); got != tt.want {
+				t.Errorf("RoleNameFor(%d) = %q, want %q", tt.groupID, got, tt.want)
 			}
 		})
 	}

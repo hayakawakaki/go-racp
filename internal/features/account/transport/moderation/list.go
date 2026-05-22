@@ -1,26 +1,14 @@
 package moderation
 
 import (
-	"fmt"
 	"net/http"
-	"net/url"
 	"time"
 
 	app "github.com/hayakawakaki/go-racp/internal/features/account/app/moderation"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
+	"github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
-
-func pageURL(baseURL string, page int, query string) string {
-	return fmt.Sprintf("%s?page=%d&q=%s", baseURL, page, url.QueryEscape(query))
-}
-
-type ListState struct {
-	Now     time.Time
-	Query   string
-	BaseURL string
-	Page    app.UserPage
-}
 
 func (h *Handler) showList(w http.ResponseWriter, r *http.Request) {
 	query := app.ListQuery{
@@ -38,10 +26,10 @@ func (h *Handler) showList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	state := ListState{Page: page, Query: query.Query, BaseURL: "/users", Now: time.Now()}
+	s := state.ListState{Page: page, Query: query.Query, BaseURL: "/users", Now: time.Now()}
 	if httpx.IsHTMX(r) {
-		httpx.RenderHTML(w, r, h.logger, h.theme.UsersListContent(state))
+		httpx.RenderHTML(w, r, h.logger, h.theme.UsersListContent(s))
 		return
 	}
-	httpx.RenderHTML(w, r, h.logger, h.theme.UsersListPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.UsersListPage(h.layout(), s))
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/a-h/templ"
 	app "github.com/hayakawakaki/go-racp/internal/features/account/app/self"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
+	"github.com/hayakawakaki/go-racp/internal/features/home/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
@@ -18,7 +19,7 @@ type userService interface {
 }
 
 type Renderer interface {
-	HomePage(layout httpx.Layout, state HomeState) templ.Component
+	HomePage(layout httpx.Layout, state state.HomeState) templ.Component
 }
 
 //nolint:govet // GeneralConfig trailing bool forces alignment cost
@@ -54,15 +55,15 @@ func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
 }
 
 func (h *Handler) show(w http.ResponseWriter, r *http.Request) {
-	state := HomeState{}
+	s := state.HomeState{}
 	if sess, ok := middleware.SessionFromContext(r.Context()); ok {
 		user, err := h.userSvc.GetByID(r.Context(), sess.UserID)
 		if err != nil {
 			h.logger.Error("home: fetch user", "err", err, "userID", sess.UserID)
 		} else {
-			state.Username = user.Username
+			s.Username = user.Username
 		}
 	}
 
-	httpx.RenderHTML(w, r, h.logger, h.theme.HomePage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.HomePage(h.layout(), s))
 }

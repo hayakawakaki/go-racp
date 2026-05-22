@@ -1,0 +1,81 @@
+package transport
+
+import (
+	"fmt"
+
+	ticketsstate "github.com/hayakawakaki/go-racp/internal/features/tickets/transport"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+)
+
+templ TicketsPlayerListPage(layout httpx.Layout, state ticketsstate.PlayerListState) {
+	@httpx.ActiveBase(layout, "Support tickets") {
+		<div class="w-full max-w-3xl self-start">
+			<div class="flex items-center justify-between mb-6">
+				<div>
+					<h1 class="text-2xl font-semibold text-gray-900">Support tickets</h1>
+					<p class="text-sm text-gray-500 mt-0.5">Your conversations with the support team.</p>
+				</div>
+				<a href="/tickets/new" class="rounded bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 transition">New ticket</a>
+			</div>
+			if len(state.Items) == 0 {
+				<div class="bg-white border border-gray-200 rounded-lg shadow-sm p-10 text-center">
+					<p class="text-gray-700 font-medium">No tickets yet</p>
+					<p class="text-sm text-gray-500 mt-1">When you open a ticket, it will show up here.</p>
+					<a href="/tickets/new" class="inline-block mt-4 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 transition">Open your first ticket</a>
+				</div>
+			} else {
+				<div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+					<ul class="divide-y divide-gray-100">
+						for _, item := range state.Items {
+							<li>
+								<a href={ templ.URL(fmt.Sprintf("/tickets/%d", item.ID)) } class="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition">
+									<span class={ "mt-1.5 w-2 h-2 rounded-full flex-shrink-0", unreadDotClass(item.Unread) } title={ unreadTitle(item.Unread) }></span>
+									<div class="flex-1 min-w-0">
+										<div class="flex items-center justify-between gap-3">
+											<p class={ "text-sm text-gray-900 truncate", unreadTextClass(item.Unread) }>{ item.Subject }</p>
+											<time class="text-xs text-gray-400 tabular-nums flex-shrink-0">{ item.LastActivity.Format("Jan 2") }</time>
+										</div>
+										<div class="mt-1 flex items-center gap-2 text-xs text-gray-500">
+											<span class="font-mono">#{ fmt.Sprint(item.ID) }</span>
+											<span class="text-gray-300">·</span>
+											<span>{ item.CategoryDisplay }</span>
+											<span class="text-gray-300">·</span>
+											@statusBadge(item.Status)
+										</div>
+									</div>
+								</a>
+							</li>
+						}
+					</ul>
+				</div>
+				if state.Total > len(state.Items) {
+					<p class="mt-4 text-xs text-gray-500 text-center">Showing { fmt.Sprint(len(state.Items)) } of { fmt.Sprint(state.Total) }</p>
+				}
+			}
+		</div>
+	}
+}
+
+func unreadDotClass(unread bool) string {
+	if unread {
+		return "bg-blue-500"
+	}
+
+	return "bg-transparent"
+}
+
+func unreadTextClass(unread bool) string {
+	if unread {
+		return "font-semibold"
+	}
+
+	return ""
+}
+
+func unreadTitle(unread bool) string {
+	if unread {
+		return "Unread"
+	}
+
+	return ""
+}

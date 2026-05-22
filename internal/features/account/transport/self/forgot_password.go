@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/hayakawakaki/go-racp/internal/features/account/domain"
+	selfstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/self/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
@@ -16,19 +17,19 @@ func (h *Handler) showForgotPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RenderHTML(w, r, h.logger, h.theme.AccountForgotPasswordPage(h.layout(), ForgotPasswordState{}))
+	httpx.RenderHTML(w, r, h.logger, h.theme.AccountForgotPasswordPage(h.layout(), selfstate.ForgotPasswordState{}))
 }
 
 func (h *Handler) doForgotPassword(w http.ResponseWriter, r *http.Request) {
 	if err := httpx.ParseForm(w, r, maxForgotPasswordFormBytes); err != nil {
-		h.renderForgotPassword(w, r, ForgotPasswordState{Errors: map[string]string{fieldEmail: invalidFormDataMsg}})
+		h.renderForgotPassword(w, r, selfstate.ForgotPasswordState{Errors: map[string]string{fieldEmail: invalidFormDataMsg}})
 		return
 	}
 
 	email := r.PostFormValue(fieldEmail)
 	err := h.svc.RequestPasswordReset(r.Context(), email)
 	if err != nil {
-		state := ForgotPasswordState{Email: email}
+		state := selfstate.ForgotPasswordState{Email: email}
 		var ve *domain.ValidationError
 		if errors.As(err, &ve) {
 			state.Errors = ve.Fields
@@ -40,10 +41,10 @@ func (h *Handler) doForgotPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.renderForgotPassword(w, r, ForgotPasswordState{Submitted: true})
+	h.renderForgotPassword(w, r, selfstate.ForgotPasswordState{Submitted: true})
 }
 
-func (h *Handler) renderForgotPassword(w http.ResponseWriter, r *http.Request, state ForgotPasswordState) {
+func (h *Handler) renderForgotPassword(w http.ResponseWriter, r *http.Request, state selfstate.ForgotPasswordState) {
 	if httpx.IsHTMX(r) {
 		httpx.RenderHTML(w, r, h.logger, h.theme.AccountForgotPasswordForm(state))
 		return

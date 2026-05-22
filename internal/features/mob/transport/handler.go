@@ -9,6 +9,7 @@ import (
 	itemdomain "github.com/hayakawakaki/go-racp/internal/features/item/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/mob/app"
 	"github.com/hayakawakaki/go-racp/internal/features/mob/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/mob/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
@@ -26,8 +27,8 @@ type ItemLookup interface {
 }
 
 type Renderer interface {
-	MobDetailPage(layout httpx.Layout, state DetailState) templ.Component
-	MobListPage(layout httpx.Layout, state ListState) templ.Component
+	MobDetailPage(layout httpx.Layout, state state.DetailState) templ.Component
+	MobListPage(layout httpx.Layout, state state.ListState) templ.Component
 	MobNotFoundPage(layout httpx.Layout, id string) templ.Component
 	MobEmptyDatabasePage(layout httpx.Layout) templ.Component
 	MobReloadSuccess(status app.ServiceStatus) templ.Component

@@ -11,6 +11,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/features/news/app"
 	"github.com/hayakawakaki/go-racp/internal/features/news/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/news/infra"
+	"github.com/hayakawakaki/go-racp/internal/features/news/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
@@ -31,9 +32,9 @@ type userLookup interface {
 }
 
 type Renderer interface {
-	NewsListPage(layout httpx.Layout, state NewsListState) templ.Component
-	NewsDetailPage(layout httpx.Layout, state NewsDetailState) templ.Component
-	NewsFormPage(layout httpx.Layout, state NewsFormState) templ.Component
+	NewsListPage(layout httpx.Layout, state state.NewsListState) templ.Component
+	NewsDetailPage(layout httpx.Layout, state state.NewsDetailState) templ.Component
+	NewsFormPage(layout httpx.Layout, state state.NewsFormState) templ.Component
 }
 
 //nolint:govet // GeneralConfig trailing bool forces alignment cost

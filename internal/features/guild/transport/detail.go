@@ -4,14 +4,10 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/hayakawakaki/go-racp/internal/features/guild/app"
 	"github.com/hayakawakaki/go-racp/internal/features/guild/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/guild/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
-
-type DetailState struct {
-	Detail app.GuildDetail
-}
 
 func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {
 	id := httpx.ParsePositiveInt(r.PathValue("id"), 0)
@@ -31,10 +27,10 @@ func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	state := DetailState{Detail: detail}
+	s := state.DetailState{Detail: detail}
 	if httpx.IsHTMX(r) {
-		httpx.RenderHTML(w, r, h.logger, detailContent(state))
+		httpx.RenderHTML(w, r, h.logger, h.theme.GuildDetailContent(s))
 		return
 	}
-	httpx.RenderHTML(w, r, h.logger, h.theme.GuildDetailPage(h.layout(), detail.Guild.Name, state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.GuildDetailPage(h.layout(), detail.Guild.Name, s))
 }

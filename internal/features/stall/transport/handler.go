@@ -8,6 +8,7 @@ import (
 	"github.com/a-h/templ"
 	itemdomain "github.com/hayakawakaki/go-racp/internal/features/item/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/stall/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/stall/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
@@ -23,11 +24,11 @@ type itemLookup interface {
 }
 
 type Renderer interface {
-	StallListPage(layout httpx.Layout, state ListState) templ.Component
-	StallListContent(state ListState) templ.Component
+	StallListPage(layout httpx.Layout, state state.ListState) templ.Component
+	StallListContent(state state.ListState) templ.Component
 	StallLoadingPage(layout httpx.Layout, refreshURL string) templ.Component
 	StallLoadingContent(refreshURL string) templ.Component
-	StallVendingBox(state StallState) templ.Component
+	StallVendingBox(state state.StallState) templ.Component
 }
 
 //nolint:govet // GeneralConfig trailing bool forces alignment cost

@@ -18,23 +18,25 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/features/news/app"
 	"github.com/hayakawakaki/go-racp/internal/features/news/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/news/infra"
+	newsstate "github.com/hayakawakaki/go-racp/internal/features/news/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/server/config"
+	news "github.com/hayakawakaki/go-racp/themes/default/features/news/transport"
 	_ "github.com/hayakawakaki/go-racp/themes/default/platform/httpx"
 )
 
 type stubTheme struct{}
 
-func (stubTheme) NewsListPage(layout httpx.Layout, state NewsListState) templ.Component {
-	return NewsListPage(layout, state)
+func (stubTheme) NewsListPage(layout httpx.Layout, state newsstate.NewsListState) templ.Component {
+	return news.NewsListPage(layout, state)
 }
 
-func (stubTheme) NewsDetailPage(layout httpx.Layout, state NewsDetailState) templ.Component {
-	return NewsDetailPage(layout, state)
+func (stubTheme) NewsDetailPage(layout httpx.Layout, state newsstate.NewsDetailState) templ.Component {
+	return news.NewsDetailPage(layout, state)
 }
 
-func (stubTheme) NewsFormPage(layout httpx.Layout, state NewsFormState) templ.Component {
-	return NewsFormPage(layout, state)
+func (stubTheme) NewsFormPage(layout httpx.Layout, state newsstate.NewsFormState) templ.Component {
+	return news.NewsFormPage(layout, state)
 }
 
 type fakeService struct {
