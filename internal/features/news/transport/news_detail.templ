@@ -14,7 +14,7 @@ type NewsDetailState struct {
 	CanManage bool
 }
 
-templ newsDetailPage(layout httpx.Layout, state NewsDetailState) {
+templ NewsDetailPage(layout httpx.Layout, state NewsDetailState) {
 	@httpx.Base(layout, state.Item.Title) {
 		<article class="w-full max-w-3xl self-start p-6">
 			<div class="mb-4 flex items-center justify-between gap-3">

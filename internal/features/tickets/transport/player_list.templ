@@ -13,7 +13,7 @@ type PlayerListState struct {
 	Total int
 }
 
-templ playerListPage(layout httpx.Layout, state PlayerListState) {
+templ TicketsPlayerListPage(layout httpx.Layout, state PlayerListState) {
 	@httpx.Base(layout, "Support tickets") {
 		<div class="w-full max-w-3xl self-start">
 			<div class="flex items-center justify-between mb-6">

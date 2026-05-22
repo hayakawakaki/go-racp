@@ -39,7 +39,7 @@ func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {
 	if notice, ok := noticeText[r.URL.Query().Get("notice")]; ok {
 		state.Notice = notice
 	}
-	httpx.RenderHTML(w, r, h.logger, detailPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.CharacterDetailPage(h.layout(), state))
 }
 
 func (h *Handler) doResetLook(w http.ResponseWriter, r *http.Request) {

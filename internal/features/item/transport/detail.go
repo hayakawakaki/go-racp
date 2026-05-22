@@ -45,11 +45,11 @@ func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {
 		DescriptionLines: lines,
 		DroppedBy:        droppedBy,
 	}
-	httpx.RenderHTML(w, r, h.logger, detailPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.ItemDetailPage(h.layout(), state))
 }
 
 func (h *Handler) renderNotFound(w http.ResponseWriter, r *http.Request, idText string) {
-	httpx.RenderComponent404(w, r, h.logger, notFoundPage(h.layout(), idText))
+	httpx.RenderComponent404(w, r, h.logger, h.theme.ItemNotFoundPage(h.layout(), idText))
 }
 
 func buildStats(item *domain.Item) []labeledRow {

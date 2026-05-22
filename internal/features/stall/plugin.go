@@ -10,6 +10,7 @@ import (
 	coreinfra "github.com/hayakawakaki/go-racp/internal/infra"
 	"github.com/hayakawakaki/go-racp/internal/platform/plugin"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
+	"github.com/hayakawakaki/go-racp/internal/platform/theme"
 )
 
 func init() {
@@ -26,6 +27,7 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 		Logger:     in.Logger,
 		ItemLookup: item.BuildService(in),
 		General:    in.Config.App.General,
+		Theme:      theme.Active,
 	})
 	handler.RegisterRoutes(reg, mux)
 }

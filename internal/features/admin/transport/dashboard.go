@@ -12,7 +12,7 @@ const (
 	dashboardGeneralRefreshMillis = 3600000
 )
 
-type dashboardState struct {
+type DashboardState struct {
 	PeakTable peakTable              `json:"-"`
 	General   domain.GeneralSnapshot `json:"general"`
 	Online    domain.OnlineSnapshot  `json:"online"`
@@ -51,7 +51,7 @@ func windowLabel(w domain.Window) string {
 	return string(w)
 }
 
-func dashboardAlpineState(state dashboardState) string {
+func dashboardAlpineState(state DashboardState) string {
 	encoded, err := json.Marshal(alpineSeed{Online: state.Online, General: state.General})
 	if err != nil {
 		return "{ online: {}, general: {} }"

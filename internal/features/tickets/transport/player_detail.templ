@@ -11,7 +11,7 @@ type PlayerDetailState struct {
 	Categories []domain.Category
 }
 
-templ playerDetailPage(layout httpx.Layout, state PlayerDetailState) {
+templ TicketsPlayerDetailPage(layout httpx.Layout, state PlayerDetailState) {
 	@httpx.Base(layout, "Ticket") {
 		<div class="w-full max-w-3xl self-start">
 			<div class="mb-4">
@@ -19,13 +19,13 @@ templ playerDetailPage(layout httpx.Layout, state PlayerDetailState) {
 			</div>
 			<div class="bg-white border border-gray-200 rounded-lg shadow-sm">
 				<div class="px-6 pt-5">
-					@Header(state.Detail.Ticket, false, state.Categories)
+					@header(state.Detail.Ticket, false, state.Categories)
 				</div>
 				<div class="px-6 pb-5">
-					@Thread(state.Detail.Messages, false, state.Detail.OtherSeenAt)
+					@TicketsThread(state.Detail.Messages, false, state.Detail.OtherSeenAt)
 				</div>
 				<div class="px-6 pb-6">
-					@Composer(state.Detail.Ticket, state.Detail.Ticket.CanPlayerReply(), false, "")
+					@composer(state.Detail.Ticket, state.Detail.Ticket.CanPlayerReply(), false, "")
 				</div>
 			</div>
 		</div>

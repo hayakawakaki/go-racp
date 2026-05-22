@@ -10,9 +10,21 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/a-h/templ"
 	"github.com/hayakawakaki/go-racp/internal/features/guild/app"
 	"github.com/hayakawakaki/go-racp/internal/features/guild/domain"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
+
+type stubTheme struct{}
+
+func (stubTheme) GuildDetailPage(layout httpx.Layout, guildName string, state DetailState) templ.Component {
+	return GuildDetailPage(layout, guildName, state)
+}
+
+func (stubTheme) GuildListPage(layout httpx.Layout, state ListState) templ.Component {
+	return GuildListPage(layout, state)
+}
 
 type fakeService struct {
 	listErr     error
@@ -52,7 +64,7 @@ func (f *fakeService) GetEmblem(_ context.Context, id int) (data []byte, mime st
 }
 
 func newTestHandler(svc *fakeService) *Handler {
-	return NewHandler(svc, HandlerConfig{})
+	return NewHandler(svc, HandlerConfig{Theme: stubTheme{}})
 }
 
 func newRequest(t *testing.T, method, target string, pathValues, headers map[string]string) *http.Request {

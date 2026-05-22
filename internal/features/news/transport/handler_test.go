@@ -12,13 +12,29 @@ import (
 	"testing"
 	"time"
 
+	"github.com/a-h/templ"
 	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/features/news/app"
 	"github.com/hayakawakaki/go-racp/internal/features/news/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/news/infra"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
+
+type stubTheme struct{}
+
+func (stubTheme) NewsListPage(layout httpx.Layout, state NewsListState) templ.Component {
+	return NewsListPage(layout, state)
+}
+
+func (stubTheme) NewsDetailPage(layout httpx.Layout, state NewsDetailState) templ.Component {
+	return NewsDetailPage(layout, state)
+}
+
+func (stubTheme) NewsFormPage(layout httpx.Layout, state NewsFormState) templ.Component {
+	return NewsFormPage(layout, state)
+}
 
 type fakeService struct {
 	items      map[int64]app.NewsItem
@@ -101,6 +117,7 @@ func newCanManageHandler(users userLookup, manageRoles []string) *Handler {
 		Roles:       resolver,
 		ManageRoles: manageRoles,
 		General:     config.GeneralConfig{ServerName: "Test", Timezone: "UTC"},
+		Theme:       stubTheme{},
 	})
 }
 
@@ -175,6 +192,7 @@ func newJSONHandler(svc *fakeService) *Handler {
 	return NewHandler(svc, infra.NewRenderer(discardLogger()), HandlerConfig{
 		Logger:  discardLogger(),
 		General: config.GeneralConfig{ServerName: "Test", Timezone: "UTC"},
+		Theme:   stubTheme{},
 	})
 }
 

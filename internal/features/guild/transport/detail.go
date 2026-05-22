@@ -9,7 +9,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
-type detailState struct {
+type DetailState struct {
 	Detail app.GuildDetail
 }
 
@@ -31,10 +31,10 @@ func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	state := detailState{Detail: detail}
+	state := DetailState{Detail: detail}
 	if httpx.IsHTMX(r) {
 		httpx.RenderHTML(w, r, h.logger, detailContent(state))
 		return
 	}
-	httpx.RenderHTML(w, r, h.logger, detailPage(h.layout(), detail.Guild.Name, state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.GuildDetailPage(h.layout(), detail.Guild.Name, state))
 }

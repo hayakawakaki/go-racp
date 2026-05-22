@@ -4,16 +4,172 @@ package theme
 
 import (
 	"github.com/a-h/templ"
-	home "github.com/hayakawakaki/go-racp/internal/features/home/transport"
+	character "github.com/hayakawakaki/go-racp/internal/features/character/transport"
+	guild "github.com/hayakawakaki/go-racp/internal/features/guild/transport"
+	app "github.com/hayakawakaki/go-racp/internal/features/item/app"
+	mob "github.com/hayakawakaki/go-racp/internal/features/mob/transport"
+	mobapp "github.com/hayakawakaki/go-racp/internal/features/mob/app"
+	news "github.com/hayakawakaki/go-racp/internal/features/news/transport"
+	stall "github.com/hayakawakaki/go-racp/internal/features/stall/transport"
+	tickets "github.com/hayakawakaki/go-racp/internal/features/tickets/transport"
+	admin "github.com/hayakawakaki/go-racp/internal/features/admin/transport"
 	httpx "github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	home "github.com/hayakawakaki/go-racp/internal/features/home/transport"
+	item "github.com/hayakawakaki/go-racp/internal/features/item/transport"
+	domain "github.com/hayakawakaki/go-racp/internal/features/tickets/domain"
+	time "time"
 )
 
 type DefaultTheme struct{}
 
 var _ Theme = DefaultTheme{}
 
+func (DefaultTheme) DashboardContent(state admin.DashboardState) templ.Component {
+	return admin.DashboardContent(state)
+}
+
+func (DefaultTheme) DatabaseContent(state admin.DatabaseState) templ.Component {
+	return admin.DatabaseContent(state)
+}
+
+func (DefaultTheme) AdminLayout(layout httpx.Layout, pageTitle string, content templ.Component) templ.Component {
+	return admin.AdminLayout(layout, pageTitle, content)
+}
+
+func (DefaultTheme) CharacterDetailPage(layout httpx.Layout, state character.DetailState) templ.Component {
+	return character.CharacterDetailPage(layout, state)
+}
+
+func (DefaultTheme) GuildDetailPage(layout httpx.Layout, guildName string, state guild.DetailState) templ.Component {
+	return guild.GuildDetailPage(layout, guildName, state)
+}
+
+func (DefaultTheme) GuildListPage(layout httpx.Layout, state guild.ListState) templ.Component {
+	return guild.GuildListPage(layout, state)
+}
+
 func (DefaultTheme) HomePage(layout httpx.Layout, state home.HomeState) templ.Component {
 	return home.HomePage(layout, state)
+}
+
+func (DefaultTheme) ItemDetailPage(layout httpx.Layout, state item.DetailState) templ.Component {
+	return item.ItemDetailPage(layout, state)
+}
+
+func (DefaultTheme) ItemListPage(layout httpx.Layout, state item.ListState) templ.Component {
+	return item.ItemListPage(layout, state)
+}
+
+func (DefaultTheme) ItemNotFoundPage(layout httpx.Layout, id string) templ.Component {
+	return item.ItemNotFoundPage(layout, id)
+}
+
+func (DefaultTheme) ItemEmptyDatabasePage(layout httpx.Layout) templ.Component {
+	return item.ItemEmptyDatabasePage(layout)
+}
+
+func (DefaultTheme) ItemReloadSuccess(status app.ServiceStatus) templ.Component {
+	return item.ItemReloadSuccess(status)
+}
+
+func (DefaultTheme) ItemReloadFailure(message string) templ.Component {
+	return item.ItemReloadFailure(message)
+}
+
+func (DefaultTheme) ItemReloadConflict() templ.Component {
+	return item.ItemReloadConflict()
+}
+
+func (DefaultTheme) MobDetailPage(layout httpx.Layout, state mob.DetailState) templ.Component {
+	return mob.MobDetailPage(layout, state)
+}
+
+func (DefaultTheme) MobListPage(layout httpx.Layout, state mob.ListState) templ.Component {
+	return mob.MobListPage(layout, state)
+}
+
+func (DefaultTheme) MobNotFoundPage(layout httpx.Layout, id string) templ.Component {
+	return mob.MobNotFoundPage(layout, id)
+}
+
+func (DefaultTheme) MobEmptyDatabasePage(layout httpx.Layout) templ.Component {
+	return mob.MobEmptyDatabasePage(layout)
+}
+
+func (DefaultTheme) MobReloadSuccess(status mobapp.ServiceStatus) templ.Component {
+	return mob.MobReloadSuccess(status)
+}
+
+func (DefaultTheme) MobReloadFailure(message string) templ.Component {
+	return mob.MobReloadFailure(message)
+}
+
+func (DefaultTheme) MobReloadConflict() templ.Component {
+	return mob.MobReloadConflict()
+}
+
+func (DefaultTheme) NewsDetailPage(layout httpx.Layout, state news.NewsDetailState) templ.Component {
+	return news.NewsDetailPage(layout, state)
+}
+
+func (DefaultTheme) NewsFormPage(layout httpx.Layout, state news.NewsFormState) templ.Component {
+	return news.NewsFormPage(layout, state)
+}
+
+func (DefaultTheme) NewsListPage(layout httpx.Layout, state news.NewsListState) templ.Component {
+	return news.NewsListPage(layout, state)
+}
+
+func (DefaultTheme) StallListPage(layout httpx.Layout, state stall.ListState) templ.Component {
+	return stall.StallListPage(layout, state)
+}
+
+func (DefaultTheme) StallLoadingPage(layout httpx.Layout, refreshURL string) templ.Component {
+	return stall.StallLoadingPage(layout, refreshURL)
+}
+
+func (DefaultTheme) StallLoadingContent(refreshURL string) templ.Component {
+	return stall.StallLoadingContent(refreshURL)
+}
+
+func (DefaultTheme) StallListContent(state stall.ListState) templ.Component {
+	return stall.StallListContent(state)
+}
+
+func (DefaultTheme) StallVendingBox(state stall.StallState) templ.Component {
+	return stall.StallVendingBox(state)
+}
+
+func (DefaultTheme) TicketsThread(messages []domain.Message, isStaff bool, otherSeenAt time.Time) templ.Component {
+	return tickets.TicketsThread(messages, isStaff, otherSeenAt)
+}
+
+func (DefaultTheme) TicketsPlayerReplyResponse(ticket domain.Ticket, messages []domain.Message, otherSeenAt time.Time) templ.Component {
+	return tickets.TicketsPlayerReplyResponse(ticket, messages, otherSeenAt)
+}
+
+func (DefaultTheme) TicketsPlayerDetailPage(layout httpx.Layout, state tickets.PlayerDetailState) templ.Component {
+	return tickets.TicketsPlayerDetailPage(layout, state)
+}
+
+func (DefaultTheme) TicketsPlayerListPage(layout httpx.Layout, state tickets.PlayerListState) templ.Component {
+	return tickets.TicketsPlayerListPage(layout, state)
+}
+
+func (DefaultTheme) TicketsPlayerNewPage(layout httpx.Layout, state tickets.PlayerNewState) templ.Component {
+	return tickets.TicketsPlayerNewPage(layout, state)
+}
+
+func (DefaultTheme) TicketsStaffDetailPage(layout httpx.Layout, state tickets.StaffDetailState) templ.Component {
+	return tickets.TicketsStaffDetailPage(layout, state)
+}
+
+func (DefaultTheme) TicketsStaffListPage(layout httpx.Layout, state tickets.StaffListState) templ.Component {
+	return tickets.TicketsStaffListPage(layout, state)
+}
+
+func (DefaultTheme) TicketsStaffListBody(state tickets.StaffListState) templ.Component {
+	return tickets.TicketsStaffListBody(state)
 }
 
 func (DefaultTheme) Page404(layout httpx.Layout) templ.Component {

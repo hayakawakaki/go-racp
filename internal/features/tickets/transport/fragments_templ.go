@@ -16,7 +16,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/security"
 )
 
-func Thread(messages []domain.Message, isStaff bool, otherSeenAt time.Time) templ.Component {
+func TicketsThread(messages []domain.Message, isStaff bool, otherSeenAt time.Time) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -281,7 +281,7 @@ func showViewed(message domain.Message, lastOwnID, lastPubID int64, otherSeenAt 
 	return otherSeenAt.After(message.CreatedAt)
 }
 
-func Composer(ticket domain.Ticket, canReply, isStaff bool, errorMsg string) templ.Component {
+func composer(ticket domain.Ticket, canReply, isStaff bool, errorMsg string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -318,7 +318,7 @@ func Composer(ticket domain.Ticket, canReply, isStaff bool, errorMsg string) tem
 	})
 }
 
-func ComposerOOB(ticket domain.Ticket, canReply, isStaff bool, errorMsg string) templ.Component {
+func composerOOB(ticket domain.Ticket, canReply, isStaff bool, errorMsg string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -522,7 +522,7 @@ func composerContent(ticket domain.Ticket, canReply, isStaff bool, errorMsg stri
 	})
 }
 
-func PlayerReplyResponse(ticket domain.Ticket, messages []domain.Message, otherSeenAt time.Time) templ.Component {
+func TicketsPlayerReplyResponse(ticket domain.Ticket, messages []domain.Message, otherSeenAt time.Time) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -543,11 +543,11 @@ func PlayerReplyResponse(ticket domain.Ticket, messages []domain.Message, otherS
 			templ_7745c5c3_Var22 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = Thread(messages, false, otherSeenAt).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = TicketsThread(messages, false, otherSeenAt).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = ComposerOOB(ticket, ticket.CanPlayerReply(), false, "").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = composerOOB(ticket, ticket.CanPlayerReply(), false, "").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -555,7 +555,7 @@ func PlayerReplyResponse(ticket domain.Ticket, messages []domain.Message, otherS
 	})
 }
 
-func StaffNoteComposer(ticket domain.Ticket) templ.Component {
+func staffNoteComposer(ticket domain.Ticket) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -646,7 +646,7 @@ func StaffNoteComposer(ticket domain.Ticket) templ.Component {
 	})
 }
 
-func Header(ticket domain.Ticket, isStaff bool, categories []domain.Category) templ.Component {
+func header(ticket domain.Ticket, isStaff bool, categories []domain.Category) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {

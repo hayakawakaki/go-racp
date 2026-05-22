@@ -37,7 +37,7 @@ func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {
 		Drops:    resolveDrops(mob.Drops, lookup),
 		MvpDrops: resolveDrops(mob.MvpDrops, lookup),
 	}
-	httpx.RenderHTML(w, r, h.logger, detailPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.MobDetailPage(h.layout(), state))
 }
 
 func resolveDrops(drops []domain.MobDrop, lookup ItemLookup) []dropRow {
@@ -62,7 +62,7 @@ func resolveDrops(drops []domain.MobDrop, lookup ItemLookup) []dropRow {
 }
 
 func (h *Handler) renderNotFound(w http.ResponseWriter, r *http.Request, idText string) {
-	httpx.RenderComponent404(w, r, h.logger, notFoundPage(h.layout(), idText))
+	httpx.RenderComponent404(w, r, h.logger, h.theme.MobNotFoundPage(h.layout(), idText))
 }
 
 func buildStats(mob *domain.Mob) []labeledRow {

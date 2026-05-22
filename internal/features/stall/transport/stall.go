@@ -16,7 +16,7 @@ type stallItemRow struct {
 	Price    int
 }
 
-type stallState struct {
+type StallState struct {
 	Items  []stallItemRow
 	Vendor domain.Vendor
 }
@@ -38,7 +38,7 @@ func (h *Handler) showStallItems(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RenderHTML(w, r, h.logger, vendingBox(stallState{Vendor: v, Items: h.buildItemRows(r, v.Items)}))
+	httpx.RenderHTML(w, r, h.logger, h.theme.StallVendingBox(StallState{Vendor: v, Items: h.buildItemRows(r, v.Items)}))
 }
 
 func (h *Handler) resolveStallError(w http.ResponseWriter, r *http.Request, err error, vendorType domain.VendorType, id int) bool {

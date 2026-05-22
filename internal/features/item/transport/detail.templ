@@ -71,7 +71,7 @@ templ droppedBySection(entries []mobdomain.DropOf) {
 	</section>
 }
 
-templ detailPage(layout httpx.Layout, state DetailState) {
+templ ItemDetailPage(layout httpx.Layout, state DetailState) {
 	@httpx.Base(layout, state.Item.ClientName) {
 		<div x-data="{ open: false }" class="w-full max-w-4xl space-y-6">
 			<nav class="text-xs uppercase tracking-[0.18em] text-gray-400">

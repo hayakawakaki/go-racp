@@ -4,10 +4,10 @@ import (
 	"fmt"
 
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
-	"github.com/hayakawakaki/go-racp/internal/features/mob/app"
+	mobapp "github.com/hayakawakaki/go-racp/internal/features/mob/app"
 )
 
-templ reloadSuccess(status app.ServiceStatus) {
+templ MobReloadSuccess(status mobapp.ServiceStatus) {
 	<div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-900">
 		<p class="font-medium">Database reloaded.</p>
 		<p class="mt-1 text-emerald-800">
@@ -20,14 +20,14 @@ templ reloadSuccess(status app.ServiceStatus) {
 	</div>
 }
 
-templ reloadFailure(message string) {
+templ MobReloadFailure(message string) {
 	<div class="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-900">
 		<p class="font-medium">Reload failed.</p>
 		<p class="mt-1 font-mono text-red-800">{ message }</p>
 	</div>
 }
 
-templ reloadConflict() {
+templ MobReloadConflict() {
 	<div class="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
 		<p class="font-medium">Already reloading.</p>
 		<p class="mt-1 text-amber-800">A reload is in progress. Try again in a moment.</p>

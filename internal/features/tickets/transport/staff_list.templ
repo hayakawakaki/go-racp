@@ -17,7 +17,7 @@ type StaffListState struct {
 	Total        int
 }
 
-templ staffListPage(layout httpx.Layout, state StaffListState) {
+templ TicketsStaffListPage(layout httpx.Layout, state StaffListState) {
 	@httpx.Base(layout, "Support tickets - staff") {
 		<div class="w-full max-w-6xl self-start">
 			<div class="flex items-baseline justify-between mb-5">
@@ -34,12 +34,12 @@ templ staffListPage(layout httpx.Layout, state StaffListState) {
 					@tabLink(state.Tab, domain.TabTerminal, "Closed / resolved", "terminal")
 				</nav>
 			</div>
-			@staffListBody(state)
+			@TicketsStaffListBody(state)
 		</div>
 	}
 }
 
-templ staffListBody(state StaffListState) {
+templ TicketsStaffListBody(state StaffListState) {
 	<div
 		id="staff-tickets-body"
 		hx-get={ fmt.Sprintf("/tickets?tab=%s&page=%d", tabQuery(state.Tab), state.Page) }

@@ -27,7 +27,7 @@ func (h *Handler) playerList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RenderHTML(w, r, h.logger, playerListPage(h.layout(), PlayerListState{
+	httpx.RenderHTML(w, r, h.logger, h.theme.TicketsPlayerListPage(h.layout(), PlayerListState{
 		Items: items,
 		Page:  page,
 		Total: total,

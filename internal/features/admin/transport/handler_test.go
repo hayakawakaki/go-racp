@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/a-h/templ"
 	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	itemapp "github.com/hayakawakaki/go-racp/internal/features/item/app"
 	mobapp "github.com/hayakawakaki/go-racp/internal/features/mob/app"
@@ -17,6 +18,20 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
+
+type stubTheme struct{}
+
+func (stubTheme) AdminLayout(layout httpx.Layout, pageTitle string, content templ.Component) templ.Component {
+	return AdminLayout(layout, pageTitle, content)
+}
+
+func (stubTheme) DashboardContent(state DashboardState) templ.Component {
+	return DashboardContent(state)
+}
+
+func (stubTheme) DatabaseContent(state DatabaseState) templ.Component {
+	return DatabaseContent(state)
+}
 
 type stubItemStatus struct {
 	status itemapp.ServiceStatus
@@ -67,6 +82,7 @@ func newTestHandler() *Handler {
 		General:    config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
 		ItemStatus: &stubItemStatus{status: itemapp.ServiceStatus{ItemsLoaded: 42, LastReload: "2026-05-18T00:00:00Z"}},
 		MobStatus:  &stubMobStatus{status: mobapp.ServiceStatus{MobsLoaded: 7, LastReload: "2026-05-18T00:00:00Z"}},
+		Theme:      stubTheme{},
 	})
 }
 

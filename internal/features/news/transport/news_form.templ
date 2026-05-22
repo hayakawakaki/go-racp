@@ -20,7 +20,7 @@ type NewsFormState struct {
 	InitialPreview template.HTML
 }
 
-templ newsFormPage(layout httpx.Layout, state NewsFormState) {
+templ NewsFormPage(layout httpx.Layout, state NewsFormState) {
 	@httpx.Base(layout, state.PageTitle) {
 		<div class="w-full max-w-6xl self-start p-6">
 			<div class="mb-4">

@@ -41,7 +41,7 @@ func (h *Handler) htmlList(w http.ResponseWriter, r *http.Request) {
 		SelectedCategory: selected,
 		CanManage:        h.canManage(r),
 	}
-	httpx.RenderHTML(w, r, h.logger, newsListPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.NewsListPage(h.layout(), state))
 }
 
 func (h *Handler) htmlDetail(w http.ResponseWriter, r *http.Request) {
@@ -66,12 +66,12 @@ func (h *Handler) htmlDetail(w http.ResponseWriter, r *http.Request) {
 		BodyHTML:  h.renderer.Render(item.Body),
 		CanManage: h.canManage(r),
 	}
-	httpx.RenderHTML(w, r, h.logger, newsDetailPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.NewsDetailPage(h.layout(), state))
 }
 
 func (h *Handler) htmlCreateForm(w http.ResponseWriter, r *http.Request) {
 	state := h.newCreateFormState("", "", "")
-	httpx.RenderHTML(w, r, h.logger, newsFormPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.NewsFormPage(h.layout(), state))
 }
 
 func (h *Handler) htmlPreview(w http.ResponseWriter, r *http.Request) {
@@ -104,7 +104,7 @@ func (h *Handler) htmlCreate(w http.ResponseWriter, r *http.Request) {
 	if field, msg := fieldFromErr(err); field != "" {
 		state := h.newCreateFormState(title, body, category)
 		state.Errors = map[string]string{field: msg}
-		httpx.RenderHTML(w, r, h.logger, newsFormPage(h.layout(), state))
+		httpx.RenderHTML(w, r, h.logger, h.theme.NewsFormPage(h.layout(), state))
 		return
 	}
 	h.logger.Error("news: create", "err", err)
@@ -129,7 +129,7 @@ func (h *Handler) htmlEditForm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	state := h.newEditFormState(id, item.Title, item.Body, item.Category)
-	httpx.RenderHTML(w, r, h.logger, newsFormPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.NewsFormPage(h.layout(), state))
 }
 
 func (h *Handler) htmlUpdate(w http.ResponseWriter, r *http.Request) {
@@ -159,7 +159,7 @@ func (h *Handler) htmlUpdate(w http.ResponseWriter, r *http.Request) {
 	if field, msg := fieldFromErr(err); field != "" {
 		state := h.newEditFormState(id, title, body, category)
 		state.Errors = map[string]string{field: msg}
-		httpx.RenderHTML(w, r, h.logger, newsFormPage(h.layout(), state))
+		httpx.RenderHTML(w, r, h.logger, h.theme.NewsFormPage(h.layout(), state))
 		return
 	}
 	h.logger.Error("news: update", "err", err, "id", id)

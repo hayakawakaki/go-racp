@@ -14,7 +14,7 @@ func (h *Handler) playerNewForm(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	httpx.RenderHTML(w, r, h.logger, playerNewPage(h.layout(), PlayerNewState{
+	httpx.RenderHTML(w, r, h.logger, h.theme.TicketsPlayerNewPage(h.layout(), PlayerNewState{
 		Categories: h.svc.Categories().All(),
 	}))
 }
@@ -62,5 +62,5 @@ func (h *Handler) playerCreate(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) renderNewWithError(w http.ResponseWriter, r *http.Request, state PlayerNewState) {
 	state.Categories = h.svc.Categories().All()
-	httpx.RenderHTML(w, r, h.logger, playerNewPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.TicketsPlayerNewPage(h.layout(), state))
 }

@@ -7,19 +7,19 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
-templ listPage(layout httpx.Layout, state listState) {
+templ StallListPage(layout httpx.Layout, state ListState) {
 	@httpx.Base(layout, "Vendors") {
-		@listContent(state)
+		@StallListContent(state)
 	}
 }
 
-templ loadingPage(layout httpx.Layout, refreshURL string) {
+templ StallLoadingPage(layout httpx.Layout, refreshURL string) {
 	@httpx.Base(layout, "Vendors") {
-		@loadingContent(refreshURL)
+		@StallLoadingContent(refreshURL)
 	}
 }
 
-templ loadingContent(refreshURL string) {
+templ StallLoadingContent(refreshURL string) {
 	<div class="space-y-4" hx-get={ refreshURL } hx-trigger="load delay:5s" hx-target="this" hx-swap="outerHTML">
 		<header class="flex items-center justify-between gap-4">
 			<h1 class="text-2xl font-semibold text-gray-900">Vendors</h1>
@@ -28,7 +28,7 @@ templ loadingContent(refreshURL string) {
 	</div>
 }
 
-templ listContent(state listState) {
+templ StallListContent(state ListState) {
 	<div id="vendors-list" class="space-y-4">
 		<header class="flex items-center justify-between gap-4">
 			<h1 class="text-2xl font-semibold text-gray-900">Vendors</h1>
@@ -109,7 +109,7 @@ templ vendorRow(v domain.Vendor) {
 	</tbody>
 }
 
-templ pagination(state listState) {
+templ pagination(state ListState) {
 	<nav class="flex justify-between text-sm">
 		<span class="text-gray-500">{ fmt.Sprintf("Page %d of %d - %d total", state.Page.Page, max(state.Page.TotalPages, 1), state.Page.Total) }</span>
 		<div class="flex gap-2">

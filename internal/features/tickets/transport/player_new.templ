@@ -17,7 +17,7 @@ type PlayerNewState struct {
 	FormError  string
 }
 
-templ playerNewPage(layout httpx.Layout, state PlayerNewState) {
+templ TicketsPlayerNewPage(layout httpx.Layout, state PlayerNewState) {
 	@httpx.Base(layout, "Open ticket") {
 		<div class="w-full max-w-2xl self-start">
 			<div class="mb-5">

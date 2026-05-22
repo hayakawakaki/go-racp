@@ -8,7 +8,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/security"
 )
 
-templ Thread(messages []domain.Message, isStaff bool, otherSeenAt time.Time) {
+templ TicketsThread(messages []domain.Message, isStaff bool, otherSeenAt time.Time) {
 	<div id="ticket-thread" class="space-y-3">
 		if len(messages) == 0 {
 			<p class="text-sm text-gray-500 italic">No messages yet.</p>
@@ -99,13 +99,13 @@ func showViewed(message domain.Message, lastOwnID, lastPubID int64, otherSeenAt 
 	return otherSeenAt.After(message.CreatedAt)
 }
 
-templ Composer(ticket domain.Ticket, canReply, isStaff bool, errorMsg string) {
+templ composer(ticket domain.Ticket, canReply, isStaff bool, errorMsg string) {
 	<div id="ticket-composer">
 		@composerContent(ticket, canReply, isStaff, errorMsg)
 	</div>
 }
 
-templ ComposerOOB(ticket domain.Ticket, canReply, isStaff bool, errorMsg string) {
+templ composerOOB(ticket domain.Ticket, canReply, isStaff bool, errorMsg string) {
 	<div id="ticket-composer" hx-swap-oob="true">
 		@composerContent(ticket, canReply, isStaff, errorMsg)
 	</div>
@@ -168,12 +168,12 @@ templ composerContent(ticket domain.Ticket, canReply, isStaff bool, errorMsg str
 	}
 }
 
-templ PlayerReplyResponse(ticket domain.Ticket, messages []domain.Message, otherSeenAt time.Time) {
-	@Thread(messages, false, otherSeenAt)
-	@ComposerOOB(ticket, ticket.CanPlayerReply(), false, "")
+templ TicketsPlayerReplyResponse(ticket domain.Ticket, messages []domain.Message, otherSeenAt time.Time) {
+	@TicketsThread(messages, false, otherSeenAt)
+	@composerOOB(ticket, ticket.CanPlayerReply(), false, "")
 }
 
-templ StaffNoteComposer(ticket domain.Ticket) {
+templ staffNoteComposer(ticket domain.Ticket) {
 	if !ticket.IsTerminal() {
 		<form
 			x-data="{ submitting: false, noteLen: 0 }"
@@ -209,7 +209,7 @@ templ StaffNoteComposer(ticket domain.Ticket) {
 	}
 }
 
-templ Header(ticket domain.Ticket, isStaff bool, categories []domain.Category) {
+templ header(ticket domain.Ticket, isStaff bool, categories []domain.Category) {
 	<div id="ticket-header" class="border-b border-gray-200 pb-4 mb-5">
 		<div class="flex items-start justify-between gap-4">
 			<div class="min-w-0 flex-1">

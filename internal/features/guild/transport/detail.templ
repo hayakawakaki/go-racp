@@ -7,11 +7,11 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
-templ detailPage(layout httpx.Layout, guildName string, state detailState) {
+templ GuildDetailPage(layout httpx.Layout, guildName string, state DetailState) {
 	@admintransport.AdminLayout(layout, "Guild: "+guildName, detailContent(state))
 }
 
-templ detailContent(state detailState) {
+templ detailContent(state DetailState) {
 	<div class="space-y-6">
 		<div>
 			<a href="/guilds" hx-get="/guilds" hx-target="#admin-content" hx-push-url="true" class="text-sm text-blue-600 hover:underline">&larr; Back to guilds</a>

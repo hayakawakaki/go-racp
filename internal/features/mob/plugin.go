@@ -13,6 +13,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/plugin"
 	"github.com/hayakawakaki/go-racp/internal/platform/refdata"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
+	"github.com/hayakawakaki/go-racp/internal/platform/theme"
 )
 
 const mobCacheFileName = "mob-snapshot.gob"
@@ -46,6 +47,7 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 		Logger:       in.Logger,
 		General:      in.Config.App.General,
 		ItemLookupFn: currentItemLookup,
+		Theme:        theme.Active,
 	})
 	handler.RegisterRoutes(reg, mux)
 	startDevWatcher(in, service)

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/a-h/templ"
 	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
 	ticketsapp "github.com/hayakawakaki/go-racp/internal/features/tickets/app"
@@ -56,18 +57,33 @@ type userLookup interface {
 	GetByID(ctx context.Context, id int) (*accdomain.User, error)
 }
 
+type Renderer interface {
+	TicketsPlayerDetailPage(layout httpx.Layout, state PlayerDetailState) templ.Component
+	TicketsPlayerListPage(layout httpx.Layout, state PlayerListState) templ.Component
+	TicketsPlayerNewPage(layout httpx.Layout, state PlayerNewState) templ.Component
+	TicketsStaffDetailPage(layout httpx.Layout, state StaffDetailState) templ.Component
+	TicketsStaffListPage(layout httpx.Layout, state StaffListState) templ.Component
+	TicketsStaffListBody(state StaffListState) templ.Component
+	TicketsThread(messages []domain2.Message, isStaff bool, otherSeenAt time.Time) templ.Component
+	TicketsPlayerReplyResponse(ticket domain2.Ticket, messages []domain2.Message, otherSeenAt time.Time) templ.Component
+}
+
+//nolint:govet // GeneralConfig trailing bool forces alignment cost
 type HandlerConfig struct {
 	General      config.GeneralConfig
 	Roles        accdomain.RoleResolver
+	Theme        Renderer
 	Logger       *slog.Logger
 	Users        userLookup
 	ManageRoles  []string
 	PollInterval time.Duration
 }
 
+//nolint:govet // GeneralConfig trailing bool forces alignment cost
 type Handler struct {
 	svc         ticketService
 	users       userLookup
+	theme       Renderer
 	logger      *slog.Logger
 	manageRoles map[string]struct{}
 	roles       accdomain.RoleResolver
@@ -89,6 +105,7 @@ func NewHandler(service ticketService, cfg HandlerConfig) *Handler {
 		roles:       cfg.Roles,
 		poll:        cfg.PollInterval,
 		manageRoles: manageRoles,
+		theme:       cfg.Theme,
 	}
 }
 

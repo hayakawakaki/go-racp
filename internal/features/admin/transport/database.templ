@@ -9,12 +9,12 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/security"
 )
 
-type databaseState struct {
+type DatabaseState struct {
 	Item itemapp.ServiceStatus
 	Mob  mobapp.ServiceStatus
 }
 
-templ databaseContent(state databaseState) {
+templ DatabaseContent(state DatabaseState) {
 	<div class="space-y-6">
 		<header>
 			<h1 class="text-2xl font-semibold text-gray-900">Database</h1>

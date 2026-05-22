@@ -12,12 +12,44 @@ import (
 	"testing"
 	"time"
 
+	"github.com/a-h/templ"
 	itemdomain "github.com/hayakawakaki/go-racp/internal/features/item/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/mob/app"
 	"github.com/hayakawakaki/go-racp/internal/features/mob/domain"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/refdata"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
+
+type stubTheme struct{}
+
+func (stubTheme) MobDetailPage(layout httpx.Layout, state DetailState) templ.Component {
+	return MobDetailPage(layout, state)
+}
+
+func (stubTheme) MobListPage(layout httpx.Layout, state ListState) templ.Component {
+	return MobListPage(layout, state)
+}
+
+func (stubTheme) MobNotFoundPage(layout httpx.Layout, id string) templ.Component {
+	return MobNotFoundPage(layout, id)
+}
+
+func (stubTheme) MobEmptyDatabasePage(layout httpx.Layout) templ.Component {
+	return MobEmptyDatabasePage(layout)
+}
+
+func (stubTheme) MobReloadSuccess(status app.ServiceStatus) templ.Component {
+	return MobReloadSuccess(status)
+}
+
+func (stubTheme) MobReloadFailure(message string) templ.Component {
+	return MobReloadFailure(message)
+}
+
+func (stubTheme) MobReloadConflict() templ.Component {
+	return MobReloadConflict()
+}
 
 //nolint:govet // fine for test
 type fakeMobService struct {
@@ -83,6 +115,7 @@ func newTestHandler(svc mobService) *Handler {
 	return NewHandler(svc, HandlerConfig{
 		Logger:  discardLogger(),
 		General: config.GeneralConfig{ServerName: "Test", Timezone: "UTC"},
+		Theme:   stubTheme{},
 	})
 }
 
@@ -91,6 +124,7 @@ func newTestHandlerWithLookup(svc mobService, lookup ItemLookup) *Handler {
 		Logger:       discardLogger(),
 		ItemLookupFn: func() ItemLookup { return lookup },
 		General:      config.GeneralConfig{ServerName: "Test", Timezone: "UTC"},
+		Theme:        stubTheme{},
 	})
 }
 

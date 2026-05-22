@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/a-h/templ"
 	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/features/news/app"
@@ -29,22 +30,32 @@ type userLookup interface {
 	GetByID(ctx context.Context, id int) (*accdomain.User, error)
 }
 
+type Renderer interface {
+	NewsListPage(layout httpx.Layout, state NewsListState) templ.Component
+	NewsDetailPage(layout httpx.Layout, state NewsDetailState) templ.Component
+	NewsFormPage(layout httpx.Layout, state NewsFormState) templ.Component
+}
+
+//nolint:govet // GeneralConfig trailing bool forces alignment cost
 type HandlerConfig struct {
-	Logger      *slog.Logger
+	General     config.GeneralConfig
 	Users       userLookup
 	Roles       accdomain.RoleResolver
-	General     config.GeneralConfig
+	Theme       Renderer
+	Logger      *slog.Logger
 	ManageRoles []string
 }
 
+//nolint:govet // GeneralConfig trailing bool forces alignment cost
 type Handler struct {
+	general     config.GeneralConfig
 	svc         newsService
-	logger      *slog.Logger
 	renderer    *infra.Renderer
 	users       userLookup
 	roles       accdomain.RoleResolver
 	manageRoles map[string]struct{}
-	general     config.GeneralConfig
+	theme       Renderer
+	logger      *slog.Logger
 }
 
 func NewHandler(service newsService, renderer *infra.Renderer, cfg HandlerConfig) *Handler {
@@ -61,6 +72,7 @@ func NewHandler(service newsService, renderer *infra.Renderer, cfg HandlerConfig
 		roles:       cfg.Roles,
 		manageRoles: manageRoles,
 		general:     cfg.General,
+		theme:       cfg.Theme,
 	}
 }
 

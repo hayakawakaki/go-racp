@@ -18,7 +18,7 @@ func (h *Handler) showList(w http.ResponseWriter, r *http.Request) {
 
 	page, err := h.svc.List(r.Context(), query)
 	if errors.Is(err, domain.ErrEmptySnapshot) {
-		httpx.RenderHTML(w, r, h.logger, emptyDatabasePage(h.layout()))
+		httpx.RenderHTML(w, r, h.logger, h.theme.MobEmptyDatabasePage(h.layout()))
 		return
 	}
 	if err != nil {
@@ -28,5 +28,5 @@ func (h *Handler) showList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	state := ListState{Page: page, Query: query.Query, BaseURL: "/mobs"}
-	httpx.RenderHTML(w, r, h.logger, listPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.MobListPage(h.layout(), state))
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
-type listState struct {
+type ListState struct {
 	Query   string
 	BaseURL string
 	Page    app.GuildPage
@@ -32,10 +32,10 @@ func (h *Handler) showList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	state := listState{Page: page, Query: query.Query, BaseURL: "/guilds"}
+	state := ListState{Page: page, Query: query.Query, BaseURL: "/guilds"}
 	if httpx.IsHTMX(r) {
 		httpx.RenderHTML(w, r, h.logger, listContent(state))
 		return
 	}
-	httpx.RenderHTML(w, r, h.logger, listPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.GuildListPage(h.layout(), state))
 }

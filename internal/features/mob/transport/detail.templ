@@ -42,7 +42,7 @@ func (r dropRow) DisplayName() string {
 	return name
 }
 
-templ detailPage(layout httpx.Layout, state DetailState) {
+templ MobDetailPage(layout httpx.Layout, state DetailState) {
 	@httpx.Base(layout, state.Mob.Name) {
 		<div class="w-full max-w-4xl space-y-6">
 			<nav class="text-xs uppercase tracking-[0.18em] text-gray-400">

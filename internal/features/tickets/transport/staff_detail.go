@@ -38,7 +38,7 @@ func (h *Handler) staffDetail(w http.ResponseWriter, r *http.Request) {
 
 	go h.deferMarkViewed(context.WithoutCancel(r.Context()), user.ID, ticketID)
 
-	httpx.RenderHTML(w, r, h.logger, staffDetailPage(h.layout(), StaffDetailState{
+	httpx.RenderHTML(w, r, h.logger, h.theme.TicketsStaffDetailPage(h.layout(), StaffDetailState{
 		Detail:     detail,
 		Categories: h.svc.Categories().All(),
 	}))

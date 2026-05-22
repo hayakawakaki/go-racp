@@ -19,7 +19,7 @@ type StaffDetailState struct {
 	Categories []domain.Category
 }
 
-func staffDetailPage(layout httpx.Layout, state StaffDetailState) templ.Component {
+func TicketsStaffDetailPage(layout httpx.Layout, state StaffDetailState) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -69,7 +69,7 @@ func staffDetailPage(layout httpx.Layout, state StaffDetailState) templ.Componen
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = Header(state.Detail.Ticket, true, state.Categories).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = header(state.Detail.Ticket, true, state.Categories).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -77,7 +77,7 @@ func staffDetailPage(layout httpx.Layout, state StaffDetailState) templ.Componen
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = Thread(state.Detail.Messages, true, state.Detail.OtherSeenAt).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = TicketsThread(state.Detail.Messages, true, state.Detail.OtherSeenAt).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -85,11 +85,11 @@ func staffDetailPage(layout httpx.Layout, state StaffDetailState) templ.Componen
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = Composer(state.Detail.Ticket, !state.Detail.Ticket.IsTerminal(), true, "").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = composer(state.Detail.Ticket, !state.Detail.Ticket.IsTerminal(), true, "").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = StaffNoteComposer(state.Detail.Ticket).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = staffNoteComposer(state.Detail.Ticket).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

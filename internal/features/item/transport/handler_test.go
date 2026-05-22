@@ -13,12 +13,44 @@ import (
 	"testing"
 	"time"
 
+	"github.com/a-h/templ"
 	"github.com/hayakawakaki/go-racp/internal/features/item/app"
 	"github.com/hayakawakaki/go-racp/internal/features/item/domain"
 	mobdomain "github.com/hayakawakaki/go-racp/internal/features/mob/domain"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/refdata"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
+
+type stubTheme struct{}
+
+func (stubTheme) ItemDetailPage(layout httpx.Layout, state DetailState) templ.Component {
+	return ItemDetailPage(layout, state)
+}
+
+func (stubTheme) ItemListPage(layout httpx.Layout, state ListState) templ.Component {
+	return ItemListPage(layout, state)
+}
+
+func (stubTheme) ItemNotFoundPage(layout httpx.Layout, id string) templ.Component {
+	return ItemNotFoundPage(layout, id)
+}
+
+func (stubTheme) ItemEmptyDatabasePage(layout httpx.Layout) templ.Component {
+	return ItemEmptyDatabasePage(layout)
+}
+
+func (stubTheme) ItemReloadSuccess(status app.ServiceStatus) templ.Component {
+	return ItemReloadSuccess(status)
+}
+
+func (stubTheme) ItemReloadFailure(message string) templ.Component {
+	return ItemReloadFailure(message)
+}
+
+func (stubTheme) ItemReloadConflict() templ.Component {
+	return ItemReloadConflict()
+}
 
 //nolint:govet // fine for test
 type fakeItemService struct {
@@ -84,6 +116,7 @@ func newTestHandler(svc itemService) *Handler {
 	return NewHandler(svc, HandlerConfig{
 		Logger:  discardLogger(),
 		General: config.GeneralConfig{ServerName: "Test", Timezone: "UTC"},
+		Theme:   stubTheme{},
 	})
 }
 
@@ -92,6 +125,7 @@ func newTestHandlerWithDropLookup(svc itemService, lookup dropLookup) *Handler {
 		Logger:     discardLogger(),
 		DropLookup: lookup,
 		General:    config.GeneralConfig{ServerName: "Test", Timezone: "UTC"},
+		Theme:      stubTheme{},
 	})
 }
 

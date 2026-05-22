@@ -10,7 +10,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
-type listState struct {
+type ListState struct {
 	Type    string
 	BaseURL string
 	Page    domain.Page
@@ -54,10 +54,10 @@ func (h *Handler) showList(w http.ResponseWriter, r *http.Request) {
 	if errors.Is(err, domain.ErrSnapshotNotReady) {
 		refreshURL := r.URL.RequestURI()
 		if httpx.IsHTMX(r) {
-			httpx.RenderHTML(w, r, h.logger, loadingContent(refreshURL))
+			httpx.RenderHTML(w, r, h.logger, h.theme.StallLoadingContent(refreshURL))
 			return
 		}
-		httpx.RenderHTML(w, r, h.logger, loadingPage(h.layout(), refreshURL))
+		httpx.RenderHTML(w, r, h.logger, h.theme.StallLoadingPage(h.layout(), refreshURL))
 		return
 	}
 	if err != nil {
@@ -66,10 +66,10 @@ func (h *Handler) showList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	state := listState{Page: page, Type: typeName, ItemID: itemID, BaseURL: "/vendors"}
+	state := ListState{Page: page, Type: typeName, ItemID: itemID, BaseURL: "/vendors"}
 	if httpx.IsHTMX(r) {
-		httpx.RenderHTML(w, r, h.logger, listContent(state))
+		httpx.RenderHTML(w, r, h.logger, h.theme.StallListContent(state))
 		return
 	}
-	httpx.RenderHTML(w, r, h.logger, listPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.StallListPage(h.layout(), state))
 }

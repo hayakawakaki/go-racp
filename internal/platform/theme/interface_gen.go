@@ -4,12 +4,60 @@ package theme
 
 import (
 	"github.com/a-h/templ"
-	home "github.com/hayakawakaki/go-racp/internal/features/home/transport"
+	item "github.com/hayakawakaki/go-racp/internal/features/item/transport"
+	mob "github.com/hayakawakaki/go-racp/internal/features/mob/transport"
+	news "github.com/hayakawakaki/go-racp/internal/features/news/transport"
+	stall "github.com/hayakawakaki/go-racp/internal/features/stall/transport"
+	tickets "github.com/hayakawakaki/go-racp/internal/features/tickets/transport"
+	time "time"
+	admin "github.com/hayakawakaki/go-racp/internal/features/admin/transport"
+	character "github.com/hayakawakaki/go-racp/internal/features/character/transport"
 	httpx "github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	home "github.com/hayakawakaki/go-racp/internal/features/home/transport"
+	app "github.com/hayakawakaki/go-racp/internal/features/item/app"
+	mobapp "github.com/hayakawakaki/go-racp/internal/features/mob/app"
+	domain "github.com/hayakawakaki/go-racp/internal/features/tickets/domain"
+	guild "github.com/hayakawakaki/go-racp/internal/features/guild/transport"
 )
 
 type Theme interface {
+	DashboardContent(state admin.DashboardState) templ.Component
+	DatabaseContent(state admin.DatabaseState) templ.Component
+	AdminLayout(layout httpx.Layout, pageTitle string, content templ.Component) templ.Component
+	CharacterDetailPage(layout httpx.Layout, state character.DetailState) templ.Component
+	GuildDetailPage(layout httpx.Layout, guildName string, state guild.DetailState) templ.Component
+	GuildListPage(layout httpx.Layout, state guild.ListState) templ.Component
 	HomePage(layout httpx.Layout, state home.HomeState) templ.Component
+	ItemDetailPage(layout httpx.Layout, state item.DetailState) templ.Component
+	ItemListPage(layout httpx.Layout, state item.ListState) templ.Component
+	ItemNotFoundPage(layout httpx.Layout, id string) templ.Component
+	ItemEmptyDatabasePage(layout httpx.Layout) templ.Component
+	ItemReloadSuccess(status app.ServiceStatus) templ.Component
+	ItemReloadFailure(message string) templ.Component
+	ItemReloadConflict() templ.Component
+	MobDetailPage(layout httpx.Layout, state mob.DetailState) templ.Component
+	MobListPage(layout httpx.Layout, state mob.ListState) templ.Component
+	MobNotFoundPage(layout httpx.Layout, id string) templ.Component
+	MobEmptyDatabasePage(layout httpx.Layout) templ.Component
+	MobReloadSuccess(status mobapp.ServiceStatus) templ.Component
+	MobReloadFailure(message string) templ.Component
+	MobReloadConflict() templ.Component
+	NewsDetailPage(layout httpx.Layout, state news.NewsDetailState) templ.Component
+	NewsFormPage(layout httpx.Layout, state news.NewsFormState) templ.Component
+	NewsListPage(layout httpx.Layout, state news.NewsListState) templ.Component
+	StallListPage(layout httpx.Layout, state stall.ListState) templ.Component
+	StallLoadingPage(layout httpx.Layout, refreshURL string) templ.Component
+	StallLoadingContent(refreshURL string) templ.Component
+	StallListContent(state stall.ListState) templ.Component
+	StallVendingBox(state stall.StallState) templ.Component
+	TicketsThread(messages []domain.Message, isStaff bool, otherSeenAt time.Time) templ.Component
+	TicketsPlayerReplyResponse(ticket domain.Ticket, messages []domain.Message, otherSeenAt time.Time) templ.Component
+	TicketsPlayerDetailPage(layout httpx.Layout, state tickets.PlayerDetailState) templ.Component
+	TicketsPlayerListPage(layout httpx.Layout, state tickets.PlayerListState) templ.Component
+	TicketsPlayerNewPage(layout httpx.Layout, state tickets.PlayerNewState) templ.Component
+	TicketsStaffDetailPage(layout httpx.Layout, state tickets.StaffDetailState) templ.Component
+	TicketsStaffListPage(layout httpx.Layout, state tickets.StaffListState) templ.Component
+	TicketsStaffListBody(state tickets.StaffListState) templ.Component
 	Page404(layout httpx.Layout) templ.Component
 	Page429(layout httpx.Layout) templ.Component
 	Base(layout httpx.Layout, title string) templ.Component

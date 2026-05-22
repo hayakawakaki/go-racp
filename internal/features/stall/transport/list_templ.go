@@ -15,7 +15,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
-func listPage(layout httpx.Layout, state listState) templ.Component {
+func StallListPage(layout httpx.Layout, state ListState) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -48,7 +48,7 @@ func listPage(layout httpx.Layout, state listState) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = listContent(state).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = StallListContent(state).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -62,7 +62,7 @@ func listPage(layout httpx.Layout, state listState) templ.Component {
 	})
 }
 
-func loadingPage(layout httpx.Layout, refreshURL string) templ.Component {
+func StallLoadingPage(layout httpx.Layout, refreshURL string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -95,7 +95,7 @@ func loadingPage(layout httpx.Layout, refreshURL string) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = loadingContent(refreshURL).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = StallLoadingContent(refreshURL).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -109,7 +109,7 @@ func loadingPage(layout httpx.Layout, refreshURL string) templ.Component {
 	})
 }
 
-func loadingContent(refreshURL string) templ.Component {
+func StallLoadingContent(refreshURL string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -151,7 +151,7 @@ func loadingContent(refreshURL string) templ.Component {
 	})
 }
 
-func listContent(state listState) templ.Component {
+func StallListContent(state ListState) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -415,7 +415,7 @@ func vendorRow(v domain.Vendor) templ.Component {
 	})
 }
 
-func pagination(state listState) templ.Component {
+func pagination(state ListState) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {

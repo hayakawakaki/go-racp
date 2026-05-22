@@ -22,7 +22,7 @@ type NewsDetailState struct {
 	CanManage bool
 }
 
-func newsDetailPage(layout httpx.Layout, state NewsDetailState) templ.Component {
+func NewsDetailPage(layout httpx.Layout, state NewsDetailState) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {

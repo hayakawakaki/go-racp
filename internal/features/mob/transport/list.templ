@@ -15,7 +15,7 @@ type ListState struct {
 	BaseURL string
 }
 
-templ listPage(layout httpx.Layout, state ListState) {
+templ MobListPage(layout httpx.Layout, state ListState) {
 	@httpx.Base(layout, "Monsters") {
 		<div class="w-full max-w-5xl space-y-6">
 			<section class="rounded-2xl bg-white ring-1 ring-gray-200 px-8 py-7">

@@ -22,6 +22,10 @@ var (
 	nonIdentRe  = regexp.MustCompile(`[^a-zA-Z0-9]`)
 	capIdentRe  = regexp.MustCompile(`(^|[^.\w])([A-Z][A-Za-z0-9_]*)`)
 
+	importBlockRe   = regexp.MustCompile(`(?s)import\s*\(([^)]+)\)`)
+	importLineRe    = regexp.MustCompile(`(?m)^\s*(?:(\w+)\s+)?"([^"]+)"`)
+	qualifiedTypeRe = regexp.MustCompile(`\b([a-z][a-zA-Z0-9_]*)\.[A-Z]\w*`)
+
 	skippedDirSegments = map[string]struct{}{
 		"internal":  {},
 		"features":  {},
@@ -31,12 +35,13 @@ var (
 )
 
 type Component struct {
-	Method     string
-	ImportPath string
-	ImportName string
-	FuncName   string
-	Params     string
-	Args       string
+	Method       string
+	ImportPath   string
+	ImportName   string
+	FuncName     string
+	Params       string
+	Args         string
+	ExtraImports []importEntry
 }
 
 type importEntry struct {
@@ -45,7 +50,7 @@ type importEntry struct {
 }
 
 func main() {
-	roots := flag.String("roots", "internal/features/home/transport,internal/platform/httpx", "comma-separated directories to scan for .templ files")
+	roots := flag.String("roots", "internal/features,internal/platform/httpx", "comma-separated directories to scan for .templ files")
 	out := flag.String("out", "internal/platform/theme", "output directory for generated files")
 	module := flag.String("module", "github.com/hayakawakaki/go-racp", "Go module path used to build import paths")
 	flag.Parse()
@@ -96,6 +101,11 @@ func scan(roots []string, module string) ([]Component, error) {
 				return nil
 			}
 
+			norm := filepath.ToSlash(path)
+			if strings.HasPrefix(norm, "internal/features/") && !strings.Contains(norm, "/transport/") {
+				return nil
+			}
+
 			comps, err := extract(path, module)
 			if err != nil {
 				return fmt.Errorf("%s: %w", path, err)
@@ -121,6 +131,7 @@ func extract(path, module string) ([]Component, error) {
 
 	importPath := module + "/" + filepath.ToSlash(filepath.Dir(path))
 	importName := aliasFor(filepath.ToSlash(filepath.Dir(path)))
+	fileImports := parseTemplImports(src)
 
 	var out []Component
 	for _, m := range templFuncRe.FindAllStringSubmatch(src, -1) {
@@ -128,17 +139,67 @@ func extract(path, module string) ([]Component, error) {
 		rawParams := strings.TrimSpace(m[2])
 		params := qualifyTypes(rawParams, importName)
 		args := paramNames(rawParams)
+		extras := referencedImports(rawParams, fileImports)
 		out = append(out, Component{
-			Method:     funcName,
-			ImportPath: importPath,
-			ImportName: importName,
-			FuncName:   funcName,
-			Params:     params,
-			Args:       args,
+			Method:       funcName,
+			ImportPath:   importPath,
+			ImportName:   importName,
+			FuncName:     funcName,
+			Params:       params,
+			Args:         args,
+			ExtraImports: extras,
 		})
 	}
 
 	return out, nil
+}
+
+func parseTemplImports(src string) []importEntry {
+	block := importBlockRe.FindStringSubmatch(src)
+	if len(block) < 2 {
+		return nil
+	}
+
+	var out []importEntry
+	for _, m := range importLineRe.FindAllStringSubmatch(block[1], -1) {
+		alias := m[1]
+		path := m[2]
+		if alias == "" {
+			parts := strings.Split(path, "/")
+			alias = parts[len(parts)-1]
+		}
+		out = append(out, importEntry{Alias: alias, Path: path})
+	}
+
+	return out
+}
+
+func referencedImports(params string, fileImports []importEntry) []importEntry {
+	if len(fileImports) == 0 {
+		return nil
+	}
+
+	byAlias := map[string]importEntry{}
+	for _, imp := range fileImports {
+		byAlias[imp.Alias] = imp
+	}
+
+	seen := map[string]struct{}{}
+	var out []importEntry
+	for _, m := range qualifiedTypeRe.FindAllStringSubmatch(params, -1) {
+		alias := m[1]
+		if _, ok := seen[alias]; ok {
+			continue
+		}
+		imp, found := byAlias[alias]
+		if !found {
+			continue
+		}
+		seen[alias] = struct{}{}
+		out = append(out, imp)
+	}
+
+	return out
 }
 
 func qualifyTypes(params, localAlias string) string {
@@ -182,18 +243,27 @@ func paramNames(params string) string {
 	return strings.Join(names, ", ")
 }
 
-func uniqueImports(comps []Component) []importEntry {
+func uniqueImports(comps []Component) ([]importEntry, error) {
 	seen := map[string]string{}
 	for _, c := range comps {
-		seen[c.ImportPath] = c.ImportName
+		if existing, ok := seen[c.ImportName]; ok && existing != c.ImportPath {
+			return nil, fmt.Errorf("alias collision: %q maps to both %q and %q", c.ImportName, existing, c.ImportPath)
+		}
+		seen[c.ImportName] = c.ImportPath
+		for _, extra := range c.ExtraImports {
+			if existing, ok := seen[extra.Alias]; ok && existing != extra.Path {
+				return nil, fmt.Errorf("alias collision: %q maps to both %q and %q", extra.Alias, existing, extra.Path)
+			}
+			seen[extra.Alias] = extra.Path
+		}
 	}
 
 	out := make([]importEntry, 0, len(seen))
-	for path, alias := range seen {
+	for alias, path := range seen {
 		out = append(out, importEntry{Alias: alias, Path: path})
 	}
 
-	return out
+	return out, nil
 }
 
 func writeIfChanged(path string, content []byte) error {
@@ -210,12 +280,27 @@ func writeIfChanged(path string, content []byte) error {
 }
 
 func writeInterface(outDir string, comps []Component) error {
+	imports, err := uniqueImports(comps)
+	if err != nil {
+		return fmt.Errorf("collect imports: %w", err)
+	}
+
+	var paramsCat strings.Builder
+	for _, c := range comps {
+		paramsCat.WriteString(c.Params)
+		paramsCat.WriteString(" ")
+	}
+	used := paramsCat.String()
+
 	var b strings.Builder
 	b.WriteString(generatedHeader)
 	b.WriteString("package theme\n\n")
 	b.WriteString("import (\n")
 	b.WriteString("\t\"github.com/a-h/templ\"\n")
-	for _, imp := range uniqueImports(comps) {
+	for _, imp := range imports {
+		if !strings.Contains(used, imp.Alias+".") {
+			continue
+		}
 		fmt.Fprintf(&b, "\t%s %q\n", imp.Alias, imp.Path)
 	}
 	b.WriteString(")\n\n")
@@ -229,12 +314,17 @@ func writeInterface(outDir string, comps []Component) error {
 }
 
 func writeDefault(outDir string, comps []Component) error {
+	imports, err := uniqueImports(comps)
+	if err != nil {
+		return fmt.Errorf("collect imports: %w", err)
+	}
+
 	var b strings.Builder
 	b.WriteString(generatedHeader)
 	b.WriteString("package theme\n\n")
 	b.WriteString("import (\n")
 	b.WriteString("\t\"github.com/a-h/templ\"\n")
-	for _, imp := range uniqueImports(comps) {
+	for _, imp := range imports {
 		fmt.Fprintf(&b, "\t%s %q\n", imp.Alias, imp.Path)
 	}
 	b.WriteString(")\n\n")
