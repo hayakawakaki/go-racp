@@ -86,8 +86,5 @@ type Theme interface {
 	TicketsStaffDetailPage(layout httpx.Layout, state tickets.StaffDetailState) templ.Component
 	TicketsStaffListPage(layout httpx.Layout, state tickets.StaffListState) templ.Component
 	TicketsStaffListBody(state tickets.StaffListState) templ.Component
-	Page404(layout httpx.Layout) templ.Component
-	Page429(layout httpx.Layout) templ.Component
-	Base(layout httpx.Layout, title string) templ.Component
 	LocalTime(iso string) templ.Component
 }

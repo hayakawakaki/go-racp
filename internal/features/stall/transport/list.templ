@@ -8,13 +8,13 @@ import (
 )
 
 templ StallListPage(layout httpx.Layout, state ListState) {
-	@httpx.Base(layout, "Vendors") {
+	@httpx.ActiveBase(layout, "Vendors") {
 		@StallListContent(state)
 	}
 }
 
 templ StallLoadingPage(layout httpx.Layout, refreshURL string) {
-	@httpx.Base(layout, "Vendors") {
+	@httpx.ActiveBase(layout, "Vendors") {
 		@StallLoadingContent(refreshURL)
 	}
 }

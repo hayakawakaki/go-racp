@@ -117,7 +117,7 @@ func NewsDetailPage(layout httpx.Layout, state NewsDetailState) templ.Component 
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = httpx.Base(layout, state.Item.Title).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = httpx.ActiveBase(layout, state.Item.Title).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

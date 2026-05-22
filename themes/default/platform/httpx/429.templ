@@ -1,6 +1,8 @@
 package httpx
 
-templ Page429(layout Layout) {
+import platformhttpx "github.com/hayakawakaki/go-racp/internal/platform/httpx"
+
+templ Page429(layout platformhttpx.Layout) {
 	@Base(layout, "Rate Limited") {
 		<div class="w-full max-w-md bg-white rounded-lg shadow-md p-8 text-center">
 			<h1 class="text-6xl font-bold mb-2 text-red-600">Error 429</h1>

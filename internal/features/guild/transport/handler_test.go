@@ -14,6 +14,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/features/guild/app"
 	"github.com/hayakawakaki/go-racp/internal/features/guild/domain"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	_ "github.com/hayakawakaki/go-racp/themes/default/platform/httpx"
 )
 
 type stubTheme struct{}

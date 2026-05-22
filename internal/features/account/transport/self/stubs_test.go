@@ -16,6 +16,7 @@ import (
 	characterapp "github.com/hayakawakaki/go-racp/internal/features/character/app"
 	actiontokendomain "github.com/hayakawakaki/go-racp/internal/platform/actiontoken/domain"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	_ "github.com/hayakawakaki/go-racp/themes/default/platform/httpx"
 )
 
 const stubSessionTTL = 24 * time.Hour

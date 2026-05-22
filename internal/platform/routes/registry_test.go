@@ -14,6 +14,7 @@ import (
 	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/server/config"
+	_ "github.com/hayakawakaki/go-racp/themes/default/platform/httpx"
 )
 
 type stubSession struct {

@@ -62,7 +62,7 @@ func ItemNotFoundPage(layout httpx.Layout, id string) templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = httpx.Base(layout, "Item not found").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = httpx.ActiveBase(layout, "Item not found").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -109,7 +109,7 @@ func ItemEmptyDatabasePage(layout httpx.Layout) templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = httpx.Base(layout, "Items").Render(templ.WithChildren(ctx, templ_7745c5c3_Var5), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = httpx.ActiveBase(layout, "Items").Render(templ.WithChildren(ctx, templ_7745c5c3_Var5), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

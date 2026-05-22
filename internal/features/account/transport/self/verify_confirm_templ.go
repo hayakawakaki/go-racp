@@ -77,7 +77,7 @@ func AccountVerifyConfirmPage(layout httpx.Layout, state VerifyConfirmState) tem
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = httpx.Base(layout, "Verify your email").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = httpx.ActiveBase(layout, "Verify your email").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

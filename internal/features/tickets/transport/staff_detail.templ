@@ -12,7 +12,7 @@ type StaffDetailState struct {
 }
 
 templ TicketsStaffDetailPage(layout httpx.Layout, state StaffDetailState) {
-	@httpx.Base(layout, "Staff ticket") {
+	@httpx.ActiveBase(layout, "Staff ticket") {
 		<div class="w-full max-w-4xl self-start">
 			<div class="mb-4 flex items-center justify-between">
 				<a href="/tickets" class="text-sm text-blue-600 hover:underline">← Back to queue</a>

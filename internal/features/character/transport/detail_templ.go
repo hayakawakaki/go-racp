@@ -294,7 +294,7 @@ func CharacterDetailPage(layout httpx.Layout, state DetailState) templ.Component
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = httpx.Base(layout, "Character").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = httpx.ActiveBase(layout, "Character").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

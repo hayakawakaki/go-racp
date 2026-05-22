@@ -15,6 +15,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	_ "github.com/hayakawakaki/go-racp/themes/default/platform/httpx"
 )
 
 type stubUserService struct {

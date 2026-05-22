@@ -8,7 +8,9 @@ package httpx
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-func Page429(layout Layout) templ.Component {
+import platformhttpx "github.com/hayakawakaki/go-racp/internal/platform/httpx"
+
+func Page404(layout platformhttpx.Layout) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -41,13 +43,13 @@ func Page429(layout Layout) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"w-full max-w-md bg-white rounded-lg shadow-md p-8 text-center\"><h1 class=\"text-6xl font-bold mb-2 text-red-600\">Error 429</h1><p class=\"text-gray-700 mb-6\">You are currently being rate-limited.</p><a href=\"/\" class=\"inline-block rounded bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 transition\">Return to Home</a></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"w-full max-w-md bg-white rounded-lg shadow-md p-8 text-center\"><h1 class=\"text-6xl font-bold mb-2 text-red-600\">Error 404</h1><p class=\"text-gray-700 mb-6\">The page you are looking for doesn't exist.</p><a href=\"/\" class=\"inline-block rounded bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 transition\">Return to Home</a></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Base(layout, "Rate Limited").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Base(layout, "Not Found").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

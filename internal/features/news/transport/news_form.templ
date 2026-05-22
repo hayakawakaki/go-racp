@@ -21,7 +21,7 @@ type NewsFormState struct {
 }
 
 templ NewsFormPage(layout httpx.Layout, state NewsFormState) {
-	@httpx.Base(layout, state.PageTitle) {
+	@httpx.ActiveBase(layout, state.PageTitle) {
 		<div class="w-full max-w-6xl self-start p-6">
 			<div class="mb-4">
 				<a href="/news" class="text-sm text-blue-600 hover:underline">&larr; News</a>

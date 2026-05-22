@@ -23,7 +23,7 @@ var itemTypeOptions = []string{
 }
 
 templ ItemListPage(layout httpx.Layout, state ListState) {
-	@httpx.Base(layout, "Items") {
+	@httpx.ActiveBase(layout, "Items") {
 		<div class="w-full max-w-5xl space-y-6">
 			<section class="rounded-2xl bg-white ring-1 ring-gray-200 px-8 py-7">
 				<div class="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">

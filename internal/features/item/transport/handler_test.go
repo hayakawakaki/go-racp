@@ -20,6 +20,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/refdata"
 	"github.com/hayakawakaki/go-racp/server/config"
+	_ "github.com/hayakawakaki/go-racp/themes/default/platform/httpx"
 )
 
 type stubTheme struct{}

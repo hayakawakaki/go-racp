@@ -17,6 +17,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
+	_ "github.com/hayakawakaki/go-racp/themes/default/platform/httpx"
 )
 
 func middlewareCtxWithActor(ctx context.Context, userID int) context.Context {

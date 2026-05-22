@@ -2,4 +2,8 @@
 
 package theme
 
+import (
+	_ "github.com/hayakawakaki/go-racp/themes/default/platform/httpx"
+)
+
 var Active Theme = DefaultTheme{}

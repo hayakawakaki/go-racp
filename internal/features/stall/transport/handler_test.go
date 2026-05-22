@@ -12,6 +12,7 @@ import (
 	itemdomain "github.com/hayakawakaki/go-racp/internal/features/item/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/stall/domain"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	_ "github.com/hayakawakaki/go-racp/themes/default/platform/httpx"
 )
 
 type stubTheme struct{}

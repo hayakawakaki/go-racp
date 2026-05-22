@@ -44,7 +44,7 @@ templ AccountChangeEmailForm(state ChangeEmailState) {
 }
 
 templ AccountChangeEmailPage(layout httpx.Layout, state ChangeEmailState) {
-	@httpx.Base(layout, "Change email") {
+	@httpx.ActiveBase(layout, "Change email") {
 		<div class="w-full max-w-md bg-white rounded-lg shadow-md p-8">
 			<h1 class="text-2xl font-semibold mb-4 text-gray-900">Change email</h1>
 			@AccountChangeEmailForm(state)

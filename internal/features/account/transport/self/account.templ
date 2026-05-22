@@ -16,7 +16,7 @@ type AccountState struct {
 }
 
 templ AccountPage(layout httpx.Layout, state AccountState) {
-	@httpx.Base(layout, "Account") {
+	@httpx.ActiveBase(layout, "Account") {
 		<div class="w-full max-w-4xl space-y-6">
 			if state.Account.Restricted {
 				<div class="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-amber-900">

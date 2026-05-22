@@ -18,7 +18,7 @@ type PlayerNewState struct {
 }
 
 templ TicketsPlayerNewPage(layout httpx.Layout, state PlayerNewState) {
-	@httpx.Base(layout, "Open ticket") {
+	@httpx.ActiveBase(layout, "Open ticket") {
 		<div class="w-full max-w-2xl self-start">
 			<div class="mb-5">
 				<a href="/tickets" class="text-sm text-blue-600 hover:underline">← Back to tickets</a>

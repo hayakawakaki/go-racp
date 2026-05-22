@@ -12,7 +12,7 @@ type LoginFormState struct {
 }
 
 templ AccountLoginPage(layout httpx.Layout, state LoginFormState) {
-	@httpx.Base(layout, "Sign in") {
+	@httpx.ActiveBase(layout, "Sign in") {
 		<div class="w-full max-w-md bg-white rounded-lg shadow-md p-8">
 			<h1 class="text-2xl font-semibold mb-6 text-center text-gray-900">Sign in</h1>
 			if state.Notice != "" {

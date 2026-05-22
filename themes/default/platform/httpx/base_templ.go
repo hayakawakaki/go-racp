@@ -8,9 +8,13 @@ package httpx
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-import "github.com/hayakawakaki/go-racp/internal/platform/security"
+import (
+	"github.com/hayakawakaki/go-racp/internal/platform/security"
 
-func Base(layout Layout, title string) templ.Component {
+	platformhttpx "github.com/hayakawakaki/go-racp/internal/platform/httpx"
+)
+
+func Base(layout platformhttpx.Layout, title string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -46,7 +50,7 @@ func Base(layout Layout, title string) templ.Component {
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(layout.ServerName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/platform/httpx/base.templ`, Line: 12, Col: 29}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/platform/httpx/base.templ`, Line: 16, Col: 29}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
@@ -59,7 +63,7 @@ func Base(layout Layout, title string) templ.Component {
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/platform/httpx/base.templ`, Line: 12, Col: 41}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/platform/httpx/base.templ`, Line: 16, Col: 41}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
@@ -72,7 +76,7 @@ func Base(layout Layout, title string) templ.Component {
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(security.HxHeadersValue(ctx))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/platform/httpx/base.templ`, Line: 19, Col: 44}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/platform/httpx/base.templ`, Line: 23, Col: 44}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {

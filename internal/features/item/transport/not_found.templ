@@ -3,7 +3,7 @@ package transport
 import "github.com/hayakawakaki/go-racp/internal/platform/httpx"
 
 templ ItemNotFoundPage(layout httpx.Layout, id string) {
-	@httpx.Base(layout, "Item not found") {
+	@httpx.ActiveBase(layout, "Item not found") {
 		<div class="w-full max-w-md">
 			<section class="rounded-2xl bg-white ring-1 ring-gray-200 px-8 py-7 text-center">
 				<p class="text-xs uppercase tracking-[0.18em] text-gray-400">404</p>
@@ -27,7 +27,7 @@ templ ItemNotFoundPage(layout httpx.Layout, id string) {
 }
 
 templ ItemEmptyDatabasePage(layout httpx.Layout) {
-	@httpx.Base(layout, "Items") {
+	@httpx.ActiveBase(layout, "Items") {
 		<div class="w-full max-w-xl">
 			<section class="rounded-2xl bg-white ring-1 ring-gray-200 px-8 py-7">
 				<p class="text-xs uppercase tracking-[0.18em] text-gray-400">Item Database</p>

@@ -1,8 +1,12 @@
 package httpx
 
-import "github.com/hayakawakaki/go-racp/internal/platform/security"
+import (
+	"github.com/hayakawakaki/go-racp/internal/platform/security"
 
-templ Base(layout Layout, title string) {
+	platformhttpx "github.com/hayakawakaki/go-racp/internal/platform/httpx"
+)
+
+templ Base(layout platformhttpx.Layout, title string) {
 	<!DOCTYPE html>
 	<html lang="en">
 		<head>

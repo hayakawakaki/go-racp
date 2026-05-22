@@ -3,7 +3,7 @@ package transport
 import "github.com/hayakawakaki/go-racp/internal/platform/httpx"
 
 templ MobNotFoundPage(layout httpx.Layout, id string) {
-	@httpx.Base(layout, "Monster not found") {
+	@httpx.ActiveBase(layout, "Monster not found") {
 		<div class="w-full max-w-md">
 			<section class="rounded-2xl bg-white ring-1 ring-gray-200 px-8 py-7 text-center">
 				<p class="text-xs uppercase tracking-[0.18em] text-gray-400">404</p>
@@ -27,7 +27,7 @@ templ MobNotFoundPage(layout httpx.Layout, id string) {
 }
 
 templ MobEmptyDatabasePage(layout httpx.Layout) {
-	@httpx.Base(layout, "Monsters") {
+	@httpx.ActiveBase(layout, "Monsters") {
 		<div class="w-full max-w-xl">
 			<section class="rounded-2xl bg-white ring-1 ring-gray-200 px-8 py-7">
 				<p class="text-xs uppercase tracking-[0.18em] text-gray-400">Mob Database</p>

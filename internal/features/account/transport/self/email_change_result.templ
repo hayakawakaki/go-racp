@@ -19,7 +19,7 @@ type EmailChangeResultState struct {
 }
 
 templ AccountEmailChangeResultPage(layout httpx.Layout, state EmailChangeResultState) {
-	@httpx.Base(layout, "Email change") {
+	@httpx.ActiveBase(layout, "Email change") {
 		<div class="w-full max-w-md bg-white rounded-lg shadow-md p-8">
 			switch state.Kind {
 				case EmailChangeResultSuccess:

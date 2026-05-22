@@ -15,7 +15,7 @@ type VerifyResultState struct {
 }
 
 templ AccountVerifyResultPage(layout httpx.Layout, state VerifyResultState) {
-	@httpx.Base(layout, "Verification") {
+	@httpx.ActiveBase(layout, "Verification") {
 		<div class="w-full max-w-md bg-white rounded-lg shadow-md p-8">
 			switch state.Kind {
 				case VerifyResultSuccess:

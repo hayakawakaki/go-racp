@@ -16,7 +16,7 @@ type DetailState struct {
 }
 
 templ CharacterDetailPage(layout httpx.Layout, state DetailState) {
-	@httpx.Base(layout, "Character") {
+	@httpx.ActiveBase(layout, "Character") {
 		<div class="w-full max-w-4xl space-y-6">
 			<nav class="text-xs uppercase tracking-[0.18em] text-gray-400">
 				<a href="/account" class="transition hover:text-gray-700">Account</a>

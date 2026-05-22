@@ -278,18 +278,6 @@ func (DefaultTheme) TicketsStaffListBody(state tickets.StaffListState) templ.Com
 	return tickets.TicketsStaffListBody(state)
 }
 
-func (DefaultTheme) Page404(layout httpx.Layout) templ.Component {
-	return httpx.Page404(layout)
-}
-
-func (DefaultTheme) Page429(layout httpx.Layout) templ.Component {
-	return httpx.Page429(layout)
-}
-
-func (DefaultTheme) Base(layout httpx.Layout, title string) templ.Component {
-	return httpx.Base(layout, title)
-}
-
 func (DefaultTheme) LocalTime(iso string) templ.Component {
 	return httpx.LocalTime(iso)
 }

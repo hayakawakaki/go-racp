@@ -16,7 +16,7 @@ type NewsListState struct {
 }
 
 templ NewsListPage(layout httpx.Layout, state NewsListState) {
-	@httpx.Base(layout, "News") {
+	@httpx.ActiveBase(layout, "News") {
 		<div class="w-full max-w-3xl self-start p-6">
 			<div class="flex items-center justify-between mb-6 gap-3">
 				<h1 class="text-2xl font-semibold text-gray-900">News</h1>

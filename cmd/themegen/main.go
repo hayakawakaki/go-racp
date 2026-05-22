@@ -34,6 +34,13 @@ var (
 		"platform":  {},
 		"transport": {},
 	}
+
+	platformOverrideable = []string{"Base", "Page404", "Page429"}
+	platformVarFor       = map[string]string{
+		"Base":    "ActiveBase",
+		"Page404": "ActivePage404",
+		"Page429": "ActivePage429",
+	}
 )
 
 type Component struct {
@@ -54,6 +61,7 @@ type importEntry struct {
 func main() {
 	roots := flag.String("roots", "internal/features,internal/platform/httpx", "comma-separated directories to scan for .templ files")
 	out := flag.String("out", "internal/platform/theme", "output directory for generated files")
+	themesDir := flag.String("themes", "themes", "directory containing theme subdirectories")
 	module := flag.String("module", "github.com/hayakawakaki/go-racp", "Go module path used to build import paths")
 	flag.Parse()
 
@@ -70,23 +78,28 @@ func main() {
 		log.Fatalf("themegen: scan: %v", err)
 	}
 
-	if err := os.MkdirAll(*out, dirPerm); err != nil {
+	if err = os.MkdirAll(*out, dirPerm); err != nil {
 		log.Fatalf("themegen: mkdir: %v", err)
 	}
 
-	if err := writeInterface(*out, discovered); err != nil {
+	if err = writeInterface(*out, discovered); err != nil {
 		log.Fatalf("themegen: write interface: %v", err)
 	}
 
-	if err := writeDefault(*out, discovered); err != nil {
+	if err = writeDefault(*out, discovered); err != nil {
 		log.Fatalf("themegen: write default: %v", err)
 	}
 
-	if err := writeActiveDefault(*out); err != nil {
+	if err = writeActiveDefault(*out); err != nil {
 		log.Fatalf("themegen: write active_default: %v", err)
 	}
 
-	fmt.Printf("themegen: wrote %d components\n", len(discovered))
+	registers, err := writeThemeRegisters(*themesDir, *module)
+	if err != nil {
+		log.Fatalf("themegen: write theme registers: %v", err)
+	}
+
+	fmt.Printf("themegen: wrote %d components, %d theme registers\n", len(discovered), registers)
 }
 
 func scan(roots []string, module string) ([]Component, error) {
@@ -357,8 +370,106 @@ func writeDefault(outDir string, comps []Component) error {
 func writeActiveDefault(outDir string) error {
 	body := generatedHeader + `package theme
 
+import (
+	_ "github.com/hayakawakaki/go-racp/themes/default/platform/httpx"
+)
+
 var Active Theme = DefaultTheme{}
 `
 
 	return writeIfChanged(filepath.Join(outDir, "active_default_gen.go"), []byte(body))
+}
+
+func writeThemeRegisters(themesDir, module string) (int, error) {
+	entries, err := os.ReadDir(themesDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return 0, nil
+		}
+
+		return 0, fmt.Errorf("read themes dir %s: %w", themesDir, err)
+	}
+
+	count := 0
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+
+		themeName := entry.Name()
+		httpxDir := filepath.Join(themesDir, themeName, "platform", "httpx")
+		info, err := os.Stat(httpxDir)
+		if err != nil || !info.IsDir() {
+			continue
+		}
+
+		overrides, err := discoverPlatformOverrides(httpxDir)
+		if err != nil {
+			return count, fmt.Errorf("discover overrides %s: %w", themeName, err)
+		}
+		if len(overrides) == 0 {
+			continue
+		}
+
+		if err := writeRegister(themeName, httpxDir, module, overrides); err != nil {
+			return count, fmt.Errorf("write register %s: %w", themeName, err)
+		}
+
+		count++
+	}
+
+	return count, nil
+}
+
+func discoverPlatformOverrides(dir string) ([]string, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, fmt.Errorf("read %s: %w", dir, err)
+	}
+
+	found := map[string]bool{}
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".templ") {
+			continue
+		}
+
+		data, err := os.ReadFile(filepath.Join(dir, entry.Name())) //nolint:gosec // path from ReadDir
+		if err != nil {
+			return nil, fmt.Errorf("read %s: %w", entry.Name(), err)
+		}
+
+		for _, m := range templFuncRe.FindAllStringSubmatch(string(data), -1) {
+			if _, ok := platformVarFor[m[1]]; ok {
+				found[m[1]] = true
+			}
+		}
+	}
+
+	var out []string
+	for _, name := range platformOverrideable {
+		if found[name] {
+			out = append(out, name)
+		}
+	}
+
+	return out, nil
+}
+
+func writeRegister(themeName, dir, module string, overrides []string) error {
+	var b strings.Builder
+	b.WriteString(generatedHeader)
+	b.WriteString("package httpx\n\n")
+	b.WriteString("import (\n")
+	fmt.Fprintf(&b, "\tplatformhttpx %q\n", module+"/internal/platform/httpx")
+	if themeName != "default" {
+		fmt.Fprintf(&b, "\t_ %q\n", module+"/themes/default/platform/httpx")
+	}
+	b.WriteString(")\n\n")
+	b.WriteString("func init() {\n")
+	for _, name := range overrides {
+		fmt.Fprintf(&b, "\tplatformhttpx.%s = %s\n", platformVarFor[name], name)
+	}
+	b.WriteString("}\n")
+
+	return writeIfChanged(filepath.Join(dir, "register.go"), []byte(b.String()))
 }

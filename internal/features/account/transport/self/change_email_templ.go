@@ -198,7 +198,7 @@ func AccountChangeEmailPage(layout httpx.Layout, state ChangeEmailState) templ.C
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = httpx.Base(layout, "Change email").Render(templ.WithChildren(ctx, templ_7745c5c3_Var7), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = httpx.ActiveBase(layout, "Change email").Render(templ.WithChildren(ctx, templ_7745c5c3_Var7), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
