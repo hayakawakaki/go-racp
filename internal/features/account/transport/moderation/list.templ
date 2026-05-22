@@ -7,11 +7,11 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
-templ listPage(layout httpx.Layout, state listState) {
-	@admintransport.AdminLayout(layout, "Users", listContent(state))
+templ UsersListPage(layout httpx.Layout, state ListState) {
+	@admintransport.AdminLayout(layout, "Users", UsersListContent(state))
 }
 
-templ listContent(state listState) {
+templ UsersListContent(state ListState) {
 	<div class="space-y-4">
 		<header class="flex items-center justify-between gap-4">
 			<h1 class="text-2xl font-semibold text-gray-900">Users</h1>
@@ -73,7 +73,7 @@ templ listContent(state listState) {
 	</div>
 }
 
-templ pagination(state listState) {
+templ pagination(state ListState) {
 	<nav class="flex justify-between text-sm">
 		<span class="text-gray-500">{ fmt.Sprintf("Page %d of %d - %d total", state.Page.Page, max(state.Page.TotalPages, 1), state.Page.Total) }</span>
 		<div class="flex gap-2">

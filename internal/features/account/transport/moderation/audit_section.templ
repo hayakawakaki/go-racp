@@ -6,7 +6,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
-templ auditSection(state detailState) {
+templ auditSection(state DetailState) {
 	<section class="rounded-2xl bg-white ring-1 ring-gray-200 p-5">
 		<h2 class="text-lg font-semibold text-gray-900 mb-3">Recent actions</h2>
 		if len(state.Detail.Recent) == 0 {

@@ -4,6 +4,7 @@ package theme
 
 import (
 	"github.com/a-h/templ"
+	accountmoderation "github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation"
 	admin "github.com/hayakawakaki/go-racp/internal/features/admin/transport"
 	character "github.com/hayakawakaki/go-racp/internal/features/character/transport"
 	guild "github.com/hayakawakaki/go-racp/internal/features/guild/transport"
@@ -23,6 +24,30 @@ import (
 type DefaultTheme struct{}
 
 var _ Theme = DefaultTheme{}
+
+func (DefaultTheme) UsersDetailPage(layout httpx.Layout, username string, state accountmoderation.DetailState) templ.Component {
+	return accountmoderation.UsersDetailPage(layout, username, state)
+}
+
+func (DefaultTheme) UsersDetailContent(state accountmoderation.DetailState) templ.Component {
+	return accountmoderation.UsersDetailContent(state)
+}
+
+func (DefaultTheme) UsersListPage(layout httpx.Layout, state accountmoderation.ListState) templ.Component {
+	return accountmoderation.UsersListPage(layout, state)
+}
+
+func (DefaultTheme) UsersListContent(state accountmoderation.ListState) templ.Component {
+	return accountmoderation.UsersListContent(state)
+}
+
+func (DefaultTheme) UsersNotFoundPage(layout httpx.Layout, id string) templ.Component {
+	return accountmoderation.UsersNotFoundPage(layout, id)
+}
+
+func (DefaultTheme) UsersActionError(message string) templ.Component {
+	return accountmoderation.UsersActionError(message)
+}
 
 func (DefaultTheme) DashboardContent(state admin.DashboardState) templ.Component {
 	return admin.DashboardContent(state)

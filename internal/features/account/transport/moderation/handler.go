@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/a-h/templ"
 	app "github.com/hayakawakaki/go-racp/internal/features/account/app/moderation"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
@@ -20,15 +21,28 @@ type userService interface {
 	AllowedRoles() map[int]string
 }
 
-type HandlerConfig struct {
-	Logger  *slog.Logger
-	General config.GeneralConfig
+type Renderer interface {
+	UsersListPage(layout httpx.Layout, state ListState) templ.Component
+	UsersListContent(state ListState) templ.Component
+	UsersDetailPage(layout httpx.Layout, username string, state DetailState) templ.Component
+	UsersDetailContent(state DetailState) templ.Component
+	UsersNotFoundPage(layout httpx.Layout, id string) templ.Component
+	UsersActionError(message string) templ.Component
 }
 
+//nolint:govet // GeneralConfig trailing bool forces alignment cost
+type HandlerConfig struct {
+	General config.GeneralConfig
+	Theme   Renderer
+	Logger  *slog.Logger
+}
+
+//nolint:govet // GeneralConfig trailing bool forces alignment cost
 type Handler struct {
-	svc     userService
-	logger  *slog.Logger
 	general config.GeneralConfig
+	svc     userService
+	theme   Renderer
+	logger  *slog.Logger
 }
 
 func NewHandler(svc userService, cfg HandlerConfig) *Handler {
@@ -37,7 +51,7 @@ func NewHandler(svc userService, cfg HandlerConfig) *Handler {
 		logger = slog.Default()
 	}
 
-	return &Handler{svc: svc, logger: logger, general: cfg.General}
+	return &Handler{svc: svc, logger: logger, general: cfg.General, theme: cfg.Theme}
 }
 
 func (h *Handler) layout() httpx.Layout {

@@ -5,11 +5,11 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
-templ detailPage(layout httpx.Layout, username string, state detailState) {
-	@admintransport.AdminLayout(layout, "Users / "+username, detailContent(state))
+templ UsersDetailPage(layout httpx.Layout, username string, state DetailState) {
+	@admintransport.AdminLayout(layout, "Users / "+username, UsersDetailContent(state))
 }
 
-templ detailContent(state detailState) {
+templ UsersDetailContent(state DetailState) {
 	<div id="user-detail" class="space-y-6">
 		@accountSection(state)
 		@charactersSection(state)

@@ -6,7 +6,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/security"
 )
 
-templ actionsSection(state detailState) {
+templ actionsSection(state DetailState) {
 	<section class="rounded-2xl bg-white ring-1 ring-gray-200 p-5 space-y-4">
 		<h2 class="text-lg font-semibold text-gray-900">Actions</h2>
 		<div class="grid gap-4 md:grid-cols-3 items-stretch">
@@ -107,7 +107,7 @@ templ unbanForm(targetID int) {
 	</div>
 }
 
-templ setRoleForm(state detailState) {
+templ setRoleForm(state DetailState) {
 	<div class="rounded-xl ring-1 ring-gray-200 p-4 flex flex-col gap-3">
 		@actionCardHeader("bg-slate-500", "Set role")
 		<form

@@ -4,6 +4,7 @@ package theme
 
 import (
 	"github.com/a-h/templ"
+	accountmoderation "github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation"
 	admin "github.com/hayakawakaki/go-racp/internal/features/admin/transport"
 	character "github.com/hayakawakaki/go-racp/internal/features/character/transport"
 	guild "github.com/hayakawakaki/go-racp/internal/features/guild/transport"
@@ -21,6 +22,12 @@ import (
 )
 
 type Theme interface {
+	UsersDetailPage(layout httpx.Layout, username string, state accountmoderation.DetailState) templ.Component
+	UsersDetailContent(state accountmoderation.DetailState) templ.Component
+	UsersListPage(layout httpx.Layout, state accountmoderation.ListState) templ.Component
+	UsersListContent(state accountmoderation.ListState) templ.Component
+	UsersNotFoundPage(layout httpx.Layout, id string) templ.Component
+	UsersActionError(message string) templ.Component
 	DashboardContent(state admin.DashboardState) templ.Component
 	DatabaseContent(state admin.DatabaseState) templ.Component
 	AdminLayout(layout httpx.Layout, pageTitle string, content templ.Component) templ.Component

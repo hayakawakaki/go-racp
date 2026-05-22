@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/a-h/templ"
 	app "github.com/hayakawakaki/go-racp/internal/features/account/app/moderation"
 	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
@@ -82,10 +83,32 @@ func (s *stubUsers) GetByID(_ context.Context, id int) (*accdomain.User, error) 
 	return &accdomain.User{ID: id}, nil
 }
 
+type stubTheme struct{}
+
+func (stubTheme) UsersListPage(layout httpx.Layout, state ListState) templ.Component {
+	return UsersListPage(layout, state)
+}
+func (stubTheme) UsersListContent(state ListState) templ.Component {
+	return UsersListContent(state)
+}
+func (stubTheme) UsersDetailPage(layout httpx.Layout, username string, state DetailState) templ.Component {
+	return UsersDetailPage(layout, username, state)
+}
+func (stubTheme) UsersDetailContent(state DetailState) templ.Component {
+	return UsersDetailContent(state)
+}
+func (stubTheme) UsersNotFoundPage(layout httpx.Layout, id string) templ.Component {
+	return UsersNotFoundPage(layout, id)
+}
+func (stubTheme) UsersActionError(message string) templ.Component {
+	return UsersActionError(message)
+}
+
 func newTestHandler() *Handler {
 	return NewHandler(&stubService{}, HandlerConfig{
 		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
 		General: config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
+		Theme:   stubTheme{},
 	})
 }
 
@@ -137,6 +160,7 @@ func TestHandler_ShowList_RendersUsernames(t *testing.T) {
 	h := NewHandler(svc, HandlerConfig{
 		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
 		General: config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
+		Theme:   stubTheme{},
 	})
 
 	rr := httptest.NewRecorder()
@@ -167,6 +191,7 @@ func TestHandler_ShowList_ExcludesActor(t *testing.T) {
 	h := NewHandler(svc, HandlerConfig{
 		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
 		General: config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
+		Theme:   stubTheme{},
 	})
 
 	rr := httptest.NewRecorder()
@@ -189,6 +214,7 @@ func TestHandler_ShowList_HTMXFragment(t *testing.T) {
 	h := NewHandler(svc, HandlerConfig{
 		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
 		General: config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
+		Theme:   stubTheme{},
 	})
 
 	rr := httptest.NewRecorder()
@@ -219,6 +245,7 @@ func TestHandler_ShowDetail_RendersUsernameAndChars(t *testing.T) {
 	h := NewHandler(svc, HandlerConfig{
 		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
 		General: config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
+		Theme:   stubTheme{},
 	})
 
 	rr := httptest.NewRecorder()
@@ -242,6 +269,7 @@ func TestHandler_ShowDetail_NotFound(t *testing.T) {
 	h := NewHandler(svc, HandlerConfig{
 		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
 		General: config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
+		Theme:   stubTheme{},
 	})
 
 	rr := httptest.NewRecorder()
@@ -268,6 +296,7 @@ func TestHandler_DoBan_SwapsDetail(t *testing.T) {
 	h := NewHandler(svc, HandlerConfig{
 		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
 		General: config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
+		Theme:   stubTheme{},
 	})
 
 	rr := httptest.NewRecorder()
@@ -296,6 +325,7 @@ func TestHandler_DoBan_ValidationError(t *testing.T) {
 	h := NewHandler(svc, HandlerConfig{
 		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
 		General: config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
+		Theme:   stubTheme{},
 	})
 
 	rr := httptest.NewRecorder()
@@ -329,6 +359,7 @@ func TestHandler_DoUnban_Calls(t *testing.T) {
 	h := NewHandler(svc, HandlerConfig{
 		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
 		General: config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
+		Theme:   stubTheme{},
 	})
 
 	rr := httptest.NewRecorder()
@@ -363,6 +394,7 @@ func TestHandler_DoSetRole_Calls(t *testing.T) {
 	h := NewHandler(svc, HandlerConfig{
 		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
 		General: config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
+		Theme:   stubTheme{},
 	})
 
 	rr := httptest.NewRecorder()
@@ -460,7 +492,7 @@ func TestBuildRoleOptions(t *testing.T) {
 func TestRoleNameFor(t *testing.T) {
 	t.Parallel()
 
-	state := detailState{
+	state := DetailState{
 		AllowedRoles: []roleOption{
 			{GroupID: 0, Name: "Player"},
 			{GroupID: 20, Name: "Moderator"},
@@ -517,6 +549,7 @@ func TestHandler_DoBan_ThreadsActorIsAdminFromSnapshot(t *testing.T) {
 			h := NewHandler(svc, HandlerConfig{
 				Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
 				General: config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
+				Theme:   stubTheme{},
 			})
 
 			rr := httptest.NewRecorder()
