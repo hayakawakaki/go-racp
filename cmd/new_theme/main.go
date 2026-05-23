@@ -46,7 +46,8 @@ func main() {
 	fmt.Printf("themes/%s/ created. Next steps:\n", *name)
 	fmt.Printf("  1. Edit themes/%s/theme.yml. Fill in Author.Name (DisplayName defaults to %q)\n", *name, *name+" Theme")
 	fmt.Printf("  2. Add files under themes/%s/ to override defaults (see GUIDE_AUTHORING_THEMES.md)\n", *name)
-	fmt.Printf("  3. Set 'Theme: %s' in config.yml when ready to activate\n", *name)
+	fmt.Printf("  3. For any pages added under themes/%s/pages/, add a matching ThemePages.<X> entry to themes/%s/access.yml\n", *name, *name)
+	fmt.Printf("  4. Set 'Theme: %s' in config.yml when ready to activate\n", *name)
 }
 
 func createDirs(root string) error {
@@ -76,9 +77,10 @@ func createDirs(root string) error {
 func renderTemplates(root string, data map[string]string) error {
 	files := map[string]string{
 		"theme.yml":       "theme.yml.tmpl",
-		"pages.yml":       "pages.yml.tmpl",
+		"access.yml":      "access.yml.tmpl",
 		"pages_embed.go":  "pages_embed.go.tmpl",
 		"static_embed.go": "static_embed.go.tmpl",
+		"access_embed.go": "access_embed.go.tmpl",
 	}
 
 	for outName, tmplName := range files {

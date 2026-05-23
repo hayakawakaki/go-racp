@@ -1,0 +1,8 @@
+# Per-theme access config. Operator owns this file.
+# Contains only ThemePages.* entries (other groups belong in root access.yml).
+
+ThemePages:
+  Rates:
+    Roles: ["Public"]
+  ServerInfo:
+    Roles: ["Public"]

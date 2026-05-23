@@ -21,7 +21,7 @@ func init() {
 }
 
 func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
-	access := config.ProcessAccessConfig()
+	access := config.ProcessAccessConfig(theme.ActiveAccessYAML())
 	categories := buildCategoryResolver(in.Config.App.NewsCategories)
 	repo := infra.NewRepository(in.DB)
 	service := app.NewService(repo, categories, in.Logger)

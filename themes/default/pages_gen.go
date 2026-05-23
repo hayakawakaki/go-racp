@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 	"github.com/hayakawakaki/go-racp/internal/platform/themepage"
 	pages "github.com/hayakawakaki/go-racp/themes/default/pages"
 )
@@ -33,15 +34,15 @@ func mustRead(fs embed.FS, path string) []byte {
 	return data
 }
 
-func MountRoutes(mux *http.ServeMux, layout httpx.Layout) {
-	mux.HandleFunc("/rates", func(w http.ResponseWriter, r *http.Request) {
+func MountRoutes(reg *routes.Registry, mux *http.ServeMux, layout httpx.Layout) {
+	reg.Wrap(mux, "ThemePages.Rates", "/rates", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := pages.Rates(themepage.BuildCtx(r, layout)).Render(r.Context(), w); err != nil {
 			http.Error(w, "render error", http.StatusInternalServerError)
 		}
-	})
-	mux.HandleFunc("/server-info", func(w http.ResponseWriter, r *http.Request) {
+	}))
+	reg.Wrap(mux, "ThemePages.ServerInfo", "/server-info", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := themepage.RenderMarkdownPageFrom(w, r, layout, "Server Information", "pages/server-info.md", precomputedHTMLServerInfo); err != nil {
 			http.Error(w, "render error", http.StatusInternalServerError)
 		}
-	})
+	}))
 }
