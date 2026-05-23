@@ -743,12 +743,16 @@ func collectThemePages(pagesDir string) ([]pageEntry, error) {
 		}
 
 		tag := themePageTag(relNoExt)
+		suffix := tag[len("ThemePages."):]
 
-		if len(tag) > len("ThemePages.") {
-			first := tag[len("ThemePages.")]
-			if first < 'A' || first > 'Z' {
-				return fmt.Errorf("page %s: derived tag %q starts with a non-letter, rename the file so it begins with a letter (a-z)", path, tag)
-			}
+		if suffix == "" {
+			return fmt.Errorf("page %s: filename normalizes to an empty tag suffix, rename the file so it contains letters or digits", path)
+		}
+
+		first := suffix[0]
+
+		if first < 'A' || first > 'Z' {
+			return fmt.Errorf("page %s: derived tag %q starts with a non-letter, rename the file so it begins with a letter (a-z)", path, tag)
 		}
 
 		out = append(out, pageEntry{
