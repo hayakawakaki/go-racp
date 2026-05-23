@@ -921,13 +921,6 @@ func writeThemePages(themeDir, themeName, module string, pages []pageEntry) erro
 
 	if hasMD {
 		b.WriteString("\t\"embed\"\n")
-	}
-
-	if needsTheme {
-		b.WriteString("\t\"fmt\"\n")
-	}
-
-	if hasMD {
 		b.WriteString("\t\"html/template\"\n")
 	}
 
@@ -997,20 +990,12 @@ func writeThemePages(themeDir, themeName, module string, pages []pageEntry) erro
 			case templFileType:
 				fmt.Fprintf(&b, "\treg.Wrap(mux, %q, %q, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n", p.Tag, p.Route)
 				fmt.Fprintf(&b, "\t\tif err := pages.%s(themepage.BuildCtx(r, layout)).Render(r.Context(), w); err != nil {\n", p.FuncName)
-				fmt.Fprintf(&b, "\t\t\tif themepage.DevMode {\n")
-				fmt.Fprintf(&b, "\t\t\t\thttp.Error(w, fmt.Sprintf(%q, err), http.StatusInternalServerError)\n", "render error: %v\n\nfile: "+p.FilePath)
-				fmt.Fprintf(&b, "\t\t\t\treturn\n")
-				fmt.Fprintf(&b, "\t\t\t}\n")
 				fmt.Fprintf(&b, "\t\t\thttp.Error(w, %q, http.StatusInternalServerError)\n", "render error")
 				fmt.Fprintf(&b, "\t\t}\n")
 				fmt.Fprintf(&b, "\t}))\n")
 			case mdFileType:
 				fmt.Fprintf(&b, "\treg.Wrap(mux, %q, %q, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n", p.Tag, p.Route)
 				fmt.Fprintf(&b, "\t\tif err := themepage.RenderMarkdownPageFrom(w, r, layout, %q, %q, precomputedHTML%s); err != nil {\n", p.Title, p.FilePath, p.VarName)
-				fmt.Fprintf(&b, "\t\t\tif themepage.DevMode {\n")
-				fmt.Fprintf(&b, "\t\t\t\thttp.Error(w, fmt.Sprintf(%q, err), http.StatusInternalServerError)\n", "render error: %v\n\nfile: "+p.FilePath)
-				fmt.Fprintf(&b, "\t\t\t\treturn\n")
-				fmt.Fprintf(&b, "\t\t\t}\n")
 				fmt.Fprintf(&b, "\t\t\thttp.Error(w, %q, http.StatusInternalServerError)\n", "render error")
 				fmt.Fprintf(&b, "\t\t}\n")
 				fmt.Fprintf(&b, "\t}))\n")
