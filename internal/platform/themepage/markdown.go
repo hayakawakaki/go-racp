@@ -29,7 +29,7 @@ func RenderMarkdown(src []byte) (template.HTML, error) {
 		return "", fmt.Errorf("markdown convert: %w", err)
 	}
 
-	return template.HTML(buf.String()), nil //nolint:gosec // markdown rendered with safe defaults
+	return template.HTML(buf.String()), nil //nolint:gosec // goldmark without WithUnsafe strips raw HTML
 }
 
 func RenderMarkdownPage(w http.ResponseWriter, r *http.Request, layout httpx.Layout, title string, src []byte) error {

@@ -160,6 +160,30 @@ func TestRenderMarkdown_HTMLEscaping(t *testing.T) {
 			mustNot:  []string{"<script>alert(1)</script>"},
 			mustHave: []string{"&lt;script&gt;", "&lt;/script&gt;"},
 		},
+		{
+			name:     "raw HTML block stripped",
+			input:    `<script>alert(1)</script>`,
+			mustNot:  []string{"<script>", "alert(1)"},
+			mustHave: []string{"raw HTML omitted"},
+		},
+		{
+			name:     "inline raw HTML stripped",
+			input:    `Hello <script>alert(1)</script> world`,
+			mustNot:  []string{"<script>"},
+			mustHave: []string{"raw HTML omitted", "Hello", "world"},
+		},
+		{
+			name:     "raw HTML attribute injection stripped",
+			input:    `<img src=x onerror=alert(1)>`,
+			mustNot:  []string{"<img", "onerror"},
+			mustHave: []string{"raw HTML omitted"},
+		},
+		{
+			name:     "raw HTML div with event handler stripped",
+			input:    `<div onclick="alert(1)">click</div>`,
+			mustNot:  []string{"<div", "onclick"},
+			mustHave: []string{"raw HTML omitted"},
+		},
 	}
 
 	for _, tt := range tests {
