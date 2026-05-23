@@ -332,6 +332,62 @@ func TestRegistry_Finalize_PanicsOnUngatedTag(t *testing.T) {
 	reg.Finalize()
 }
 
+func TestRegistry_Finalize_WarnsButDoesNotPanicOnDeadThemeEntries(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+
+	cfg := config.AccessConfig{
+		"ThemePages": config.ActionRoles{
+			"Orphaned": config.Entry{Roles: config.RoleList{"Public"}},
+		},
+	}
+
+	reg, buf := newRegistry(t, cfg)
+	_ = mux
+
+	reg.Finalize()
+
+	if !strings.Contains(buf.String(), "ThemePages.Orphaned") {
+		t.Errorf("expected warning to mention ThemePages.Orphaned, got log: %s", buf.String())
+	}
+
+	if !strings.Contains(buf.String(), "dead entries") {
+		t.Errorf("expected warning to mention dead entries, got log: %s", buf.String())
+	}
+}
+
+func TestRegistry_Finalize_PanicsOnDeadNonThemeEntryEvenWhenThemeAlsoDead(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+
+	cfg := config.AccessConfig{
+		"News":       config.ActionRoles{"Edit": config.Entry{Roles: config.RoleList{"Moderator"}}},
+		"ThemePages": config.ActionRoles{"Orphaned": config.Entry{Roles: config.RoleList{"Public"}}},
+	}
+
+	reg, _ := newRegistry(t, cfg)
+	_ = mux
+
+	defer func() {
+		v := recover()
+		if v == nil {
+			t.Fatalf("Finalize did not panic when slice tag was also dead")
+		}
+		msg, ok := v.(error)
+		if !ok || !strings.Contains(msg.Error(), "News.Edit") {
+			t.Errorf("panic = %v, want mention of News.Edit", v)
+		}
+
+		if ok && strings.Contains(msg.Error(), "ThemePages.Orphaned") {
+			t.Errorf("panic message should not include ThemePages.* (those are warnings): %v", v)
+		}
+	}()
+
+	reg.Finalize()
+}
+
 func TestRegistry_Finalize_SilentForAdminTags(t *testing.T) {
 	t.Parallel()
 	mux := http.NewServeMux()

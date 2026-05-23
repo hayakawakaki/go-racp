@@ -4,7 +4,6 @@ package themesdefault
 
 import (
 	"embed"
-	"fmt"
 	"html/template"
 	"net/http"
 
@@ -38,19 +37,11 @@ func mustRead(fs embed.FS, path string) []byte {
 func MountRoutes(reg *routes.Registry, mux *http.ServeMux, layout httpx.Layout) {
 	reg.Wrap(mux, "ThemePages.Rates", "/rates", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := pages.Rates(themepage.BuildCtx(r, layout)).Render(r.Context(), w); err != nil {
-			if themepage.DevMode {
-				http.Error(w, fmt.Sprintf("render error: %v\n\nfile: pages/rates.templ", err), http.StatusInternalServerError)
-				return
-			}
 			http.Error(w, "render error", http.StatusInternalServerError)
 		}
 	}))
 	reg.Wrap(mux, "ThemePages.ServerInfo", "/server-info", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := themepage.RenderMarkdownPageFrom(w, r, layout, "Server Information", "pages/server-info.md", precomputedHTMLServerInfo); err != nil {
-			if themepage.DevMode {
-				http.Error(w, fmt.Sprintf("render error: %v\n\nfile: pages/server-info.md", err), http.StatusInternalServerError)
-				return
-			}
 			http.Error(w, "render error", http.StatusInternalServerError)
 		}
 	}))

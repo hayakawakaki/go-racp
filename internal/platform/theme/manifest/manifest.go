@@ -1,4 +1,4 @@
-package theme
+package manifest
 
 import (
 	"fmt"

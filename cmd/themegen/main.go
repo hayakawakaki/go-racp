@@ -13,7 +13,7 @@ import (
 	"strings"
 
 	"github.com/goccy/go-yaml"
-	"github.com/hayakawakaki/go-racp/internal/platform/theme"
+	"github.com/hayakawakaki/go-racp/internal/platform/theme/manifest"
 )
 
 const (
@@ -139,15 +139,15 @@ func readAppVersion() (string, error) {
 	return strings.TrimSpace(string(data)), nil
 }
 
-func readManifest(themeDir string) (theme.Manifest, error) {
+func readManifest(themeDir string) (manifest.Manifest, error) {
 	data, err := os.ReadFile(filepath.Join(themeDir, "theme.yml")) //nolint:gosec // path from caller
 	if err != nil {
-		return theme.Manifest{}, fmt.Errorf("read %s/theme.yml: %w", themeDir, err)
+		return manifest.Manifest{}, fmt.Errorf("read %s/theme.yml: %w", themeDir, err)
 	}
 
-	m, err := theme.ParseManifest(data)
+	m, err := manifest.ParseManifest(data)
 	if err != nil {
-		return theme.Manifest{}, fmt.Errorf("parse %s/theme.yml: %w", themeDir, err)
+		return manifest.Manifest{}, fmt.Errorf("parse %s/theme.yml: %w", themeDir, err)
 	}
 
 	return m, nil
@@ -459,19 +459,19 @@ func writeThemeRegisters(themesDir, module, appVersion string) (int, error) {
 		themeName := entry.Name()
 		themeDir := filepath.Join(themesDir, themeName)
 
-		manifest, err := readManifest(themeDir)
+		mf, err := readManifest(themeDir)
 		if err != nil {
 			return count, fmt.Errorf("theme %s: %w", themeName, err)
 		}
 
 		if themeName != "default" {
-			compatible, compatErr := theme.VersionAtLeast(appVersion, manifest.Compatible.Min)
+			compatible, compatErr := manifest.VersionAtLeast(appVersion, mf.Compatible.Min)
 			if compatErr != nil {
 				return count, fmt.Errorf("theme %s: compat check: %w", themeName, compatErr)
 			}
 
 			if !compatible {
-				if fallbackErr := writeActiveFallback(themeName, module, appVersion, manifest); fallbackErr != nil {
+				if fallbackErr := writeActiveFallback(themeName, module, appVersion, mf); fallbackErr != nil {
 					return count, fmt.Errorf("theme %s: write fallback: %w", themeName, fallbackErr)
 				}
 
@@ -504,11 +504,11 @@ func writeThemeRegisters(themesDir, module, appVersion string) (int, error) {
 	return count, nil
 }
 
-func writeActiveFallback(themeName, module, appVersion string, manifest theme.Manifest) error {
+func writeActiveFallback(themeName, module, appVersion string, mf manifest.Manifest) error {
 	_ = themeName
 	_ = module
 	_ = appVersion
-	_ = manifest
+	_ = mf
 
 	return nil
 }
@@ -586,7 +586,7 @@ func pascalCaseVarName(relNoExt string) string {
 	return b.String()
 }
 
-func writeThemeManifestGen(themeDir, themeName string, manifest theme.Manifest, pageCount int) error {
+func writeThemeManifestGen(themeDir, themeName string, mf manifest.Manifest, pageCount int) error {
 	var b strings.Builder
 
 	b.WriteString(generatedHeader)
@@ -595,8 +595,8 @@ func writeThemeManifestGen(themeDir, themeName string, manifest theme.Manifest, 
 
 	b.WriteString("const (\n")
 
-	fmt.Fprintf(&b, "\tThemeName    = %q\n", manifest.Name)
-	fmt.Fprintf(&b, "\tThemeVersion = %q\n", manifest.Version)
+	fmt.Fprintf(&b, "\tThemeName    = %q\n", mf.Name)
+	fmt.Fprintf(&b, "\tThemeVersion = %q\n", mf.Version)
 	fmt.Fprintf(&b, "\tPageCount    = %d\n", pageCount)
 
 	b.WriteString(")\n")
@@ -653,12 +653,12 @@ func writeAllThemePages(themesDir, module string) (int, error) {
 			return count, fmt.Errorf("theme %s: write pages_gen: %w", themeName, err)
 		}
 
-		manifest, err := readManifest(themeDir)
+		mf, err := readManifest(themeDir)
 		if err != nil {
 			return count, fmt.Errorf("theme %s: %w", themeName, err)
 		}
 
-		if err = writeThemeManifestGen(themeDir, themeName, manifest, len(pages)); err != nil {
+		if err = writeThemeManifestGen(themeDir, themeName, mf, len(pages)); err != nil {
 			return count, fmt.Errorf("theme %s: write manifest_gen: %w", themeName, err)
 		}
 
@@ -921,13 +921,6 @@ func writeThemePages(themeDir, themeName, module string, pages []pageEntry) erro
 
 	if hasMD {
 		b.WriteString("\t\"embed\"\n")
-	}
-
-	if needsTheme {
-		b.WriteString("\t\"fmt\"\n")
-	}
-
-	if hasMD {
 		b.WriteString("\t\"html/template\"\n")
 	}
 
@@ -997,20 +990,12 @@ func writeThemePages(themeDir, themeName, module string, pages []pageEntry) erro
 			case templFileType:
 				fmt.Fprintf(&b, "\treg.Wrap(mux, %q, %q, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n", p.Tag, p.Route)
 				fmt.Fprintf(&b, "\t\tif err := pages.%s(themepage.BuildCtx(r, layout)).Render(r.Context(), w); err != nil {\n", p.FuncName)
-				fmt.Fprintf(&b, "\t\t\tif themepage.DevMode {\n")
-				fmt.Fprintf(&b, "\t\t\t\thttp.Error(w, fmt.Sprintf(%q, err), http.StatusInternalServerError)\n", "render error: %v\n\nfile: "+p.FilePath)
-				fmt.Fprintf(&b, "\t\t\t\treturn\n")
-				fmt.Fprintf(&b, "\t\t\t}\n")
 				fmt.Fprintf(&b, "\t\t\thttp.Error(w, %q, http.StatusInternalServerError)\n", "render error")
 				fmt.Fprintf(&b, "\t\t}\n")
 				fmt.Fprintf(&b, "\t}))\n")
 			case mdFileType:
 				fmt.Fprintf(&b, "\treg.Wrap(mux, %q, %q, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n", p.Tag, p.Route)
 				fmt.Fprintf(&b, "\t\tif err := themepage.RenderMarkdownPageFrom(w, r, layout, %q, %q, precomputedHTML%s); err != nil {\n", p.Title, p.FilePath, p.VarName)
-				fmt.Fprintf(&b, "\t\t\tif themepage.DevMode {\n")
-				fmt.Fprintf(&b, "\t\t\t\thttp.Error(w, fmt.Sprintf(%q, err), http.StatusInternalServerError)\n", "render error: %v\n\nfile: "+p.FilePath)
-				fmt.Fprintf(&b, "\t\t\t\treturn\n")
-				fmt.Fprintf(&b, "\t\t\t}\n")
 				fmt.Fprintf(&b, "\t\t\thttp.Error(w, %q, http.StatusInternalServerError)\n", "render error")
 				fmt.Fprintf(&b, "\t\t}\n")
 				fmt.Fprintf(&b, "\t}))\n")
