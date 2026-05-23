@@ -297,6 +297,187 @@ func TestEntry_RequiresUnrestricted(t *testing.T) {
 	}
 }
 
+func TestMergeAccessConfigs(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		root  AccessConfig
+		theme AccessConfig
+		want  AccessConfig
+		name  string
+	}{
+		{
+			name:  "both empty",
+			root:  AccessConfig{},
+			theme: AccessConfig{},
+			want:  AccessConfig{},
+		},
+		{
+			name: "non-empty root with empty theme",
+			root: AccessConfig{
+				"News": ActionRoles{"View": Entry{Roles: RoleList{"Public"}}},
+			},
+			theme: AccessConfig{},
+			want: AccessConfig{
+				"News": ActionRoles{"View": Entry{Roles: RoleList{"Public"}}},
+			},
+		},
+		{
+			name: "empty root with non-empty theme",
+			root: AccessConfig{},
+			theme: AccessConfig{
+				"ThemePages": ActionRoles{"Rates": Entry{Roles: RoleList{"Public"}}},
+			},
+			want: AccessConfig{
+				"ThemePages": ActionRoles{"Rates": Entry{Roles: RoleList{"Public"}}},
+			},
+		},
+		{
+			name: "disjoint groups merge",
+			root: AccessConfig{
+				"News": ActionRoles{"View": Entry{Roles: RoleList{"Public"}}},
+			},
+			theme: AccessConfig{
+				"ThemePages": ActionRoles{"Rates": Entry{Roles: RoleList{"Public"}}},
+			},
+			want: AccessConfig{
+				"News":       ActionRoles{"View": Entry{Roles: RoleList{"Public"}}},
+				"ThemePages": ActionRoles{"Rates": Entry{Roles: RoleList{"Public"}}},
+			},
+		},
+		{
+			name: "same group different actions merge",
+			root: AccessConfig{
+				"ThemePages": ActionRoles{"Rates": Entry{Roles: RoleList{"Public"}}},
+			},
+			theme: AccessConfig{
+				"ThemePages": ActionRoles{"ServerInfo": Entry{Roles: RoleList{"Public"}}},
+			},
+			want: AccessConfig{
+				"ThemePages": ActionRoles{
+					"Rates":      Entry{Roles: RoleList{"Public"}},
+					"ServerInfo": Entry{Roles: RoleList{"Public"}},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got := mergeAccessConfigs(tt.root, tt.theme)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("merge = %#v\nwant  = %#v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestMergeAccessConfigs_CollisionPanics(t *testing.T) {
+	t.Parallel()
+
+	root := AccessConfig{
+		"ThemePages": ActionRoles{"Rates": Entry{Roles: RoleList{"Public"}}},
+	}
+	theme := AccessConfig{
+		"ThemePages": ActionRoles{"Rates": Entry{Roles: RoleList{"Admin"}}},
+	}
+
+	msg := mustPanicMessage(t, func() { mergeAccessConfigs(root, theme) })
+	if !strings.Contains(msg, "ThemePages.Rates") {
+		t.Errorf("panic message = %q, want substring %q", msg, "ThemePages.Rates")
+	}
+	if !strings.Contains(msg, "defined in both") {
+		t.Errorf("panic message = %q, want substring %q", msg, "defined in both")
+	}
+}
+
+func TestMergeAccessConfigs_RootMutationAfterMergeDoesNotAffectResult(t *testing.T) {
+	t.Parallel()
+
+	root := AccessConfig{
+		"ThemePages": ActionRoles{"Rates": Entry{Roles: RoleList{"Public"}}},
+	}
+	theme := AccessConfig{}
+
+	merged := mergeAccessConfigs(root, theme)
+
+	root["ThemePages"]["Rates"] = Entry{Roles: RoleList{"Admin"}}
+	root["ThemePages"]["Mutated"] = Entry{Roles: RoleList{"Public"}}
+
+	got := merged["ThemePages"]["Rates"]
+	if !reflect.DeepEqual(got, Entry{Roles: RoleList{"Public"}}) {
+		t.Errorf("merged entry mutated by root edit: got %#v", got)
+	}
+	if _, has := merged["ThemePages"]["Mutated"]; has {
+		t.Errorf("merged group mutated by root add: got Mutated key in merged result")
+	}
+}
+
+func TestValidateThemeAccessConfig(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		cfg         AccessConfig
+		name        string
+		wantContain string
+	}{
+		{
+			name:        "empty config accepted",
+			cfg:         AccessConfig{},
+			wantContain: "",
+		},
+		{
+			name: "themepages only accepted",
+			cfg: AccessConfig{
+				"ThemePages": ActionRoles{
+					"Rates":      Entry{Roles: RoleList{"Public"}},
+					"ServerInfo": Entry{Roles: RoleList{"Public"}},
+				},
+			},
+			wantContain: "",
+		},
+		{
+			name: "slice group rejected",
+			cfg: AccessConfig{
+				"News": ActionRoles{"View": Entry{Roles: RoleList{"Public"}}},
+			},
+			wantContain: `"News"`,
+		},
+		{
+			name: "admin group rejected",
+			cfg: AccessConfig{
+				"Admin": ActionRoles{"Dashboard": Entry{}},
+			},
+			wantContain: `"Admin"`,
+		},
+		{
+			name: "themepages plus rogue group rejected",
+			cfg: AccessConfig{
+				"ThemePages": ActionRoles{"Rates": Entry{Roles: RoleList{"Public"}}},
+				"News":       ActionRoles{"View": Entry{Roles: RoleList{"Public"}}},
+			},
+			wantContain: `"News"`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			cfg := tt.cfg
+
+			if tt.wantContain == "" {
+				validateThemeAccessConfig(cfg)
+
+				return
+			}
+
+			msg := mustPanicMessage(t, func() { validateThemeAccessConfig(cfg) })
+			if !strings.Contains(msg, tt.wantContain) {
+				t.Errorf("panic message = %q, want substring %q", msg, tt.wantContain)
+			}
+		})
+	}
+}
+
 func TestAccessConfig_ManageRoles(t *testing.T) {
 	t.Parallel()
 

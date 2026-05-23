@@ -546,6 +546,409 @@ func TestWriteIfChanged_SameContent_DoesNotTouchMtime(t *testing.T) {
 	}
 }
 
+func TestPascalCaseVarName(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		input  string
+		expect string
+	}{
+		{name: "empty", input: "", expect: ""},
+		{name: "single word", input: "rates", expect: "Rates"},
+		{name: "dash separated", input: "server-info", expect: "ServerInfo"},
+		{name: "underscore separated", input: "server_info", expect: "ServerInfo"},
+		{name: "mixed dash underscore", input: "multi-word_name", expect: "MultiWordName"},
+		{name: "slash separated nested path", input: "events/summer", expect: "EventsSummer"},
+		{name: "slash plus dash", input: "events/summer-2026", expect: "EventsSummer2026"},
+		{name: "trailing digit", input: "page2", expect: "Page2"},
+		{name: "leading digit", input: "2foo", expect: "2foo"},
+		{name: "only dashes", input: "--", expect: ""},
+		{name: "only underscores", input: "__", expect: ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := pascalCaseVarName(tt.input); got != tt.expect {
+				t.Errorf("pascalCaseVarName(%q) = %q, want %q", tt.input, got, tt.expect)
+			}
+		})
+	}
+}
+
+func TestThemePageTag(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		input  string
+		expect string
+	}{
+		{name: "single word", input: "rates", expect: "ThemePages.Rates"},
+		{name: "dash separated", input: "server-info", expect: "ThemePages.ServerInfo"},
+		{name: "nested path", input: "events/summer-2026", expect: "ThemePages.EventsSummer2026"},
+		{name: "empty input yields prefix only", input: "", expect: "ThemePages."},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := themePageTag(tt.input); got != tt.expect {
+				t.Errorf("themePageTag(%q) = %q, want %q", tt.input, got, tt.expect)
+			}
+		})
+	}
+}
+
+func TestParseFrontmatter(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		check     func(t *testing.T, fm frontmatter, body []byte)
+		name      string
+		input     string
+		wantFound bool
+	}{
+		{
+			name:      "no frontmatter",
+			input:     "# Heading\nbody text\n",
+			wantFound: false,
+			check: func(t *testing.T, fm frontmatter, body []byte) {
+				if fm.Title != "" {
+					t.Errorf("Title = %q, want empty", fm.Title)
+				}
+				if string(body) != "# Heading\nbody text\n" {
+					t.Errorf("body = %q, want original content", string(body))
+				}
+			},
+		},
+		{
+			name:      "lf frontmatter with title",
+			input:     "---\ntitle: Server Info\n---\n# Heading\n",
+			wantFound: true,
+			check: func(t *testing.T, fm frontmatter, body []byte) {
+				if fm.Title != "Server Info" {
+					t.Errorf("Title = %q, want %q", fm.Title, "Server Info")
+				}
+				if string(body) != "# Heading\n" {
+					t.Errorf("body = %q, want %q", string(body), "# Heading\n")
+				}
+			},
+		},
+		{
+			name:      "crlf frontmatter with title",
+			input:     "---\r\ntitle: Server Info\r\n---\r\n# Heading\r\n",
+			wantFound: true,
+			check: func(t *testing.T, fm frontmatter, body []byte) {
+				if fm.Title != "Server Info" {
+					t.Errorf("Title = %q, want %q", fm.Title, "Server Info")
+				}
+				if !strings.Contains(string(body), "# Heading") {
+					t.Errorf("body = %q, want to contain %q", string(body), "# Heading")
+				}
+			},
+		},
+		{
+			name:      "frontmatter only no body",
+			input:     "---\ntitle: Solo\n---\n",
+			wantFound: true,
+			check: func(t *testing.T, fm frontmatter, body []byte) {
+				if fm.Title != "Solo" {
+					t.Errorf("Title = %q, want %q", fm.Title, "Solo")
+				}
+				if len(body) != 0 {
+					t.Errorf("body = %q, want empty", string(body))
+				}
+			},
+		},
+		{
+			name:      "malformed yaml falls through as no frontmatter",
+			input:     "---\ntitle: : : broken\n---\nbody\n",
+			wantFound: false,
+			check: func(t *testing.T, fm frontmatter, body []byte) {
+				if fm.Title != "" {
+					t.Errorf("Title = %q, want empty on malformed yaml", fm.Title)
+				}
+				if !strings.Contains(string(body), "title: : : broken") {
+					t.Errorf("body should retain original content on malformed yaml")
+				}
+			},
+		},
+		{
+			name:      "frontmatter without trailing newline does not match",
+			input:     "---\ntitle: X\n---",
+			wantFound: false,
+			check: func(t *testing.T, _ frontmatter, body []byte) {
+				if !strings.Contains(string(body), "title: X") {
+					t.Errorf("body should retain original content when terminator newline missing")
+				}
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			fm, body, found := parseFrontmatter([]byte(tt.input))
+			if found != tt.wantFound {
+				t.Errorf("found = %v, want %v", found, tt.wantFound)
+			}
+			tt.check(t, fm, body)
+		})
+	}
+}
+
+func TestExtractH1Title(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		input  string
+		expect string
+	}{
+		{name: "simple h1", input: "# Server Info\nbody\n", expect: "Server Info"},
+		{name: "h1 with trailing whitespace", input: "# Server Info   \nbody\n", expect: "Server Info"},
+		{name: "no h1", input: "body text only\n", expect: ""},
+		{name: "h2 ignored", input: "## subheading\n", expect: ""},
+		{name: "hash without space ignored", input: "#nospace\n", expect: ""},
+		{name: "first of multiple h1s wins", input: "# First\nbody\n# Second\n", expect: "First"},
+		{name: "h1 after body content", input: "intro paragraph\n\n# Buried Heading\n", expect: "Buried Heading"},
+		{name: "empty input", input: "", expect: ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := extractH1Title([]byte(tt.input)); got != tt.expect {
+				t.Errorf("extractH1Title = %q, want %q", got, tt.expect)
+			}
+		})
+	}
+}
+
+func TestCollectThemePages(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		files       map[string]string
+		check       func(t *testing.T, entries []pageEntry)
+		name        string
+		wantErrPart string
+	}{
+		{
+			name: "single md page derives tag from filename",
+			files: map[string]string{
+				"rates.md": "# Server Rates\nbody\n",
+			},
+			check: func(t *testing.T, entries []pageEntry) {
+				if len(entries) != 1 {
+					t.Fatalf("got %d entries, want 1", len(entries))
+				}
+
+				e := entries[0]
+
+				if e.Route != "/rates" {
+					t.Errorf("Route = %q, want /rates", e.Route)
+				}
+				if e.Tag != "ThemePages.Rates" {
+					t.Errorf("Tag = %q, want ThemePages.Rates", e.Tag)
+				}
+				if e.Kind != mdFileType {
+					t.Errorf("Kind = %q, want %q", e.Kind, mdFileType)
+				}
+				if e.Title != "Server Rates" {
+					t.Errorf("Title = %q, want %q (H1 derived)", e.Title, "Server Rates")
+				}
+			},
+		},
+		{
+			name: "frontmatter title overrides h1",
+			files: map[string]string{
+				"info.md": "---\ntitle: Custom Title\n---\n# H1 Heading\n",
+			},
+			check: func(t *testing.T, entries []pageEntry) {
+				if len(entries) != 1 {
+					t.Fatalf("got %d entries, want 1", len(entries))
+				}
+				if entries[0].Title != "Custom Title" {
+					t.Errorf("Title = %q, want %q (frontmatter override)", entries[0].Title, "Custom Title")
+				}
+			},
+		},
+		{
+			name: "h1 overrides filename derived title",
+			files: map[string]string{
+				"info.md": "# H1 Heading\nbody\n",
+			},
+			check: func(t *testing.T, entries []pageEntry) {
+				if len(entries) != 1 {
+					t.Fatalf("got %d entries, want 1", len(entries))
+				}
+				if entries[0].Title != "H1 Heading" {
+					t.Errorf("Title = %q, want %q (H1 override)", entries[0].Title, "H1 Heading")
+				}
+			},
+		},
+		{
+			name: "filename derives title when no frontmatter and no h1",
+			files: map[string]string{
+				"server-info.md": "no heading\n",
+			},
+			check: func(t *testing.T, entries []pageEntry) {
+				if len(entries) != 1 {
+					t.Fatalf("got %d entries, want 1", len(entries))
+				}
+				if entries[0].Title == "" {
+					t.Errorf("Title is empty, want non-empty filename-derived title")
+				}
+			},
+		},
+		{
+			name: "underscore prefix file skipped",
+			files: map[string]string{
+				"_partial.md":  "partial content\n",
+				"published.md": "# Published\n",
+			},
+			check: func(t *testing.T, entries []pageEntry) {
+				if len(entries) != 1 {
+					t.Fatalf("got %d entries, want 1 (_partial.md should be skipped)", len(entries))
+				}
+				if entries[0].Route != "/published" {
+					t.Errorf("Route = %q, want /published", entries[0].Route)
+				}
+			},
+		},
+		{
+			name: "non-md non-templ files ignored",
+			files: map[string]string{
+				"readme.txt": "ignore me\n",
+				"page.md":    "# Page\n",
+			},
+			check: func(t *testing.T, entries []pageEntry) {
+				if len(entries) != 1 {
+					t.Fatalf("got %d entries, want 1 (txt should be ignored)", len(entries))
+				}
+				if entries[0].Route != "/page" {
+					t.Errorf("Route = %q, want /page", entries[0].Route)
+				}
+			},
+		},
+		{
+			name: "tag collision across dash and underscore variants rejected",
+			files: map[string]string{
+				"server-info.md": "# Dash\n",
+				"server_info.md": "# Underscore\n",
+			},
+			wantErrPart: "ThemePages.ServerInfo",
+		},
+		{
+			name: "empty tag suffix rejected",
+			files: map[string]string{
+				"-.md": "# Hyphen Only\n",
+			},
+			wantErrPart: "empty tag suffix",
+		},
+		{
+			name: "leading digit tag rejected",
+			files: map[string]string{
+				"2foo.md": "# Digits First\n",
+			},
+			wantErrPart: "non-letter",
+		},
+		{
+			name: "dynamic segment rejected",
+			files: map[string]string{
+				"[id].templ": "package pages\n\ntempl Id() {}\n",
+			},
+			wantErrPart: "dynamic segments not supported",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			dir := t.TempDir()
+
+			for rel, content := range tt.files {
+				full := filepath.Join(dir, rel)
+
+				if err := os.MkdirAll(filepath.Dir(full), 0o750); err != nil {
+					t.Fatalf("mkdir %s: %v", full, err)
+				}
+
+				if err := os.WriteFile(full, []byte(content), 0o600); err != nil {
+					t.Fatalf("write %s: %v", full, err)
+				}
+			}
+
+			entries, err := collectThemePages(dir)
+
+			if tt.wantErrPart != "" {
+				if err == nil {
+					t.Fatalf("expected error containing %q, got nil with entries=%#v", tt.wantErrPart, entries)
+				}
+				if !strings.Contains(err.Error(), tt.wantErrPart) {
+					t.Errorf("error %q does not contain %q", err.Error(), tt.wantErrPart)
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			tt.check(t, entries)
+		})
+	}
+}
+
+func TestCollectThemePages_NestedAndUnderscoreDirsSkipped(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+
+	files := map[string]string{
+		"top.md":             "# Top\n",
+		"events/summer.md":   "# Summer Event\n",
+		"_internal/draft.md": "# Draft\n",
+	}
+
+	for rel, content := range files {
+		full := filepath.Join(dir, rel)
+
+		if err := os.MkdirAll(filepath.Dir(full), 0o750); err != nil {
+			t.Fatalf("mkdir %s: %v", full, err)
+		}
+
+		if err := os.WriteFile(full, []byte(content), 0o600); err != nil {
+			t.Fatalf("write %s: %v", full, err)
+		}
+	}
+
+	entries, err := collectThemePages(dir)
+	if err != nil {
+		t.Fatalf("collectThemePages: %v", err)
+	}
+
+	gotRoutes := map[string]bool{}
+
+	for _, e := range entries {
+		gotRoutes[e.Route] = true
+	}
+
+	if !gotRoutes["/top"] {
+		t.Errorf("missing /top route")
+	}
+
+	if !gotRoutes["/events/summer"] {
+		t.Errorf("missing /events/summer route")
+	}
+
+	for route := range gotRoutes {
+		if strings.Contains(route, "_internal") || strings.Contains(route, "draft") {
+			t.Errorf("route %q should have been skipped (underscore dir)", route)
+		}
+	}
+}
+
 func equalImports(a, b []importEntry) bool {
 	if len(a) != len(b) {
 		return false
