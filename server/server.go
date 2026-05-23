@@ -31,6 +31,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/plugin"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 	"github.com/hayakawakaki/go-racp/internal/platform/security"
+	"github.com/hayakawakaki/go-racp/internal/platform/theme"
 	"github.com/hayakawakaki/go-racp/internal/platform/worker"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
@@ -101,7 +102,7 @@ func Start() error {
 		Config: cfg.App,
 	})
 
-	accessCfg := config.ProcessAccessConfig()
+	accessCfg := config.ProcessAccessConfig(theme.ActiveAccessYAML())
 	layout := httpx.Layout{GeneralConfig: cfg.App.General}
 
 	limiters, err := buildRateLimiters(in.ShutdownCtx, accessCfg, cfg.App.Security.TrustedProxyCIDRs, logger, layout)

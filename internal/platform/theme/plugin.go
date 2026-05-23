@@ -20,7 +20,7 @@ func init() {
 	})
 }
 
-func mount(_ *routes.Registry, mux *http.ServeMux, in *infra.Infra) {
+func mount(reg *routes.Registry, mux *http.ServeMux, in *infra.Infra) {
 	activeTheme := in.Config.App.General.Theme
 	devMode := in.Config.Env.Mode == "development"
 
@@ -45,7 +45,7 @@ func mount(_ *routes.Registry, mux *http.ServeMux, in *infra.Infra) {
 	mux.Handle(urlPrefix, http.StripPrefix(urlPrefix, handler))
 
 	layout := httpx.Layout{GeneralConfig: in.Config.App.General}
-	themesdefault.MountRoutes(mux, layout)
+	themesdefault.MountRoutes(reg, mux, layout)
 
 	in.Logger.Info("theme assets mounted", "prefix", urlPrefix, "mode", in.Config.Env.Mode)
 }

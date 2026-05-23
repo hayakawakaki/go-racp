@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"os"
 	"slices"
 
@@ -88,23 +89,68 @@ func (c AccessConfig) ManageRoles(group string) []string {
 }
 
 // ProcessAccessConfig loads and validates access.yml from the project root, returning an empty config when the file is absent and panicking on any parse or schema error.
-func ProcessAccessConfig() AccessConfig {
+func ProcessAccessConfig(themeData []byte) AccessConfig {
+	rootCfg := AccessConfig{}
+
 	cfgPath, err := GetTargetFilePath("access.yml")
 	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			cfg := AccessConfig{}
-			validateAccessConfig(cfg)
-			return cfg
+		if !errors.Is(err, fs.ErrNotExist) {
+			panic(fmt.Errorf("locate access.yml: %w", err))
 		}
-		panic(fmt.Errorf("locate access.yml: %w", err))
+	} else {
+		rootCfg, err = loadAccessConfig(cfgPath)
+		if err != nil {
+			panic(err)
+		}
 	}
-	cfg, err := loadAccessConfig(cfgPath)
-	if err != nil {
-		panic(err)
-	}
-	validateAccessConfig(cfg)
 
-	return cfg
+	themeCfg, err := parseAccessConfig(themeData)
+	if err != nil {
+		panic(fmt.Errorf("parse theme access.yml: %w", err))
+	}
+
+	validateThemeAccessConfig(themeCfg)
+
+	merged := mergeAccessConfigs(rootCfg, themeCfg)
+
+	validateAccessConfig(merged)
+
+	return merged
+}
+
+func validateThemeAccessConfig(cfg AccessConfig) {
+	for group := range cfg {
+		if group != "ThemePages" {
+			panic(fmt.Errorf("theme access.yml: group %q is not permitted, only ThemePages.* entries are allowed (move slice tags to root access.yml)", group))
+		}
+	}
+}
+
+func mergeAccessConfigs(root, theme AccessConfig) AccessConfig {
+	out := AccessConfig{}
+
+	for group, actions := range root {
+		out[group] = maps.Clone(actions)
+	}
+
+	for group, actions := range theme {
+		existing, hasGroup := out[group]
+		if !hasGroup {
+			existing = ActionRoles{}
+		}
+
+		for action, entry := range actions {
+			if _, dup := existing[action]; dup {
+				panic(fmt.Errorf("access.yml: %s.%s defined in both root access.yml and theme access.yml, remove one", group, action))
+			}
+
+			existing[action] = entry
+		}
+
+		out[group] = existing
+	}
+
+	return out
 }
 
 func loadAccessConfig(path string) (AccessConfig, error) {

@@ -24,7 +24,7 @@ func init() {
 }
 
 func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
-	access := config.ProcessAccessConfig()
+	access := config.ProcessAccessConfig(theme.ActiveAccessYAML())
 	validateAccessCrossConfig(in.Config.App.TicketCategories, access)
 
 	categories := buildCategoryResolver(in.Config.App.TicketCategories)
