@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -371,5 +372,69 @@ func TestRegistry_Wrap_SoleAdminEntryIs404ForNonAdmin(t *testing.T) {
 
 	if rr.Code != http.StatusNotFound {
 		t.Errorf("non-admin hitting sole-Admin route must 404 (hidden); got %d", rr.Code)
+	}
+}
+
+func TestRegistry_RoutesSnapshot_EmptyByDefault(t *testing.T) {
+	t.Parallel()
+
+	reg, _ := newRegistry(t, config.AccessConfig{})
+
+	got := reg.RoutesSnapshot()
+	if len(got) != 0 {
+		t.Errorf("fresh registry should have empty snapshot, got %d entries: %+v", len(got), got)
+	}
+}
+
+func TestRegistry_RoutesSnapshot_RecordsEveryWrapCall(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+
+	cfg := config.AccessConfig{
+		"Home":       config.ActionRoles{"View": config.Entry{Roles: config.RoleList{"Public"}}},
+		"Account":    config.ActionRoles{"View": config.Entry{Roles: config.RoleList{"*"}}},
+		"ThemePages": config.ActionRoles{"Rates": config.Entry{Roles: config.RoleList{"Public"}}},
+	}
+
+	reg, _ := newRegistry(t, cfg)
+
+	reg.Wrap(mux, "Home.View", "GET /", okHandler())
+	reg.Wrap(mux, "Account.View", "GET /account", okHandler())
+	reg.Wrap(mux, "ThemePages.Rates", "GET /rates", okHandler())
+	reg.Wrap(mux, "Admin.Dashboard", "GET /admin", okHandler())
+
+	got := reg.RoutesSnapshot()
+
+	want := []RouteInfo{
+		{Tag: "Home.View", Pattern: "GET /"},
+		{Tag: "Account.View", Pattern: "GET /account"},
+		{Tag: "ThemePages.Rates", Pattern: "GET /rates"},
+		{Tag: "Admin.Dashboard", Pattern: "GET /admin"},
+	}
+
+	if !slices.Equal(got, want) {
+		t.Errorf("RoutesSnapshot = %+v\nwant insertion order %+v", got, want)
+	}
+}
+
+func TestRegistry_RoutesSnapshot_ReturnsIndependentCopy(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+
+	cfg := config.AccessConfig{
+		"Home": config.ActionRoles{"View": config.Entry{Roles: config.RoleList{"Public"}}},
+	}
+
+	reg, _ := newRegistry(t, cfg)
+	reg.Wrap(mux, "Home.View", "GET /", okHandler())
+
+	first := reg.RoutesSnapshot()
+	first[0].Tag = "Mutated"
+
+	second := reg.RoutesSnapshot()
+	if second[0].Tag != "Home.View" {
+		t.Errorf("mutating returned snapshot leaked into registry state: got Tag=%q, want Home.View", second[0].Tag)
 	}
 }

@@ -24,9 +24,15 @@ type Registry struct {
 	limiters             map[string]*security.RateLimiter
 	logger               *slog.Logger
 	registered           map[string]struct{}
+	routes               []RouteInfo
 	ungated              []ungatedRoute
 	secure               bool
 	allowTempBannedLogin bool
+}
+
+type RouteInfo struct {
+	Tag     string
+	Pattern string
 }
 
 type ungatedRoute struct {
@@ -63,6 +69,7 @@ func NewRegistry(
 func (r *Registry) Wrap(mux *http.ServeMux, tag, pattern string, handler http.Handler) {
 	group, action := parseTag(tag)
 	r.registered[tag] = struct{}{}
+	r.routes = append(r.routes, RouteInfo{Tag: tag, Pattern: pattern})
 
 	if limiter, ok := r.limiters[tag]; ok {
 		handler = limiter.Middleware(handler)
@@ -136,6 +143,13 @@ func parseTag(tag string) (group, action string) {
 	}
 
 	return parts[0], parts[1]
+}
+
+func (r *Registry) RoutesSnapshot() []RouteInfo {
+	out := make([]RouteInfo, len(r.routes))
+	copy(out, r.routes)
+
+	return out
 }
 
 // Finalize panics if access.yml references tags no plugin registered, and logs a warning for every route that was mounted without an access.yml entry.
