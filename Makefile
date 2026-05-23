@@ -4,8 +4,8 @@ DEV          := docker compose -f docker-compose.dev.yml
 PROD         := docker compose -f docker-compose.yml
 APP          := $(DEV) exec app
 DEV_CP_URL   := postgres://dbuser:dbpass@db:5432/cp?sslmode=disable
-ACTIVE_THEME := $(shell $(APP) go run ./cmd/read_theme)
-THEME_TAG    := theme_$(ACTIVE_THEME)
+ACTIVE_THEME = $(shell $(APP) go run ./cmd/read_theme)
+THEME_TAG    = theme_$(ACTIVE_THEME)
 
 CYAN   := [0;36m
 GREEN  := [0;32m
