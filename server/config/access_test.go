@@ -466,7 +466,6 @@ func TestValidateThemeAccessConfig(t *testing.T) {
 
 			if tt.wantContain == "" {
 				validateThemeAccessConfig(cfg)
-
 				return
 			}
 

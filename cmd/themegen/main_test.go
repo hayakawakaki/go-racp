@@ -887,7 +887,6 @@ func TestCollectThemePages(t *testing.T) {
 				if !strings.Contains(err.Error(), tt.wantErrPart) {
 					t.Errorf("error %q does not contain %q", err.Error(), tt.wantErrPart)
 				}
-
 				return
 			}
 

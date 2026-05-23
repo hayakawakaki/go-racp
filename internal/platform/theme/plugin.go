@@ -47,5 +47,11 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *infra.Infra) {
 	layout := httpx.Layout{GeneralConfig: in.Config.App.General}
 	themesdefault.MountRoutes(reg, mux, layout)
 
-	in.Logger.Info("theme assets mounted", "prefix", urlPrefix, "mode", in.Config.Env.Mode)
+	in.Logger.Info("theme",
+		"name", themesdefault.ThemeName,
+		"version", themesdefault.ThemeVersion,
+		"pages", themesdefault.PageCount,
+		"prefix", urlPrefix,
+		"mode", in.Config.Env.Mode,
+	)
 }

@@ -116,7 +116,18 @@ func main() {
 		log.Fatalf("themegen: write theme pages: %v", err)
 	}
 
-	fmt.Printf("themegen: wrote %d components, %d theme registers, %d theme page tables\n", len(discovered), registers, pages)
+	fmt.Printf("themegen: %d components, %d theme registers, %d theme page tables\n", len(discovered), registers, pages)
+
+	if len(changedFiles) == 0 {
+		fmt.Println("themegen: no files changed")
+		return
+	}
+
+	fmt.Printf("themegen: %d files changed:\n", len(changedFiles))
+
+	for _, f := range changedFiles {
+		fmt.Printf("  %s\n", f)
+	}
 }
 
 func readAppVersion() (string, error) {
@@ -328,6 +339,8 @@ func uniqueImports(comps []Component) ([]importEntry, error) {
 	return out, nil
 }
 
+var changedFiles []string
+
 func writeIfChanged(path string, content []byte) error {
 	existing, err := os.ReadFile(path) //nolint:gosec // path from caller
 	if err == nil && bytes.Equal(existing, content) {
@@ -337,6 +350,8 @@ func writeIfChanged(path string, content []byte) error {
 	if err := os.WriteFile(path, content, filePerm); err != nil {
 		return fmt.Errorf("write %s: %w", path, err)
 	}
+
+	changedFiles = append(changedFiles, path)
 
 	return nil
 }
@@ -571,6 +586,24 @@ func pascalCaseVarName(relNoExt string) string {
 	return b.String()
 }
 
+func writeThemeManifestGen(themeDir, themeName string, manifest theme.Manifest, pageCount int) error {
+	var b strings.Builder
+
+	b.WriteString(generatedHeader)
+
+	fmt.Fprintf(&b, "package themes%s\n\n", themeName)
+
+	b.WriteString("const (\n")
+
+	fmt.Fprintf(&b, "\tThemeName    = %q\n", manifest.Name)
+	fmt.Fprintf(&b, "\tThemeVersion = %q\n", manifest.Version)
+	fmt.Fprintf(&b, "\tPageCount    = %d\n", pageCount)
+
+	b.WriteString(")\n")
+
+	return writeIfChanged(filepath.Join(themeDir, "manifest_gen.go"), []byte(b.String()))
+}
+
 //nolint:cyclop // per-theme presence checks
 func writeAllThemePages(themesDir, module string) (int, error) {
 	entries, err := os.ReadDir(themesDir)
@@ -616,8 +649,17 @@ func writeAllThemePages(themesDir, module string) (int, error) {
 			return count, fmt.Errorf("theme %s: %w", themeName, err)
 		}
 
-		if err := writeThemePages(themeDir, themeName, module, pages); err != nil {
+		if err = writeThemePages(themeDir, themeName, module, pages); err != nil {
 			return count, fmt.Errorf("theme %s: write pages_gen: %w", themeName, err)
+		}
+
+		manifest, err := readManifest(themeDir)
+		if err != nil {
+			return count, fmt.Errorf("theme %s: %w", themeName, err)
+		}
+
+		if err = writeThemeManifestGen(themeDir, themeName, manifest, len(pages)); err != nil {
+			return count, fmt.Errorf("theme %s: write manifest_gen: %w", themeName, err)
 		}
 
 		allPages = append(allPages, pages...)
