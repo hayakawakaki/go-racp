@@ -2,33 +2,12 @@ package transport
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
-	"net/url"
 
 	"github.com/hayakawakaki/go-racp/internal/features/stall/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/stall/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
-
-type listState struct {
-	Type    string
-	BaseURL string
-	Page    domain.Page
-	ItemID  int
-}
-
-func pageURL(baseURL string, page int, typeName string, itemID int) string {
-	values := url.Values{}
-	values.Set("page", fmt.Sprintf("%d", page))
-	if typeName != "" {
-		values.Set("type", typeName)
-	}
-	if itemID > 0 {
-		values.Set("item", fmt.Sprintf("%d", itemID))
-	}
-
-	return baseURL + "?" + values.Encode()
-}
 
 func (h *Handler) showList(w http.ResponseWriter, r *http.Request) {
 	typeName := r.URL.Query().Get("type")
@@ -54,10 +33,10 @@ func (h *Handler) showList(w http.ResponseWriter, r *http.Request) {
 	if errors.Is(err, domain.ErrSnapshotNotReady) {
 		refreshURL := r.URL.RequestURI()
 		if httpx.IsHTMX(r) {
-			httpx.RenderHTML(w, r, h.logger, loadingContent(refreshURL))
+			httpx.RenderHTML(w, r, h.logger, h.theme.StallLoadingContent(refreshURL))
 			return
 		}
-		httpx.RenderHTML(w, r, h.logger, loadingPage(h.layout(), refreshURL))
+		httpx.RenderHTML(w, r, h.logger, h.theme.StallLoadingPage(h.layout(), refreshURL))
 		return
 	}
 	if err != nil {
@@ -66,10 +45,10 @@ func (h *Handler) showList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	state := listState{Page: page, Type: typeName, ItemID: itemID, BaseURL: "/vendors"}
+	s := state.ListState{Page: page, Type: typeName, ItemID: itemID, BaseURL: "/vendors"}
 	if httpx.IsHTMX(r) {
-		httpx.RenderHTML(w, r, h.logger, listContent(state))
+		httpx.RenderHTML(w, r, h.logger, h.theme.StallListContent(s))
 		return
 	}
-	httpx.RenderHTML(w, r, h.logger, listPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.StallListPage(h.layout(), s))
 }

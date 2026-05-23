@@ -38,10 +38,10 @@ func (h *Handler) staffList(w http.ResponseWriter, r *http.Request) {
 		PollInterval: h.poll,
 	}
 	if httpx.IsHTMX(r) {
-		httpx.RenderHTML(w, r, h.logger, staffListBody(state))
+		httpx.RenderHTML(w, r, h.logger, h.theme.TicketsStaffListBody(state))
 		return
 	}
-	httpx.RenderHTML(w, r, h.logger, staffListPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.TicketsStaffListPage(h.layout(), state))
 }
 
 func parseTab(s string) domain2.StaffTab {

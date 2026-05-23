@@ -8,6 +8,7 @@ import (
 
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/features/character/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/character/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
@@ -35,11 +36,11 @@ func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	state := DetailState{Char: dto, Now: time.Now()}
+	s := state.DetailState{Char: dto, Now: time.Now()}
 	if notice, ok := noticeText[r.URL.Query().Get("notice")]; ok {
-		state.Notice = notice
+		s.Notice = notice
 	}
-	httpx.RenderHTML(w, r, h.logger, detailPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.CharacterDetailPage(h.layout(), s))
 }
 
 func (h *Handler) doResetLook(w http.ResponseWriter, r *http.Request) {

@@ -4,14 +4,15 @@ tmp_dir = "tmp"
 
 [build]
   pre_cmd = [
+    "go run ./cmd/themegen",
     "go tool templ generate",
     "tailwindcss -i ./static/css/tailwind.css -o ./static/css/app.css",
   ]
-  cmd = "go build -o ./tmp/racp.exe ./cmd"
+  cmd = "go build -tags theme_default -o ./tmp/racp.exe ./cmd"
   bin = "./tmp/racp.exe"
-  include_ext = ["go", "templ", "yml"]
+  include_ext = ["go", "templ", "yml", "md"]
   exclude_dir = ["tmp", "docs", "docker", ".git", ".claude", "node_modules", "static/vendor", "testdata", "data"]
-  exclude_regex = ["_test\\.go$", "_templ\\.go$"]
+  exclude_regex = ["_test\\.go$", "_templ\\.go$", "_gen\\.go$"]
   delay = 500
   kill_delay = "500ms"
   send_interrupt = true

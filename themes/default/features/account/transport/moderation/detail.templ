@@ -1,0 +1,20 @@
+package moderation
+
+import (
+	accountmoderationstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation/state"
+	admintransport "github.com/hayakawakaki/go-racp/themes/default/features/admin/transport"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+)
+
+templ UsersDetailPage(layout httpx.Layout, username string, state accountmoderationstate.DetailState) {
+	@admintransport.AdminLayout(layout, "Users / "+username, UsersDetailContent(state))
+}
+
+templ UsersDetailContent(state accountmoderationstate.DetailState) {
+	<div id="user-detail" class="space-y-6">
+		@accountSection(state)
+		@charactersSection(state)
+		@actionsSection(state)
+		@auditSection(state)
+	</div>
+}

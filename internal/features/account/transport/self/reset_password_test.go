@@ -17,6 +17,7 @@ import (
 func newResetHandler(reset *stubAccountService) *Handler {
 	return &Handler{
 		svc:    reset,
+		theme:  stubTheme{},
 		logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
 	}
 }

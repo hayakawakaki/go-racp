@@ -9,6 +9,7 @@ import (
 	app "github.com/hayakawakaki/go-racp/internal/features/account/app/moderation"
 	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
+	"github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
@@ -30,12 +31,12 @@ func (h *Handler) targetAndActor(w http.ResponseWriter, r *http.Request) (target
 }
 
 func (h *Handler) renderDetail(w http.ResponseWriter, r *http.Request, detail app.UserDetail) {
-	state := detailState{
+	s := state.DetailState{
 		Detail:       detail,
 		Now:          time.Now(),
-		AllowedRoles: buildRoleOptions(h.svc.AllowedRoles()),
+		AllowedRoles: state.BuildRoleOptions(h.svc.AllowedRoles()),
 	}
-	httpx.RenderHTML(w, r, h.logger, detailContent(state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.UsersDetailContent(s))
 }
 
 func (h *Handler) doBan(w http.ResponseWriter, r *http.Request) {
@@ -128,7 +129,7 @@ func pathID(r *http.Request) (int, bool) {
 
 func (h *Handler) writeActionError(w http.ResponseWriter, r *http.Request, message string, status int) {
 	w.WriteHeader(status)
-	httpx.RenderHTML(w, r, h.logger, actionError(message))
+	httpx.RenderHTML(w, r, h.logger, h.theme.UsersActionError(message))
 }
 
 func (h *Handler) writeActionErrorFromDomain(w http.ResponseWriter, r *http.Request, err error) {

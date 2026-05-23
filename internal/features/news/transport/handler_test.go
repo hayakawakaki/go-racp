@@ -12,13 +12,32 @@ import (
 	"testing"
 	"time"
 
+	"github.com/a-h/templ"
 	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/features/news/app"
 	"github.com/hayakawakaki/go-racp/internal/features/news/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/news/infra"
+	newsstate "github.com/hayakawakaki/go-racp/internal/features/news/transport/state"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/server/config"
+	news "github.com/hayakawakaki/go-racp/themes/default/features/news/transport"
+	_ "github.com/hayakawakaki/go-racp/themes/default/platform/httpx"
 )
+
+type stubTheme struct{}
+
+func (stubTheme) NewsListPage(layout httpx.Layout, state newsstate.NewsListState) templ.Component {
+	return news.NewsListPage(layout, state)
+}
+
+func (stubTheme) NewsDetailPage(layout httpx.Layout, state newsstate.NewsDetailState) templ.Component {
+	return news.NewsDetailPage(layout, state)
+}
+
+func (stubTheme) NewsFormPage(layout httpx.Layout, state newsstate.NewsFormState) templ.Component {
+	return news.NewsFormPage(layout, state)
+}
 
 type fakeService struct {
 	items      map[int64]app.NewsItem
@@ -101,6 +120,7 @@ func newCanManageHandler(users userLookup, manageRoles []string) *Handler {
 		Roles:       resolver,
 		ManageRoles: manageRoles,
 		General:     config.GeneralConfig{ServerName: "Test", Timezone: "UTC"},
+		Theme:       stubTheme{},
 	})
 }
 
@@ -175,6 +195,7 @@ func newJSONHandler(svc *fakeService) *Handler {
 	return NewHandler(svc, infra.NewRenderer(discardLogger()), HandlerConfig{
 		Logger:  discardLogger(),
 		General: config.GeneralConfig{ServerName: "Test", Timezone: "UTC"},
+		Theme:   stubTheme{},
 	})
 }
 

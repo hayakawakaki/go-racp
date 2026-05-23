@@ -8,6 +8,7 @@ import (
 
 	"github.com/hayakawakaki/go-racp/internal/features/news/app"
 	"github.com/hayakawakaki/go-racp/internal/features/news/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/news/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
@@ -35,13 +36,13 @@ func (h *Handler) htmlList(w http.ResponseWriter, r *http.Request) {
 	if selected == "" {
 		selected = categoryAll
 	}
-	state := NewsListState{
+	s := state.NewsListState{
 		Items:            items,
 		Categories:       h.svc.Categories().All(),
 		SelectedCategory: selected,
 		CanManage:        h.canManage(r),
 	}
-	httpx.RenderHTML(w, r, h.logger, newsListPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.NewsListPage(h.layout(), s))
 }
 
 func (h *Handler) htmlDetail(w http.ResponseWriter, r *http.Request) {
@@ -61,17 +62,17 @@ func (h *Handler) htmlDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	state := NewsDetailState{
+	s := state.NewsDetailState{
 		Item:      item,
 		BodyHTML:  h.renderer.Render(item.Body),
 		CanManage: h.canManage(r),
 	}
-	httpx.RenderHTML(w, r, h.logger, newsDetailPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.NewsDetailPage(h.layout(), s))
 }
 
 func (h *Handler) htmlCreateForm(w http.ResponseWriter, r *http.Request) {
-	state := h.newCreateFormState("", "", "")
-	httpx.RenderHTML(w, r, h.logger, newsFormPage(h.layout(), state))
+	s := h.newCreateFormState("", "", "")
+	httpx.RenderHTML(w, r, h.logger, h.theme.NewsFormPage(h.layout(), s))
 }
 
 func (h *Handler) htmlPreview(w http.ResponseWriter, r *http.Request) {
@@ -102,9 +103,9 @@ func (h *Handler) htmlCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if field, msg := fieldFromErr(err); field != "" {
-		state := h.newCreateFormState(title, body, category)
-		state.Errors = map[string]string{field: msg}
-		httpx.RenderHTML(w, r, h.logger, newsFormPage(h.layout(), state))
+		s := h.newCreateFormState(title, body, category)
+		s.Errors = map[string]string{field: msg}
+		httpx.RenderHTML(w, r, h.logger, h.theme.NewsFormPage(h.layout(), s))
 		return
 	}
 	h.logger.Error("news: create", "err", err)
@@ -128,8 +129,8 @@ func (h *Handler) htmlEditForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	state := h.newEditFormState(id, item.Title, item.Body, item.Category)
-	httpx.RenderHTML(w, r, h.logger, newsFormPage(h.layout(), state))
+	s := h.newEditFormState(id, item.Title, item.Body, item.Category)
+	httpx.RenderHTML(w, r, h.logger, h.theme.NewsFormPage(h.layout(), s))
 }
 
 func (h *Handler) htmlUpdate(w http.ResponseWriter, r *http.Request) {
@@ -157,9 +158,9 @@ func (h *Handler) htmlUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if field, msg := fieldFromErr(err); field != "" {
-		state := h.newEditFormState(id, title, body, category)
-		state.Errors = map[string]string{field: msg}
-		httpx.RenderHTML(w, r, h.logger, newsFormPage(h.layout(), state))
+		s := h.newEditFormState(id, title, body, category)
+		s.Errors = map[string]string{field: msg}
+		httpx.RenderHTML(w, r, h.logger, h.theme.NewsFormPage(h.layout(), s))
 		return
 	}
 	h.logger.Error("news: update", "err", err, "id", id)
@@ -187,13 +188,13 @@ func (h *Handler) htmlDelete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusSeeOther)
 }
 
-func (h *Handler) newCreateFormState(title, body, category string) NewsFormState {
+func (h *Handler) newCreateFormState(title, body, category string) state.NewsFormState {
 	categories := h.svc.Categories().All()
 	if category == "" && len(categories) > 0 {
 		category = categories[0].Key
 	}
 
-	return NewsFormState{
+	return state.NewsFormState{
 		Action:         "/news",
 		PageTitle:      "New news post",
 		Submit:         "Create",
@@ -205,8 +206,8 @@ func (h *Handler) newCreateFormState(title, body, category string) NewsFormState
 	}
 }
 
-func (h *Handler) newEditFormState(id int64, title, body, category string) NewsFormState {
-	return NewsFormState{
+func (h *Handler) newEditFormState(id int64, title, body, category string) state.NewsFormState {
+	return state.NewsFormState{
 		Action:         fmt.Sprintf("/news/%d/edit", id),
 		PageTitle:      "Edit: " + title,
 		Submit:         "Save",

@@ -13,13 +13,13 @@ func (h *Handler) doReload(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case errors.Is(err, refdata.ErrReloadConflict):
 		w.WriteHeader(http.StatusConflict)
-		httpx.RenderHTML(w, r, h.logger, reloadConflict())
+		httpx.RenderHTML(w, r, h.logger, h.theme.MobReloadConflict())
 		return
 	case err != nil:
 		h.logger.Error("mob: reload failed", "err", err)
 		w.WriteHeader(http.StatusInternalServerError)
-		httpx.RenderHTML(w, r, h.logger, reloadFailure("Reload failed. Check server logs for details."))
+		httpx.RenderHTML(w, r, h.logger, h.theme.MobReloadFailure("Reload failed. Check server logs for details."))
 		return
 	}
-	httpx.RenderHTML(w, r, h.logger, reloadSuccess(h.svc.Status()))
+	httpx.RenderHTML(w, r, h.logger, h.theme.MobReloadSuccess(h.svc.Status()))
 }

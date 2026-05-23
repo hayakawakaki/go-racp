@@ -18,6 +18,7 @@ func newAuthHandlerWithPolicy(auth *stubAccountService, sess *stubSessionService
 	return &Handler{
 		svc:                  auth,
 		sessSvc:              sess,
+		theme:                stubTheme{},
 		logger:               slog.New(slog.NewTextHandler(io.Discard, nil)),
 		secure:               false,
 		allowTempBannedLogin: allowTempBannedLogin,

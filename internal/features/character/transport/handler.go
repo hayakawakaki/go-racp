@@ -5,7 +5,9 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/a-h/templ"
 	"github.com/hayakawakaki/go-racp/internal/features/character/app"
+	"github.com/hayakawakaki/go-racp/internal/features/character/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
@@ -17,15 +19,23 @@ type characterService interface {
 	ResetLocation(ctx context.Context, accountID, charID int) error
 }
 
-type HandlerConfig struct {
-	Logger  *slog.Logger
-	General config.GeneralConfig
+type Renderer interface {
+	CharacterDetailPage(layout httpx.Layout, state state.DetailState) templ.Component
 }
 
+//nolint:govet // GeneralConfig trailing bool forces alignment cost
+type HandlerConfig struct {
+	General config.GeneralConfig
+	Theme   Renderer
+	Logger  *slog.Logger
+}
+
+//nolint:govet // GeneralConfig trailing bool forces alignment cost
 type Handler struct {
-	svc     characterService
-	logger  *slog.Logger
 	general config.GeneralConfig
+	svc     characterService
+	theme   Renderer
+	logger  *slog.Logger
 }
 
 func NewHandler(svc characterService, cfg HandlerConfig) *Handler {
@@ -34,7 +44,12 @@ func NewHandler(svc characterService, cfg HandlerConfig) *Handler {
 		logger = slog.Default()
 	}
 
-	return &Handler{svc: svc, logger: logger, general: cfg.General}
+	return &Handler{
+		svc:     svc,
+		logger:  logger,
+		general: cfg.General,
+		theme:   cfg.Theme,
+	}
 }
 
 func (h *Handler) layout() httpx.Layout {

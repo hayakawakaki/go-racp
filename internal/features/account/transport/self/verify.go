@@ -8,6 +8,7 @@ import (
 	app "github.com/hayakawakaki/go-racp/internal/features/account/app/self"
 	"github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
+	selfstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/self/state"
 	actiontokendomain "github.com/hayakawakaki/go-racp/internal/platform/actiontoken/domain"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
@@ -51,34 +52,34 @@ func (h *Handler) showVerifyAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	state := VerifyAccountState{Email: user.Email}
+	state := selfstate.VerifyAccountState{Email: user.Email}
 	if notice, ok := resendNoticeText[r.URL.Query().Get("notice")]; ok {
 		state.Notice = notice
 	}
-	httpx.RenderHTML(w, r, h.logger, verifyAccountPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.AccountVerifyAccountPage(h.layout(), state))
 }
 
 func (h *Handler) showVerify(w http.ResponseWriter, r *http.Request) {
-	expired := verifyResultPage(h.layout(), VerifyResultState{Kind: VerifyResultExpired})
+	expired := h.theme.AccountVerifyResultPage(h.layout(), selfstate.VerifyResultState{Kind: selfstate.VerifyResultExpired})
 	token, ok := h.validateTokenLink(w, r, actiontokendomain.EmailVerification, "verify peek", expired)
 	if !ok {
 		return
 	}
 
-	httpx.RenderHTML(w, r, h.logger, verifyConfirmPage(h.layout(), VerifyConfirmState{Token: token}))
+	httpx.RenderHTML(w, r, h.logger, h.theme.AccountVerifyConfirmPage(h.layout(), selfstate.VerifyConfirmState{Token: token}))
 }
 
 //nolint:cyclop // splitting would obscure the flow
 func (h *Handler) doVerify(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Referrer-Policy", "no-referrer")
 	if err := httpx.ParseForm(w, r, maxVerifyFormBytes); err != nil {
-		httpx.RenderHTML(w, r, h.logger, verifyResultPage(h.layout(), VerifyResultState{Kind: VerifyResultInvalid}))
+		httpx.RenderHTML(w, r, h.logger, h.theme.AccountVerifyResultPage(h.layout(), selfstate.VerifyResultState{Kind: selfstate.VerifyResultInvalid}))
 		return
 	}
 
 	token := r.PostFormValue(fieldToken)
 	if token == "" {
-		httpx.RenderHTML(w, r, h.logger, verifyResultPage(h.layout(), VerifyResultState{Kind: VerifyResultInvalid}))
+		httpx.RenderHTML(w, r, h.logger, h.theme.AccountVerifyResultPage(h.layout(), selfstate.VerifyResultState{Kind: selfstate.VerifyResultInvalid}))
 		return
 	}
 
@@ -88,19 +89,19 @@ func (h *Handler) doVerify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	state := VerifyResultState{}
+	state := selfstate.VerifyResultState{}
 	switch {
 	case err == nil:
-		state.Kind = VerifyResultSuccess
+		state.Kind = selfstate.VerifyResultSuccess
 	case errors.Is(err, actiontokendomain.ErrTokenExpired):
-		state.Kind = VerifyResultExpired
+		state.Kind = selfstate.VerifyResultExpired
 	default:
 		if !errors.Is(err, actiontokendomain.ErrTokenInvalid) && !errors.Is(err, actiontokendomain.ErrTokenAlreadyUsed) {
 			h.logger.Error("verify consume", "err", err)
 		}
-		state.Kind = VerifyResultInvalid
+		state.Kind = selfstate.VerifyResultInvalid
 	}
-	httpx.RenderHTML(w, r, h.logger, verifyResultPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.AccountVerifyResultPage(h.layout(), state))
 }
 
 func (h *Handler) hasActiveSession(r *http.Request) bool {

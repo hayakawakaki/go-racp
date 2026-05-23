@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
+@source "../../themes/default/**/*.templ";
 @source "../../internal/**/*.templ";
+@source inline("prose max-w-3xl mx-auto p-8");
 
 [x-cloak] { display: none !important; }
 

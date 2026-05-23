@@ -1,0 +1,130 @@
+package transport
+
+import (
+	"fmt"
+
+	itemstate "github.com/hayakawakaki/go-racp/internal/features/item/transport/state"
+	"github.com/hayakawakaki/go-racp/internal/features/item/domain"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+)
+
+templ ItemListPage(layout httpx.Layout, state itemstate.ListState) {
+	@httpx.ActiveBase(layout, "Items") {
+		<div class="w-full max-w-5xl space-y-6">
+			<section class="rounded-2xl bg-white ring-1 ring-gray-200 px-8 py-7">
+				<div class="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+					<div>
+						<p class="text-xs uppercase tracking-[0.18em] text-gray-400">Item Database</p>
+						<h1 class="mt-2 text-3xl font-semibold tracking-tight text-gray-900">Items</h1>
+						if state.Page.Total > 0 {
+							<p class="mt-1 text-sm text-gray-500">
+								{ fmt.Sprintf("%d", state.Page.Total) }
+								if state.Page.Total == 1 {
+									item
+								} else {
+									items
+								}
+								if state.Query != "" || state.Type != "" {
+									matching your filters
+								}
+							</p>
+						}
+					</div>
+					<form method="get" action="/items" class="flex flex-wrap items-center gap-2">
+						<label for="item-query" class="sr-only">Search by name or ID</label>
+						<input
+							id="item-query"
+							type="text"
+							name="q"
+							autocomplete="off"
+							value={ state.Query }
+							placeholder="Name or ID"
+							class="w-48 rounded-full border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-900 focus:outline-none"
+						/>
+						<label for="item-type" class="sr-only">Filter by item type</label>
+						<select
+							id="item-type"
+							name="type"
+							autocomplete="off"
+							class="rounded-full border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 focus:border-gray-900 focus:outline-none"
+						>
+							<option value="">All types</option>
+							for _, name := range itemTypeOptions {
+								<option value={ name } selected?={ state.Type == name }>{ name }</option>
+							}
+						</select>
+						<button
+							type="submit"
+							class="rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-900 hover:text-gray-900"
+						>
+							Filter
+						</button>
+					</form>
+				</div>
+			</section>
+			<section class="rounded-2xl bg-white ring-1 ring-gray-200 px-8 py-7">
+				<header class="flex items-baseline justify-between border-b border-gray-100 pb-4">
+					<h2 class="text-lg font-semibold tracking-tight text-gray-900">Results</h2>
+					if state.Page.TotalPages > 1 {
+						<span class="text-xs uppercase tracking-[0.18em] text-gray-400">
+							{ fmt.Sprintf("Page %d of %d", state.Page.Page, state.Page.TotalPages) }
+						</span>
+					}
+				</header>
+				if state.Page.Total == 0 {
+					<p class="pt-6 text-sm text-gray-500">No items match your filters.</p>
+				} else {
+					<ul class="divide-y divide-gray-100">
+						for _, item := range state.Page.Items {
+							@itemRow(item)
+						}
+					</ul>
+					@pagination(state)
+				}
+			</section>
+		</div>
+	}
+}
+
+templ itemRow(item *domain.Item) {
+	<li>
+		<a
+			href={ templ.SafeURL(fmt.Sprintf("/items/%d", item.ID)) }
+			class="grid grid-cols-[4rem_auto_minmax(0,1fr)_auto] items-center gap-x-4 py-3 text-sm transition hover:bg-gray-50"
+		>
+			<span class="font-mono text-xs text-gray-400">{ fmt.Sprintf("%d", item.ID) }</span>
+			@spriteBox(item.Image, "size-[25px]")
+			<span class="font-medium tracking-tight text-gray-900">{ item.ClientName + item.SlotSuffix() }</span>
+			<span class="text-right text-xs uppercase tracking-[0.14em] text-gray-400">{ item.Type.Display() }</span>
+		</a>
+	</li>
+}
+
+templ pagination(state itemstate.ListState) {
+	<nav class="mt-6 flex items-center justify-between border-t border-gray-100 pt-4">
+		if state.Page.Page > 1 {
+			<a
+				href={ templ.SafeURL(pageURL(state, state.Page.Page-1)) }
+				class="rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-900 hover:text-gray-900"
+			>
+				Previous
+			</a>
+		} else {
+			<span class="rounded-full border border-gray-100 px-4 py-2 text-sm font-medium text-gray-300">Previous</span>
+		}
+		<span class="text-xs uppercase tracking-[0.18em] text-gray-400">
+			{ fmt.Sprintf("%d / %d", state.Page.Page, state.Page.TotalPages) }
+		</span>
+		if state.Page.Page < state.Page.TotalPages {
+			<a
+				href={ templ.SafeURL(pageURL(state, state.Page.Page+1)) }
+				class="rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-900 hover:text-gray-900"
+			>
+				Next
+			</a>
+		} else {
+			<span class="rounded-full border border-gray-100 px-4 py-2 text-sm font-medium text-gray-300">Next</span>
+		}
+	</nav>
+}
+

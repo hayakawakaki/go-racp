@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/a-h/templ"
+	"github.com/hayakawakaki/go-racp/internal/features/admin/transport/state"
 	itemapp "github.com/hayakawakaki/go-racp/internal/features/item/app"
 	mobapp "github.com/hayakawakaki/go-racp/internal/features/mob/app"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
@@ -28,20 +30,30 @@ type metricReader interface {
 	General(ctx context.Context) (domain.GeneralSnapshot, error)
 }
 
+type Renderer interface {
+	AdminLayout(layout httpx.Layout, pageTitle string, content templ.Component) templ.Component
+	DashboardContent(state state.DashboardState) templ.Component
+	DatabaseContent(state state.DatabaseState) templ.Component
+}
+
+//nolint:govet // GeneralConfig trailing bool forces alignment cost
 type HandlerConfig struct {
-	Logger     *slog.Logger
+	General    config.GeneralConfig
 	ItemStatus itemStatusProvider
 	MobStatus  mobStatusProvider
 	Metric     metricReader
-	General    config.GeneralConfig
+	Theme      Renderer
+	Logger     *slog.Logger
 }
 
+//nolint:govet // GeneralConfig trailing bool forces alignment cost
 type Handler struct {
-	logger     *slog.Logger
+	general    config.GeneralConfig
 	itemStatus itemStatusProvider
 	mobStatus  mobStatusProvider
 	metric     metricReader
-	general    config.GeneralConfig
+	theme      Renderer
+	logger     *slog.Logger
 }
 
 func NewHandler(cfg HandlerConfig) *Handler {
@@ -51,6 +63,7 @@ func NewHandler(cfg HandlerConfig) *Handler {
 		mobStatus:  cfg.MobStatus,
 		metric:     cfg.Metric,
 		general:    cfg.General,
+		theme:      cfg.Theme,
 	}
 }
 
@@ -64,20 +77,20 @@ func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
 }
 
 func (h *Handler) showDashboard(w http.ResponseWriter, r *http.Request) {
-	state := h.dashboardState(r.Context())
+	s := h.dashboardState(r.Context())
 	if httpx.IsHTMX(r) {
-		httpx.RenderHTML(w, r, h.logger, dashboardContent(state))
+		httpx.RenderHTML(w, r, h.logger, h.theme.DashboardContent(s))
 		return
 	}
-	httpx.RenderHTML(w, r, h.logger, AdminLayout(h.layout(), "Dashboard", dashboardContent(state)))
+	httpx.RenderHTML(w, r, h.logger, h.theme.AdminLayout(h.layout(), "Dashboard", h.theme.DashboardContent(s)))
 }
 
-func (h *Handler) dashboardState(ctx context.Context) dashboardState {
-	state := dashboardState{}
+func (h *Handler) dashboardState(ctx context.Context) state.DashboardState {
+	s := state.DashboardState{}
 	if h.metric == nil {
-		return state
+		return s
 	}
-	state.Online = h.metric.Online(ctx)
+	s.Online = h.metric.Online(ctx)
 
 	var general domain.GeneralSnapshot
 	var peaks []domain.PeakRow
@@ -102,28 +115,28 @@ func (h *Handler) dashboardState(ctx context.Context) dashboardState {
 	})
 	_ = g.Wait()
 
-	state.General = general
-	state.PeakTable = buildPeakTable(peaks)
-	return state
+	s.General = general
+	s.PeakTable = state.BuildPeakTable(peaks)
+	return s
 }
 
 func (h *Handler) showDatabase(w http.ResponseWriter, r *http.Request) {
-	state := h.databaseState()
+	s := h.databaseState()
 	if httpx.IsHTMX(r) {
-		httpx.RenderHTML(w, r, h.logger, databaseContent(state))
+		httpx.RenderHTML(w, r, h.logger, h.theme.DatabaseContent(s))
 		return
 	}
-	httpx.RenderHTML(w, r, h.logger, AdminLayout(h.layout(), "Database", databaseContent(state)))
+	httpx.RenderHTML(w, r, h.logger, h.theme.AdminLayout(h.layout(), "Database", h.theme.DatabaseContent(s)))
 }
 
-func (h *Handler) databaseState() databaseState {
-	state := databaseState{}
+func (h *Handler) databaseState() state.DatabaseState {
+	s := state.DatabaseState{}
 	if h.itemStatus != nil {
-		state.Item = h.itemStatus.Status()
+		s.Item = h.itemStatus.Status()
 	}
 	if h.mobStatus != nil {
-		state.Mob = h.mobStatus.Status()
+		s.Mob = h.mobStatus.Status()
 	}
 
-	return state
+	return s
 }

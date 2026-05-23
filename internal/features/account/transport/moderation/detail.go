@@ -2,27 +2,14 @@ package moderation
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
-	"slices"
 	"strconv"
 	"time"
 
-	app "github.com/hayakawakaki/go-racp/internal/features/account/app/moderation"
 	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
-
-type roleOption struct {
-	Name    string
-	GroupID int
-}
-
-type detailState struct {
-	Now          time.Time
-	Detail       app.UserDetail
-	AllowedRoles []roleOption
-}
 
 func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {
 	id, ok := pathID(r)
@@ -34,7 +21,7 @@ func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {
 	detail, err := h.svc.Get(r.Context(), id)
 	if errors.Is(err, accdomain.ErrUserNotFound) {
 		w.WriteHeader(http.StatusNotFound)
-		httpx.RenderHTML(w, r, h.logger, notFoundPage(h.layout(), strconv.Itoa(id)))
+		httpx.RenderHTML(w, r, h.logger, h.theme.UsersNotFoundPage(h.layout(), strconv.Itoa(id)))
 		return
 	}
 	if err != nil {
@@ -43,38 +30,15 @@ func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	state := detailState{
+	s := state.DetailState{
 		Detail:       detail,
 		Now:          time.Now(),
-		AllowedRoles: buildRoleOptions(h.svc.AllowedRoles()),
+		AllowedRoles: state.BuildRoleOptions(h.svc.AllowedRoles()),
 	}
 
 	if httpx.IsHTMX(r) {
-		httpx.RenderHTML(w, r, h.logger, detailContent(state))
+		httpx.RenderHTML(w, r, h.logger, h.theme.UsersDetailContent(s))
 		return
 	}
-	httpx.RenderHTML(w, r, h.logger, detailPage(h.layout(), detail.User.Username, state))
-}
-
-func buildRoleOptions(allowed map[int]string) []roleOption {
-	out := make([]roleOption, 0, len(allowed))
-	for id, name := range allowed {
-		out = append(out, roleOption{GroupID: id, Name: name})
-	}
-	slices.SortFunc(out, func(a, b roleOption) int { return a.GroupID - b.GroupID })
-
-	return out
-}
-
-func roleNameFor(state detailState, groupID int) string {
-	for _, opt := range state.AllowedRoles {
-		if opt.GroupID == groupID {
-			return opt.Name
-		}
-	}
-	if groupID == accdomain.RoleAdmin.GroupID {
-		return "Admin"
-	}
-
-	return fmt.Sprintf("group_%d", groupID)
+	httpx.RenderHTML(w, r, h.logger, h.theme.UsersDetailPage(h.layout(), detail.User.Username, s))
 }

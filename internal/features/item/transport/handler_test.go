@@ -13,12 +13,47 @@ import (
 	"testing"
 	"time"
 
+	"github.com/a-h/templ"
 	"github.com/hayakawakaki/go-racp/internal/features/item/app"
 	"github.com/hayakawakaki/go-racp/internal/features/item/domain"
+	itemstate "github.com/hayakawakaki/go-racp/internal/features/item/transport/state"
 	mobdomain "github.com/hayakawakaki/go-racp/internal/features/mob/domain"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/refdata"
 	"github.com/hayakawakaki/go-racp/server/config"
+	itemtpl "github.com/hayakawakaki/go-racp/themes/default/features/item/transport"
+	_ "github.com/hayakawakaki/go-racp/themes/default/platform/httpx"
 )
+
+type stubTheme struct{}
+
+func (stubTheme) ItemDetailPage(layout httpx.Layout, state itemstate.DetailState) templ.Component {
+	return itemtpl.ItemDetailPage(layout, state)
+}
+
+func (stubTheme) ItemListPage(layout httpx.Layout, state itemstate.ListState) templ.Component {
+	return itemtpl.ItemListPage(layout, state)
+}
+
+func (stubTheme) ItemNotFoundPage(layout httpx.Layout, id string) templ.Component {
+	return itemtpl.ItemNotFoundPage(layout, id)
+}
+
+func (stubTheme) ItemEmptyDatabasePage(layout httpx.Layout) templ.Component {
+	return itemtpl.ItemEmptyDatabasePage(layout)
+}
+
+func (stubTheme) ItemReloadSuccess(status app.ServiceStatus) templ.Component {
+	return itemtpl.ItemReloadSuccess(status)
+}
+
+func (stubTheme) ItemReloadFailure(message string) templ.Component {
+	return itemtpl.ItemReloadFailure(message)
+}
+
+func (stubTheme) ItemReloadConflict() templ.Component {
+	return itemtpl.ItemReloadConflict()
+}
 
 //nolint:govet // fine for test
 type fakeItemService struct {
@@ -84,6 +119,7 @@ func newTestHandler(svc itemService) *Handler {
 	return NewHandler(svc, HandlerConfig{
 		Logger:  discardLogger(),
 		General: config.GeneralConfig{ServerName: "Test", Timezone: "UTC"},
+		Theme:   stubTheme{},
 	})
 }
 
@@ -92,6 +128,7 @@ func newTestHandlerWithDropLookup(svc itemService, lookup dropLookup) *Handler {
 		Logger:     discardLogger(),
 		DropLookup: lookup,
 		General:    config.GeneralConfig{ServerName: "Test", Timezone: "UTC"},
+		Theme:      stubTheme{},
 	})
 }
 
@@ -591,31 +628,6 @@ func TestNewHandler_NilLoggerFallsBackToDefault(t *testing.T) {
 	}
 }
 
-func TestDroppedByAlpineState(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name  string
-		want  string
-		count int
-	}{
-		{name: "zero entries clamps to one page", count: 0, want: "{ page: 1, perPage: 10, totalPages: 1 }"},
-		{name: "fits in one page", count: 7, want: "{ page: 1, perPage: 10, totalPages: 1 }"},
-		{name: "exactly one page", count: 10, want: "{ page: 1, perPage: 10, totalPages: 1 }"},
-		{name: "rolls over to two pages", count: 11, want: "{ page: 1, perPage: 10, totalPages: 2 }"},
-		{name: "many pages", count: 35, want: "{ page: 1, perPage: 10, totalPages: 4 }"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			if got := droppedByAlpineState(tt.count); got != tt.want {
-				t.Errorf("droppedByAlpineState(%d) = %q, want %q", tt.count, got, tt.want)
-			}
-		})
-	}
-}
-
 func TestYesNo(t *testing.T) {
 	t.Parallel()
 
@@ -738,7 +750,7 @@ func TestBuildStats_EmptySubTypeIsOmitted(t *testing.T) {
 	}
 }
 
-func rowLabels(rows []labeledRow) []string {
+func rowLabels(rows []itemstate.LabeledRow) []string {
 	labels := make([]string, len(rows))
 	for index, row := range rows {
 		labels[index] = row.Label

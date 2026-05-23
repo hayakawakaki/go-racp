@@ -20,6 +20,7 @@ func newForgotHandler(reset *stubAccountService, logBuffer io.Writer) *Handler {
 	}
 	return &Handler{
 		svc:    reset,
+		theme:  stubTheme{},
 		logger: slog.New(slog.NewTextHandler(logBuffer, nil)),
 	}
 }

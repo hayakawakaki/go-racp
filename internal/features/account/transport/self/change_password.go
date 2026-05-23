@@ -6,11 +6,12 @@ import (
 
 	"github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
+	selfstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/self/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
 func (h *Handler) showChangePassword(w http.ResponseWriter, r *http.Request) {
-	h.renderChangePassword(w, r, ChangePasswordState{}, true)
+	h.renderChangePassword(w, r, selfstate.ChangePasswordState{}, true)
 }
 
 //nolint:cyclop // splitting would obscure the flow
@@ -22,7 +23,7 @@ func (h *Handler) doChangePassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := httpx.ParseForm(w, r, maxAccountFormBytes); err != nil {
-		h.renderChangePassword(w, r, ChangePasswordState{
+		h.renderChangePassword(w, r, selfstate.ChangePasswordState{
 			Errors: map[string]string{fieldNewPassword: invalidFormDataMsg},
 		}, false)
 		return
@@ -42,11 +43,11 @@ func (h *Handler) doChangePassword(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		var ve *domain.ValidationError
 		if errors.As(err, &ve) {
-			h.renderChangePassword(w, r, ChangePasswordState{Errors: ve.Fields}, false)
+			h.renderChangePassword(w, r, selfstate.ChangePasswordState{Errors: ve.Fields}, false)
 			return
 		}
 		if errors.Is(err, domain.ErrPasswordRecentlyChanged) {
-			h.renderChangePassword(w, r, ChangePasswordState{
+			h.renderChangePassword(w, r, selfstate.ChangePasswordState{
 				Errors: map[string]string{fieldCurrentPassword: "Password was changed recently. Please try again later."},
 			}, false)
 			return
@@ -61,14 +62,14 @@ func (h *Handler) doChangePassword(w http.ResponseWriter, r *http.Request) {
 
 // renderChangePassword renders the modal/form for HTMX requests and the full page for direct navigation.
 // modalOnInitial selects between the modal wrapper (for initial GET) and the bare form (for re-renders after POST).
-func (h *Handler) renderChangePassword(w http.ResponseWriter, r *http.Request, state ChangePasswordState, modalOnInitial bool) {
+func (h *Handler) renderChangePassword(w http.ResponseWriter, r *http.Request, state selfstate.ChangePasswordState, modalOnInitial bool) {
 	if httpx.IsHTMX(r) {
 		if modalOnInitial {
-			httpx.RenderHTML(w, r, h.logger, changePasswordModal(state))
+			httpx.RenderHTML(w, r, h.logger, h.theme.AccountChangePasswordModal(state))
 			return
 		}
-		httpx.RenderHTML(w, r, h.logger, changePasswordForm(state))
+		httpx.RenderHTML(w, r, h.logger, h.theme.AccountChangePasswordForm(state))
 		return
 	}
-	httpx.RenderHTML(w, r, h.logger, changePasswordPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.AccountChangePasswordPage(h.layout(), state))
 }

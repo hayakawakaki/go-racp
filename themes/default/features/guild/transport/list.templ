@@ -1,0 +1,102 @@
+package transport
+
+import (
+	"fmt"
+
+	admintransport "github.com/hayakawakaki/go-racp/themes/default/features/admin/transport"
+	guildstate "github.com/hayakawakaki/go-racp/internal/features/guild/transport/state"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+)
+
+templ GuildListPage(layout httpx.Layout, state guildstate.ListState) {
+	@admintransport.AdminLayout(layout, "Guilds", GuildListContent(state))
+}
+
+templ GuildListContent(state guildstate.ListState) {
+	<div class="space-y-4">
+		<header class="flex items-center justify-between gap-4">
+			<h1 class="text-2xl font-semibold text-gray-900">Guilds</h1>
+			<form class="flex gap-2" hx-get={ state.BaseURL } hx-target="#admin-content" hx-push-url="true">
+				<input
+					type="text"
+					name="q"
+					value={ state.Query }
+					placeholder="Search guild name"
+					class="rounded-md border border-gray-300 px-3 py-1.5 text-sm w-72"
+				/>
+				<button type="submit" class="rounded-md bg-gray-900 px-3 py-1.5 text-sm text-white">Search</button>
+			</form>
+		</header>
+		<div class="overflow-hidden rounded-2xl ring-1 ring-gray-200 bg-white">
+			<table class="min-w-full text-sm">
+				<thead class="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
+					<tr>
+						<th class="px-4 py-2">ID</th>
+						<th class="px-4 py-2">Name</th>
+						<th class="px-4 py-2">Master</th>
+						<th class="px-4 py-2">Level</th>
+						<th class="px-4 py-2">Max members</th>
+					</tr>
+				</thead>
+				<tbody>
+					for _, g := range state.Page.Guilds {
+						<tr class="border-t border-gray-100">
+							<td class="px-4 py-2 font-mono">{ fmt.Sprintf("%d", g.ID) }</td>
+							<td class="px-4 py-2">
+								<a
+									href={ templ.SafeURL(fmt.Sprintf("/guilds/%d", g.ID)) }
+									hx-get={ fmt.Sprintf("/guilds/%d", g.ID) }
+									hx-target="#admin-content"
+									hx-push-url="true"
+									class="text-blue-600 hover:underline"
+								>
+									{ g.Name }
+								</a>
+							</td>
+							<td class="px-4 py-2">
+								<a
+									href={ templ.SafeURL(fmt.Sprintf("/characters/%d", g.MasterCharID)) }
+									class="text-blue-600 hover:underline"
+								>
+									{ g.MasterName }
+								</a>
+							</td>
+							<td class="px-4 py-2">{ fmt.Sprintf("%d", g.GuildLevel) }</td>
+							<td class="px-4 py-2">{ fmt.Sprintf("%d", g.MaxMember) }</td>
+						</tr>
+					}
+					if len(state.Page.Guilds) == 0 {
+						<tr><td colspan="5" class="px-4 py-6 text-center text-gray-500">No guilds.</td></tr>
+					}
+				</tbody>
+			</table>
+		</div>
+		@pagination(state)
+	</div>
+}
+
+templ pagination(state guildstate.ListState) {
+	<nav class="flex justify-between text-sm">
+		<span class="text-gray-500">{ fmt.Sprintf("Page %d of %d - %d total", state.Page.Page, max(state.Page.TotalPages, 1), state.Page.Total) }</span>
+		<div class="flex gap-2">
+			if state.Page.Page > 1 {
+				<a
+					class="rounded border px-2 py-1"
+					href={ templ.SafeURL(pageURL(state.BaseURL, state.Page.Page-1, state.Query)) }
+					hx-get={ pageURL(state.BaseURL, state.Page.Page-1, state.Query) }
+					hx-target="#admin-content"
+					hx-push-url="true"
+				>Prev</a>
+			}
+			if state.Page.Page < state.Page.TotalPages {
+				<a
+					class="rounded border px-2 py-1"
+					href={ templ.SafeURL(pageURL(state.BaseURL, state.Page.Page+1, state.Query)) }
+					hx-get={ pageURL(state.BaseURL, state.Page.Page+1, state.Query) }
+					hx-target="#admin-content"
+					hx-push-url="true"
+				>Next</a>
+			}
+		</div>
+	</nav>
+}

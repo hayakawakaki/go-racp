@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/hayakawakaki/go-racp/internal/features/item/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/item/transport/state"
 	mobdomain "github.com/hayakawakaki/go-racp/internal/features/mob/domain"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
@@ -39,21 +40,21 @@ func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {
 	if h.dropLookup != nil {
 		droppedBy = h.dropLookup.WhoDrops(item.AegisName)
 	}
-	state := DetailState{
+	s := state.DetailState{
 		Item:             item,
 		Stats:            buildStats(item),
 		DescriptionLines: lines,
 		DroppedBy:        droppedBy,
 	}
-	httpx.RenderHTML(w, r, h.logger, detailPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.ItemDetailPage(h.layout(), s))
 }
 
 func (h *Handler) renderNotFound(w http.ResponseWriter, r *http.Request, idText string) {
-	httpx.RenderComponent404(w, r, h.logger, notFoundPage(h.layout(), idText))
+	httpx.RenderComponent404(w, r, h.logger, h.theme.ItemNotFoundPage(h.layout(), idText))
 }
 
-func buildStats(item *domain.Item) []labeledRow {
-	rows := []labeledRow{
+func buildStats(item *domain.Item) []state.LabeledRow {
+	rows := []state.LabeledRow{
 		{Label: "Type", Value: item.Type.Display()},
 		{Label: "Weight", Value: fmt.Sprintf("%.1f", item.Weight)},
 		{Label: "Buy", Value: fmt.Sprintf("%d z", item.Buy)},
@@ -62,27 +63,27 @@ func buildStats(item *domain.Item) []labeledRow {
 	switch item.Type {
 	case domain.ItemTypeWeapon:
 		rows = append(rows,
-			labeledRow{Label: "Weapon Level", Value: fmt.Sprintf("%d", item.WeaponLevel)},
-			labeledRow{Label: "Attack", Value: fmt.Sprintf("%d", item.Attack)},
-			labeledRow{Label: "Range", Value: fmt.Sprintf("%d", item.Range)},
-			labeledRow{Label: "Slots", Value: fmt.Sprintf("%d", item.Slots)},
-			labeledRow{Label: "Refineable", Value: yesNo(item.Refineable)},
+			state.LabeledRow{Label: "Weapon Level", Value: fmt.Sprintf("%d", item.WeaponLevel)},
+			state.LabeledRow{Label: "Attack", Value: fmt.Sprintf("%d", item.Attack)},
+			state.LabeledRow{Label: "Range", Value: fmt.Sprintf("%d", item.Range)},
+			state.LabeledRow{Label: "Slots", Value: fmt.Sprintf("%d", item.Slots)},
+			state.LabeledRow{Label: "Refineable", Value: yesNo(item.Refineable)},
 		)
 	case domain.ItemTypeArmor:
 		rows = append(rows,
-			labeledRow{Label: "Armor Level", Value: fmt.Sprintf("%d", item.ArmorLevel)},
-			labeledRow{Label: "Defense", Value: fmt.Sprintf("%d", item.Defense)},
-			labeledRow{Label: "Slots", Value: fmt.Sprintf("%d", item.Slots)},
-			labeledRow{Label: "Refineable", Value: yesNo(item.Refineable)},
+			state.LabeledRow{Label: "Armor Level", Value: fmt.Sprintf("%d", item.ArmorLevel)},
+			state.LabeledRow{Label: "Defense", Value: fmt.Sprintf("%d", item.Defense)},
+			state.LabeledRow{Label: "Slots", Value: fmt.Sprintf("%d", item.Slots)},
+			state.LabeledRow{Label: "Refineable", Value: yesNo(item.Refineable)},
 		)
 	}
 	if label := locationLabel(item.Type); label != "" {
 		if locations := item.Locations.Display(); len(locations) > 0 {
-			rows = append(rows, labeledRow{Label: label, Value: strings.Join(locations, ", ")})
+			rows = append(rows, state.LabeledRow{Label: label, Value: strings.Join(locations, ", ")})
 		}
 	}
 	if item.SubType != "" {
-		rows = append(rows, labeledRow{Label: "Subtype", Value: item.SubType})
+		rows = append(rows, state.LabeledRow{Label: "Subtype", Value: item.SubType})
 	}
 
 	return rows
@@ -105,12 +106,4 @@ func yesNo(value bool) string {
 	}
 
 	return "No"
-}
-
-const droppedByPerPage = 10
-
-func droppedByAlpineState(count int) string {
-	pages := max((count+droppedByPerPage-1)/droppedByPerPage, 1)
-
-	return fmt.Sprintf("{ page: 1, perPage: %d, totalPages: %d }", droppedByPerPage, pages)
 }

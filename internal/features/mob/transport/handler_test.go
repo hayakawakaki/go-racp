@@ -12,12 +12,47 @@ import (
 	"testing"
 	"time"
 
+	"github.com/a-h/templ"
 	itemdomain "github.com/hayakawakaki/go-racp/internal/features/item/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/mob/app"
 	"github.com/hayakawakaki/go-racp/internal/features/mob/domain"
+	mobstate "github.com/hayakawakaki/go-racp/internal/features/mob/transport/state"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/refdata"
 	"github.com/hayakawakaki/go-racp/server/config"
+	mobtpl "github.com/hayakawakaki/go-racp/themes/default/features/mob/transport"
+	_ "github.com/hayakawakaki/go-racp/themes/default/platform/httpx"
 )
+
+type stubTheme struct{}
+
+func (stubTheme) MobDetailPage(layout httpx.Layout, state mobstate.DetailState) templ.Component {
+	return mobtpl.MobDetailPage(layout, state)
+}
+
+func (stubTheme) MobListPage(layout httpx.Layout, state mobstate.ListState) templ.Component {
+	return mobtpl.MobListPage(layout, state)
+}
+
+func (stubTheme) MobNotFoundPage(layout httpx.Layout, id string) templ.Component {
+	return mobtpl.MobNotFoundPage(layout, id)
+}
+
+func (stubTheme) MobEmptyDatabasePage(layout httpx.Layout) templ.Component {
+	return mobtpl.MobEmptyDatabasePage(layout)
+}
+
+func (stubTheme) MobReloadSuccess(status app.ServiceStatus) templ.Component {
+	return mobtpl.MobReloadSuccess(status)
+}
+
+func (stubTheme) MobReloadFailure(message string) templ.Component {
+	return mobtpl.MobReloadFailure(message)
+}
+
+func (stubTheme) MobReloadConflict() templ.Component {
+	return mobtpl.MobReloadConflict()
+}
 
 //nolint:govet // fine for test
 type fakeMobService struct {
@@ -83,6 +118,7 @@ func newTestHandler(svc mobService) *Handler {
 	return NewHandler(svc, HandlerConfig{
 		Logger:  discardLogger(),
 		General: config.GeneralConfig{ServerName: "Test", Timezone: "UTC"},
+		Theme:   stubTheme{},
 	})
 }
 
@@ -91,6 +127,7 @@ func newTestHandlerWithLookup(svc mobService, lookup ItemLookup) *Handler {
 		Logger:       discardLogger(),
 		ItemLookupFn: func() ItemLookup { return lookup },
 		General:      config.GeneralConfig{ServerName: "Test", Timezone: "UTC"},
+		Theme:        stubTheme{},
 	})
 }
 
@@ -661,65 +698,18 @@ func TestBuildExp_OmitsMvpRowWhenAbsent(t *testing.T) {
 	}
 }
 
-func TestFormatRate(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name string
-		want string
-		in   int
-	}{
-		{name: "zero", in: 0, want: "0.00%"},
-		{name: "one percent", in: 100, want: "1.00%"},
-		{name: "fractional", in: 1, want: "0.01%"},
-		{name: "ten percent", in: 1000, want: "10.00%"},
-		{name: "full hundred percent", in: 10000, want: "100.00%"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			if got := formatRate(tt.in); got != tt.want {
-				t.Errorf("formatRate(%d) = %q, want %q", tt.in, got, tt.want)
-			}
-		})
-	}
-}
-
-func TestElementDisplay(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name string
-		mob  *domain.Mob
-		want string
-	}{
-		{name: "no level", mob: &domain.Mob{Element: domain.ElementFire}, want: "Fire"},
-		{name: "with level", mob: &domain.Mob{Element: domain.ElementFire, ElementLevel: 3}, want: "Fire 3"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			if got := elementDisplay(tt.mob); got != tt.want {
-				t.Errorf("elementDisplay = %q, want %q", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestDropRow_DisplayName(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name string
 		want string
-		row  dropRow
+		row  mobstate.DropRow
 	}{
-		{name: "client name preferred", row: dropRow{Aegis: "A", ClientName: "Pretty"}, want: "Pretty"},
-		{name: "aegis fallback when client name empty", row: dropRow{Aegis: "Fallback"}, want: "Fallback"},
-		{name: "slots append bracket", row: dropRow{ClientName: "Sword", Slots: 3}, want: "Sword [3]"},
-		{name: "no bracket when zero slots", row: dropRow{ClientName: "Card"}, want: "Card"},
+		{name: "client name preferred", row: mobstate.DropRow{Aegis: "A", ClientName: "Pretty"}, want: "Pretty"},
+		{name: "aegis fallback when client name empty", row: mobstate.DropRow{Aegis: "Fallback"}, want: "Fallback"},
+		{name: "slots append bracket", row: mobstate.DropRow{ClientName: "Sword", Slots: 3}, want: "Sword [3]"},
+		{name: "no bracket when zero slots", row: mobstate.DropRow{ClientName: "Card"}, want: "Card"},
 	}
 
 	for _, tt := range tests {

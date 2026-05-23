@@ -1,0 +1,51 @@
+package transport
+
+import "github.com/hayakawakaki/go-racp/internal/platform/httpx"
+
+templ MobNotFoundPage(layout httpx.Layout, id string) {
+	@httpx.ActiveBase(layout, "Monster not found") {
+		<div class="w-full max-w-md">
+			<section class="rounded-2xl bg-white ring-1 ring-gray-200 px-8 py-7 text-center">
+				<p class="text-xs uppercase tracking-[0.18em] text-gray-400">404</p>
+				<h1 class="mt-2 text-3xl font-semibold tracking-tight text-gray-900">Monster not found</h1>
+				<p class="mt-3 text-sm text-gray-500">
+					No monster with ID
+					<span class="font-mono text-gray-700">{ id }</span>
+					exists in the loaded database.
+				</p>
+				<div class="mt-6">
+					<a
+						href="/mobs"
+						class="inline-block rounded-full border border-gray-300 px-5 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-900 hover:text-gray-900"
+					>
+						Back to monsters
+					</a>
+				</div>
+			</section>
+		</div>
+	}
+}
+
+templ MobEmptyDatabasePage(layout httpx.Layout) {
+	@httpx.ActiveBase(layout, "Monsters") {
+		<div class="w-full max-w-xl">
+			<section class="rounded-2xl bg-white ring-1 ring-gray-200 px-8 py-7">
+				<p class="text-xs uppercase tracking-[0.18em] text-gray-400">Mob Database</p>
+				<h1 class="mt-2 text-3xl font-semibold tracking-tight text-gray-900">No monsters loaded</h1>
+				<p class="mt-3 text-sm text-gray-500">
+					No monster database is configured, or none of the configured files could be read.
+				</p>
+				<dl class="mt-6 divide-y divide-gray-100 border-y border-gray-100 text-sm">
+					<div class="grid grid-cols-[10rem_minmax(0,1fr)] gap-x-4 py-3">
+						<dt class="text-gray-500">Config keys</dt>
+						<dd class="font-mono text-gray-900">MobDB.YAML</dd>
+					</div>
+					<div class="grid grid-cols-[10rem_minmax(0,1fr)] gap-x-4 py-3">
+						<dt class="text-gray-500">Then trigger</dt>
+						<dd class="font-mono text-gray-900">POST /admin/mobs/reload</dd>
+					</div>
+				</dl>
+			</section>
+		</div>
+	}
+}

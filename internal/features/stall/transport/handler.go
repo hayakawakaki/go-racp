@@ -5,8 +5,10 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/a-h/templ"
 	itemdomain "github.com/hayakawakaki/go-racp/internal/features/item/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/stall/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/stall/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
@@ -21,17 +23,29 @@ type itemLookup interface {
 	Get(ctx context.Context, id int) (*itemdomain.Item, error)
 }
 
-type HandlerConfig struct {
-	Logger     *slog.Logger
-	ItemLookup itemLookup
-	General    config.GeneralConfig
+type Renderer interface {
+	StallListPage(layout httpx.Layout, state state.ListState) templ.Component
+	StallListContent(state state.ListState) templ.Component
+	StallLoadingPage(layout httpx.Layout, refreshURL string) templ.Component
+	StallLoadingContent(refreshURL string) templ.Component
+	StallVendingBox(state state.StallState) templ.Component
 }
 
+//nolint:govet // GeneralConfig trailing bool forces alignment cost
+type HandlerConfig struct {
+	General    config.GeneralConfig
+	ItemLookup itemLookup
+	Theme      Renderer
+	Logger     *slog.Logger
+}
+
+//nolint:govet // GeneralConfig trailing bool forces alignment cost
 type Handler struct {
-	svc        vendorService
-	logger     *slog.Logger
-	itemLookup itemLookup
 	general    config.GeneralConfig
+	svc        vendorService
+	itemLookup itemLookup
+	theme      Renderer
+	logger     *slog.Logger
 }
 
 func NewHandler(svc vendorService, cfg HandlerConfig) *Handler {
@@ -40,7 +54,13 @@ func NewHandler(svc vendorService, cfg HandlerConfig) *Handler {
 		logger = slog.Default()
 	}
 
-	return &Handler{svc: svc, logger: logger, itemLookup: cfg.ItemLookup, general: cfg.General}
+	return &Handler{
+		svc:        svc,
+		logger:     logger,
+		itemLookup: cfg.ItemLookup,
+		general:    cfg.General,
+		theme:      cfg.Theme,
+	}
 }
 
 func (h *Handler) layout() httpx.Layout {

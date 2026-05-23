@@ -10,9 +10,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/a-h/templ"
 	app "github.com/hayakawakaki/go-racp/internal/features/account/app/self"
 	"github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
+	homestate "github.com/hayakawakaki/go-racp/internal/features/home/transport/state"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	home "github.com/hayakawakaki/go-racp/themes/default/features/home/transport"
+	_ "github.com/hayakawakaki/go-racp/themes/default/platform/httpx"
 )
 
 type stubUserService struct {
@@ -26,13 +31,21 @@ func (s *stubUserService) GetByID(ctx context.Context, id int) (*app.GetDTO, err
 	return &app.GetDTO{ID: id, Username: "stub-user"}, nil
 }
 
+type stubTheme struct{}
+
+func (stubTheme) HomePage(layout httpx.Layout, state homestate.HomeState) templ.Component {
+	return home.HomePage(layout, state)
+}
+
 func newTestHandler(svc *stubUserService, logBuf io.Writer) *Handler {
 	if logBuf == nil {
 		logBuf = io.Discard
 	}
+
 	return &Handler{
 		userSvc: svc,
 		logger:  slog.New(slog.NewTextHandler(logBuf, nil)),
+		theme:   stubTheme{},
 	}
 }
 

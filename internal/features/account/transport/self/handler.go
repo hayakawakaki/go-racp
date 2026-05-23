@@ -8,9 +8,11 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/a-h/templ"
 	app "github.com/hayakawakaki/go-racp/internal/features/account/app/self"
 	"github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
+	selfstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/self/state"
 	charapp "github.com/hayakawakaki/go-racp/internal/features/character/app"
 	actiontokendomain "github.com/hayakawakaki/go-racp/internal/platform/actiontoken/domain"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
@@ -67,21 +69,48 @@ type characterLister interface {
 	List(ctx context.Context, accountID int) ([]charapp.CharacterDTO, error)
 }
 
+type Renderer interface {
+	AccountPage(layout httpx.Layout, state selfstate.AccountState) templ.Component
+	AccountChangeEmailModal(state selfstate.ChangeEmailState) templ.Component
+	AccountChangeEmailForm(state selfstate.ChangeEmailState) templ.Component
+	AccountChangeEmailPage(layout httpx.Layout, state selfstate.ChangeEmailState) templ.Component
+	AccountChangePasswordModal(state selfstate.ChangePasswordState) templ.Component
+	AccountChangePasswordForm(state selfstate.ChangePasswordState) templ.Component
+	AccountChangePasswordPage(layout httpx.Layout, state selfstate.ChangePasswordState) templ.Component
+	AccountEmailChangeResultPage(layout httpx.Layout, state selfstate.EmailChangeResultState) templ.Component
+	AccountForgotPasswordPage(layout httpx.Layout, state selfstate.ForgotPasswordState) templ.Component
+	AccountForgotPasswordForm(state selfstate.ForgotPasswordState) templ.Component
+	AccountLoginPage(layout httpx.Layout, state selfstate.LoginFormState) templ.Component
+	AccountLoginForm(state selfstate.LoginFormState) templ.Component
+	AccountRegisterPage(layout httpx.Layout, state selfstate.RegisterFormState) templ.Component
+	AccountRegisterForm(state selfstate.RegisterFormState) templ.Component
+	AccountResetPasswordPage(layout httpx.Layout, state selfstate.ResetPasswordState) templ.Component
+	AccountResetResultPage(layout httpx.Layout, state selfstate.ResetResultState) templ.Component
+	AccountVerifyAccountPage(layout httpx.Layout, state selfstate.VerifyAccountState) templ.Component
+	AccountVerifyConfirmPage(layout httpx.Layout, state selfstate.VerifyConfirmState) templ.Component
+	AccountVerifyEmailChangeConfirmPage(layout httpx.Layout, state selfstate.VerifyEmailChangeConfirmState) templ.Component
+	AccountVerifyResultPage(layout httpx.Layout, state selfstate.VerifyResultState) templ.Component
+}
+
+//nolint:govet // GeneralConfig trailing bool forces alignment cost
 type HandlerConfig struct {
 	Logger               *slog.Logger
 	Users                userLookup
 	Characters           characterLister
+	Theme                Renderer
 	TrustedProxies       []*net.IPNet
 	General              config.GeneralConfig
 	Secure               bool
 	AllowTempBannedLogin bool
 }
 
+//nolint:govet // GeneralConfig trailing bool forces alignment cost
 type Handler struct {
 	svc                  accountService
 	sessSvc              sessionService
 	users                userLookup
 	characters           characterLister
+	theme                Renderer
 	logger               *slog.Logger
 	trustedProxies       []*net.IPNet
 	general              config.GeneralConfig
@@ -94,11 +123,13 @@ func NewHandler(svc accountService, sessSvc sessionService, cfg HandlerConfig) *
 	if logger == nil {
 		logger = slog.Default()
 	}
+
 	return &Handler{
 		svc:                  svc,
 		sessSvc:              sessSvc,
 		users:                cfg.Users,
 		characters:           cfg.Characters,
+		theme:                cfg.Theme,
 		logger:               logger,
 		trustedProxies:       cfg.TrustedProxies,
 		general:              cfg.General,
@@ -150,7 +181,7 @@ func (h *Handler) showRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	minDate, maxDate := h.birthdateBounds()
-	httpx.RenderHTML(w, r, h.logger, registerPage(h.layout(), RegisterFormState{
+	httpx.RenderHTML(w, r, h.logger, h.theme.AccountRegisterPage(h.layout(), selfstate.RegisterFormState{
 		BirthdateMin: minDate,
 		BirthdateMax: maxDate,
 	}))
@@ -160,7 +191,7 @@ func (h *Handler) doRegister(w http.ResponseWriter, r *http.Request) {
 	minDate, maxDate := h.birthdateBounds()
 
 	if err := httpx.ParseForm(w, r, maxRegisterFormBytes); err != nil {
-		h.renderRegister(w, r, RegisterFormState{
+		h.renderRegister(w, r, selfstate.RegisterFormState{
 			FormError:    invalidFormDataMsg,
 			BirthdateMin: minDate,
 			BirthdateMax: maxDate,
@@ -179,7 +210,7 @@ func (h *Handler) doRegister(w http.ResponseWriter, r *http.Request) {
 
 	_, err := h.svc.Create(r.Context(), cmd)
 	if err != nil {
-		state := RegisterFormState{
+		state := selfstate.RegisterFormState{
 			Username:     cmd.Username,
 			Email:        cmd.Email,
 			Gender:       cmd.Gender,
@@ -201,12 +232,12 @@ func (h *Handler) doRegister(w http.ResponseWriter, r *http.Request) {
 	httpx.Redirect(w, r, "/login")
 }
 
-func (h *Handler) renderRegister(w http.ResponseWriter, r *http.Request, state RegisterFormState) {
+func (h *Handler) renderRegister(w http.ResponseWriter, r *http.Request, state selfstate.RegisterFormState) {
 	if httpx.IsHTMX(r) {
-		httpx.RenderHTML(w, r, h.logger, registerForm(state))
+		httpx.RenderHTML(w, r, h.logger, h.theme.AccountRegisterForm(state))
 		return
 	}
-	httpx.RenderHTML(w, r, h.logger, registerPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.AccountRegisterPage(h.layout(), state))
 }
 
 var loginNoticeText = map[string]string{
@@ -220,18 +251,18 @@ func (h *Handler) showLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	state := LoginFormState{}
+	state := selfstate.LoginFormState{}
 	if notice, ok := loginNoticeText[r.URL.Query().Get("notice")]; ok {
 		state.Notice = notice
 	}
 
-	httpx.RenderHTML(w, r, h.logger, loginPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.AccountLoginPage(h.layout(), state))
 }
 
 //nolint:cyclop // sequential checks
 func (h *Handler) doLogin(w http.ResponseWriter, r *http.Request) {
 	if err := httpx.ParseForm(w, r, maxLoginFormBytes); err != nil {
-		h.renderLogin(w, r, LoginFormState{Error: invalidFormDataMsg})
+		h.renderLogin(w, r, selfstate.LoginFormState{Error: invalidFormDataMsg})
 		return
 	}
 
@@ -244,7 +275,7 @@ func (h *Handler) doLogin(w http.ResponseWriter, r *http.Request) {
 
 	user, tier, err := h.svc.Authenticate(r.Context(), cmd)
 	if err != nil {
-		state := LoginFormState{Username: cmd.Username}
+		state := selfstate.LoginFormState{Username: cmd.Username}
 		switch {
 		case errors.Is(err, domain.ErrAccountLocked):
 			state.Error = "Too many recent attempts. Please try again later."
@@ -259,7 +290,7 @@ func (h *Handler) doLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if tier == app.TierPermaBanned {
-		h.renderLogin(w, r, LoginFormState{
+		h.renderLogin(w, r, selfstate.LoginFormState{
 			Username: cmd.Username,
 			Error:    "This account is permanently banned.",
 		})
@@ -267,7 +298,7 @@ func (h *Handler) doLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if tier == app.TierTempBanned && !h.allowTempBannedLogin {
-		h.renderLogin(w, r, LoginFormState{
+		h.renderLogin(w, r, selfstate.LoginFormState{
 			Username: cmd.Username,
 			Error:    "This account is currently restricted. Please try again later.",
 		})
@@ -277,7 +308,7 @@ func (h *Handler) doLogin(w http.ResponseWriter, r *http.Request) {
 	token, _, err := h.sessSvc.Create(r.Context(), user.ID)
 	if err != nil {
 		h.logger.Error("session create", "err", err)
-		h.renderLogin(w, r, LoginFormState{
+		h.renderLogin(w, r, selfstate.LoginFormState{
 			Username: cmd.Username,
 			Error:    genericErrorMessage,
 		})
@@ -293,12 +324,12 @@ func (h *Handler) doLogin(w http.ResponseWriter, r *http.Request) {
 	httpx.Redirect(w, r, "/")
 }
 
-func (h *Handler) renderLogin(w http.ResponseWriter, r *http.Request, state LoginFormState) {
+func (h *Handler) renderLogin(w http.ResponseWriter, r *http.Request, state selfstate.LoginFormState) {
 	if httpx.IsHTMX(r) {
-		httpx.RenderHTML(w, r, h.logger, loginForm(state))
+		httpx.RenderHTML(w, r, h.logger, h.theme.AccountLoginForm(state))
 		return
 	}
-	httpx.RenderHTML(w, r, h.logger, loginPage(h.layout(), state))
+	httpx.RenderHTML(w, r, h.logger, h.theme.AccountLoginPage(h.layout(), state))
 }
 
 func (h *Handler) doLogout(w http.ResponseWriter, r *http.Request) {

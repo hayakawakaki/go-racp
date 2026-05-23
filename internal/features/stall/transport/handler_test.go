@@ -8,9 +8,36 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/a-h/templ"
 	itemdomain "github.com/hayakawakaki/go-racp/internal/features/item/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/stall/domain"
+	stallstate "github.com/hayakawakaki/go-racp/internal/features/stall/transport/state"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	stall "github.com/hayakawakaki/go-racp/themes/default/features/stall/transport"
+	_ "github.com/hayakawakaki/go-racp/themes/default/platform/httpx"
 )
+
+type stubTheme struct{}
+
+func (stubTheme) StallListPage(layout httpx.Layout, state stallstate.ListState) templ.Component {
+	return stall.StallListPage(layout, state)
+}
+
+func (stubTheme) StallListContent(state stallstate.ListState) templ.Component {
+	return stall.StallListContent(state)
+}
+
+func (stubTheme) StallLoadingPage(layout httpx.Layout, refreshURL string) templ.Component {
+	return stall.StallLoadingPage(layout, refreshURL)
+}
+
+func (stubTheme) StallLoadingContent(refreshURL string) templ.Component {
+	return stall.StallLoadingContent(refreshURL)
+}
+
+func (stubTheme) StallVendingBox(state stallstate.StallState) templ.Component {
+	return stall.StallVendingBox(state)
+}
 
 type fakeService struct {
 	listErr    error
@@ -55,7 +82,7 @@ func (f *fakeItemLookup) Get(_ context.Context, id int) (*itemdomain.Item, error
 }
 
 func newTestHandler(svc *fakeService, lookup *fakeItemLookup) *Handler {
-	return NewHandler(svc, HandlerConfig{ItemLookup: lookup})
+	return NewHandler(svc, HandlerConfig{ItemLookup: lookup, Theme: stubTheme{}})
 }
 
 func TestHandler_ShowList_HappyPath(t *testing.T) {

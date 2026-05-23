@@ -14,6 +14,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/plugin"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 	"github.com/hayakawakaki/go-racp/internal/platform/security"
+	"github.com/hayakawakaki/go-racp/internal/platform/theme"
 )
 
 func init() {
@@ -38,6 +39,7 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 		Logger:               in.Logger,
 		Users:                userRepo,
 		Characters:           charSvc,
+		Theme:                theme.Active,
 		Secure:               secure,
 		General:              in.Config.App.General,
 		AllowTempBannedLogin: in.Config.App.Auth.AllowTempBannedLogin,
@@ -49,6 +51,7 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 	modH := modtransport.NewHandler(modSvc, modtransport.HandlerConfig{
 		Logger:  in.Logger,
 		General: in.Config.App.General,
+		Theme:   theme.Active,
 	})
 	modH.RegisterRoutes(reg, mux)
 }

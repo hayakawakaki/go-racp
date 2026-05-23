@@ -1,9 +1,11 @@
 package config
 
 import (
+	"cmp"
 	"fmt"
 	"net"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -11,11 +13,14 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/refdata"
 )
 
+var themeNameRe = regexp.MustCompile(`^[a-z0-9_]+$`)
+
 // GeneralConfig holds UI/branding settings shared across every page.
 type GeneralConfig struct {
 	location   *time.Location
 	ServerName string `yaml:"ServerName"`
 	Timezone   string `yaml:"Timezone"`
+	Theme      string `yaml:"Theme"`
 	Gepard     bool   `yaml:"Gepard"`
 }
 
@@ -153,7 +158,7 @@ type AppConfig struct {
 // appConfigDefaults apply default config in case of missing config file
 func appConfigDefaults() *AppConfig {
 	return &AppConfig{
-		General: GeneralConfig{ServerName: "Go Control Panel", Timezone: "UTC"},
+		General: GeneralConfig{ServerName: "Go Control Panel", Timezone: "UTC", Theme: "default"},
 		Mailer:  MailerConfig{FromAddress: "noreply@gocp.com"},
 		TTL: TTLConfig{
 			Session:       24 * time.Hour,
@@ -275,6 +280,14 @@ func validateAppConfig(cfg *AppConfig) {
 	validateVendorConfig(&cfg.Vendor)
 	validateMetricsConfig(&cfg.Metrics)
 	validateTrustedProxyCIDRs(cfg.Security.TrustedProxyCIDRs)
+	validateTheme(&cfg.General)
+}
+
+func validateTheme(cfg *GeneralConfig) {
+	cfg.Theme = cmp.Or(cfg.Theme, "default")
+	if !themeNameRe.MatchString(cfg.Theme) {
+		panic(fmt.Errorf("GeneralConfig.Theme %q must match %s", cfg.Theme, themeNameRe))
+	}
 }
 
 func validateTrustedProxyCIDRs(cidrs []string) {
