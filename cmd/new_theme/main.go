@@ -44,7 +44,7 @@ func main() {
 	}
 
 	fmt.Printf("themes/%s/ created. Next steps:\n", *name)
-	fmt.Printf("  1. Edit themes/%s/theme.yml. Fill in DisplayName and Author.Name\n", *name)
+	fmt.Printf("  1. Edit themes/%s/theme.yml. Fill in Author.Name (DisplayName defaults to %q)\n", *name, *name+" Theme")
 	fmt.Printf("  2. Add files under themes/%s/ to override defaults (see GUIDE_AUTHORING_THEMES.md)\n", *name)
 	fmt.Printf("  3. Set 'Theme: %s' in config.yml when ready to activate\n", *name)
 }

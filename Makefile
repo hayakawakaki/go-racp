@@ -1,4 +1,4 @@
-.PHONY: help dev dev-build dev-down dev-logs app-logs app-shell psql mysql lint test theme-gen migrate-up migrate-down migrate-status prod-up prod-down prod-logs
+.PHONY: help dev dev-build dev-down dev-logs app-logs app-shell psql mysql lint test theme-gen new-theme migrate-up migrate-down migrate-status prod-up prod-down prod-logs
 
 DEV          := docker compose -f docker-compose.dev.yml
 PROD         := docker compose -f docker-compose.yml
@@ -72,6 +72,12 @@ test:
 
 theme-gen:
 	$(APP) go run ./cmd/themegen
+
+new-theme:
+ifndef name
+	$(error name is required: make new-theme name=<theme name here>)
+endif
+	$(APP) go run ./cmd/new_theme --name=$(name)
 
 migrate-up:
 	$(APP) sh scripts/migrate.sh
