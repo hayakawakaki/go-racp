@@ -1,4 +1,4 @@
-package theme
+package themepage
 
 import (
 	"bytes"
@@ -38,7 +38,8 @@ func RenderMarkdownPage(w http.ResponseWriter, r *http.Request, layout httpx.Lay
 		return err
 	}
 
-	child := templ.Raw(string(html))
+	wrapped := `<article class="prose max-w-3xl mx-auto p-8">` + string(html) + `</article>`
+	child := templ.Raw(wrapped)
 	ctx := templ.WithChildren(r.Context(), child)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 

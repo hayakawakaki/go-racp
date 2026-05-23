@@ -728,63 +728,49 @@ func writeThemePages(themeDir, themeName, module string, pages []pageEntry) erro
 	b.WriteString(generatedHeader)
 	fmt.Fprintf(&b, "package %s\n\n", pkgName)
 
-	needsHTTP := true
-	needsTheme := false
-	needsHTTPx := true
+	hasTempl := false
+	hasMD := false
 
 	for _, p := range pages {
-		if p.Kind == mdFileType {
-			needsTheme = true
+		if p.Kind == templFileType {
+			hasTempl = true
 		}
 
-		if p.Kind == templFileType {
-			needsTheme = true
+		if p.Kind == mdFileType {
+			hasMD = true
 		}
 	}
+
+	needsTheme := hasTempl || hasMD
 
 	b.WriteString("import (\n")
-	if needsHTTP {
-		b.WriteString("\t\"net/http\"\n")
-	}
+	b.WriteString("\t\"net/http\"\n")
 
-	if needsHTTPx || needsTheme {
+	if needsTheme {
 		b.WriteString("\n")
-	}
-
-	if needsHTTPx {
+		fmt.Fprintf(&b, "\t%q\n", module+"/internal/platform/httpx")
+		fmt.Fprintf(&b, "\t%q\n", module+"/internal/platform/themepage")
+	} else {
+		b.WriteString("\n")
 		fmt.Fprintf(&b, "\t%q\n", module+"/internal/platform/httpx")
 	}
 
-	if needsTheme {
-		fmt.Fprintf(&b, "\t%q\n", module+"/internal/platform/theme")
+	if hasTempl {
+		fmt.Fprintf(&b, "\tpages %q\n", module+"/themes/"+themeName+"/pages")
 	}
 
 	b.WriteString(")\n\n")
-
-	hasMD := false
-	for _, p := range pages {
-		if p.Kind == mdFileType {
-			hasMD = true
-
-			break
-		}
-	}
 
 	if len(pages) == 0 {
 		b.WriteString("func MountRoutes(_ *http.ServeMux, _ httpx.Layout) {\n")
 		b.WriteString("}\n")
 	} else {
-		layoutParam := "layout"
-		if !hasMD {
-			layoutParam = "_"
-		}
-
-		fmt.Fprintf(&b, "func MountRoutes(mux *http.ServeMux, %s httpx.Layout) {\n", layoutParam)
+		fmt.Fprintf(&b, "func MountRoutes(mux *http.ServeMux, layout httpx.Layout) {\n")
 		for _, p := range pages {
 			switch p.Kind {
 			case templFileType:
 				fmt.Fprintf(&b, "\tmux.HandleFunc(%q, func(w http.ResponseWriter, r *http.Request) {\n", p.Route)
-				fmt.Fprintf(&b, "\t\tif err := %s(theme.BuildCtx(r)).Render(r.Context(), w); err != nil {\n", p.FuncName)
+				fmt.Fprintf(&b, "\t\tif err := pages.%s(themepage.BuildCtx(r, layout)).Render(r.Context(), w); err != nil {\n", p.FuncName)
 				fmt.Fprintf(&b, "\t\t\thttp.Error(w, %q, http.StatusInternalServerError)\n", "render error")
 				fmt.Fprintf(&b, "\t\t}\n")
 				fmt.Fprintf(&b, "\t})\n")
@@ -795,7 +781,7 @@ func writeThemePages(themeDir, themeName, module string, pages []pageEntry) erro
 				fmt.Fprintf(&b, "\t\t\thttp.Error(w, %q, http.StatusInternalServerError)\n", "read error")
 				fmt.Fprintf(&b, "\t\t\treturn\n")
 				fmt.Fprintf(&b, "\t\t}\n\n")
-				fmt.Fprintf(&b, "\t\tif err := theme.RenderMarkdownPage(w, r, layout, %q, md); err != nil {\n", p.Title)
+				fmt.Fprintf(&b, "\t\tif err := themepage.RenderMarkdownPage(w, r, layout, %q, md); err != nil {\n", p.Title)
 				fmt.Fprintf(&b, "\t\t\thttp.Error(w, %q, http.StatusInternalServerError)\n", "render error")
 				fmt.Fprintf(&b, "\t\t}\n")
 				fmt.Fprintf(&b, "\t})\n")
