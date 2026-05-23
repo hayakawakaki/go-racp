@@ -154,15 +154,25 @@ func (r *Registry) RoutesSnapshot() []RouteInfo {
 
 // Finalize panics if access.yml references tags no plugin registered, and logs a warning for every route that was mounted without an access.yml entry.
 func (r *Registry) Finalize() {
-	var deadEntries []string
+	var deadEntries, deadThemeEntries []string
+
 	for groupName, actions := range r.cfg {
 		for actionName := range actions {
 			tag := groupName + "." + actionName
 			if _, ok := r.registered[tag]; !ok {
-				deadEntries = append(deadEntries, tag)
+				if groupName == "ThemePages" {
+					deadThemeEntries = append(deadThemeEntries, tag)
+				} else {
+					deadEntries = append(deadEntries, tag)
+				}
 			}
 		}
 	}
+
+	if len(deadThemeEntries) > 0 {
+		r.logger.Warn("theme access.yml: dead entries (page files removed, remove these from your access.yml)", "entries", strings.Join(deadThemeEntries, ", "))
+	}
+
 	if len(deadEntries) > 0 {
 		panic(fmt.Errorf("access.yml references tags not registered by any plugin: %s", strings.Join(deadEntries, ", ")))
 	}
