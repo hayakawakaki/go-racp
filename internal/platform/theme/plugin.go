@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/hayakawakaki/go-racp/internal/infra"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/plugin"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 	themesdefault "github.com/hayakawakaki/go-racp/themes/default"
@@ -35,5 +36,9 @@ func mount(_ *routes.Registry, mux *http.ServeMux, in *infra.Infra) {
 	}
 
 	mux.Handle(urlPrefix, http.StripPrefix(urlPrefix, handler))
+
+	layout := httpx.Layout{GeneralConfig: in.Config.App.General}
+	themesdefault.MountRoutes(mux, layout)
+
 	in.Logger.Info("theme assets mounted", "prefix", urlPrefix, "mode", in.Config.Env.Mode)
 }

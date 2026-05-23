@@ -1,0 +1,6 @@
+package themesdefault
+
+import "embed"
+
+//go:embed all:pages
+var Pages embed.FS
