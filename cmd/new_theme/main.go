@@ -22,7 +22,7 @@ func main() {
 	flag.Parse()
 
 	if *name == "" {
-		log.Fatal("new_theme: --name is required (e.g., make new-theme name=midnight)")
+		log.Fatal("new_theme: --name is required (e.g., make new-theme name=<theme name here>)")
 	}
 
 	if !nameRe.MatchString(*name) {

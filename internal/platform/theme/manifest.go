@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/goccy/go-yaml"
 )
@@ -26,8 +27,9 @@ type ManifestCompatibility struct {
 }
 
 var (
-	nameRe    = regexp.MustCompile(`^[a-z0-9_]+$`)
-	versionRe = regexp.MustCompile(`^(\d+)\.(\d+)$`)
+	nameRe      = regexp.MustCompile(`^[a-z0-9_]+$`)
+	versionRe   = regexp.MustCompile(`^(\d+)\.(\d+)$`)
+	nameStripRe = regexp.MustCompile(`[^a-z0-9_]`)
 )
 
 func ParseManifest(data []byte) (Manifest, error) {
@@ -38,27 +40,29 @@ func ParseManifest(data []byte) (Manifest, error) {
 	}
 
 	if m.Name == "" {
-		return Manifest{}, fmt.Errorf("manifest: Name is required")
+		return Manifest{}, fmt.Errorf(`manifest: Name is required, lowercase slug used in build tags and URL paths, e.g., "default", "light", "dark"`)
 	}
 
 	if !nameRe.MatchString(m.Name) {
-		return Manifest{}, fmt.Errorf("manifest: Name %q must match %s", m.Name, nameRe)
+		suggestion := nameStripRe.ReplaceAllString(strings.ToLower(strings.ReplaceAll(m.Name, " ", "_")), "")
+
+		return Manifest{}, fmt.Errorf("manifest: Name %q must match %s, use this as a system identifier in build tags (theme_<name>) and URL paths, put human-readable labels in DisplayName instead, did you mean Name: %q with DisplayName: %q?", m.Name, nameRe, suggestion, m.Name)
 	}
 
 	if m.DisplayName == "" {
-		return Manifest{}, fmt.Errorf("manifest: DisplayName is required")
+		return Manifest{}, fmt.Errorf("manifest: DisplayName is required, human-readable theme name (can contain spaces, capitals, anything)")
 	}
 
 	if _, _, err := ParseVersion(m.Version); err != nil {
-		return Manifest{}, fmt.Errorf("manifest: Version: %w", err)
+		return Manifest{}, fmt.Errorf(`manifest: Version: %w, use <major>.<minor> form like "1.0", "1.2", "2.0"`, err)
 	}
 
 	if m.Author.Name == "" {
-		return Manifest{}, fmt.Errorf("manifest: Author.Name is required")
+		return Manifest{}, fmt.Errorf("manifest: Author.Name is required (your name, handle, or organization)")
 	}
 
 	if _, _, err := ParseVersion(m.Compatible.Min); err != nil {
-		return Manifest{}, fmt.Errorf("manifest: Compatible.Min: %w", err)
+		return Manifest{}, fmt.Errorf(`manifest: Compatible.Min: %w, add the oldest app version this theme supports in <major>.<minor> form (e.g., "1.0")`, err)
 	}
 
 	return m, nil
