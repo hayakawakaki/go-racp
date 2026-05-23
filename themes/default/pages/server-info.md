@@ -1,3 +1,7 @@
+---
+title: Server Information
+---
+
 # Server Info
 
 ## About the Server

@@ -3,11 +3,13 @@ package theme
 import (
 	"io/fs"
 	"net/http"
+	"path/filepath"
 
 	"github.com/hayakawakaki/go-racp/internal/infra"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/plugin"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
+	"github.com/hayakawakaki/go-racp/internal/platform/themepage"
 	themesdefault "github.com/hayakawakaki/go-racp/themes/default"
 )
 
@@ -20,11 +22,16 @@ func init() {
 
 func mount(_ *routes.Registry, mux *http.ServeMux, in *infra.Infra) {
 	activeTheme := in.Config.App.General.Theme
+	devMode := in.Config.Env.Mode == "development"
+
+	themepage.DevMode = devMode
+	themepage.DiskRoot = filepath.Join("themes", "default")
+
 	urlPrefix := "/themes/" + activeTheme + "/static/"
 
 	var handler http.Handler
 
-	if in.Config.Env.Mode == "development" {
+	if devMode {
 		handler = http.FileServer(http.Dir("themes/" + activeTheme + "/static"))
 	} else {
 		sub, err := fs.Sub(themesdefault.Static, "static")

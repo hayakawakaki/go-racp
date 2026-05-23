@@ -3,12 +3,35 @@
 package themesdefault
 
 import (
+	"embed"
+	"html/template"
 	"net/http"
 
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/themepage"
 	pages "github.com/hayakawakaki/go-racp/themes/default/pages"
 )
+
+var (
+	precomputedHTMLServerInfo template.HTML
+)
+
+func init() {
+	var err error
+
+	if precomputedHTMLServerInfo, err = themepage.RenderMarkdown(mustRead(Pages, "pages/server-info.md")); err != nil {
+		panic("themesdefault: pre-render pages/server-info.md: " + err.Error())
+	}
+}
+
+func mustRead(fs embed.FS, path string) []byte {
+	data, err := fs.ReadFile(path)
+	if err != nil {
+		panic("themesdefault: embed read " + path + ": " + err.Error())
+	}
+
+	return data
+}
 
 func MountRoutes(mux *http.ServeMux, layout httpx.Layout) {
 	mux.HandleFunc("/rates", func(w http.ResponseWriter, r *http.Request) {
@@ -17,13 +40,7 @@ func MountRoutes(mux *http.ServeMux, layout httpx.Layout) {
 		}
 	})
 	mux.HandleFunc("/server-info", func(w http.ResponseWriter, r *http.Request) {
-		md, err := Pages.ReadFile("pages/server-info.md")
-		if err != nil {
-			http.Error(w, "read error", http.StatusInternalServerError)
-			return
-		}
-
-		if err := themepage.RenderMarkdownPage(w, r, layout, "Server Info", md); err != nil {
+		if err := themepage.RenderMarkdownPageFrom(w, r, layout, "Server Information", "pages/server-info.md", precomputedHTMLServerInfo); err != nil {
 			http.Error(w, "render error", http.StatusInternalServerError)
 		}
 	})

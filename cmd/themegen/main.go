@@ -12,6 +12,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/goccy/go-yaml"
 	"github.com/hayakawakaki/go-racp/internal/platform/theme"
 )
 
@@ -503,12 +504,68 @@ type pageEntry struct {
 	Kind     string
 	FuncName string
 	Title    string
+	VarName  string
+}
+
+type frontmatter struct {
+	Title string `yaml:"title"`
+	Gate  string `yaml:"gate"`
 }
 
 var (
 	pageRoutePathRe = regexp.MustCompile(`^[a-zA-Z0-9._/-]+$`)
 	pageTemplFuncRe = regexp.MustCompile(`(?m)^templ\s+([A-Z][A-Za-z0-9_]*)\s*\(`)
+	frontmatterRe   = regexp.MustCompile(`(?s)\A---\r?\n(.*?)\r?\n---\r?\n`)
+	firstH1Re       = regexp.MustCompile(`(?m)^#\s+(.+)$`)
 )
+
+func parseFrontmatter(content []byte) (frontmatter, []byte, bool) {
+	match := frontmatterRe.FindSubmatch(content)
+	if match == nil {
+		return frontmatter{}, content, false
+	}
+
+	var fm frontmatter
+
+	if err := yaml.Unmarshal(match[1], &fm); err != nil {
+		return frontmatter{}, content, false
+	}
+
+	return fm, content[len(match[0]):], true
+}
+
+func extractH1Title(content []byte) string {
+	match := firstH1Re.FindSubmatch(content)
+	if match == nil {
+		return ""
+	}
+
+	return strings.TrimSpace(string(match[1]))
+}
+
+func pascalCaseVarName(relNoExt string) string {
+	parts := strings.Split(relNoExt, "/")
+
+	var b strings.Builder
+
+	for _, p := range parts {
+		for word := range strings.FieldsFuncSeq(p, func(r rune) bool {
+			return r == '-' || r == '_'
+		}) {
+			if word == "" {
+				continue
+			}
+
+			b.WriteString(strings.ToUpper(word[:1]))
+
+			if len(word) > 1 {
+				b.WriteString(word[1:])
+			}
+		}
+	}
+
+	return b.String()
+}
 
 func writeAllThemePages(themesDir, module string) (int, error) {
 	entries, err := os.ReadDir(themesDir)
@@ -624,6 +681,8 @@ func collectThemePages(pagesDir string) ([]pageEntry, error) {
 		title := titleFromPath(relNoExt)
 		filePath := "pages/" + rel
 
+		var varName string
+
 		if kind == templFileType {
 			data, err := os.ReadFile(path) //nolint:gosec // path from WalkDir
 			if err != nil {
@@ -635,12 +694,33 @@ func collectThemePages(pagesDir string) ([]pageEntry, error) {
 			}
 		}
 
+		if kind == mdFileType {
+			data, err := os.ReadFile(path) //nolint:gosec // path from WalkDir
+			if err != nil {
+				return fmt.Errorf("read %s: %w", path, err)
+			}
+
+			fm, body, _ := parseFrontmatter(data)
+
+			resolved := strings.TrimSpace(fm.Title)
+			if resolved == "" {
+				resolved = extractH1Title(body)
+			}
+
+			if resolved != "" {
+				title = resolved
+			}
+
+			varName = pascalCaseVarName(relNoExt)
+		}
+
 		out = append(out, pageEntry{
 			Route:    route,
 			FilePath: filePath,
 			Kind:     kind,
 			FuncName: funcName,
 			Title:    title,
+			VarName:  varName,
 		})
 
 		return nil
@@ -744,6 +824,12 @@ func writeThemePages(themeDir, themeName, module string, pages []pageEntry) erro
 	needsTheme := hasTempl || hasMD
 
 	b.WriteString("import (\n")
+
+	if hasMD {
+		b.WriteString("\t\"embed\"\n")
+		b.WriteString("\t\"html/template\"\n")
+	}
+
 	b.WriteString("\t\"net/http\"\n")
 
 	if needsTheme {
@@ -761,6 +847,43 @@ func writeThemePages(themeDir, themeName, module string, pages []pageEntry) erro
 
 	b.WriteString(")\n\n")
 
+	if hasMD {
+		b.WriteString("var (\n")
+
+		for _, p := range pages {
+			if p.Kind != mdFileType {
+				continue
+			}
+
+			fmt.Fprintf(&b, "\tprecomputedHTML%s template.HTML\n", p.VarName)
+		}
+
+		b.WriteString(")\n\n")
+
+		b.WriteString("func init() {\n")
+		b.WriteString("\tvar err error\n\n")
+
+		for _, p := range pages {
+			if p.Kind != mdFileType {
+				continue
+			}
+
+			fmt.Fprintf(&b, "\tif precomputedHTML%s, err = themepage.RenderMarkdown(mustRead(Pages, %q)); err != nil {\n", p.VarName, p.FilePath)
+			fmt.Fprintf(&b, "\t\tpanic(%q + err.Error())\n", pkgName+": pre-render "+p.FilePath+": ")
+			b.WriteString("\t}\n")
+		}
+
+		b.WriteString("}\n\n")
+
+		b.WriteString("func mustRead(fs embed.FS, path string) []byte {\n")
+		b.WriteString("\tdata, err := fs.ReadFile(path)\n")
+		b.WriteString("\tif err != nil {\n")
+		fmt.Fprintf(&b, "\t\tpanic(%q + path + %q + err.Error())\n", pkgName+": embed read ", ": ")
+		b.WriteString("\t}\n\n")
+		b.WriteString("\treturn data\n")
+		b.WriteString("}\n\n")
+	}
+
 	if len(pages) == 0 {
 		b.WriteString("func MountRoutes(_ *http.ServeMux, _ httpx.Layout) {\n")
 		b.WriteString("}\n")
@@ -776,12 +899,7 @@ func writeThemePages(themeDir, themeName, module string, pages []pageEntry) erro
 				fmt.Fprintf(&b, "\t})\n")
 			case mdFileType:
 				fmt.Fprintf(&b, "\tmux.HandleFunc(%q, func(w http.ResponseWriter, r *http.Request) {\n", p.Route)
-				fmt.Fprintf(&b, "\t\tmd, err := Pages.ReadFile(%q)\n", p.FilePath)
-				fmt.Fprintf(&b, "\t\tif err != nil {\n")
-				fmt.Fprintf(&b, "\t\t\thttp.Error(w, %q, http.StatusInternalServerError)\n", "read error")
-				fmt.Fprintf(&b, "\t\t\treturn\n")
-				fmt.Fprintf(&b, "\t\t}\n\n")
-				fmt.Fprintf(&b, "\t\tif err := themepage.RenderMarkdownPage(w, r, layout, %q, md); err != nil {\n", p.Title)
+				fmt.Fprintf(&b, "\t\tif err := themepage.RenderMarkdownPageFrom(w, r, layout, %q, %q, precomputedHTML%s); err != nil {\n", p.Title, p.FilePath, p.VarName)
 				fmt.Fprintf(&b, "\t\t\thttp.Error(w, %q, http.StatusInternalServerError)\n", "render error")
 				fmt.Fprintf(&b, "\t\t}\n")
 				fmt.Fprintf(&b, "\t})\n")
