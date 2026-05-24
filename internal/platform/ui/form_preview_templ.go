@@ -195,7 +195,7 @@ func FormPreview() templ.Component {
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = Button(ButtonProps{Color: ColorBlue, Type: ButtonTypeSubmit}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var8), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = Button(ButtonProps{Color: ButtonColorBlue, Type: ButtonTypeSubmit}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var8), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -335,15 +335,15 @@ func FormPreview() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = Input(InputProps{Size: SM, Placeholder: "Small"}).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Input(InputProps{Size: InputSizeSM, Placeholder: "Small"}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = Input(InputProps{Size: MD, Placeholder: "Medium (default)"}).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Input(InputProps{Size: InputSizeMD, Placeholder: "Medium (default)"}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = Input(InputProps{Size: LG, Placeholder: "Large"}).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Input(InputProps{Size: InputSizeLG, Placeholder: "Large"}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -355,19 +355,19 @@ func FormPreview() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = Input(InputProps{Rounded: SM, Placeholder: "rounded-sm"}).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Input(InputProps{Rounded: InputRoundedSM, Placeholder: "rounded-sm"}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = Input(InputProps{Rounded: MD, Placeholder: "rounded-md"}).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Input(InputProps{Rounded: InputRoundedMD, Placeholder: "rounded-md"}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = Input(InputProps{Rounded: LG, Placeholder: "rounded-lg"}).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Input(InputProps{Rounded: InputRoundedLG, Placeholder: "rounded-lg"}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = Input(InputProps{Rounded: XL, Placeholder: "rounded-xl"}).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Input(InputProps{Rounded: InputRoundedXL, Placeholder: "rounded-xl"}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -375,19 +375,19 @@ func FormPreview() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = Input(InputProps{Color: ColorBlue, Placeholder: "Blue focus"}).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Input(InputProps{Color: InputColorBlue, Placeholder: "Blue focus"}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = Input(InputProps{Color: ColorGreen, Placeholder: "Green focus"}).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Input(InputProps{Color: InputColorGreen, Placeholder: "Green focus"}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = Input(InputProps{Color: ColorPurple, Placeholder: "Purple focus"}).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Input(InputProps{Color: InputColorPurple, Placeholder: "Purple focus"}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = Input(InputProps{Color: ColorZinc, Placeholder: "Zinc focus"}).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Input(InputProps{Color: InputColorZinc, Placeholder: "Zinc focus"}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

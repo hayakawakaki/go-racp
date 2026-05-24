@@ -10,6 +10,40 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import "strconv"
 
+type TextAreaColor string
+
+const (
+	TextAreaColorNeutral TextAreaColor = "neutral"
+	TextAreaColorBlue    TextAreaColor = "blue"
+	TextAreaColorRed     TextAreaColor = "red"
+	TextAreaColorYellow  TextAreaColor = "yellow"
+	TextAreaColorGreen   TextAreaColor = "green"
+	TextAreaColorOrange  TextAreaColor = "orange"
+	TextAreaColorPurple  TextAreaColor = "purple"
+	TextAreaColorPink    TextAreaColor = "pink"
+	TextAreaColorIndigo  TextAreaColor = "indigo"
+	TextAreaColorTeal    TextAreaColor = "teal"
+	TextAreaColorZinc    TextAreaColor = "zinc"
+	TextAreaColorStone   TextAreaColor = "stone"
+)
+
+type TextAreaSize string
+
+const (
+	TextAreaSizeSM TextAreaSize = "sm"
+	TextAreaSizeMD TextAreaSize = "md"
+	TextAreaSizeLG TextAreaSize = "lg"
+)
+
+type TextAreaRounded string
+
+const (
+	TextAreaRoundedSM TextAreaRounded = "sm"
+	TextAreaRoundedMD TextAreaRounded = "md"
+	TextAreaRoundedLG TextAreaRounded = "lg"
+	TextAreaRoundedXL TextAreaRounded = "xl"
+)
+
 type TextAreaProps struct {
 	Attrs       templ.Attributes
 	Name        string
@@ -18,9 +52,9 @@ type TextAreaProps struct {
 	Placeholder string
 	Class       string
 	AriaLabel   string
-	Size        Size
-	Rounded     Size
-	Color       Color
+	Size        TextAreaSize
+	Rounded     TextAreaRounded
+	Color       TextAreaColor
 	Rows        int
 	MinLength   int
 	MaxLength   int
@@ -28,6 +62,68 @@ type TextAreaProps struct {
 	Disabled    bool
 	ReadOnly    bool
 	Invalid     bool
+}
+
+var textAreaFocusRings = map[TextAreaColor]string{
+	TextAreaColorBlue:   "focus-visible:ring-blue-500",
+	TextAreaColorRed:    "focus-visible:ring-red-500",
+	TextAreaColorYellow: "focus-visible:ring-yellow-500",
+	TextAreaColorGreen:  "focus-visible:ring-green-500",
+	TextAreaColorOrange: "focus-visible:ring-orange-500",
+	TextAreaColorPurple: "focus-visible:ring-purple-500",
+	TextAreaColorPink:   "focus-visible:ring-pink-500",
+	TextAreaColorIndigo: "focus-visible:ring-indigo-500",
+	TextAreaColorTeal:   "focus-visible:ring-teal-500",
+	TextAreaColorZinc:   "focus-visible:ring-zinc-700",
+	TextAreaColorStone:  "focus-visible:ring-stone-600",
+}
+
+func textAreaFocusRing(color TextAreaColor) string {
+	if ring, ok := textAreaFocusRings[color]; ok {
+		return ring
+	}
+
+	return "focus-visible:ring-slate-400"
+}
+
+func textAreaRoundedClass(r TextAreaRounded) string {
+	switch r {
+	case TextAreaRoundedSM:
+		return "rounded-sm"
+	case TextAreaRoundedMD:
+		return "rounded-md"
+	case TextAreaRoundedLG:
+		return "rounded-lg"
+	case TextAreaRoundedXL:
+		return "rounded-xl"
+	default:
+		return ""
+	}
+}
+
+func textAreaClasses(p TextAreaProps) string {
+	base := "block w-full bg-white border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-slate-400"
+
+	var sizeClasses string
+
+	switch p.Size {
+	case TextAreaSizeSM:
+		sizeClasses = "px-2 py-1 text-sm"
+	case TextAreaSizeLG:
+		sizeClasses = "px-4 py-2.5 text-base"
+	default:
+		sizeClasses = "px-3 py-2 text-sm"
+	}
+
+	var stateClasses string
+
+	if p.Invalid {
+		stateClasses = "border-red-500 focus-visible:ring-red-500"
+	} else {
+		stateClasses = "border-slate-300 " + textAreaFocusRing(p.Color)
+	}
+
+	return Merge(base, sizeClasses, textAreaRoundedClass(p.Rounded), stateClasses, p.Class)
 }
 
 func textAreaRows(p TextAreaProps) int {
@@ -93,7 +189,7 @@ func TextArea(p TextAreaProps) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		var templ_7745c5c3_Var2 = []any{controlClasses(p.Size, p.Rounded, p.Color, p.Invalid, p.Class)}
+		var templ_7745c5c3_Var2 = []any{textAreaClasses(p)}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var2...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -118,7 +214,7 @@ func TextArea(p TextAreaProps) templ.Component {
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(textAreaRows(p))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/platform/ui/textarea.templ`, Line: 70, Col: 24}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/platform/ui/textarea.templ`, Line: 166, Col: 24}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -157,7 +253,7 @@ func TextArea(p TextAreaProps) templ.Component {
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(p.Value)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/platform/ui/textarea.templ`, Line: 75, Col: 11}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/platform/ui/textarea.templ`, Line: 171, Col: 11}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {

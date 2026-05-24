@@ -27,7 +27,7 @@ templ FormPreview() {
 					@Button(ButtonProps{Variant: ButtonGhost, Type: ButtonTypeButton}) {
 						Cancel
 					}
-					@Button(ButtonProps{Color: ColorBlue, Type: ButtonTypeSubmit}) {
+					@Button(ButtonProps{Color: ButtonColorBlue, Type: ButtonTypeSubmit}) {
 						Save
 					}
 				</div>
@@ -53,28 +53,28 @@ templ FormPreview() {
 		<section class="space-y-4">
 			<h2 class="text-lg font-semibold">Sizes</h2>
 			<div class="space-y-3">
-				@Input(InputProps{Size: SM, Placeholder: "Small"})
-				@Input(InputProps{Size: MD, Placeholder: "Medium (default)"})
-				@Input(InputProps{Size: LG, Placeholder: "Large"})
+				@Input(InputProps{Size: InputSizeSM, Placeholder: "Small"})
+				@Input(InputProps{Size: InputSizeMD, Placeholder: "Medium (default)"})
+				@Input(InputProps{Size: InputSizeLG, Placeholder: "Large"})
 			</div>
 		</section>
 		<section class="space-y-4">
 			<h2 class="text-lg font-semibold">Rounded</h2>
 			<div class="space-y-3">
 				@Input(InputProps{Placeholder: "None (default)"})
-				@Input(InputProps{Rounded: SM, Placeholder: "rounded-sm"})
-				@Input(InputProps{Rounded: MD, Placeholder: "rounded-md"})
-				@Input(InputProps{Rounded: LG, Placeholder: "rounded-lg"})
-				@Input(InputProps{Rounded: XL, Placeholder: "rounded-xl"})
+				@Input(InputProps{Rounded: InputRoundedSM, Placeholder: "rounded-sm"})
+				@Input(InputProps{Rounded: InputRoundedMD, Placeholder: "rounded-md"})
+				@Input(InputProps{Rounded: InputRoundedLG, Placeholder: "rounded-lg"})
+				@Input(InputProps{Rounded: InputRoundedXL, Placeholder: "rounded-xl"})
 			</div>
 		</section>
 		<section class="space-y-4">
 			<h2 class="text-lg font-semibold">Focus accent (Color)</h2>
 			<div class="space-y-3">
-				@Input(InputProps{Color: ColorBlue, Placeholder: "Blue focus"})
-				@Input(InputProps{Color: ColorGreen, Placeholder: "Green focus"})
-				@Input(InputProps{Color: ColorPurple, Placeholder: "Purple focus"})
-				@Input(InputProps{Color: ColorZinc, Placeholder: "Zinc focus"})
+				@Input(InputProps{Color: InputColorBlue, Placeholder: "Blue focus"})
+				@Input(InputProps{Color: InputColorGreen, Placeholder: "Green focus"})
+				@Input(InputProps{Color: InputColorPurple, Placeholder: "Purple focus"})
+				@Input(InputProps{Color: InputColorZinc, Placeholder: "Zinc focus"})
 			</div>
 		</section>
 		<section class="space-y-4">

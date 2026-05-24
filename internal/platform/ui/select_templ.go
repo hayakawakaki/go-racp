@@ -14,6 +14,40 @@ type SelectOption struct {
 	Disabled bool
 }
 
+type SelectColor string
+
+const (
+	SelectColorNeutral SelectColor = "neutral"
+	SelectColorBlue    SelectColor = "blue"
+	SelectColorRed     SelectColor = "red"
+	SelectColorYellow  SelectColor = "yellow"
+	SelectColorGreen   SelectColor = "green"
+	SelectColorOrange  SelectColor = "orange"
+	SelectColorPurple  SelectColor = "purple"
+	SelectColorPink    SelectColor = "pink"
+	SelectColorIndigo  SelectColor = "indigo"
+	SelectColorTeal    SelectColor = "teal"
+	SelectColorZinc    SelectColor = "zinc"
+	SelectColorStone   SelectColor = "stone"
+)
+
+type SelectSize string
+
+const (
+	SelectSizeSM SelectSize = "sm"
+	SelectSizeMD SelectSize = "md"
+	SelectSizeLG SelectSize = "lg"
+)
+
+type SelectRounded string
+
+const (
+	SelectRoundedSM SelectRounded = "sm"
+	SelectRoundedMD SelectRounded = "md"
+	SelectRoundedLG SelectRounded = "lg"
+	SelectRoundedXL SelectRounded = "xl"
+)
+
 type SelectProps struct {
 	Attrs       templ.Attributes
 	Options     []SelectOption
@@ -23,12 +57,74 @@ type SelectProps struct {
 	Placeholder string
 	Class       string
 	AriaLabel   string
-	Size        Size
-	Rounded     Size
-	Color       Color
+	Size        SelectSize
+	Rounded     SelectRounded
+	Color       SelectColor
 	Required    bool
 	Disabled    bool
 	Invalid     bool
+}
+
+var selectFocusRings = map[SelectColor]string{
+	SelectColorBlue:   "focus-visible:ring-blue-500",
+	SelectColorRed:    "focus-visible:ring-red-500",
+	SelectColorYellow: "focus-visible:ring-yellow-500",
+	SelectColorGreen:  "focus-visible:ring-green-500",
+	SelectColorOrange: "focus-visible:ring-orange-500",
+	SelectColorPurple: "focus-visible:ring-purple-500",
+	SelectColorPink:   "focus-visible:ring-pink-500",
+	SelectColorIndigo: "focus-visible:ring-indigo-500",
+	SelectColorTeal:   "focus-visible:ring-teal-500",
+	SelectColorZinc:   "focus-visible:ring-zinc-700",
+	SelectColorStone:  "focus-visible:ring-stone-600",
+}
+
+func selectFocusRing(color SelectColor) string {
+	if ring, ok := selectFocusRings[color]; ok {
+		return ring
+	}
+
+	return "focus-visible:ring-slate-400"
+}
+
+func selectRoundedClass(r SelectRounded) string {
+	switch r {
+	case SelectRoundedSM:
+		return "rounded-sm"
+	case SelectRoundedMD:
+		return "rounded-md"
+	case SelectRoundedLG:
+		return "rounded-lg"
+	case SelectRoundedXL:
+		return "rounded-xl"
+	default:
+		return ""
+	}
+}
+
+func selectClasses(p SelectProps) string {
+	base := "block w-full bg-white border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed"
+
+	var sizeClasses string
+
+	switch p.Size {
+	case SelectSizeSM:
+		sizeClasses = "px-2 py-1 text-sm"
+	case SelectSizeLG:
+		sizeClasses = "px-4 py-2.5 text-base"
+	default:
+		sizeClasses = "px-3 py-2 text-sm"
+	}
+
+	var stateClasses string
+
+	if p.Invalid {
+		stateClasses = "border-red-500 focus-visible:ring-red-500"
+	} else {
+		stateClasses = "border-slate-300 " + selectFocusRing(p.Color)
+	}
+
+	return Merge(base, sizeClasses, selectRoundedClass(p.Rounded), stateClasses, p.Class)
 }
 
 func selectAttrs(p SelectProps) templ.Attributes {
@@ -74,7 +170,7 @@ func Select(p SelectProps) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		var templ_7745c5c3_Var2 = []any{controlClasses(p.Size, p.Rounded, p.Color, p.Invalid, p.Class)}
+		var templ_7745c5c3_Var2 = []any{selectClasses(p)}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var2...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -134,7 +230,7 @@ func Select(p SelectProps) templ.Component {
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(p.Placeholder)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/platform/ui/select.templ`, Line: 56, Col: 72}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/platform/ui/select.templ`, Line: 152, Col: 72}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {
@@ -153,7 +249,7 @@ func Select(p SelectProps) templ.Component {
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(opt.Value)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/platform/ui/select.templ`, Line: 59, Col: 28}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/platform/ui/select.templ`, Line: 155, Col: 28}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
@@ -182,7 +278,7 @@ func Select(p SelectProps) templ.Component {
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(opt.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/platform/ui/select.templ`, Line: 59, Col: 104}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/platform/ui/select.templ`, Line: 155, Col: 104}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {

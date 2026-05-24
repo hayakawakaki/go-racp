@@ -14,13 +14,21 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/security"
 )
 
+type FormSpacing string
+
+const (
+	FormSpacingSM FormSpacing = "sm"
+	FormSpacingMD FormSpacing = "md"
+	FormSpacingLG FormSpacing = "lg"
+)
+
 type FormProps struct {
 	Attrs   templ.Attributes
 	Action  string
 	Method  string
 	Title   string
 	Class   string
-	Spacing Size
+	Spacing FormSpacing
 }
 
 func formMethod(p FormProps) string {
@@ -35,11 +43,11 @@ func formNeedsCSRF(p FormProps) bool {
 	return formMethod(p) != "get"
 }
 
-func formStackClasses(spacing Size) string {
+func formStackClasses(spacing FormSpacing) string {
 	switch spacing {
-	case SM:
+	case FormSpacingSM:
 		return "space-y-2"
-	case LG:
+	case FormSpacingLG:
 		return "space-y-6"
 	default:
 		return "space-y-4"
@@ -117,7 +125,7 @@ func Form(p FormProps) templ.Component {
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(p.Title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/platform/ui/form.templ`, Line: 56, Col: 61}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/platform/ui/form.templ`, Line: 64, Col: 61}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {

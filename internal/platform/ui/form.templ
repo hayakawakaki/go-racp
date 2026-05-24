@@ -6,13 +6,21 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/security"
 )
 
+type FormSpacing string
+
+const (
+	FormSpacingSM FormSpacing = "sm"
+	FormSpacingMD FormSpacing = "md"
+	FormSpacingLG FormSpacing = "lg"
+)
+
 type FormProps struct {
 	Attrs   templ.Attributes
 	Action  string
 	Method  string
 	Title   string
 	Class   string
-	Spacing Size
+	Spacing FormSpacing
 }
 
 func formMethod(p FormProps) string {
@@ -27,11 +35,11 @@ func formNeedsCSRF(p FormProps) bool {
 	return formMethod(p) != "get"
 }
 
-func formStackClasses(spacing Size) string {
+func formStackClasses(spacing FormSpacing) string {
 	switch spacing {
-	case SM:
+	case FormSpacingSM:
 		return "space-y-2"
-	case LG:
+	case FormSpacingLG:
 		return "space-y-6"
 	default:
 		return "space-y-4"

@@ -28,6 +28,40 @@ const (
 	InputTypeHidden        InputType = "hidden"
 )
 
+type InputColor string
+
+const (
+	InputColorNeutral InputColor = "neutral"
+	InputColorBlue    InputColor = "blue"
+	InputColorRed     InputColor = "red"
+	InputColorYellow  InputColor = "yellow"
+	InputColorGreen   InputColor = "green"
+	InputColorOrange  InputColor = "orange"
+	InputColorPurple  InputColor = "purple"
+	InputColorPink    InputColor = "pink"
+	InputColorIndigo  InputColor = "indigo"
+	InputColorTeal    InputColor = "teal"
+	InputColorZinc    InputColor = "zinc"
+	InputColorStone   InputColor = "stone"
+)
+
+type InputSize string
+
+const (
+	InputSizeSM InputSize = "sm"
+	InputSizeMD InputSize = "md"
+	InputSizeLG InputSize = "lg"
+)
+
+type InputRounded string
+
+const (
+	InputRoundedSM InputRounded = "sm"
+	InputRoundedMD InputRounded = "md"
+	InputRoundedLG InputRounded = "lg"
+	InputRoundedXL InputRounded = "xl"
+)
+
 type InputProps struct {
 	Attrs        templ.Attributes
 	Type         InputType
@@ -42,15 +76,77 @@ type InputProps struct {
 	Step         string
 	Class        string
 	AriaLabel    string
-	Size         Size
-	Rounded      Size
-	Color        Color
+	Size         InputSize
+	Rounded      InputRounded
+	Color        InputColor
 	MinLength    int
 	MaxLength    int
 	Required     bool
 	Disabled     bool
 	ReadOnly     bool
 	Invalid      bool
+}
+
+var inputFocusRings = map[InputColor]string{
+	InputColorBlue:   "focus-visible:ring-blue-500",
+	InputColorRed:    "focus-visible:ring-red-500",
+	InputColorYellow: "focus-visible:ring-yellow-500",
+	InputColorGreen:  "focus-visible:ring-green-500",
+	InputColorOrange: "focus-visible:ring-orange-500",
+	InputColorPurple: "focus-visible:ring-purple-500",
+	InputColorPink:   "focus-visible:ring-pink-500",
+	InputColorIndigo: "focus-visible:ring-indigo-500",
+	InputColorTeal:   "focus-visible:ring-teal-500",
+	InputColorZinc:   "focus-visible:ring-zinc-700",
+	InputColorStone:  "focus-visible:ring-stone-600",
+}
+
+func inputFocusRing(color InputColor) string {
+	if ring, ok := inputFocusRings[color]; ok {
+		return ring
+	}
+
+	return "focus-visible:ring-slate-400"
+}
+
+func inputRoundedClass(r InputRounded) string {
+	switch r {
+	case InputRoundedSM:
+		return "rounded-sm"
+	case InputRoundedMD:
+		return "rounded-md"
+	case InputRoundedLG:
+		return "rounded-lg"
+	case InputRoundedXL:
+		return "rounded-xl"
+	default:
+		return ""
+	}
+}
+
+func inputClasses(p InputProps) string {
+	base := "block w-full bg-white border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-slate-400"
+
+	var sizeClasses string
+
+	switch p.Size {
+	case InputSizeSM:
+		sizeClasses = "px-2 py-1 text-sm"
+	case InputSizeLG:
+		sizeClasses = "px-4 py-2.5 text-base"
+	default:
+		sizeClasses = "px-3 py-2 text-sm"
+	}
+
+	var stateClasses string
+
+	if p.Invalid {
+		stateClasses = "border-red-500 focus-visible:ring-red-500"
+	} else {
+		stateClasses = "border-slate-300 " + inputFocusRing(p.Color)
+	}
+
+	return Merge(base, sizeClasses, inputRoundedClass(p.Rounded), stateClasses, p.Class)
 }
 
 func inputType(p InputProps) string {
@@ -140,7 +236,7 @@ func Input(p InputProps) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		var templ_7745c5c3_Var2 = []any{controlClasses(p.Size, p.Rounded, p.Color, p.Invalid, p.Class)}
+		var templ_7745c5c3_Var2 = []any{inputClasses(p)}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var2...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -152,7 +248,7 @@ func Input(p InputProps) templ.Component {
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(inputType(p))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/platform/ui/input.templ`, Line: 116, Col: 21}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/platform/ui/input.templ`, Line: 212, Col: 21}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {

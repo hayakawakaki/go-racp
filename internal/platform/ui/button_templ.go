@@ -18,6 +18,40 @@ const (
 	ButtonLink    ButtonVariant = "link"
 )
 
+type ButtonColor string
+
+const (
+	ButtonColorNeutral ButtonColor = "neutral"
+	ButtonColorBlue    ButtonColor = "blue"
+	ButtonColorRed     ButtonColor = "red"
+	ButtonColorYellow  ButtonColor = "yellow"
+	ButtonColorGreen   ButtonColor = "green"
+	ButtonColorOrange  ButtonColor = "orange"
+	ButtonColorPurple  ButtonColor = "purple"
+	ButtonColorPink    ButtonColor = "pink"
+	ButtonColorIndigo  ButtonColor = "indigo"
+	ButtonColorTeal    ButtonColor = "teal"
+	ButtonColorZinc    ButtonColor = "zinc"
+	ButtonColorStone   ButtonColor = "stone"
+)
+
+type ButtonSize string
+
+const (
+	ButtonSizeSM ButtonSize = "sm"
+	ButtonSizeMD ButtonSize = "md"
+	ButtonSizeLG ButtonSize = "lg"
+)
+
+type ButtonRounded string
+
+const (
+	ButtonRoundedSM ButtonRounded = "sm"
+	ButtonRoundedMD ButtonRounded = "md"
+	ButtonRoundedLG ButtonRounded = "lg"
+	ButtonRoundedXL ButtonRounded = "xl"
+)
+
 type ButtonType string
 
 const (
@@ -30,9 +64,9 @@ type ButtonProps struct {
 	RightIcon templ.Component
 	Attrs     templ.Attributes
 	Variant   ButtonVariant
-	Color     Color
-	Size      Size
-	Rounded   Size
+	Color     ButtonColor
+	Size      ButtonSize
+	Rounded   ButtonRounded
 	Type      ButtonType
 	Href      string
 	Target    string
@@ -53,7 +87,7 @@ func buttonClasses(p ButtonProps) string {
 
 	size := p.Size
 	if size == "" {
-		size = MD
+		size = ButtonSizeMD
 	}
 
 	base := "inline-flex items-center justify-center gap-2 font-medium cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:pointer-events-none"
@@ -61,9 +95,9 @@ func buttonClasses(p ButtonProps) string {
 	var sizeClasses string
 
 	switch size {
-	case SM:
+	case ButtonSizeSM:
 		sizeClasses = "px-3 py-1.5 text-sm"
-	case LG:
+	case ButtonSizeLG:
 		sizeClasses = "px-6 py-3 text-base"
 	default:
 		sizeClasses = "px-4 py-2 text-sm"
@@ -71,86 +105,101 @@ func buttonClasses(p ButtonProps) string {
 
 	color := p.Color
 	if color == "" {
-		color = ColorNeutral
+		color = ButtonColorNeutral
 	}
 
-	return Merge(base, sizeClasses, roundedClass(p.Rounded), buttonVariantClasses(variant, color), p.Class)
+	return Merge(base, sizeClasses, buttonRoundedClass(p.Rounded), buttonVariantClasses(variant, color), p.Class)
 }
 
-var buttonClassMap = map[ButtonVariant]map[Color]string{
+func buttonRoundedClass(r ButtonRounded) string {
+	switch r {
+	case ButtonRoundedSM:
+		return "rounded-sm"
+	case ButtonRoundedMD:
+		return "rounded-md"
+	case ButtonRoundedLG:
+		return "rounded-lg"
+	case ButtonRoundedXL:
+		return "rounded-xl"
+	default:
+		return ""
+	}
+}
+
+var buttonClassMap = map[ButtonVariant]map[ButtonColor]string{
 	ButtonSolid: {
-		ColorNeutral: "bg-slate-200 text-slate-900 hover:bg-slate-300 active:bg-slate-400 focus-visible:ring-slate-400",
-		ColorBlue:    "bg-blue-600 text-white hover:bg-blue-500 active:bg-blue-700 focus-visible:ring-blue-500",
-		ColorRed:     "bg-red-600 text-white hover:bg-red-500 active:bg-red-700 focus-visible:ring-red-500",
-		ColorYellow:  "bg-yellow-400 text-yellow-950 hover:bg-yellow-300 active:bg-yellow-500 focus-visible:ring-yellow-500",
-		ColorGreen:   "bg-green-600 text-white hover:bg-green-500 active:bg-green-700 focus-visible:ring-green-500",
-		ColorOrange:  "bg-orange-500 text-white hover:bg-orange-400 active:bg-orange-600 focus-visible:ring-orange-500",
-		ColorPurple:  "bg-purple-600 text-white hover:bg-purple-500 active:bg-purple-700 focus-visible:ring-purple-500",
-		ColorPink:    "bg-pink-600 text-white hover:bg-pink-500 active:bg-pink-700 focus-visible:ring-pink-500",
-		ColorIndigo:  "bg-indigo-600 text-white hover:bg-indigo-500 active:bg-indigo-700 focus-visible:ring-indigo-500",
-		ColorTeal:    "bg-teal-600 text-white hover:bg-teal-500 active:bg-teal-700 focus-visible:ring-teal-500",
-		ColorZinc:    "bg-zinc-900 text-white hover:bg-zinc-800 active:bg-zinc-950 focus-visible:ring-zinc-700",
-		ColorStone:   "bg-stone-800 text-white hover:bg-stone-700 active:bg-stone-900 focus-visible:ring-stone-600",
+		ButtonColorNeutral: "bg-slate-200 text-slate-900 hover:bg-slate-300 active:bg-slate-400 focus-visible:ring-slate-400",
+		ButtonColorBlue:    "bg-blue-600 text-white hover:bg-blue-500 active:bg-blue-700 focus-visible:ring-blue-500",
+		ButtonColorRed:     "bg-red-600 text-white hover:bg-red-500 active:bg-red-700 focus-visible:ring-red-500",
+		ButtonColorYellow:  "bg-yellow-400 text-yellow-950 hover:bg-yellow-300 active:bg-yellow-500 focus-visible:ring-yellow-500",
+		ButtonColorGreen:   "bg-green-600 text-white hover:bg-green-500 active:bg-green-700 focus-visible:ring-green-500",
+		ButtonColorOrange:  "bg-orange-500 text-white hover:bg-orange-400 active:bg-orange-600 focus-visible:ring-orange-500",
+		ButtonColorPurple:  "bg-purple-600 text-white hover:bg-purple-500 active:bg-purple-700 focus-visible:ring-purple-500",
+		ButtonColorPink:    "bg-pink-600 text-white hover:bg-pink-500 active:bg-pink-700 focus-visible:ring-pink-500",
+		ButtonColorIndigo:  "bg-indigo-600 text-white hover:bg-indigo-500 active:bg-indigo-700 focus-visible:ring-indigo-500",
+		ButtonColorTeal:    "bg-teal-600 text-white hover:bg-teal-500 active:bg-teal-700 focus-visible:ring-teal-500",
+		ButtonColorZinc:    "bg-zinc-900 text-white hover:bg-zinc-800 active:bg-zinc-950 focus-visible:ring-zinc-700",
+		ButtonColorStone:   "bg-stone-800 text-white hover:bg-stone-700 active:bg-stone-900 focus-visible:ring-stone-600",
 	},
 	ButtonOutline: {
-		ColorNeutral: "bg-transparent text-slate-900 border border-slate-300 hover:bg-slate-50 active:bg-slate-100 focus-visible:ring-slate-400",
-		ColorBlue:    "bg-transparent text-blue-700 border border-blue-300 hover:bg-blue-50 active:bg-blue-100 focus-visible:ring-blue-400",
-		ColorRed:     "bg-transparent text-red-700 border border-red-300 hover:bg-red-50 active:bg-red-100 focus-visible:ring-red-400",
-		ColorYellow:  "bg-transparent text-yellow-700 border border-yellow-300 hover:bg-yellow-50 active:bg-yellow-100 focus-visible:ring-yellow-400",
-		ColorGreen:   "bg-transparent text-green-700 border border-green-300 hover:bg-green-50 active:bg-green-100 focus-visible:ring-green-400",
-		ColorOrange:  "bg-transparent text-orange-700 border border-orange-300 hover:bg-orange-50 active:bg-orange-100 focus-visible:ring-orange-400",
-		ColorPurple:  "bg-transparent text-purple-700 border border-purple-300 hover:bg-purple-50 active:bg-purple-100 focus-visible:ring-purple-400",
-		ColorPink:    "bg-transparent text-pink-700 border border-pink-300 hover:bg-pink-50 active:bg-pink-100 focus-visible:ring-pink-400",
-		ColorIndigo:  "bg-transparent text-indigo-700 border border-indigo-300 hover:bg-indigo-50 active:bg-indigo-100 focus-visible:ring-indigo-400",
-		ColorTeal:    "bg-transparent text-teal-700 border border-teal-300 hover:bg-teal-50 active:bg-teal-100 focus-visible:ring-teal-400",
-		ColorZinc:    "bg-transparent text-zinc-900 border border-zinc-400 hover:bg-zinc-100 active:bg-zinc-200 focus-visible:ring-zinc-500",
-		ColorStone:   "bg-transparent text-stone-900 border border-stone-400 hover:bg-stone-100 active:bg-stone-200 focus-visible:ring-stone-500",
+		ButtonColorNeutral: "bg-transparent text-slate-900 border border-slate-300 hover:bg-slate-50 active:bg-slate-100 focus-visible:ring-slate-400",
+		ButtonColorBlue:    "bg-transparent text-blue-700 border border-blue-300 hover:bg-blue-50 active:bg-blue-100 focus-visible:ring-blue-400",
+		ButtonColorRed:     "bg-transparent text-red-700 border border-red-300 hover:bg-red-50 active:bg-red-100 focus-visible:ring-red-400",
+		ButtonColorYellow:  "bg-transparent text-yellow-700 border border-yellow-300 hover:bg-yellow-50 active:bg-yellow-100 focus-visible:ring-yellow-400",
+		ButtonColorGreen:   "bg-transparent text-green-700 border border-green-300 hover:bg-green-50 active:bg-green-100 focus-visible:ring-green-400",
+		ButtonColorOrange:  "bg-transparent text-orange-700 border border-orange-300 hover:bg-orange-50 active:bg-orange-100 focus-visible:ring-orange-400",
+		ButtonColorPurple:  "bg-transparent text-purple-700 border border-purple-300 hover:bg-purple-50 active:bg-purple-100 focus-visible:ring-purple-400",
+		ButtonColorPink:    "bg-transparent text-pink-700 border border-pink-300 hover:bg-pink-50 active:bg-pink-100 focus-visible:ring-pink-400",
+		ButtonColorIndigo:  "bg-transparent text-indigo-700 border border-indigo-300 hover:bg-indigo-50 active:bg-indigo-100 focus-visible:ring-indigo-400",
+		ButtonColorTeal:    "bg-transparent text-teal-700 border border-teal-300 hover:bg-teal-50 active:bg-teal-100 focus-visible:ring-teal-400",
+		ButtonColorZinc:    "bg-transparent text-zinc-900 border border-zinc-400 hover:bg-zinc-100 active:bg-zinc-200 focus-visible:ring-zinc-500",
+		ButtonColorStone:   "bg-transparent text-stone-900 border border-stone-400 hover:bg-stone-100 active:bg-stone-200 focus-visible:ring-stone-500",
 	},
 	ButtonGhost: {
-		ColorNeutral: "bg-transparent text-slate-700 hover:bg-slate-100 active:bg-slate-200 focus-visible:ring-slate-400",
-		ColorBlue:    "bg-transparent text-blue-700 hover:bg-blue-50 active:bg-blue-100 focus-visible:ring-blue-400",
-		ColorRed:     "bg-transparent text-red-700 hover:bg-red-50 active:bg-red-100 focus-visible:ring-red-400",
-		ColorYellow:  "bg-transparent text-yellow-700 hover:bg-yellow-50 active:bg-yellow-100 focus-visible:ring-yellow-400",
-		ColorGreen:   "bg-transparent text-green-700 hover:bg-green-50 active:bg-green-100 focus-visible:ring-green-400",
-		ColorOrange:  "bg-transparent text-orange-700 hover:bg-orange-50 active:bg-orange-100 focus-visible:ring-orange-400",
-		ColorPurple:  "bg-transparent text-purple-700 hover:bg-purple-50 active:bg-purple-100 focus-visible:ring-purple-400",
-		ColorPink:    "bg-transparent text-pink-700 hover:bg-pink-50 active:bg-pink-100 focus-visible:ring-pink-400",
-		ColorIndigo:  "bg-transparent text-indigo-700 hover:bg-indigo-50 active:bg-indigo-100 focus-visible:ring-indigo-400",
-		ColorTeal:    "bg-transparent text-teal-700 hover:bg-teal-50 active:bg-teal-100 focus-visible:ring-teal-400",
-		ColorZinc:    "bg-transparent text-zinc-900 hover:bg-zinc-100 active:bg-zinc-200 focus-visible:ring-zinc-500",
-		ColorStone:   "bg-transparent text-stone-900 hover:bg-stone-100 active:bg-stone-200 focus-visible:ring-stone-500",
+		ButtonColorNeutral: "bg-transparent text-slate-700 hover:bg-slate-100 active:bg-slate-200 focus-visible:ring-slate-400",
+		ButtonColorBlue:    "bg-transparent text-blue-700 hover:bg-blue-50 active:bg-blue-100 focus-visible:ring-blue-400",
+		ButtonColorRed:     "bg-transparent text-red-700 hover:bg-red-50 active:bg-red-100 focus-visible:ring-red-400",
+		ButtonColorYellow:  "bg-transparent text-yellow-700 hover:bg-yellow-50 active:bg-yellow-100 focus-visible:ring-yellow-400",
+		ButtonColorGreen:   "bg-transparent text-green-700 hover:bg-green-50 active:bg-green-100 focus-visible:ring-green-400",
+		ButtonColorOrange:  "bg-transparent text-orange-700 hover:bg-orange-50 active:bg-orange-100 focus-visible:ring-orange-400",
+		ButtonColorPurple:  "bg-transparent text-purple-700 hover:bg-purple-50 active:bg-purple-100 focus-visible:ring-purple-400",
+		ButtonColorPink:    "bg-transparent text-pink-700 hover:bg-pink-50 active:bg-pink-100 focus-visible:ring-pink-400",
+		ButtonColorIndigo:  "bg-transparent text-indigo-700 hover:bg-indigo-50 active:bg-indigo-100 focus-visible:ring-indigo-400",
+		ButtonColorTeal:    "bg-transparent text-teal-700 hover:bg-teal-50 active:bg-teal-100 focus-visible:ring-teal-400",
+		ButtonColorZinc:    "bg-transparent text-zinc-900 hover:bg-zinc-100 active:bg-zinc-200 focus-visible:ring-zinc-500",
+		ButtonColorStone:   "bg-transparent text-stone-900 hover:bg-stone-100 active:bg-stone-200 focus-visible:ring-stone-500",
 	},
 	ButtonSubtle: {
-		ColorNeutral: "bg-slate-100 text-slate-900 hover:bg-slate-200 active:bg-slate-300 focus-visible:ring-slate-400",
-		ColorBlue:    "bg-blue-100 text-blue-800 hover:bg-blue-200 active:bg-blue-300 focus-visible:ring-blue-400",
-		ColorRed:     "bg-red-100 text-red-800 hover:bg-red-200 active:bg-red-300 focus-visible:ring-red-400",
-		ColorYellow:  "bg-yellow-100 text-yellow-900 hover:bg-yellow-200 active:bg-yellow-300 focus-visible:ring-yellow-500",
-		ColorGreen:   "bg-green-100 text-green-800 hover:bg-green-200 active:bg-green-300 focus-visible:ring-green-400",
-		ColorOrange:  "bg-orange-100 text-orange-800 hover:bg-orange-200 active:bg-orange-300 focus-visible:ring-orange-400",
-		ColorPurple:  "bg-purple-100 text-purple-800 hover:bg-purple-200 active:bg-purple-300 focus-visible:ring-purple-400",
-		ColorPink:    "bg-pink-100 text-pink-800 hover:bg-pink-200 active:bg-pink-300 focus-visible:ring-pink-400",
-		ColorIndigo:  "bg-indigo-100 text-indigo-800 hover:bg-indigo-200 active:bg-indigo-300 focus-visible:ring-indigo-400",
-		ColorTeal:    "bg-teal-100 text-teal-800 hover:bg-teal-200 active:bg-teal-300 focus-visible:ring-teal-400",
-		ColorZinc:    "bg-zinc-200 text-zinc-900 hover:bg-zinc-300 active:bg-zinc-400 focus-visible:ring-zinc-500",
-		ColorStone:   "bg-stone-200 text-stone-900 hover:bg-stone-300 active:bg-stone-400 focus-visible:ring-stone-500",
+		ButtonColorNeutral: "bg-slate-100 text-slate-900 hover:bg-slate-200 active:bg-slate-300 focus-visible:ring-slate-400",
+		ButtonColorBlue:    "bg-blue-100 text-blue-800 hover:bg-blue-200 active:bg-blue-300 focus-visible:ring-blue-400",
+		ButtonColorRed:     "bg-red-100 text-red-800 hover:bg-red-200 active:bg-red-300 focus-visible:ring-red-400",
+		ButtonColorYellow:  "bg-yellow-100 text-yellow-900 hover:bg-yellow-200 active:bg-yellow-300 focus-visible:ring-yellow-500",
+		ButtonColorGreen:   "bg-green-100 text-green-800 hover:bg-green-200 active:bg-green-300 focus-visible:ring-green-400",
+		ButtonColorOrange:  "bg-orange-100 text-orange-800 hover:bg-orange-200 active:bg-orange-300 focus-visible:ring-orange-400",
+		ButtonColorPurple:  "bg-purple-100 text-purple-800 hover:bg-purple-200 active:bg-purple-300 focus-visible:ring-purple-400",
+		ButtonColorPink:    "bg-pink-100 text-pink-800 hover:bg-pink-200 active:bg-pink-300 focus-visible:ring-pink-400",
+		ButtonColorIndigo:  "bg-indigo-100 text-indigo-800 hover:bg-indigo-200 active:bg-indigo-300 focus-visible:ring-indigo-400",
+		ButtonColorTeal:    "bg-teal-100 text-teal-800 hover:bg-teal-200 active:bg-teal-300 focus-visible:ring-teal-400",
+		ButtonColorZinc:    "bg-zinc-200 text-zinc-900 hover:bg-zinc-300 active:bg-zinc-400 focus-visible:ring-zinc-500",
+		ButtonColorStone:   "bg-stone-200 text-stone-900 hover:bg-stone-300 active:bg-stone-400 focus-visible:ring-stone-500",
 	},
 	ButtonLink: {
-		ColorNeutral: "bg-transparent text-slate-700 hover:text-slate-900 active:text-slate-950 focus-visible:ring-slate-400 px-0 py-0",
-		ColorBlue:    "bg-transparent text-blue-600 hover:text-blue-800 active:text-blue-900 focus-visible:ring-blue-400 px-0 py-0",
-		ColorRed:     "bg-transparent text-red-600 hover:text-red-800 active:text-red-900 focus-visible:ring-red-400 px-0 py-0",
-		ColorYellow:  "bg-transparent text-yellow-700 hover:text-yellow-900 active:text-yellow-950 focus-visible:ring-yellow-400 px-0 py-0",
-		ColorGreen:   "bg-transparent text-green-600 hover:text-green-800 active:text-green-900 focus-visible:ring-green-400 px-0 py-0",
-		ColorOrange:  "bg-transparent text-orange-600 hover:text-orange-800 active:text-orange-900 focus-visible:ring-orange-400 px-0 py-0",
-		ColorPurple:  "bg-transparent text-purple-600 hover:text-purple-800 active:text-purple-900 focus-visible:ring-purple-400 px-0 py-0",
-		ColorPink:    "bg-transparent text-pink-600 hover:text-pink-800 active:text-pink-900 focus-visible:ring-pink-400 px-0 py-0",
-		ColorIndigo:  "bg-transparent text-indigo-600 hover:text-indigo-800 active:text-indigo-900 focus-visible:ring-indigo-400 px-0 py-0",
-		ColorTeal:    "bg-transparent text-teal-600 hover:text-teal-800 active:text-teal-900 focus-visible:ring-teal-400 px-0 py-0",
-		ColorZinc:    "bg-transparent text-zinc-700 hover:text-zinc-900 active:text-zinc-950 focus-visible:ring-zinc-500 px-0 py-0",
-		ColorStone:   "bg-transparent text-stone-700 hover:text-stone-900 active:text-stone-950 focus-visible:ring-stone-500 px-0 py-0",
+		ButtonColorNeutral: "bg-transparent text-slate-700 hover:text-slate-900 active:text-slate-950 focus-visible:ring-slate-400 px-0 py-0",
+		ButtonColorBlue:    "bg-transparent text-blue-600 hover:text-blue-800 active:text-blue-900 focus-visible:ring-blue-400 px-0 py-0",
+		ButtonColorRed:     "bg-transparent text-red-600 hover:text-red-800 active:text-red-900 focus-visible:ring-red-400 px-0 py-0",
+		ButtonColorYellow:  "bg-transparent text-yellow-700 hover:text-yellow-900 active:text-yellow-950 focus-visible:ring-yellow-400 px-0 py-0",
+		ButtonColorGreen:   "bg-transparent text-green-600 hover:text-green-800 active:text-green-900 focus-visible:ring-green-400 px-0 py-0",
+		ButtonColorOrange:  "bg-transparent text-orange-600 hover:text-orange-800 active:text-orange-900 focus-visible:ring-orange-400 px-0 py-0",
+		ButtonColorPurple:  "bg-transparent text-purple-600 hover:text-purple-800 active:text-purple-900 focus-visible:ring-purple-400 px-0 py-0",
+		ButtonColorPink:    "bg-transparent text-pink-600 hover:text-pink-800 active:text-pink-900 focus-visible:ring-pink-400 px-0 py-0",
+		ButtonColorIndigo:  "bg-transparent text-indigo-600 hover:text-indigo-800 active:text-indigo-900 focus-visible:ring-indigo-400 px-0 py-0",
+		ButtonColorTeal:    "bg-transparent text-teal-600 hover:text-teal-800 active:text-teal-900 focus-visible:ring-teal-400 px-0 py-0",
+		ButtonColorZinc:    "bg-transparent text-zinc-700 hover:text-zinc-900 active:text-zinc-950 focus-visible:ring-zinc-500 px-0 py-0",
+		ButtonColorStone:   "bg-transparent text-stone-700 hover:text-stone-900 active:text-stone-950 focus-visible:ring-stone-500 px-0 py-0",
 	},
 }
 
-func buttonVariantClasses(variant ButtonVariant, color Color) string {
+func buttonVariantClasses(variant ButtonVariant, color ButtonColor) string {
 	return buttonClassMap[variant][color]
 }
 
@@ -363,7 +412,7 @@ func Button(p ButtonProps) templ.Component {
 				var templ_7745c5c3_Var8 templ.SafeURL
 				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinURLErrs(p.Href)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/platform/ui/button.templ`, Line: 219, Col: 19}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/platform/ui/button.templ`, Line: 268, Col: 19}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
@@ -434,7 +483,7 @@ func Button(p ButtonProps) templ.Component {
 			var templ_7745c5c3_Var12 string
 			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(buttonType(p))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/platform/ui/button.templ`, Line: 226, Col: 30}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/platform/ui/button.templ`, Line: 275, Col: 30}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 			if templ_7745c5c3_Err != nil {
@@ -663,7 +712,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Color: ColorNeutral}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var21), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Color: ButtonColorNeutral}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var21), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -685,7 +734,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Color: ColorBlue}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var22), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Color: ButtonColorBlue}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var22), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -707,7 +756,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Color: ColorRed}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var23), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Color: ButtonColorRed}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var23), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -729,7 +778,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Color: ColorYellow}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var24), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Color: ButtonColorYellow}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var24), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -751,7 +800,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Color: ColorGreen}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var25), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Color: ButtonColorGreen}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var25), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -773,7 +822,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Color: ColorOrange}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var26), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Color: ButtonColorOrange}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var26), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -795,7 +844,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Color: ColorPurple}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var27), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Color: ButtonColorPurple}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var27), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -817,7 +866,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Color: ColorPink}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var28), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Color: ButtonColorPink}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var28), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -839,7 +888,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Color: ColorIndigo}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var29), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Color: ButtonColorIndigo}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var29), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -861,7 +910,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Color: ColorTeal}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var30), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Color: ButtonColorTeal}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var30), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -883,7 +932,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Color: ColorZinc}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var31), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Color: ButtonColorZinc}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var31), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -905,7 +954,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Color: ColorStone}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var32), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Color: ButtonColorStone}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var32), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -931,7 +980,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonOutline, Color: ColorNeutral}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var33), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonOutline, Color: ButtonColorNeutral}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var33), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -953,7 +1002,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonOutline, Color: ColorBlue}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var34), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonOutline, Color: ButtonColorBlue}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var34), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -975,7 +1024,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonOutline, Color: ColorRed}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var35), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonOutline, Color: ButtonColorRed}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var35), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -997,7 +1046,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonOutline, Color: ColorYellow}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var36), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonOutline, Color: ButtonColorYellow}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var36), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1019,7 +1068,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonOutline, Color: ColorGreen}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var37), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonOutline, Color: ButtonColorGreen}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var37), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1041,7 +1090,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonOutline, Color: ColorOrange}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var38), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonOutline, Color: ButtonColorOrange}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var38), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1063,7 +1112,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonOutline, Color: ColorPurple}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var39), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonOutline, Color: ButtonColorPurple}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var39), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1085,7 +1134,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonOutline, Color: ColorPink}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var40), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonOutline, Color: ButtonColorPink}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var40), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1107,7 +1156,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonOutline, Color: ColorIndigo}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var41), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonOutline, Color: ButtonColorIndigo}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var41), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1129,7 +1178,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonOutline, Color: ColorTeal}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var42), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonOutline, Color: ButtonColorTeal}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var42), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1151,7 +1200,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonOutline, Color: ColorZinc}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var43), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonOutline, Color: ButtonColorZinc}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var43), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1173,7 +1222,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonOutline, Color: ColorStone}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var44), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonOutline, Color: ButtonColorStone}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var44), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1199,7 +1248,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonGhost, Color: ColorNeutral}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var45), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonGhost, Color: ButtonColorNeutral}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var45), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1221,7 +1270,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonGhost, Color: ColorBlue}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var46), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonGhost, Color: ButtonColorBlue}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var46), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1243,7 +1292,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonGhost, Color: ColorRed}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var47), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonGhost, Color: ButtonColorRed}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var47), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1265,7 +1314,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonGhost, Color: ColorYellow}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var48), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonGhost, Color: ButtonColorYellow}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var48), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1287,7 +1336,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonGhost, Color: ColorGreen}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var49), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonGhost, Color: ButtonColorGreen}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var49), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1309,7 +1358,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonGhost, Color: ColorOrange}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var50), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonGhost, Color: ButtonColorOrange}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var50), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1331,7 +1380,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonGhost, Color: ColorPurple}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var51), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonGhost, Color: ButtonColorPurple}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var51), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1353,7 +1402,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonGhost, Color: ColorPink}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var52), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonGhost, Color: ButtonColorPink}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var52), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1375,7 +1424,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonGhost, Color: ColorIndigo}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var53), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonGhost, Color: ButtonColorIndigo}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var53), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1397,7 +1446,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonGhost, Color: ColorTeal}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var54), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonGhost, Color: ButtonColorTeal}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var54), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1419,7 +1468,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonGhost, Color: ColorZinc}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var55), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonGhost, Color: ButtonColorZinc}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var55), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1441,7 +1490,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonGhost, Color: ColorStone}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var56), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonGhost, Color: ButtonColorStone}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var56), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1467,7 +1516,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonSubtle, Color: ColorNeutral}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var57), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonSubtle, Color: ButtonColorNeutral}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var57), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1489,7 +1538,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonSubtle, Color: ColorBlue}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var58), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonSubtle, Color: ButtonColorBlue}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var58), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1511,7 +1560,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonSubtle, Color: ColorRed}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var59), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonSubtle, Color: ButtonColorRed}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var59), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1533,7 +1582,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonSubtle, Color: ColorYellow}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var60), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonSubtle, Color: ButtonColorYellow}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var60), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1555,7 +1604,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonSubtle, Color: ColorGreen}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var61), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonSubtle, Color: ButtonColorGreen}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var61), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1577,7 +1626,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonSubtle, Color: ColorOrange}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var62), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonSubtle, Color: ButtonColorOrange}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var62), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1599,7 +1648,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonSubtle, Color: ColorPurple}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var63), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonSubtle, Color: ButtonColorPurple}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var63), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1621,7 +1670,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonSubtle, Color: ColorPink}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var64), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonSubtle, Color: ButtonColorPink}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var64), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1643,7 +1692,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonSubtle, Color: ColorIndigo}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var65), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonSubtle, Color: ButtonColorIndigo}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var65), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1665,7 +1714,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonSubtle, Color: ColorTeal}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var66), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonSubtle, Color: ButtonColorTeal}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var66), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1687,7 +1736,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonSubtle, Color: ColorZinc}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var67), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonSubtle, Color: ButtonColorZinc}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var67), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1709,7 +1758,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonSubtle, Color: ColorStone}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var68), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonSubtle, Color: ButtonColorStone}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var68), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1735,7 +1784,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonLink, Color: ColorNeutral}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var69), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonLink, Color: ButtonColorNeutral}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var69), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1757,7 +1806,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonLink, Color: ColorBlue}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var70), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonLink, Color: ButtonColorBlue}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var70), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1779,7 +1828,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonLink, Color: ColorRed}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var71), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonLink, Color: ButtonColorRed}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var71), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1801,7 +1850,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonLink, Color: ColorYellow}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var72), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonLink, Color: ButtonColorYellow}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var72), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1823,7 +1872,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonLink, Color: ColorGreen}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var73), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonLink, Color: ButtonColorGreen}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var73), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1845,7 +1894,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonLink, Color: ColorOrange}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var74), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonLink, Color: ButtonColorOrange}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var74), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1867,7 +1916,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonLink, Color: ColorPurple}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var75), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonLink, Color: ButtonColorPurple}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var75), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1889,7 +1938,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonLink, Color: ColorPink}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var76), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonLink, Color: ButtonColorPink}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var76), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1911,7 +1960,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonLink, Color: ColorIndigo}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var77), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonLink, Color: ButtonColorIndigo}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var77), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1933,7 +1982,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonLink, Color: ColorTeal}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var78), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonLink, Color: ButtonColorTeal}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var78), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1955,7 +2004,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonLink, Color: ColorZinc}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var79), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonLink, Color: ButtonColorZinc}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var79), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1977,7 +2026,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonLink, Color: ColorStone}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var80), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Variant: ButtonLink, Color: ButtonColorStone}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var80), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2003,7 +2052,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Size: SM}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var81), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Size: ButtonSizeSM}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var81), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2025,7 +2074,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Size: MD}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var82), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Size: ButtonSizeMD}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var82), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2047,7 +2096,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Size: LG}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var83), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Size: ButtonSizeLG}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var83), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2095,7 +2144,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Rounded: SM}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var85), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Rounded: ButtonRoundedSM}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var85), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2117,7 +2166,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Rounded: MD}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var86), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Rounded: ButtonRoundedMD}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var86), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2139,7 +2188,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Rounded: LG}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var87), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Rounded: ButtonRoundedLG}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var87), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2161,7 +2210,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Rounded: XL}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var88), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Rounded: ButtonRoundedXL}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var88), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2302,7 +2351,7 @@ func ButtonPreview() templ.Component {
 			return nil
 		})
 		templ_7745c5c3_Err = Button(ButtonProps{
-			Color: ColorRed,
+			Color: ButtonColorRed,
 			Attrs: templ.Attributes{
 				"hx-delete":  "/items/1",
 				"hx-confirm": "Delete item?",
@@ -2458,7 +2507,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Color: ColorRed, Loading: true}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var100), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Color: ButtonColorRed, Loading: true}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var100), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2642,7 +2691,7 @@ func ButtonPreview() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Button(ButtonProps{Color: ColorRed, Disabled: true}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var108), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Button(ButtonProps{Color: ButtonColorRed, Disabled: true}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var108), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
