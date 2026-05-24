@@ -103,7 +103,7 @@ func selectRoundedClass(r SelectRounded) string {
 }
 
 func selectClasses(p SelectProps) string {
-	base := "block w-full bg-white border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed"
+	base := "block w-full bg-white border transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-inset disabled:opacity-50 disabled:cursor-not-allowed"
 
 	var sizeClasses string
 
@@ -213,7 +213,7 @@ func Select(p SelectProps) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if p.Placeholder != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<option value=\"\" disabled")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<option value=\"\" disabled hidden")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -230,7 +230,7 @@ func Select(p SelectProps) templ.Component {
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(p.Placeholder)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/platform/ui/select.templ`, Line: 152, Col: 72}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/platform/ui/select.templ`, Line: 152, Col: 79}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {

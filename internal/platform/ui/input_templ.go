@@ -125,7 +125,7 @@ func inputRoundedClass(r InputRounded) string {
 }
 
 func inputClasses(p InputProps) string {
-	base := "block w-full bg-white border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-slate-400"
+	base := "block w-full bg-white border transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-inset disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-slate-400"
 
 	var sizeClasses string
 
