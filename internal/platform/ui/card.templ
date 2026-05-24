@@ -431,9 +431,7 @@ templ CardPreview() {
 				@Card(CardProps{Rounded: CardRoundedMD}) {
 					@CardHeader("flex flex-row items-center justify-between space-y-0") {
 						<div class="flex items-center gap-2">
-							<span class="text-blue-600">
-								@Icon("plus")
-							</span>
+							@Icon("plus", "text-blue-600")
 							@CardTitle() {
 								Custom header
 							}

@@ -24,6 +24,7 @@ type ModalContentProps struct {
 	StaticBackdrop bool
 	NoEscapeClose  bool
 	NoScrollLock   bool
+	NoCloseButton  bool
 }
 
 func modalOuterAttrs(p ModalContentProps) templ.Attributes {
@@ -97,6 +98,16 @@ templ ModalContent(p ModalContentProps) {
 	>
 		<div class="flex min-h-full items-center justify-center p-4" { modalBackdropAttrs(p)... }>
 			<div class={ modalPanelClasses(p) } role="dialog" aria-modal="true" { p.Attrs... }>
+				if !p.NoCloseButton {
+					@Button(ButtonProps{
+						Variant:   ButtonGhost,
+						Size:      ButtonSizeSM,
+						AriaLabel: "Close",
+						LeftIcon:  Icon("x"),
+						Class:     "absolute top-3 right-3",
+						Attrs:     templ.Attributes{"@click": "open = false"},
+					})
+				}
 				{ children... }
 			</div>
 		</div>

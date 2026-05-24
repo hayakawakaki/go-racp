@@ -32,6 +32,7 @@ type ModalContentProps struct {
 	StaticBackdrop bool
 	NoEscapeClose  bool
 	NoScrollLock   bool
+	NoCloseButton  bool
 }
 
 func modalOuterAttrs(p ModalContentProps) templ.Attributes {
@@ -115,7 +116,7 @@ func Modal(p ModalProps) templ.Component {
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.FormatBool(p.Open))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/platform/ui/modal.templ`, Line: 78, Col: 65}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/platform/ui/modal.templ`, Line: 79, Col: 65}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
@@ -283,6 +284,19 @@ func ModalContent(p ModalContentProps) templ.Component {
 		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, ">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
+		}
+		if !p.NoCloseButton {
+			templ_7745c5c3_Err = Button(ButtonProps{
+				Variant:   ButtonGhost,
+				Size:      ButtonSizeSM,
+				AriaLabel: "Close",
+				LeftIcon:  Icon("x"),
+				Class:     "absolute top-3 right-3",
+				Attrs:     templ.Attributes{"@click": "open = false"},
+			}).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
 		}
 		templ_7745c5c3_Err = templ_7745c5c3_Var8.Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {

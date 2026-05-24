@@ -19,21 +19,11 @@ templ IconPreview() {
 		<section class="space-y-4">
 			<h2 class="text-lg font-semibold">Class overrides (size, color)</h2>
 			<div class="flex flex-wrap items-end gap-4">
-				<span class="text-slate-900">
-					@Icon("check")
-				</span>
-				<span class="text-slate-900">
-					@Icon("check", "size-6")
-				</span>
-				<span class="text-blue-600">
-					@Icon("check", "size-8")
-				</span>
-				<span class="text-red-600">
-					@Icon("trash", "size-8")
-				</span>
-				<span class="text-yellow-700">
-					@Icon("search", "size-8")
-				</span>
+				@Icon("check")
+				@Icon("check", "size-6")
+				@Icon("check", "size-8 text-blue-600")
+				@Icon("trash", "size-8 text-red-600")
+				@Icon("search", "size-8 text-yellow-700")
 			</div>
 		</section>
 		<section class="space-y-4">

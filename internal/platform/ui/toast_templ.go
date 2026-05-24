@@ -99,7 +99,21 @@ func ToastContainer(p ToastContainerProps) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\"><template x-for=\"t in toasts\" :key=\"t.id\"><div :class=\"toastClass(t.type, t.size)\" x-transition role=\"status\" aria-live=\"polite\"><p class=\"flex-1\" x-text=\"t.message\"></p><button type=\"button\" @click=\"remove(t.id)\" class=\"text-current/60 hover:text-current text-xl leading-none\" aria-label=\"Dismiss\">×</button></div></template><div class=\"hidden bg-green-50 border-green-200 text-green-900 bg-red-50 border-red-200 text-red-900 bg-yellow-50 border-yellow-200 text-yellow-900 bg-blue-50 border-blue-200 text-blue-900 bg-white border-slate-200 text-slate-900 min-w-[220px] max-w-xs px-3 py-2 text-xs gap-2 min-w-[280px] max-w-sm px-4 py-3 text-sm gap-3 min-w-[360px] max-w-md px-5 py-4 text-base gap-3\"></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\"><template x-for=\"t in toasts\" :key=\"t.id\"><div :class=\"toastClass(t.type, t.size)\" x-transition role=\"status\" aria-live=\"polite\"><p class=\"flex-1\" x-text=\"t.message\"></p>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = Button(ButtonProps{
+			Variant:   ButtonGhost,
+			Size:      ButtonSizeSM,
+			AriaLabel: "Dismiss",
+			LeftIcon:  Icon("x"),
+			Attrs:     templ.Attributes{"@click": "remove(t.id)"},
+		}).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div></template><div class=\"hidden bg-green-50 border-green-200 text-green-900 bg-red-50 border-red-200 text-red-900 bg-yellow-50 border-yellow-200 text-yellow-900 bg-blue-50 border-blue-200 text-blue-900 bg-white border-slate-200 text-slate-900 min-w-[220px] max-w-xs px-3 py-2 text-xs gap-2 min-w-[280px] max-w-sm px-4 py-3 text-sm gap-3 min-w-[360px] max-w-md px-5 py-4 text-base gap-3\"></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -128,7 +142,7 @@ func ToastPreview() templ.Component {
 			templ_7745c5c3_Var4 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<div class=\"space-y-8\"><section class=\"space-y-4\"><h2 class=\"text-lg font-semibold\">Trigger toasts</h2><p class=\"text-sm text-slate-500\">Click a button to dispatch a toast. The <code>ToastContainer</code> below catches them.</p><div class=\"flex flex-wrap gap-2\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"space-y-8\"><section class=\"space-y-4\"><h2 class=\"text-lg font-semibold\">Trigger toasts</h2><p class=\"text-sm text-slate-500\">Click a button to dispatch a toast. The <code>ToastContainer</code> below catches them.</p><div class=\"flex flex-wrap gap-2\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -144,7 +158,7 @@ func ToastPreview() templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "Success")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "Success")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -172,7 +186,7 @@ func ToastPreview() templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "Error")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "Error")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -200,7 +214,7 @@ func ToastPreview() templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "Warning")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "Warning")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -228,7 +242,7 @@ func ToastPreview() templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "Info")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "Info")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -256,7 +270,7 @@ func ToastPreview() templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "10-second toast")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "10-second toast")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -273,7 +287,7 @@ func ToastPreview() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div></section><section class=\"space-y-4\"><h2 class=\"text-lg font-semibold\">Sizes</h2><div class=\"flex flex-wrap gap-2\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</div></section><section class=\"space-y-4\"><h2 class=\"text-lg font-semibold\">Sizes</h2><div class=\"flex flex-wrap gap-2\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -289,7 +303,7 @@ func ToastPreview() templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "Small")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "Small")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -319,7 +333,7 @@ func ToastPreview() templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "Medium")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "Medium")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -348,7 +362,7 @@ func ToastPreview() templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "Large")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "Large")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -366,20 +380,20 @@ func ToastPreview() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</div></section><section class=\"space-y-4\"><h2 class=\"text-lg font-semibold\">Trigger sources</h2><dl class=\"text-sm text-slate-700 space-y-2\"><div><dt class=\"font-semibold\">data-* attribute (no Alpine scope needed)</dt><dd><code>&lt;button data-toast=\"Saved\" data-toast-type=\"success\"&gt;</code></dd></div><div><dt class=\"font-semibold\">Alpine magic helper (inside an x-data scope)</dt><dd><code>&lt;button @click=\"$toast('success', 'Saved')\"&gt;</code></dd></div><div><dt class=\"font-semibold\">HTMX response header</dt><dd><code>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "</div></section><section class=\"space-y-4\"><h2 class=\"text-lg font-semibold\">Trigger sources</h2><dl class=\"text-sm text-slate-700 space-y-2\"><div><dt class=\"font-semibold\">data-* attribute (no Alpine scope needed)</dt><dd><code>&lt;button data-toast=\"Saved\" data-toast-type=\"success\"&gt;</code></dd></div><div><dt class=\"font-semibold\">Alpine magic helper (inside an x-data scope)</dt><dd><code>&lt;button @click=\"$toast('success', 'Saved')\"&gt;</code></dd></div><div><dt class=\"font-semibold\">HTMX response header</dt><dd><code>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var13 string
 		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(`HX-Trigger: {"toast":{"type":"success","message":"Saved"}}`)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/platform/ui/toast.templ`, Line: 176, Col: 77}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/platform/ui/toast.templ`, Line: 182, Col: 77}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "</code></dd></div></dl></section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</code></dd></div></dl></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -387,7 +401,7 @@ func ToastPreview() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

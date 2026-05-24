@@ -62,7 +62,13 @@ templ ToastContainer(p ToastContainerProps) {
 				aria-live="polite"
 			>
 				<p class="flex-1" x-text="t.message"></p>
-				<button type="button" @click="remove(t.id)" class="text-current/60 hover:text-current text-xl leading-none" aria-label="Dismiss">×</button>
+				@Button(ButtonProps{
+					Variant:   ButtonGhost,
+					Size:      ButtonSizeSM,
+					AriaLabel: "Dismiss",
+					LeftIcon:  Icon("x"),
+					Attrs:     templ.Attributes{"@click": "remove(t.id)"},
+				})
 			</div>
 		</template>
 		<div class="hidden bg-green-50 border-green-200 text-green-900 bg-red-50 border-red-200 text-red-900 bg-yellow-50 border-yellow-200 text-yellow-900 bg-blue-50 border-blue-200 text-blue-900 bg-white border-slate-200 text-slate-900 min-w-[220px] max-w-xs px-3 py-2 text-xs gap-2 min-w-[280px] max-w-sm px-4 py-3 text-sm gap-3 min-w-[360px] max-w-md px-5 py-4 text-base gap-3"></div>
