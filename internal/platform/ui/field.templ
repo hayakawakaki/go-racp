@@ -22,7 +22,7 @@ func fieldLabelAttrs(p FieldProps) templ.Attributes {
 templ Field(p FieldProps) {
 	<div class={ Merge("space-y-1.5", p.Class) }>
 		if p.Label != "" {
-			<label class="block text-sm font-medium text-slate-900" { fieldLabelAttrs(p)... }>
+			<label class="block text-sm font-medium text-slate-900 dark:text-slate-100" { fieldLabelAttrs(p)... }>
 				{ p.Label }
 				if p.Required {
 					<span class="text-red-600 ml-0.5" aria-hidden="true">*</span>
@@ -33,7 +33,7 @@ templ Field(p FieldProps) {
 		if p.Error != "" {
 			<p class="text-sm text-red-600">{ p.Error }</p>
 		} else if p.Help != "" {
-			<p class="text-sm text-slate-500">{ p.Help }</p>
+			<p class="text-sm text-slate-500 dark:text-slate-400">{ p.Help }</p>
 		}
 	</div>
 }

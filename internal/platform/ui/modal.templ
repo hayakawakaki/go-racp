@@ -70,7 +70,7 @@ func modalPanelClasses(p ModalContentProps) string {
 		sizeClass = "max-w-md"
 	}
 
-	base := "relative w-full max-h-[90dvh] lg:max-h-[80dvh] overflow-y-auto bg-white rounded-lg shadow-xl flex flex-col gap-4 p-6"
+	base := "relative w-full max-h-[90dvh] lg:max-h-[80dvh] overflow-y-auto bg-white dark:bg-slate-900 rounded-lg shadow-xl flex flex-col gap-4 p-6"
 
 	return Merge(base, sizeClass, p.Class)
 }
@@ -121,13 +121,13 @@ templ ModalHeader(class ...string) {
 }
 
 templ ModalTitle(class ...string) {
-	<h2 class={ MergeWithDefault("text-lg font-semibold text-slate-900", class) }>
+	<h2 class={ MergeWithDefault("text-lg font-semibold text-slate-900 dark:text-slate-100", class) }>
 		{ children... }
 	</h2>
 }
 
 templ ModalDescription(class ...string) {
-	<p class={ MergeWithDefault("text-sm text-slate-500", class) }>
+	<p class={ MergeWithDefault("text-sm text-slate-500 dark:text-slate-400", class) }>
 		{ children... }
 	</p>
 }
@@ -148,7 +148,7 @@ templ ModalPreview() {
 	<div class="space-y-8">
 		<section class="space-y-4">
 			<h2 class="text-lg font-semibold">Confirm dialog</h2>
-			<p class="text-sm text-slate-500">Backdrop click, ESC, and body scroll-lock are all on by default.</p>
+			<p class="text-sm text-slate-500 dark:text-slate-400">Backdrop click, ESC, and body scroll-lock are all on by default.</p>
 			@Modal(ModalProps{}) {
 				@ModalTrigger() {
 					@Button(ButtonProps{Color: ButtonColorRed}) {
@@ -190,7 +190,7 @@ templ ModalPreview() {
 						@ModalTitle() {
 							Small modal
 						}
-						<p class="text-sm text-slate-700">max-w-sm</p>
+						<p class="text-sm text-slate-700 dark:text-slate-300">max-w-sm</p>
 						@ModalFooter("justify-end") {
 							@ModalClose() {
 								@Button(ButtonProps{Variant: ButtonGhost}) {
@@ -210,7 +210,7 @@ templ ModalPreview() {
 						@ModalTitle() {
 							Medium modal
 						}
-						<p class="text-sm text-slate-700">max-w-md (default)</p>
+						<p class="text-sm text-slate-700 dark:text-slate-300">max-w-md (default)</p>
 						@ModalFooter("justify-end") {
 							@ModalClose() {
 								@Button(ButtonProps{Variant: ButtonGhost}) {
@@ -230,7 +230,7 @@ templ ModalPreview() {
 						@ModalTitle() {
 							Large modal
 						}
-						<p class="text-sm text-slate-700">max-w-lg</p>
+						<p class="text-sm text-slate-700 dark:text-slate-300">max-w-lg</p>
 						@ModalFooter("justify-end") {
 							@ModalClose() {
 								@Button(ButtonProps{Variant: ButtonGhost}) {
@@ -250,7 +250,7 @@ templ ModalPreview() {
 						@ModalTitle() {
 							Extra large modal
 						}
-						<p class="text-sm text-slate-700">max-w-2xl</p>
+						<p class="text-sm text-slate-700 dark:text-slate-300">max-w-2xl</p>
 						@ModalFooter("justify-end") {
 							@ModalClose() {
 								@Button(ButtonProps{Variant: ButtonGhost}) {
@@ -270,7 +270,7 @@ templ ModalPreview() {
 						@ModalTitle() {
 							Full-width modal
 						}
-						<p class="text-sm text-slate-700">Override max-width via Class for anything beyond the size presets.</p>
+						<p class="text-sm text-slate-700 dark:text-slate-300">Override max-width via Class for anything beyond the size presets.</p>
 						@ModalFooter("justify-end") {
 							@ModalClose() {
 								@Button(ButtonProps{Variant: ButtonGhost}) {
@@ -354,7 +354,7 @@ templ ModalPreview() {
 							Scroll wraps via the modal overlay, not the page.
 						}
 					}
-					<div class="space-y-3 text-sm text-slate-700">
+					<div class="space-y-3 text-sm text-slate-700 dark:text-slate-300">
 						for range 12 {
 							<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum imperdiet, nulla et dictum interdum, nisi lorem egestas vitae scelerisque enim ligula venenatis dolor.</p>
 						}
@@ -374,7 +374,7 @@ templ ModalPreview() {
 		</section>
 		<section class="space-y-4">
 			<h2 class="text-lg font-semibold">HTMX (Attrs)</h2>
-			<p class="text-sm text-slate-500">Wire the panel up to HTMX via Attrs — for example, submit a form inside without leaving the modal.</p>
+			<p class="text-sm text-slate-500 dark:text-slate-400">Wire the panel up to HTMX via Attrs — for example, submit a form inside without leaving the modal.</p>
 			@Modal(ModalProps{}) {
 				@ModalTrigger() {
 					@Button(ButtonProps{Variant: ButtonOutline, LeftIcon: Icon("edit")}) {
@@ -390,7 +390,7 @@ templ ModalPreview() {
 					@ModalTitle() {
 						Edit item
 					}
-					<p class="text-sm text-slate-500">Replace the panel with the server's response.</p>
+					<p class="text-sm text-slate-500 dark:text-slate-400">Replace the panel with the server's response.</p>
 					@ModalFooter("justify-end gap-2") {
 						@ModalClose() {
 							@Button(ButtonProps{Variant: ButtonGhost}) {

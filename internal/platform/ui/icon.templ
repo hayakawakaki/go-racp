@@ -4,14 +4,14 @@ templ IconPreview() {
 	<div class="space-y-8">
 		<section class="space-y-4">
 			<h2 class="text-lg font-semibold">Icon(name, class...)</h2>
-			<p class="text-sm text-slate-500">Default <code>size-4</code>; inherits color via <code>currentColor</code>. Drop an SVG into <code>internal/platform/ui/icons/</code> to register it automatically.</p>
+			<p class="text-sm text-slate-500 dark:text-slate-400">Default <code>size-4</code>; inherits color via <code>currentColor</code>. Drop an SVG into <code>internal/platform/ui/icons/</code> to register it automatically.</p>
 			<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
 				for _, name := range IconNames() {
-					<div class="flex items-center gap-3 border border-slate-200 rounded-md px-3 py-2">
-						<span class="text-slate-700">
+					<div class="flex items-center gap-3 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-2">
+						<span class="text-slate-700 dark:text-slate-300">
 							@Icon(name)
 						</span>
-						<code class="text-xs text-slate-600">{ name }</code>
+						<code class="text-xs text-slate-600 dark:text-slate-400">{ name }</code>
 					</div>
 				}
 			</div>

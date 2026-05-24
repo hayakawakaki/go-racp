@@ -113,7 +113,7 @@ func ToastContainer(p ToastContainerProps) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div></template><div class=\"hidden bg-green-50 border-green-200 text-green-900 bg-red-50 border-red-200 text-red-900 bg-yellow-50 border-yellow-200 text-yellow-900 bg-blue-50 border-blue-200 text-blue-900 bg-white border-slate-200 text-slate-900 min-w-[220px] max-w-xs px-3 py-2 text-xs gap-2 min-w-[280px] max-w-sm px-4 py-3 text-sm gap-3 min-w-[360px] max-w-md px-5 py-4 text-base gap-3\"></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div></template><div class=\"hidden bg-green-50 border-green-200 text-green-900 bg-red-50 border-red-200 text-red-900 bg-yellow-50 border-yellow-200 text-yellow-900 bg-blue-50 border-blue-200 text-blue-900 bg-white dark:bg-slate-900 border-slate-200 text-slate-900 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 min-w-[220px] max-w-xs px-3 py-2 text-xs gap-2 min-w-[280px] max-w-sm px-4 py-3 text-sm gap-3 min-w-[360px] max-w-md px-5 py-4 text-base gap-3\"></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -142,7 +142,7 @@ func ToastPreview() templ.Component {
 			templ_7745c5c3_Var4 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"space-y-8\"><section class=\"space-y-4\"><h2 class=\"text-lg font-semibold\">Trigger toasts</h2><p class=\"text-sm text-slate-500\">Click a button to dispatch a toast. The <code>ToastContainer</code> below catches them.</p><div class=\"flex flex-wrap gap-2\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"space-y-8\"><section class=\"space-y-4\"><h2 class=\"text-lg font-semibold\">Trigger toasts</h2><p class=\"text-sm text-slate-500 dark:text-slate-400\">Click a button to dispatch a toast. The <code>ToastContainer</code> below catches them.</p><div class=\"flex flex-wrap gap-2\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -380,7 +380,7 @@ func ToastPreview() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "</div></section><section class=\"space-y-4\"><h2 class=\"text-lg font-semibold\">Trigger sources</h2><dl class=\"text-sm text-slate-700 space-y-2\"><div><dt class=\"font-semibold\">data-* attribute (no Alpine scope needed)</dt><dd><code>&lt;button data-toast=\"Saved\" data-toast-type=\"success\"&gt;</code></dd></div><div><dt class=\"font-semibold\">Alpine magic helper (inside an x-data scope)</dt><dd><code>&lt;button @click=\"$toast('success', 'Saved')\"&gt;</code></dd></div><div><dt class=\"font-semibold\">HTMX response header</dt><dd><code>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "</div></section><section class=\"space-y-4\"><h2 class=\"text-lg font-semibold\">Trigger sources</h2><dl class=\"text-sm text-slate-700 dark:text-slate-300 space-y-2\"><div><dt class=\"font-semibold\">data-* attribute (no Alpine scope needed)</dt><dd><code>&lt;button data-toast=\"Saved\" data-toast-type=\"success\"&gt;</code></dd></div><div><dt class=\"font-semibold\">Alpine magic helper (inside an x-data scope)</dt><dd><code>&lt;button @click=\"$toast('success', 'Saved')\"&gt;</code></dd></div><div><dt class=\"font-semibold\">HTMX response header</dt><dd><code>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

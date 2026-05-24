@@ -128,7 +128,7 @@ func buttonRoundedClass(r ButtonRounded) string {
 
 var buttonClassMap = map[ButtonVariant]map[ButtonColor]string{
 	ButtonSolid: {
-		ButtonColorNeutral: "bg-slate-200 text-slate-900 hover:bg-slate-300 active:bg-slate-400 focus-visible:ring-slate-400",
+		ButtonColorNeutral: "bg-slate-200 text-slate-900 hover:bg-slate-300 active:bg-slate-400 focus-visible:ring-slate-400 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600 dark:active:bg-slate-500 dark:focus-visible:ring-slate-500",
 		ButtonColorBlue:    "bg-blue-600 text-white hover:bg-blue-500 active:bg-blue-700 focus-visible:ring-blue-500",
 		ButtonColorRed:     "bg-red-600 text-white hover:bg-red-500 active:bg-red-700 focus-visible:ring-red-500",
 		ButtonColorYellow:  "bg-yellow-400 text-yellow-950 hover:bg-yellow-300 active:bg-yellow-500 focus-visible:ring-yellow-500",
@@ -142,7 +142,7 @@ var buttonClassMap = map[ButtonVariant]map[ButtonColor]string{
 		ButtonColorStone:   "bg-stone-800 text-white hover:bg-stone-700 active:bg-stone-900 focus-visible:ring-stone-600",
 	},
 	ButtonOutline: {
-		ButtonColorNeutral: "bg-transparent text-slate-900 border border-slate-300 hover:bg-slate-50 active:bg-slate-100 focus-visible:ring-slate-400",
+		ButtonColorNeutral: "bg-transparent text-slate-900 border border-slate-300 hover:bg-slate-50 active:bg-slate-100 focus-visible:ring-slate-400 dark:text-slate-100 dark:border-slate-600 dark:hover:bg-slate-800 dark:active:bg-slate-700 dark:focus-visible:ring-slate-500",
 		ButtonColorBlue:    "bg-transparent text-blue-700 border border-blue-300 hover:bg-blue-50 active:bg-blue-100 focus-visible:ring-blue-400",
 		ButtonColorRed:     "bg-transparent text-red-700 border border-red-300 hover:bg-red-50 active:bg-red-100 focus-visible:ring-red-400",
 		ButtonColorYellow:  "bg-transparent text-yellow-700 border border-yellow-300 hover:bg-yellow-50 active:bg-yellow-100 focus-visible:ring-yellow-400",
@@ -156,7 +156,7 @@ var buttonClassMap = map[ButtonVariant]map[ButtonColor]string{
 		ButtonColorStone:   "bg-transparent text-stone-900 border border-stone-400 hover:bg-stone-100 active:bg-stone-200 focus-visible:ring-stone-500",
 	},
 	ButtonGhost: {
-		ButtonColorNeutral: "bg-transparent text-slate-700 hover:bg-slate-100 active:bg-slate-200 focus-visible:ring-slate-400",
+		ButtonColorNeutral: "bg-transparent text-slate-700 hover:bg-slate-100 active:bg-slate-200 focus-visible:ring-slate-400 dark:text-slate-300 dark:hover:bg-slate-800 dark:active:bg-slate-700 dark:focus-visible:ring-slate-500",
 		ButtonColorBlue:    "bg-transparent text-blue-700 hover:bg-blue-50 active:bg-blue-100 focus-visible:ring-blue-400",
 		ButtonColorRed:     "bg-transparent text-red-700 hover:bg-red-50 active:bg-red-100 focus-visible:ring-red-400",
 		ButtonColorYellow:  "bg-transparent text-yellow-700 hover:bg-yellow-50 active:bg-yellow-100 focus-visible:ring-yellow-400",
@@ -170,7 +170,7 @@ var buttonClassMap = map[ButtonVariant]map[ButtonColor]string{
 		ButtonColorStone:   "bg-transparent text-stone-900 hover:bg-stone-100 active:bg-stone-200 focus-visible:ring-stone-500",
 	},
 	ButtonSubtle: {
-		ButtonColorNeutral: "bg-slate-100 text-slate-900 hover:bg-slate-200 active:bg-slate-300 focus-visible:ring-slate-400",
+		ButtonColorNeutral: "bg-slate-100 text-slate-900 hover:bg-slate-200 active:bg-slate-300 focus-visible:ring-slate-400 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 dark:active:bg-slate-600 dark:focus-visible:ring-slate-500",
 		ButtonColorBlue:    "bg-blue-100 text-blue-800 hover:bg-blue-200 active:bg-blue-300 focus-visible:ring-blue-400",
 		ButtonColorRed:     "bg-red-100 text-red-800 hover:bg-red-200 active:bg-red-300 focus-visible:ring-red-400",
 		ButtonColorYellow:  "bg-yellow-100 text-yellow-900 hover:bg-yellow-200 active:bg-yellow-300 focus-visible:ring-yellow-500",
@@ -184,7 +184,7 @@ var buttonClassMap = map[ButtonVariant]map[ButtonColor]string{
 		ButtonColorStone:   "bg-stone-200 text-stone-900 hover:bg-stone-300 active:bg-stone-400 focus-visible:ring-stone-500",
 	},
 	ButtonLink: {
-		ButtonColorNeutral: "bg-transparent text-slate-700 hover:text-slate-900 active:text-slate-950 focus-visible:ring-slate-400 px-0 py-0",
+		ButtonColorNeutral: "bg-transparent text-slate-700 hover:text-slate-900 active:text-slate-950 focus-visible:ring-slate-400 dark:text-slate-300 dark:hover:text-slate-100 dark:active:text-white dark:focus-visible:ring-slate-500 px-0 py-0",
 		ButtonColorBlue:    "bg-transparent text-blue-600 hover:text-blue-800 active:text-blue-900 focus-visible:ring-blue-400 px-0 py-0",
 		ButtonColorRed:     "bg-transparent text-red-600 hover:text-red-800 active:text-red-900 focus-visible:ring-red-400 px-0 py-0",
 		ButtonColorYellow:  "bg-transparent text-yellow-700 hover:text-yellow-900 active:text-yellow-950 focus-visible:ring-yellow-400 px-0 py-0",

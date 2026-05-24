@@ -19,12 +19,12 @@ templ ItemSpritePreview() {
 	<div class="space-y-8">
 		<section class="space-y-4">
 			<h2 class="text-lg font-semibold">ItemSprite(id, class...)</h2>
-			<p class="text-sm text-slate-500">Resolves id via <code>ui.Sprites.Item</code>. Renders <code>/static/item/&lt;file&gt;.webp</code>; broken images show an X fallback.</p>
+			<p class="text-sm text-slate-500 dark:text-slate-400">Resolves id via <code>ui.Sprites.Item</code>. Renders <code>/static/item/&lt;file&gt;.webp</code>; broken images show an X fallback.</p>
 			<div class="flex flex-wrap items-center gap-4">
 				for _, s := range itemSpritePreviews {
-					<div class="flex items-center gap-3 border border-slate-200 rounded-md px-3 py-2">
+					<div class="flex items-center gap-3 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-2">
 						@ItemSprite(s.ID, "size-8")
-						<code class="text-xs text-slate-600">{ s.Label }</code>
+						<code class="text-xs text-slate-600 dark:text-slate-400">{ s.Label }</code>
 					</div>
 				}
 			</div>

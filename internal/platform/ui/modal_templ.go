@@ -78,7 +78,7 @@ func modalPanelClasses(p ModalContentProps) string {
 		sizeClass = "max-w-md"
 	}
 
-	base := "relative w-full max-h-[90dvh] lg:max-h-[80dvh] overflow-y-auto bg-white rounded-lg shadow-xl flex flex-col gap-4 p-6"
+	base := "relative w-full max-h-[90dvh] lg:max-h-[80dvh] overflow-y-auto bg-white dark:bg-slate-900 rounded-lg shadow-xl flex flex-col gap-4 p-6"
 
 	return Merge(base, sizeClass, p.Class)
 }
@@ -386,7 +386,7 @@ func ModalTitle(class ...string) templ.Component {
 			templ_7745c5c3_Var14 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		var templ_7745c5c3_Var15 = []any{MergeWithDefault("text-lg font-semibold text-slate-900", class)}
+		var templ_7745c5c3_Var15 = []any{MergeWithDefault("text-lg font-semibold text-slate-900 dark:text-slate-100", class)}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var15...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -441,7 +441,7 @@ func ModalDescription(class ...string) templ.Component {
 			templ_7745c5c3_Var17 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		var templ_7745c5c3_Var18 = []any{MergeWithDefault("text-sm text-slate-500", class)}
+		var templ_7745c5c3_Var18 = []any{MergeWithDefault("text-sm text-slate-500 dark:text-slate-400", class)}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var18...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -606,7 +606,7 @@ func ModalPreview() templ.Component {
 			templ_7745c5c3_Var26 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<div class=\"space-y-8\"><section class=\"space-y-4\"><h2 class=\"text-lg font-semibold\">Confirm dialog</h2><p class=\"text-sm text-slate-500\">Backdrop click, ESC, and body scroll-lock are all on by default.</p>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<div class=\"space-y-8\"><section class=\"space-y-4\"><h2 class=\"text-lg font-semibold\">Confirm dialog</h2><p class=\"text-sm text-slate-500 dark:text-slate-400\">Backdrop click, ESC, and body scroll-lock are all on by default.</p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -938,7 +938,7 @@ func ModalPreview() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, " <p class=\"text-sm text-slate-700\">max-w-sm</p>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, " <p class=\"text-sm text-slate-700 dark:text-slate-300\">max-w-sm</p>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -1102,7 +1102,7 @@ func ModalPreview() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, " <p class=\"text-sm text-slate-700\">max-w-md (default)</p>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, " <p class=\"text-sm text-slate-700 dark:text-slate-300\">max-w-md (default)</p>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -1266,7 +1266,7 @@ func ModalPreview() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 55, " <p class=\"text-sm text-slate-700\">max-w-lg</p>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 55, " <p class=\"text-sm text-slate-700 dark:text-slate-300\">max-w-lg</p>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -1430,7 +1430,7 @@ func ModalPreview() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 60, " <p class=\"text-sm text-slate-700\">max-w-2xl</p>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 60, " <p class=\"text-sm text-slate-700 dark:text-slate-300\">max-w-2xl</p>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -1594,7 +1594,7 @@ func ModalPreview() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 65, " <p class=\"text-sm text-slate-700\">Override max-width via Class for anything beyond the size presets.</p>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 65, " <p class=\"text-sm text-slate-700 dark:text-slate-300\">Override max-width via Class for anything beyond the size presets.</p>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -2238,7 +2238,7 @@ func ModalPreview() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 91, " <div class=\"space-y-3 text-sm text-slate-700\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 91, " <div class=\"space-y-3 text-sm text-slate-700 dark:text-slate-300\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -2348,7 +2348,7 @@ func ModalPreview() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 97, "</section><section class=\"space-y-4\"><h2 class=\"text-lg font-semibold\">HTMX (Attrs)</h2><p class=\"text-sm text-slate-500\">Wire the panel up to HTMX via Attrs — for example, submit a form inside without leaving the modal.</p>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 97, "</section><section class=\"space-y-4\"><h2 class=\"text-lg font-semibold\">HTMX (Attrs)</h2><p class=\"text-sm text-slate-500 dark:text-slate-400\">Wire the panel up to HTMX via Attrs — for example, submit a form inside without leaving the modal.</p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2442,7 +2442,7 @@ func ModalPreview() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 101, " <p class=\"text-sm text-slate-500\">Replace the panel with the server's response.</p>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 101, " <p class=\"text-sm text-slate-500 dark:text-slate-400\">Replace the panel with the server's response.</p>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

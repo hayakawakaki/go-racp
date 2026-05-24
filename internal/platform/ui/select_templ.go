@@ -103,7 +103,7 @@ func selectRoundedClass(r SelectRounded) string {
 }
 
 func selectClasses(p SelectProps) string {
-	base := "block w-full bg-white border transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-inset disabled:opacity-50 disabled:cursor-not-allowed"
+	base := "block w-full bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-inset disabled:opacity-50 disabled:cursor-not-allowed"
 
 	var sizeClasses string
 
@@ -121,7 +121,7 @@ func selectClasses(p SelectProps) string {
 	if p.Invalid {
 		stateClasses = "border-red-500 focus-visible:ring-red-500"
 	} else {
-		stateClasses = "border-slate-300 " + selectFocusRing(p.Color)
+		stateClasses = "border-slate-300 dark:border-slate-600 " + selectFocusRing(p.Color)
 	}
 
 	return Merge(base, sizeClasses, selectRoundedClass(p.Rounded), stateClasses, p.Class)

@@ -61,7 +61,7 @@ func formAttrs(p FormProps) templ.Attributes {
 templ Form(p FormProps) {
 	<form class={ Merge(formStackClasses(p.Spacing), p.Class) } { formAttrs(p)... }>
 		if p.Title != "" {
-			<h2 class="text-xl font-semibold text-slate-900">{ p.Title }</h2>
+			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">{ p.Title }</h2>
 		}
 		if formNeedsCSRF(p) {
 			@security.HiddenField()

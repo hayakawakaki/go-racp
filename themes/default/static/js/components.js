@@ -44,7 +44,7 @@ document.addEventListener('alpine:init', () => {
                 md: 'min-w-[280px] max-w-sm px-4 py-3 text-sm gap-3',
                 lg: 'min-w-[360px] max-w-md px-5 py-4 text-base gap-3',
             };
-            const variant = variants[type] || 'bg-white border-slate-200 text-slate-900';
+            const variant = variants[type] || 'bg-white border-slate-200 text-slate-900 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100';
             const sizing = sizes[size] || sizes.md;
             return 'pointer-events-auto rounded-lg border shadow-md flex items-start ' + sizing + ' ' + variant;
         },

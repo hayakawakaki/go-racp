@@ -42,7 +42,7 @@ func galleryShell(title string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</title><link rel=\"stylesheet\" href=\"/static/css/app.css\"><script src=\"/themes/default/static/vendor/htmx-2.0.9.min.js\" defer></script><script src=\"/themes/default/static/js/components.js\" defer></script><script src=\"/themes/default/static/vendor/alpine-3.15.12.min.js\" defer></script></head><body class=\"min-h-screen bg-white text-slate-900 font-sans antialiased\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</title><link rel=\"stylesheet\" href=\"/static/css/app.css\"><script src=\"/themes/default/static/vendor/htmx-2.0.9.min.js\" defer></script><script src=\"/themes/default/static/js/components.js\" defer></script><script src=\"/themes/default/static/vendor/alpine-3.15.12.min.js\" defer></script></head><body class=\"min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -96,7 +96,7 @@ func galleryIndex(components []Component) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			if len(components) == 0 {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<p class=\"text-slate-600\">No components registered.</p>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<p class=\"text-slate-600 dark:text-slate-400\">No components registered.</p>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

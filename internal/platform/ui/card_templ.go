@@ -109,21 +109,21 @@ func cardRoundedClass(r CardRounded) string {
 
 var cardClassMap = map[CardVariant]map[CardColor]string{
 	CardSolid: {
-		CardColorNeutral: "bg-white border border-slate-200 shadow-sm",
-		CardColorBlue:    "bg-white border border-blue-200 shadow-sm",
-		CardColorRed:     "bg-white border border-red-200 shadow-sm",
-		CardColorYellow:  "bg-white border border-yellow-200 shadow-sm",
-		CardColorGreen:   "bg-white border border-green-200 shadow-sm",
-		CardColorOrange:  "bg-white border border-orange-200 shadow-sm",
-		CardColorPurple:  "bg-white border border-purple-200 shadow-sm",
-		CardColorPink:    "bg-white border border-pink-200 shadow-sm",
-		CardColorIndigo:  "bg-white border border-indigo-200 shadow-sm",
-		CardColorTeal:    "bg-white border border-teal-200 shadow-sm",
-		CardColorZinc:    "bg-white border border-zinc-300 shadow-sm",
-		CardColorStone:   "bg-white border border-stone-300 shadow-sm",
+		CardColorNeutral: "bg-white dark:bg-slate-900 border border-slate-200 shadow-sm dark:bg-slate-900 dark:border-slate-700",
+		CardColorBlue:    "bg-white dark:bg-slate-900 border border-blue-200 shadow-sm",
+		CardColorRed:     "bg-white dark:bg-slate-900 border border-red-200 shadow-sm",
+		CardColorYellow:  "bg-white dark:bg-slate-900 border border-yellow-200 shadow-sm",
+		CardColorGreen:   "bg-white dark:bg-slate-900 border border-green-200 shadow-sm",
+		CardColorOrange:  "bg-white dark:bg-slate-900 border border-orange-200 shadow-sm",
+		CardColorPurple:  "bg-white dark:bg-slate-900 border border-purple-200 shadow-sm",
+		CardColorPink:    "bg-white dark:bg-slate-900 border border-pink-200 shadow-sm",
+		CardColorIndigo:  "bg-white dark:bg-slate-900 border border-indigo-200 shadow-sm",
+		CardColorTeal:    "bg-white dark:bg-slate-900 border border-teal-200 shadow-sm",
+		CardColorZinc:    "bg-white dark:bg-slate-900 border border-zinc-300 shadow-sm",
+		CardColorStone:   "bg-white dark:bg-slate-900 border border-stone-300 shadow-sm",
 	},
 	CardOutline: {
-		CardColorNeutral: "bg-transparent border border-slate-300",
+		CardColorNeutral: "bg-transparent border border-slate-300 dark:border-slate-600",
 		CardColorBlue:    "bg-transparent border border-blue-400",
 		CardColorRed:     "bg-transparent border border-red-400",
 		CardColorYellow:  "bg-transparent border border-yellow-400",
@@ -137,7 +137,7 @@ var cardClassMap = map[CardVariant]map[CardColor]string{
 		CardColorStone:   "bg-transparent border border-stone-500",
 	},
 	CardSubtle: {
-		CardColorNeutral: "bg-slate-50 border border-slate-200",
+		CardColorNeutral: "bg-slate-50 border border-slate-200 dark:bg-slate-800 dark:border-slate-700",
 		CardColorBlue:    "bg-blue-50 border border-blue-200",
 		CardColorRed:     "bg-red-50 border border-red-200",
 		CardColorYellow:  "bg-yellow-50 border border-yellow-200",
@@ -151,18 +151,18 @@ var cardClassMap = map[CardVariant]map[CardColor]string{
 		CardColorStone:   "bg-stone-100 border border-stone-200",
 	},
 	CardElevated: {
-		CardColorNeutral: "bg-white shadow-md",
-		CardColorBlue:    "bg-white shadow-md ring-1 ring-blue-100",
-		CardColorRed:     "bg-white shadow-md ring-1 ring-red-100",
-		CardColorYellow:  "bg-white shadow-md ring-1 ring-yellow-100",
-		CardColorGreen:   "bg-white shadow-md ring-1 ring-green-100",
-		CardColorOrange:  "bg-white shadow-md ring-1 ring-orange-100",
-		CardColorPurple:  "bg-white shadow-md ring-1 ring-purple-100",
-		CardColorPink:    "bg-white shadow-md ring-1 ring-pink-100",
-		CardColorIndigo:  "bg-white shadow-md ring-1 ring-indigo-100",
-		CardColorTeal:    "bg-white shadow-md ring-1 ring-teal-100",
-		CardColorZinc:    "bg-white shadow-md ring-1 ring-zinc-200",
-		CardColorStone:   "bg-white shadow-md ring-1 ring-stone-200",
+		CardColorNeutral: "bg-white dark:bg-slate-900 shadow-md dark:bg-slate-900",
+		CardColorBlue:    "bg-white dark:bg-slate-900 shadow-md ring-1 ring-blue-100",
+		CardColorRed:     "bg-white dark:bg-slate-900 shadow-md ring-1 ring-red-100",
+		CardColorYellow:  "bg-white dark:bg-slate-900 shadow-md ring-1 ring-yellow-100",
+		CardColorGreen:   "bg-white dark:bg-slate-900 shadow-md ring-1 ring-green-100",
+		CardColorOrange:  "bg-white dark:bg-slate-900 shadow-md ring-1 ring-orange-100",
+		CardColorPurple:  "bg-white dark:bg-slate-900 shadow-md ring-1 ring-purple-100",
+		CardColorPink:    "bg-white dark:bg-slate-900 shadow-md ring-1 ring-pink-100",
+		CardColorIndigo:  "bg-white dark:bg-slate-900 shadow-md ring-1 ring-indigo-100",
+		CardColorTeal:    "bg-white dark:bg-slate-900 shadow-md ring-1 ring-teal-100",
+		CardColorZinc:    "bg-white dark:bg-slate-900 shadow-md ring-1 ring-zinc-200",
+		CardColorStone:   "bg-white dark:bg-slate-900 shadow-md ring-1 ring-stone-200",
 	},
 }
 
@@ -309,7 +309,7 @@ func CardTitle(class ...string) templ.Component {
 			templ_7745c5c3_Var7 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		var templ_7745c5c3_Var8 = []any{MergeWithDefault("text-base font-semibold text-slate-900", class)}
+		var templ_7745c5c3_Var8 = []any{MergeWithDefault("text-base font-semibold text-slate-900 dark:text-slate-100", class)}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var8...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -364,7 +364,7 @@ func CardDescription(class ...string) templ.Component {
 			templ_7745c5c3_Var10 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		var templ_7745c5c3_Var11 = []any{MergeWithDefault("text-sm text-slate-500", class)}
+		var templ_7745c5c3_Var11 = []any{MergeWithDefault("text-sm text-slate-500 dark:text-slate-400", class)}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var11...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -556,7 +556,7 @@ func CardPreview() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, " <p class=\"text-sm text-slate-700\">Card body content goes here.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, " <p class=\"text-sm text-slate-700 dark:text-slate-300\">Card body content goes here.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -644,7 +644,7 @@ func CardPreview() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, " <p class=\"text-sm text-slate-700\">Card body content goes here.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, " <p class=\"text-sm text-slate-700 dark:text-slate-300\">Card body content goes here.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -732,7 +732,7 @@ func CardPreview() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, " <p class=\"text-sm text-slate-700\">Card body content goes here.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, " <p class=\"text-sm text-slate-700 dark:text-slate-300\">Card body content goes here.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -820,7 +820,7 @@ func CardPreview() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, " <p class=\"text-sm text-slate-700\">Card body content goes here.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, " <p class=\"text-sm text-slate-700 dark:text-slate-300\">Card body content goes here.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1560,7 +1560,7 @@ func CardPreview() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, " <p class=\"text-sm text-slate-700\">Body</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, " <p class=\"text-sm text-slate-700 dark:text-slate-300\">Body</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1648,7 +1648,7 @@ func CardPreview() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 60, " <p class=\"text-sm text-slate-700\">Body</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 60, " <p class=\"text-sm text-slate-700 dark:text-slate-300\">Body</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1736,7 +1736,7 @@ func CardPreview() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 64, " <p class=\"text-sm text-slate-700\">Body</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 64, " <p class=\"text-sm text-slate-700 dark:text-slate-300\">Body</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -2032,7 +2032,7 @@ func CardPreview() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 75, " <p class=\"text-sm text-slate-700\">Review the diff below before saving.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 75, " <p class=\"text-sm text-slate-700 dark:text-slate-300\">Review the diff below before saving.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -2180,7 +2180,7 @@ func CardPreview() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, " <p class=\"text-sm text-slate-700\">Pass classes to CardHeader to override the default stack.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, " <p class=\"text-sm text-slate-700 dark:text-slate-300\">Pass classes to CardHeader to override the default stack.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -2254,7 +2254,7 @@ func CardPreview() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 88, " <p class=\"text-sm text-slate-500\">Loading…</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 88, " <p class=\"text-sm text-slate-500 dark:text-slate-400\">Loading…</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -2309,7 +2309,7 @@ func CardPreview() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 91, " <p class=\"text-sm text-slate-700\">Class merges into the variant classes.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 91, " <p class=\"text-sm text-slate-700 dark:text-slate-300\">Class merges into the variant classes.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

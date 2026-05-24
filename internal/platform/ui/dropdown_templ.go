@@ -54,7 +54,7 @@ func dropdownMenuClasses(p DropdownMenuProps) string {
 		side = DropdownSideBottom
 	}
 
-	base := "absolute z-40 min-w-[12rem] rounded-md border border-slate-200 bg-white shadow-lg p-1 flex flex-col"
+	base := "absolute z-40 min-w-[12rem] rounded-md border border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-700 shadow-lg p-1 flex flex-col"
 
 	var sideClass string
 
@@ -86,11 +86,11 @@ func dropdownItemClasses(p DropdownItemProps) string {
 
 	switch {
 	case p.Disabled:
-		state = "text-slate-400 cursor-not-allowed pointer-events-none"
+		state = "text-slate-400 cursor-not-allowed pointer-events-none dark:text-slate-500"
 	case p.Destructive:
-		state = "text-red-700 hover:bg-red-50 active:bg-red-100"
+		state = "text-red-700 hover:bg-red-50 active:bg-red-100 dark:text-red-400 dark:hover:bg-red-950 dark:active:bg-red-900"
 	default:
-		state = "text-slate-700 hover:bg-slate-100 active:bg-slate-200"
+		state = "text-slate-700 hover:bg-slate-100 active:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-800 dark:active:bg-slate-700"
 	}
 
 	return Merge(base, state, p.Class)
@@ -425,7 +425,7 @@ func DropdownSeparator() templ.Component {
 			templ_7745c5c3_Var16 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<hr class=\"my-1 border-slate-200\" role=\"separator\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<hr class=\"my-1 border-slate-200 dark:border-slate-700\" role=\"separator\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -454,7 +454,7 @@ func DropdownLabel(class ...string) templ.Component {
 			templ_7745c5c3_Var17 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		var templ_7745c5c3_Var18 = []any{MergeWithDefault("px-3 py-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wide", class)}
+		var templ_7745c5c3_Var18 = []any{MergeWithDefault("px-3 py-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide", class)}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var18...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err

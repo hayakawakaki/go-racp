@@ -102,7 +102,7 @@ func textAreaRoundedClass(r TextAreaRounded) string {
 }
 
 func textAreaClasses(p TextAreaProps) string {
-	base := "block w-full bg-white border transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-inset disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-slate-400"
+	base := "block w-full bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-inset disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-slate-400 dark:placeholder:text-slate-500"
 
 	var sizeClasses string
 
@@ -120,7 +120,7 @@ func textAreaClasses(p TextAreaProps) string {
 	if p.Invalid {
 		stateClasses = "border-red-500 focus-visible:ring-red-500"
 	} else {
-		stateClasses = "border-slate-300 " + textAreaFocusRing(p.Color)
+		stateClasses = "border-slate-300 dark:border-slate-600 " + textAreaFocusRing(p.Color)
 	}
 
 	return Merge(base, sizeClasses, textAreaRoundedClass(p.Rounded), stateClasses, p.Class)
