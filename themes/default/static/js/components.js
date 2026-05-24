@@ -50,6 +50,19 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
+    Alpine.data('dropdown', () => ({
+        open: false,
+        toggle() {
+            this.open = !this.open;
+        },
+        show() {
+            this.open = true;
+        },
+        close() {
+            this.open = false;
+        },
+    }));
+
     Alpine.magic('toast', () => {
         return (type, message, duration, size) => {
             window.dispatchEvent(new CustomEvent('toast', {
