@@ -1,8 +1,17 @@
 package ui
 
+type AccordionSize string
+
+const (
+	AccordionSizeSM AccordionSize = "sm"
+	AccordionSizeMD AccordionSize = "md"
+	AccordionSizeLG AccordionSize = "lg"
+)
+
 type AccordionProps struct {
 	Attrs templ.Attributes
 	Class string
+	Size  AccordionSize
 }
 
 type AccordionItemProps struct {
@@ -22,11 +31,11 @@ type AccordionContentProps struct {
 }
 
 func accordionClasses(p AccordionProps) string {
-	return Merge("flex w-full flex-col", p.Class)
+	return Merge("group/accordion flex w-full flex-col", p.Class)
 }
 
 func accordionItemClasses(p AccordionItemProps) string {
-	return Merge("group border-b border-slate-200 last:border-b-0 dark:border-slate-700", p.Class)
+	return Merge("group/item border-b border-slate-200 last:border-b-0 dark:border-slate-700", p.Class)
 }
 
 func accordionStateAttr(open bool) string {
@@ -37,18 +46,33 @@ func accordionStateAttr(open bool) string {
 	return "closed"
 }
 
-func accordionTriggerClasses(p AccordionTriggerProps) string {
-	base := "group flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:focus-visible:ring-slate-500"
+func accordionSizeAttr(s AccordionSize) string {
+	switch s {
+	case AccordionSizeSM:
+		return "sm"
+	case AccordionSizeLG:
+		return "lg"
+	default:
+		return "md"
+	}
+}
 
-	return Merge(base, p.Class)
+func accordionTriggerClasses(p AccordionTriggerProps) string {
+	base := "group/trigger flex w-full items-center justify-between gap-3 text-left font-medium text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:focus-visible:ring-slate-500"
+	sizing := "group-data-[size=sm]/accordion:px-3 group-data-[size=sm]/accordion:py-2 group-data-[size=sm]/accordion:text-xs group-data-[size=md]/accordion:px-4 group-data-[size=md]/accordion:py-3 group-data-[size=md]/accordion:text-sm group-data-[size=lg]/accordion:px-5 group-data-[size=lg]/accordion:py-4 group-data-[size=lg]/accordion:text-base"
+
+	return Merge(base, sizing, p.Class)
 }
 
 func accordionContentClasses(p AccordionContentProps) string {
-	return Merge("px-4 pt-1 pb-4 text-sm text-slate-600 dark:text-slate-400", p.Class)
+	base := "text-slate-600 dark:text-slate-400"
+	sizing := "group-data-[size=sm]/accordion:px-3 group-data-[size=sm]/accordion:pt-0.5 group-data-[size=sm]/accordion:pb-3 group-data-[size=sm]/accordion:text-xs group-data-[size=md]/accordion:px-4 group-data-[size=md]/accordion:pt-1 group-data-[size=md]/accordion:pb-4 group-data-[size=md]/accordion:text-sm group-data-[size=lg]/accordion:px-5 group-data-[size=lg]/accordion:pt-1.5 group-data-[size=lg]/accordion:pb-5 group-data-[size=lg]/accordion:text-base"
+
+	return Merge(base, sizing, p.Class)
 }
 
 templ Accordion(p AccordionProps) {
-	<div class={ accordionClasses(p) } { p.Attrs... }>
+	<div class={ accordionClasses(p) } data-size={ accordionSizeAttr(p.Size) } { p.Attrs... }>
 		{ children... }
 	</div>
 }
@@ -76,13 +100,13 @@ templ AccordionTrigger(p AccordionTriggerProps) {
 		<span class="min-w-0 flex-1">
 			{ children... }
 		</span>
-		@Icon("chevron-down", "size-4 shrink-0 text-slate-500 dark:text-slate-400 transition-transform group-aria-expanded:rotate-180")
+		@Icon("chevron-down", "shrink-0 text-slate-500 dark:text-slate-400 transition-transform group-aria-expanded/trigger:rotate-180 group-data-[size=sm]/accordion:size-3.5 group-data-[size=md]/accordion:size-4 group-data-[size=lg]/accordion:size-5")
 	</button>
 }
 
 templ AccordionContent(p AccordionContentProps) {
 	<div
-		class="grid grid-rows-[0fr] transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none group-data-[state=open]:grid-rows-[1fr]"
+		class="grid grid-rows-[0fr] transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none group-data-[state=open]/item:grid-rows-[1fr]"
 		role="region"
 		{ p.Attrs... }
 	>
@@ -124,6 +148,65 @@ templ AccordionPreview() {
 					}
 				}
 			}
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Sizes</h2>
+			<div class="flex flex-col gap-6">
+				@Accordion(AccordionProps{Size: AccordionSizeSM}) {
+					@AccordionItem(AccordionItemProps{}) {
+						@AccordionTrigger(AccordionTriggerProps{}) {
+							Small
+						}
+						@AccordionContent(AccordionContentProps{}) {
+							Compact spacing and text. Suited for dense sidebar nav.
+						}
+					}
+					@AccordionItem(AccordionItemProps{}) {
+						@AccordionTrigger(AccordionTriggerProps{}) {
+							Another small item
+						}
+						@AccordionContent(AccordionContentProps{}) {
+							Body text.
+						}
+					}
+				}
+				@Accordion(AccordionProps{Size: AccordionSizeMD}) {
+					@AccordionItem(AccordionItemProps{}) {
+						@AccordionTrigger(AccordionTriggerProps{}) {
+							Medium (default)
+						}
+						@AccordionContent(AccordionContentProps{}) {
+							Default spacing and text size.
+						}
+					}
+					@AccordionItem(AccordionItemProps{}) {
+						@AccordionTrigger(AccordionTriggerProps{}) {
+							Another medium item
+						}
+						@AccordionContent(AccordionContentProps{}) {
+							Body text.
+						}
+					}
+				}
+				@Accordion(AccordionProps{Size: AccordionSizeLG}) {
+					@AccordionItem(AccordionItemProps{}) {
+						@AccordionTrigger(AccordionTriggerProps{}) {
+							Large
+						}
+						@AccordionContent(AccordionContentProps{}) {
+							Roomier spacing and bigger text. Suited for landing or FAQ sections.
+						}
+					}
+					@AccordionItem(AccordionItemProps{}) {
+						@AccordionTrigger(AccordionTriggerProps{}) {
+							Another large item
+						}
+						@AccordionContent(AccordionContentProps{}) {
+							Body text.
+						}
+					}
+				}
+			</div>
 		</section>
 		<section class="space-y-4">
 			<h2 class="text-lg font-semibold">Default open</h2>
