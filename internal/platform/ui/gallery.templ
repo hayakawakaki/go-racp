@@ -8,6 +8,9 @@ templ galleryShell(title string) {
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
 			<title>Components / { title }</title>
 			<link rel="stylesheet" href="/static/css/app.css"/>
+			<script src="/themes/default/static/vendor/htmx-2.0.9.min.js" defer></script>
+			<script src="/themes/default/static/js/components.js" defer></script>
+			<script src="/themes/default/static/vendor/alpine-3.15.12.min.js" defer></script>
 		</head>
 		<body class="min-h-screen bg-white text-slate-900 font-sans antialiased">
 			{ children... }

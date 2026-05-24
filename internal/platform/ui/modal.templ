@@ -1,0 +1,410 @@
+package ui
+
+import "strconv"
+
+type ModalSize string
+
+const (
+	ModalSizeSM ModalSize = "sm"
+	ModalSizeMD ModalSize = "md"
+	ModalSizeLG ModalSize = "lg"
+	ModalSizeXL ModalSize = "xl"
+)
+
+type ModalProps struct {
+	Attrs templ.Attributes
+	Class string
+	Open  bool
+}
+
+type ModalContentProps struct {
+	Attrs          templ.Attributes
+	Size           ModalSize
+	Class          string
+	StaticBackdrop bool
+	NoEscapeClose  bool
+	NoScrollLock   bool
+}
+
+func modalOuterAttrs(p ModalContentProps) templ.Attributes {
+	attrs := templ.Attributes{}
+
+	if !p.NoEscapeClose {
+		attrs["@keydown.escape.window"] = "open = false"
+	}
+
+	if !p.NoScrollLock {
+		attrs["x-effect"] = "lockScroll()"
+	}
+
+	return attrs
+}
+
+func modalBackdropAttrs(p ModalContentProps) templ.Attributes {
+	attrs := templ.Attributes{}
+
+	if !p.StaticBackdrop {
+		attrs["@click.self"] = "open = false"
+	}
+
+	return attrs
+}
+
+func modalPanelClasses(p ModalContentProps) string {
+	size := p.Size
+	if size == "" {
+		size = ModalSizeMD
+	}
+
+	var sizeClass string
+
+	switch size {
+	case ModalSizeSM:
+		sizeClass = "max-w-sm"
+	case ModalSizeLG:
+		sizeClass = "max-w-lg"
+	case ModalSizeXL:
+		sizeClass = "max-w-2xl"
+	default:
+		sizeClass = "max-w-md"
+	}
+
+	base := "relative w-full max-h-[90dvh] lg:max-h-[80dvh] overflow-y-auto bg-white rounded-lg shadow-xl flex flex-col gap-4 p-6"
+
+	return Merge(base, sizeClass, p.Class)
+}
+
+templ Modal(p ModalProps) {
+	<div x-data="modal" data-modal-open={ strconv.FormatBool(p.Open) } class={ p.Class } { p.Attrs... }>
+		{ children... }
+	</div>
+}
+
+templ ModalTrigger(class ...string) {
+	<div @click="open = true" class={ MergeWithDefault("inline-block", class) }>
+		{ children... }
+	</div>
+}
+
+templ ModalContent(p ModalContentProps) {
+	<div
+		x-show="open"
+		x-cloak
+		x-transition.opacity
+		style="display: none"
+		class="fixed inset-0 z-50 overflow-y-auto bg-black/50"
+		{ modalOuterAttrs(p)... }
+	>
+		<div class="flex min-h-full items-center justify-center p-4" { modalBackdropAttrs(p)... }>
+			<div class={ modalPanelClasses(p) } role="dialog" aria-modal="true" { p.Attrs... }>
+				{ children... }
+			</div>
+		</div>
+	</div>
+}
+
+templ ModalHeader(class ...string) {
+	<div class={ MergeWithDefault("space-y-1", class) }>
+		{ children... }
+	</div>
+}
+
+templ ModalTitle(class ...string) {
+	<h2 class={ MergeWithDefault("text-lg font-semibold text-slate-900", class) }>
+		{ children... }
+	</h2>
+}
+
+templ ModalDescription(class ...string) {
+	<p class={ MergeWithDefault("text-sm text-slate-500", class) }>
+		{ children... }
+	</p>
+}
+
+templ ModalFooter(class ...string) {
+	<div class={ MergeWithDefault("flex items-center", class) }>
+		{ children... }
+	</div>
+}
+
+templ ModalClose(class ...string) {
+	<div @click="open = false" class={ MergeWithDefault("inline-block", class) }>
+		{ children... }
+	</div>
+}
+
+templ ModalPreview() {
+	<div class="space-y-8">
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Confirm dialog</h2>
+			<p class="text-sm text-slate-500">Backdrop click, ESC, and body scroll-lock are all on by default.</p>
+			@Modal(ModalProps{}) {
+				@ModalTrigger() {
+					@Button(ButtonProps{Color: ButtonColorRed}) {
+						Delete item
+					}
+				}
+				@ModalContent(ModalContentProps{}) {
+					@ModalHeader() {
+						@ModalTitle() {
+							Delete this item?
+						}
+						@ModalDescription() {
+							This action cannot be undone.
+						}
+					}
+					@ModalFooter("justify-end gap-2") {
+						@ModalClose() {
+							@Button(ButtonProps{Variant: ButtonGhost}) {
+								Cancel
+							}
+						}
+						@Button(ButtonProps{Color: ButtonColorRed}) {
+							Delete
+						}
+					}
+				}
+			}
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Sizes</h2>
+			<div class="flex flex-wrap items-center gap-3">
+				@Modal(ModalProps{}) {
+					@ModalTrigger() {
+						@Button(ButtonProps{Variant: ButtonOutline}) {
+							Small
+						}
+					}
+					@ModalContent(ModalContentProps{Size: ModalSizeSM}) {
+						@ModalTitle() {
+							Small modal
+						}
+						<p class="text-sm text-slate-700">max-w-sm</p>
+						@ModalFooter("justify-end") {
+							@ModalClose() {
+								@Button(ButtonProps{Variant: ButtonGhost}) {
+									Close
+								}
+							}
+						}
+					}
+				}
+				@Modal(ModalProps{}) {
+					@ModalTrigger() {
+						@Button(ButtonProps{Variant: ButtonOutline}) {
+							Medium
+						}
+					}
+					@ModalContent(ModalContentProps{Size: ModalSizeMD}) {
+						@ModalTitle() {
+							Medium modal
+						}
+						<p class="text-sm text-slate-700">max-w-md (default)</p>
+						@ModalFooter("justify-end") {
+							@ModalClose() {
+								@Button(ButtonProps{Variant: ButtonGhost}) {
+									Close
+								}
+							}
+						}
+					}
+				}
+				@Modal(ModalProps{}) {
+					@ModalTrigger() {
+						@Button(ButtonProps{Variant: ButtonOutline}) {
+							Large
+						}
+					}
+					@ModalContent(ModalContentProps{Size: ModalSizeLG}) {
+						@ModalTitle() {
+							Large modal
+						}
+						<p class="text-sm text-slate-700">max-w-lg</p>
+						@ModalFooter("justify-end") {
+							@ModalClose() {
+								@Button(ButtonProps{Variant: ButtonGhost}) {
+									Close
+								}
+							}
+						}
+					}
+				}
+				@Modal(ModalProps{}) {
+					@ModalTrigger() {
+						@Button(ButtonProps{Variant: ButtonOutline}) {
+							Extra large
+						}
+					}
+					@ModalContent(ModalContentProps{Size: ModalSizeXL}) {
+						@ModalTitle() {
+							Extra large modal
+						}
+						<p class="text-sm text-slate-700">max-w-2xl</p>
+						@ModalFooter("justify-end") {
+							@ModalClose() {
+								@Button(ButtonProps{Variant: ButtonGhost}) {
+									Close
+								}
+							}
+						}
+					}
+				}
+				@Modal(ModalProps{}) {
+					@ModalTrigger() {
+						@Button(ButtonProps{Variant: ButtonOutline}) {
+							Full
+						}
+					}
+					@ModalContent(ModalContentProps{Class: "max-w-[95vw]"}) {
+						@ModalTitle() {
+							Full-width modal
+						}
+						<p class="text-sm text-slate-700">Override max-width via Class for anything beyond the size presets.</p>
+						@ModalFooter("justify-end") {
+							@ModalClose() {
+								@Button(ButtonProps{Variant: ButtonGhost}) {
+									Close
+								}
+							}
+						}
+					}
+				}
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Static backdrop (no click-outside dismiss)</h2>
+			@Modal(ModalProps{}) {
+				@ModalTrigger() {
+					@Button(ButtonProps{}) {
+						Open
+					}
+				}
+				@ModalContent(ModalContentProps{StaticBackdrop: true}) {
+					@ModalTitle() {
+						You must choose
+					}
+					@ModalDescription() {
+						Backdrop clicks are ignored. Use the buttons or press ESC.
+					}
+					@ModalFooter("justify-end gap-2") {
+						@ModalClose() {
+							@Button(ButtonProps{Variant: ButtonGhost}) {
+								Cancel
+							}
+						}
+						@ModalClose() {
+							@Button(ButtonProps{Color: ButtonColorBlue}) {
+								OK
+							}
+						}
+					}
+				}
+			}
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">No ESC close</h2>
+			@Modal(ModalProps{}) {
+				@ModalTrigger() {
+					@Button(ButtonProps{}) {
+						Open
+					}
+				}
+				@ModalContent(ModalContentProps{NoEscapeClose: true}) {
+					@ModalTitle() {
+						ESC is disabled
+					}
+					@ModalDescription() {
+						Backdrop click still dismisses.
+					}
+					@ModalFooter("justify-end") {
+						@ModalClose() {
+							@Button(ButtonProps{Variant: ButtonGhost}) {
+								Close
+							}
+						}
+					}
+				}
+			}
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Long content (scrolls inside the modal)</h2>
+			@Modal(ModalProps{}) {
+				@ModalTrigger() {
+					@Button(ButtonProps{Variant: ButtonOutline}) {
+						Open long modal
+					}
+				}
+				@ModalContent(ModalContentProps{Size: ModalSizeLG}) {
+					@ModalHeader() {
+						@ModalTitle() {
+							Terms of service
+						}
+						@ModalDescription() {
+							Scroll wraps via the modal overlay, not the page.
+						}
+					}
+					<div class="space-y-3 text-sm text-slate-700">
+						for range 12 {
+							<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum imperdiet, nulla et dictum interdum, nisi lorem egestas vitae scelerisque enim ligula venenatis dolor.</p>
+						}
+					</div>
+					@ModalFooter("justify-end gap-2") {
+						@ModalClose() {
+							@Button(ButtonProps{Variant: ButtonGhost}) {
+								Decline
+							}
+						}
+						@Button(ButtonProps{Color: ButtonColorBlue}) {
+							Accept
+						}
+					}
+				}
+			}
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">HTMX (Attrs)</h2>
+			<p class="text-sm text-slate-500">Wire the panel up to HTMX via Attrs — for example, submit a form inside without leaving the modal.</p>
+			@Modal(ModalProps{}) {
+				@ModalTrigger() {
+					@Button(ButtonProps{Variant: ButtonOutline, LeftIcon: Icon("edit")}) {
+						Edit
+					}
+				}
+				@ModalContent(ModalContentProps{
+					Attrs: templ.Attributes{
+						"hx-target": "this",
+						"hx-swap":   "outerHTML",
+					},
+				}) {
+					@ModalTitle() {
+						Edit item
+					}
+					<p class="text-sm text-slate-500">Replace the panel with the server's response.</p>
+					@ModalFooter("justify-end gap-2") {
+						@ModalClose() {
+							@Button(ButtonProps{Variant: ButtonGhost}) {
+								Cancel
+							}
+						}
+						@Button(ButtonProps{
+							Color: ButtonColorBlue,
+							Attrs: templ.Attributes{
+								"hx-post": "/items/1",
+							},
+						}) {
+							Save
+						}
+					}
+				}
+			}
+		</section>
+	</div>
+}
+
+func init() {
+	Register(Component{
+		Name:   "modal",
+		Title:  "Modal",
+		Render: ModalPreview,
+	})
+}

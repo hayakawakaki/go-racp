@@ -44,16 +44,12 @@ const (
 )
 
 type CardProps struct {
-	Header      templ.Component
-	Footer      templ.Component
-	Attrs       templ.Attributes
-	Variant     CardVariant
-	Color       CardColor
-	Size        CardSize
-	Rounded     CardRounded
-	Title       string
-	Description string
-	Class       string
+	Attrs   templ.Attributes
+	Variant CardVariant
+	Color   CardColor
+	Size    CardSize
+	Rounded CardRounded
+	Class   string
 }
 
 func cardClasses(p CardProps) string {
@@ -168,45 +164,31 @@ func cardVariantClasses(variant CardVariant, color CardColor) string {
 
 templ Card(p CardProps) {
 	<div class={ cardClasses(p) } { p.Attrs... }>
-		if p.Header != nil {
-			@p.Header
-		} else if p.Title != "" || p.Description != "" {
-			<div class="space-y-1">
-				if p.Title != "" {
-					<h3 class="text-base font-semibold text-slate-900">{ p.Title }</h3>
-				}
-				if p.Description != "" {
-					<p class="text-sm text-slate-500">{ p.Description }</p>
-				}
-			</div>
-		}
 		{ children... }
-		if p.Footer != nil {
-			@p.Footer
-		}
 	</div>
 }
 
-templ cardPreviewFooter() {
-	<div class="flex justify-end gap-2 pt-1">
-		@Button(ButtonProps{Variant: ButtonGhost, Size: ButtonSizeSM}) {
-			Cancel
-		}
-		@Button(ButtonProps{Color: ButtonColorBlue, Size: ButtonSizeSM}) {
-			Save
-		}
+templ CardHeader(class ...string) {
+	<div class={ MergeWithDefault("space-y-1", class) }>
+		{ children... }
 	</div>
 }
 
-templ cardPreviewCustomHeader() {
-	<div class="flex items-center justify-between">
-		<div class="flex items-center gap-2">
-			<span class="text-blue-600">
-				@Icon("plus")
-			</span>
-			<h3 class="text-base font-semibold text-slate-900">Custom header</h3>
-		</div>
-		@Button(ButtonProps{Variant: ButtonGhost, Size: ButtonSizeSM, AriaLabel: "Close", LeftIcon: Icon("x")})
+templ CardTitle(class ...string) {
+	<h3 class={ MergeWithDefault("text-base font-semibold text-slate-900", class) }>
+		{ children... }
+	</h3>
+}
+
+templ CardDescription(class ...string) {
+	<p class={ MergeWithDefault("text-sm text-slate-500", class) }>
+		{ children... }
+	</p>
+}
+
+templ CardFooter(class ...string) {
+	<div class={ MergeWithDefault("flex items-center", class) }>
+		{ children... }
 	</div>
 }
 
@@ -215,16 +197,48 @@ templ CardPreview() {
 		<section class="space-y-4">
 			<h2 class="text-lg font-semibold">Variants (neutral, md, rounded-md)</h2>
 			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-				@Card(CardProps{Variant: CardSolid, Rounded: CardRoundedMD, Title: "Solid", Description: "White background with a subtle border."}) {
+				@Card(CardProps{Variant: CardSolid, Rounded: CardRoundedMD}) {
+					@CardHeader() {
+						@CardTitle() {
+							Solid
+						}
+						@CardDescription() {
+							White background with a subtle border.
+						}
+					}
 					<p class="text-sm text-slate-700">Card body content goes here.</p>
 				}
-				@Card(CardProps{Variant: CardOutline, Rounded: CardRoundedMD, Title: "Outline", Description: "Transparent background, prominent border."}) {
+				@Card(CardProps{Variant: CardOutline, Rounded: CardRoundedMD}) {
+					@CardHeader() {
+						@CardTitle() {
+							Outline
+						}
+						@CardDescription() {
+							Transparent background, prominent border.
+						}
+					}
 					<p class="text-sm text-slate-700">Card body content goes here.</p>
 				}
-				@Card(CardProps{Variant: CardSubtle, Rounded: CardRoundedMD, Title: "Subtle", Description: "Tinted background, matching border."}) {
+				@Card(CardProps{Variant: CardSubtle, Rounded: CardRoundedMD}) {
+					@CardHeader() {
+						@CardTitle() {
+							Subtle
+						}
+						@CardDescription() {
+							Tinted background, matching border.
+						}
+					}
 					<p class="text-sm text-slate-700">Card body content goes here.</p>
 				}
-				@Card(CardProps{Variant: CardElevated, Rounded: CardRoundedMD, Title: "Elevated", Description: "Shadow without a border."}) {
+				@Card(CardProps{Variant: CardElevated, Rounded: CardRoundedMD}) {
+					@CardHeader() {
+						@CardTitle() {
+							Elevated
+						}
+						@CardDescription() {
+							Shadow without a border.
+						}
+					}
 					<p class="text-sm text-slate-700">Card body content goes here.</p>
 				}
 			</div>
@@ -232,39 +246,127 @@ templ CardPreview() {
 		<section class="space-y-4">
 			<h2 class="text-lg font-semibold">Colors (subtle)</h2>
 			<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-				@Card(CardProps{Variant: CardSubtle, Rounded: CardRoundedMD, Color: CardColorNeutral, Title: "Neutral"})
-				@Card(CardProps{Variant: CardSubtle, Rounded: CardRoundedMD, Color: CardColorBlue, Title: "Blue"})
-				@Card(CardProps{Variant: CardSubtle, Rounded: CardRoundedMD, Color: CardColorRed, Title: "Red"})
-				@Card(CardProps{Variant: CardSubtle, Rounded: CardRoundedMD, Color: CardColorYellow, Title: "Yellow"})
-				@Card(CardProps{Variant: CardSubtle, Rounded: CardRoundedMD, Color: CardColorGreen, Title: "Green"})
-				@Card(CardProps{Variant: CardSubtle, Rounded: CardRoundedMD, Color: CardColorOrange, Title: "Orange"})
-				@Card(CardProps{Variant: CardSubtle, Rounded: CardRoundedMD, Color: CardColorPurple, Title: "Purple"})
-				@Card(CardProps{Variant: CardSubtle, Rounded: CardRoundedMD, Color: CardColorPink, Title: "Pink"})
-				@Card(CardProps{Variant: CardSubtle, Rounded: CardRoundedMD, Color: CardColorIndigo, Title: "Indigo"})
-				@Card(CardProps{Variant: CardSubtle, Rounded: CardRoundedMD, Color: CardColorTeal, Title: "Teal"})
-				@Card(CardProps{Variant: CardSubtle, Rounded: CardRoundedMD, Color: CardColorZinc, Title: "Zinc"})
-				@Card(CardProps{Variant: CardSubtle, Rounded: CardRoundedMD, Color: CardColorStone, Title: "Stone"})
+				@Card(CardProps{Variant: CardSubtle, Rounded: CardRoundedMD, Color: CardColorNeutral}) {
+					@CardTitle() {
+						Neutral
+					}
+				}
+				@Card(CardProps{Variant: CardSubtle, Rounded: CardRoundedMD, Color: CardColorBlue}) {
+					@CardTitle() {
+						Blue
+					}
+				}
+				@Card(CardProps{Variant: CardSubtle, Rounded: CardRoundedMD, Color: CardColorRed}) {
+					@CardTitle() {
+						Red
+					}
+				}
+				@Card(CardProps{Variant: CardSubtle, Rounded: CardRoundedMD, Color: CardColorYellow}) {
+					@CardTitle() {
+						Yellow
+					}
+				}
+				@Card(CardProps{Variant: CardSubtle, Rounded: CardRoundedMD, Color: CardColorGreen}) {
+					@CardTitle() {
+						Green
+					}
+				}
+				@Card(CardProps{Variant: CardSubtle, Rounded: CardRoundedMD, Color: CardColorOrange}) {
+					@CardTitle() {
+						Orange
+					}
+				}
+				@Card(CardProps{Variant: CardSubtle, Rounded: CardRoundedMD, Color: CardColorPurple}) {
+					@CardTitle() {
+						Purple
+					}
+				}
+				@Card(CardProps{Variant: CardSubtle, Rounded: CardRoundedMD, Color: CardColorPink}) {
+					@CardTitle() {
+						Pink
+					}
+				}
+				@Card(CardProps{Variant: CardSubtle, Rounded: CardRoundedMD, Color: CardColorIndigo}) {
+					@CardTitle() {
+						Indigo
+					}
+				}
+				@Card(CardProps{Variant: CardSubtle, Rounded: CardRoundedMD, Color: CardColorTeal}) {
+					@CardTitle() {
+						Teal
+					}
+				}
+				@Card(CardProps{Variant: CardSubtle, Rounded: CardRoundedMD, Color: CardColorZinc}) {
+					@CardTitle() {
+						Zinc
+					}
+				}
+				@Card(CardProps{Variant: CardSubtle, Rounded: CardRoundedMD, Color: CardColorStone}) {
+					@CardTitle() {
+						Stone
+					}
+				}
 			</div>
 		</section>
 		<section class="space-y-4">
 			<h2 class="text-lg font-semibold">Colors (outline)</h2>
 			<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-				@Card(CardProps{Variant: CardOutline, Rounded: CardRoundedMD, Color: CardColorBlue, Title: "Blue"})
-				@Card(CardProps{Variant: CardOutline, Rounded: CardRoundedMD, Color: CardColorRed, Title: "Red"})
-				@Card(CardProps{Variant: CardOutline, Rounded: CardRoundedMD, Color: CardColorGreen, Title: "Green"})
-				@Card(CardProps{Variant: CardOutline, Rounded: CardRoundedMD, Color: CardColorPurple, Title: "Purple"})
+				@Card(CardProps{Variant: CardOutline, Rounded: CardRoundedMD, Color: CardColorBlue}) {
+					@CardTitle() {
+						Blue
+					}
+				}
+				@Card(CardProps{Variant: CardOutline, Rounded: CardRoundedMD, Color: CardColorRed}) {
+					@CardTitle() {
+						Red
+					}
+				}
+				@Card(CardProps{Variant: CardOutline, Rounded: CardRoundedMD, Color: CardColorGreen}) {
+					@CardTitle() {
+						Green
+					}
+				}
+				@Card(CardProps{Variant: CardOutline, Rounded: CardRoundedMD, Color: CardColorPurple}) {
+					@CardTitle() {
+						Purple
+					}
+				}
 			</div>
 		</section>
 		<section class="space-y-4">
 			<h2 class="text-lg font-semibold">Sizes</h2>
 			<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-				@Card(CardProps{Rounded: CardRoundedMD, Size: CardSizeSM, Title: "Small (sm)", Description: "Compact padding."}) {
+				@Card(CardProps{Rounded: CardRoundedMD, Size: CardSizeSM}) {
+					@CardHeader() {
+						@CardTitle() {
+							Small (sm)
+						}
+						@CardDescription() {
+							Compact padding.
+						}
+					}
 					<p class="text-sm text-slate-700">Body</p>
 				}
-				@Card(CardProps{Rounded: CardRoundedMD, Size: CardSizeMD, Title: "Medium (md)", Description: "Default padding."}) {
+				@Card(CardProps{Rounded: CardRoundedMD, Size: CardSizeMD}) {
+					@CardHeader() {
+						@CardTitle() {
+							Medium (md)
+						}
+						@CardDescription() {
+							Default padding.
+						}
+					}
 					<p class="text-sm text-slate-700">Body</p>
 				}
-				@Card(CardProps{Rounded: CardRoundedMD, Size: CardSizeLG, Title: "Large (lg)", Description: "Roomy padding."}) {
+				@Card(CardProps{Rounded: CardRoundedMD, Size: CardSizeLG}) {
+					@CardHeader() {
+						@CardTitle() {
+							Large (lg)
+						}
+						@CardDescription() {
+							Roomy padding.
+						}
+					}
 					<p class="text-sm text-slate-700">Body</p>
 				}
 			</div>
@@ -272,26 +374,73 @@ templ CardPreview() {
 		<section class="space-y-4">
 			<h2 class="text-lg font-semibold">Rounded</h2>
 			<div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
-				@Card(CardProps{Title: "None"})
-				@Card(CardProps{Rounded: CardRoundedSM, Title: "rounded-sm"})
-				@Card(CardProps{Rounded: CardRoundedMD, Title: "rounded-md"})
-				@Card(CardProps{Rounded: CardRoundedLG, Title: "rounded-lg"})
-				@Card(CardProps{Rounded: CardRoundedXL, Title: "rounded-xl"})
+				@Card(CardProps{}) {
+					@CardTitle() {
+						None
+					}
+				}
+				@Card(CardProps{Rounded: CardRoundedSM}) {
+					@CardTitle() {
+						rounded-sm
+					}
+				}
+				@Card(CardProps{Rounded: CardRoundedMD}) {
+					@CardTitle() {
+						rounded-md
+					}
+				}
+				@Card(CardProps{Rounded: CardRoundedLG}) {
+					@CardTitle() {
+						rounded-lg
+					}
+				}
+				@Card(CardProps{Rounded: CardRoundedXL}) {
+					@CardTitle() {
+						rounded-xl
+					}
+				}
 			</div>
 		</section>
 		<section class="space-y-4">
 			<h2 class="text-lg font-semibold">With footer</h2>
 			<div class="max-w-md">
-				@Card(CardProps{Rounded: CardRoundedMD, Title: "Confirm changes", Description: "Your changes will be visible to everyone.", Footer: cardPreviewFooter()}) {
+				@Card(CardProps{Rounded: CardRoundedMD}) {
+					@CardHeader() {
+						@CardTitle() {
+							Confirm changes
+						}
+						@CardDescription() {
+							Your changes will be visible to everyone.
+						}
+					}
 					<p class="text-sm text-slate-700">Review the diff below before saving.</p>
+					@CardFooter("justify-end gap-2") {
+						@Button(ButtonProps{Variant: ButtonGhost, Size: ButtonSizeSM}) {
+							Cancel
+						}
+						@Button(ButtonProps{Color: ButtonColorBlue, Size: ButtonSizeSM}) {
+							Save
+						}
+					}
 				}
 			</div>
 		</section>
 		<section class="space-y-4">
-			<h2 class="text-lg font-semibold">Custom header</h2>
+			<h2 class="text-lg font-semibold">Custom header layout</h2>
 			<div class="max-w-md">
-				@Card(CardProps{Rounded: CardRoundedMD, Header: cardPreviewCustomHeader()}) {
-					<p class="text-sm text-slate-700">Header slot overrides Title/Description.</p>
+				@Card(CardProps{Rounded: CardRoundedMD}) {
+					@CardHeader("flex flex-row items-center justify-between space-y-0") {
+						<div class="flex items-center gap-2">
+							<span class="text-blue-600">
+								@Icon("plus")
+							</span>
+							@CardTitle() {
+								Custom header
+							}
+						</div>
+						@Button(ButtonProps{Variant: ButtonGhost, Size: ButtonSizeSM, AriaLabel: "Close", LeftIcon: Icon("x")})
+					}
+					<p class="text-sm text-slate-700">Pass classes to CardHeader to override the default stack.</p>
 				}
 			</div>
 		</section>
@@ -299,7 +448,7 @@ templ CardPreview() {
 			<h2 class="text-lg font-semibold">Children only</h2>
 			<div class="max-w-md">
 				@Card(CardProps{Variant: CardSubtle, Color: CardColorBlue, Rounded: CardRoundedMD}) {
-					<p class="text-sm text-blue-900">Heads up — no title, just a single paragraph.</p>
+					<p class="text-sm text-blue-900">Heads up — sub-components are optional. Drop raw content directly.</p>
 				}
 			</div>
 		</section>
@@ -308,13 +457,15 @@ templ CardPreview() {
 			<div class="max-w-md">
 				@Card(CardProps{
 					Rounded: CardRoundedMD,
-					Title:   "Lazy load",
 					Attrs: templ.Attributes{
 						"hx-get":     "/news/latest",
 						"hx-trigger": "revealed",
 						"hx-swap":    "innerHTML",
 					},
 				}) {
+					@CardTitle() {
+						Lazy load
+					}
 					<p class="text-sm text-slate-500">Loading…</p>
 				}
 			</div>
@@ -322,7 +473,10 @@ templ CardPreview() {
 		<section class="space-y-4">
 			<h2 class="text-lg font-semibold">Class override</h2>
 			<div class="max-w-md">
-				@Card(CardProps{Rounded: CardRoundedLG, Title: "Custom width", Class: "border-dashed"}) {
+				@Card(CardProps{Rounded: CardRoundedLG, Class: "border-dashed"}) {
+					@CardTitle() {
+						Custom width
+					}
 					<p class="text-sm text-slate-700">Class merges into the variant classes.</p>
 				}
 			</div>

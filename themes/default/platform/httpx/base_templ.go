@@ -69,14 +69,14 @@ func Base(layout platformhttpx.Layout, title string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</title><link rel=\"stylesheet\" href=\"/static/css/app.css\"><script src=\"/themes/default/static/vendor/htmx-2.0.9.min.js\" defer></script><script src=\"/themes/default/static/vendor/alpine-3.15.12.min.js\" defer></script></head><body class=\"min-h-screen bg-gray-100 text-gray-900 font-sans antialiased\" hx-headers=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</title><link rel=\"stylesheet\" href=\"/static/css/app.css\"><script src=\"/themes/default/static/vendor/htmx-2.0.9.min.js\" defer></script><script src=\"/themes/default/static/js/components.js\" defer></script><script src=\"/themes/default/static/vendor/alpine-3.15.12.min.js\" defer></script></head><body class=\"min-h-screen bg-gray-100 text-gray-900 font-sans antialiased\" hx-headers=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(security.HxHeadersValue(ctx))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/platform/httpx/base.templ`, Line: 23, Col: 44}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/platform/httpx/base.templ`, Line: 24, Col: 44}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
