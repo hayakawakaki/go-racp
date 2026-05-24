@@ -1,0 +1,63 @@
+package ui
+
+import (
+	"strings"
+
+	"github.com/hayakawakaki/go-racp/internal/platform/security"
+)
+
+type FormProps struct {
+	Attrs   templ.Attributes
+	Action  string
+	Method  string
+	Title   string
+	Class   string
+	Spacing Size
+}
+
+func formMethod(p FormProps) string {
+	if p.Method == "" {
+		return "post"
+	}
+
+	return strings.ToLower(p.Method)
+}
+
+func formNeedsCSRF(p FormProps) bool {
+	return formMethod(p) != "get"
+}
+
+func formStackClasses(spacing Size) string {
+	switch spacing {
+	case SM:
+		return "space-y-2"
+	case LG:
+		return "space-y-6"
+	default:
+		return "space-y-4"
+	}
+}
+
+func formAttrs(p FormProps) templ.Attributes {
+	attrs := templ.Attributes{
+		"method": formMethod(p),
+	}
+
+	if p.Action != "" {
+		attrs["action"] = p.Action
+	}
+
+	return MergeAttr(attrs, p.Attrs)
+}
+
+templ Form(p FormProps) {
+	<form class={ Merge(formStackClasses(p.Spacing), p.Class) } { formAttrs(p)... }>
+		if p.Title != "" {
+			<h2 class="text-xl font-semibold text-slate-900">{ p.Title }</h2>
+		}
+		if formNeedsCSRF(p) {
+			@security.HiddenField()
+		}
+		{ children... }
+	</form>
+}

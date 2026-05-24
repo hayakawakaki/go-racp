@@ -1,0 +1,39 @@
+package ui
+
+type FieldProps struct {
+	Label    string
+	For      string
+	Help     string
+	Error    string
+	Class    string
+	Required bool
+}
+
+func fieldLabelAttrs(p FieldProps) templ.Attributes {
+	attrs := templ.Attributes{}
+
+	if p.For != "" {
+		attrs["for"] = p.For
+	}
+
+	return attrs
+}
+
+templ Field(p FieldProps) {
+	<div class={ Merge("space-y-1.5", p.Class) }>
+		if p.Label != "" {
+			<label class="block text-sm font-medium text-slate-900" { fieldLabelAttrs(p)... }>
+				{ p.Label }
+				if p.Required {
+					<span class="text-red-600 ml-0.5" aria-hidden="true">*</span>
+				}
+			</label>
+		}
+		{ children... }
+		if p.Error != "" {
+			<p class="text-sm text-red-600">{ p.Error }</p>
+		} else if p.Help != "" {
+			<p class="text-sm text-slate-500">{ p.Help }</p>
+		}
+	</div>
+}

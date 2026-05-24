@@ -15,6 +15,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/refdata"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 	"github.com/hayakawakaki/go-racp/internal/platform/theme"
+	"github.com/hayakawakaki/go-racp/internal/platform/ui"
 )
 
 const itemCacheFileName = "item-snapshot.gob"
@@ -31,12 +32,24 @@ func init() {
 func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 	service := BuildService(in)
 	mob.SetItemLookup(service)
+
 	handler := transport.NewHandler(service, transport.HandlerConfig{
 		Logger:     in.Logger,
 		General:    in.Config.App.General,
 		DropLookup: mob.BuildService(in),
 		Theme:      theme.Active,
 	})
+
+	// Item sprite component helper
+	ui.Sprites.Item = func(id int) string {
+		item, err := service.Get(context.Background(), id)
+		if err != nil || item == nil {
+			return ""
+		}
+
+		return item.Image
+	}
+
 	handler.RegisterRoutes(reg, mux)
 	startDevWatcher(in, service)
 }

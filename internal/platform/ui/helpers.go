@@ -11,6 +11,10 @@ func Merge(classes ...string) string {
 	return twmerge.Merge(classes...)
 }
 
+func MergeWithDefault(defaults string, extras []string) string {
+	return Merge(append([]string{defaults}, extras...)...)
+}
+
 func MergeAttr(attributes ...templ.Attributes) templ.Attributes {
 	merged := templ.Attributes{}
 

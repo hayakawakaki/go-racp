@@ -66,22 +66,7 @@ func buttonClasses(p ButtonProps) string {
 		color = ColorNeutral
 	}
 
-	return Merge(base, sizeClasses, buttonRounded(p.Rounded), buttonVariantClasses(variant, color), p.Class)
-}
-
-func buttonRounded(rounded Size) string {
-	switch rounded {
-	case SM:
-		return "rounded-sm"
-	case MD:
-		return "rounded-md"
-	case LG:
-		return "rounded-lg"
-	case XL:
-		return "rounded-xl"
-	default:
-		return ""
-	}
+	return Merge(base, sizeClasses, roundedClass(p.Rounded), buttonVariantClasses(variant, color), p.Class)
 }
 
 var buttonClassMap = map[ButtonVariant]map[Color]string{
@@ -244,12 +229,6 @@ templ Button(p ButtonProps) {
 			}
 		</button>
 	}
-}
-
-templ iconPlaceholder() {
-	<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-		<path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 5l7 7-7 7"></path>
-	</svg>
 }
 
 templ ButtonPreview() {
@@ -560,13 +539,13 @@ templ ButtonPreview() {
 		<section class="space-y-4">
 			<h2 class="text-lg font-semibold">Icons</h2>
 			<div class="flex flex-wrap items-center gap-3">
-				@Button(ButtonProps{LeftIcon: iconPlaceholder()}) {
+				@Button(ButtonProps{LeftIcon: Icon("arrow-right")}) {
 					With left icon
 				}
-				@Button(ButtonProps{Variant: ButtonOutline, RightIcon: iconPlaceholder()}) {
+				@Button(ButtonProps{Variant: ButtonOutline, RightIcon: Icon("arrow-right")}) {
 					With right icon
 				}
-				@Button(ButtonProps{Variant: ButtonGhost, AriaLabel: "Next", LeftIcon: iconPlaceholder()})
+				@Button(ButtonProps{Variant: ButtonGhost, AriaLabel: "Next", LeftIcon: Icon("arrow-right")})
 			</div>
 		</section>
 		<section class="space-y-4">
@@ -575,7 +554,7 @@ templ ButtonPreview() {
 				@Button(ButtonProps{Loading: true}) {
 					Saving
 				}
-				@Button(ButtonProps{Variant: ButtonOutline, Loading: true, LeftIcon: iconPlaceholder()}) {
+				@Button(ButtonProps{Variant: ButtonOutline, Loading: true, LeftIcon: Icon("arrow-right")}) {
 					Loading
 				}
 				@Button(ButtonProps{Color: ColorRed, Loading: true}) {

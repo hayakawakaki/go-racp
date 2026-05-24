@@ -1,0 +1,123 @@
+package ui
+
+import "strconv"
+
+type InputType string
+
+const (
+	InputTypeText          InputType = "text"
+	InputTypeEmail         InputType = "email"
+	InputTypePassword      InputType = "password"
+	InputTypeNumber        InputType = "number"
+	InputTypeTel           InputType = "tel"
+	InputTypeURL           InputType = "url"
+	InputTypeDate          InputType = "date"
+	InputTypeTime          InputType = "time"
+	InputTypeDateTimeLocal InputType = "datetime-local"
+	InputTypeSearch        InputType = "search"
+	InputTypeColor         InputType = "color"
+	InputTypeFile          InputType = "file"
+	InputTypeHidden        InputType = "hidden"
+)
+
+type InputProps struct {
+	Attrs        templ.Attributes
+	Type         InputType
+	Name         string
+	ID           string
+	Value        string
+	Placeholder  string
+	AutoComplete string
+	Pattern      string
+	Min          string
+	Max          string
+	Step         string
+	Class        string
+	AriaLabel    string
+	Size         Size
+	Rounded      Size
+	Color        Color
+	MinLength    int
+	MaxLength    int
+	Required     bool
+	Disabled     bool
+	ReadOnly     bool
+	Invalid      bool
+}
+
+func inputType(p InputProps) string {
+	if p.Type == "" {
+		return string(InputTypeText)
+	}
+
+	return string(p.Type)
+}
+
+func inputAttrs(p InputProps) templ.Attributes {
+	attrs := templ.Attributes{}
+
+	if p.ID != "" {
+		attrs["id"] = p.ID
+	}
+
+	if p.Name != "" {
+		attrs["name"] = p.Name
+	}
+
+	if p.Value != "" {
+		attrs["value"] = p.Value
+	}
+
+	if p.Placeholder != "" {
+		attrs["placeholder"] = p.Placeholder
+	}
+
+	if p.AutoComplete != "" {
+		attrs["autocomplete"] = p.AutoComplete
+	}
+
+	if p.Pattern != "" {
+		attrs["pattern"] = p.Pattern
+	}
+
+	if p.Min != "" {
+		attrs["min"] = p.Min
+	}
+
+	if p.Max != "" {
+		attrs["max"] = p.Max
+	}
+
+	if p.Step != "" {
+		attrs["step"] = p.Step
+	}
+
+	if p.MinLength > 0 {
+		attrs["minlength"] = strconv.Itoa(p.MinLength)
+	}
+
+	if p.MaxLength > 0 {
+		attrs["maxlength"] = strconv.Itoa(p.MaxLength)
+	}
+
+	if p.AriaLabel != "" {
+		attrs["aria-label"] = p.AriaLabel
+	}
+
+	if p.Invalid {
+		attrs["aria-invalid"] = "true"
+	}
+
+	return MergeAttr(attrs, p.Attrs)
+}
+
+templ Input(p InputProps) {
+	<input
+		type={ inputType(p) }
+		class={ controlClasses(p.Size, p.Rounded, p.Color, p.Invalid, p.Class) }
+		required?={ p.Required }
+		disabled?={ p.Disabled }
+		readonly?={ p.ReadOnly }
+		{ inputAttrs(p)... }
+	/>
+}

@@ -1,0 +1,52 @@
+package ui
+
+templ ItemSprite(id int, class ...string) {
+	@spriteBox("/static/item/"+itemSpriteFile(id)+".webp", class...)
+}
+
+type itemSpriteSample struct {
+	Label string
+	ID    int
+}
+
+var itemSpritePreviews = []itemSpriteSample{
+	{ID: 501, Label: "Red Potion"},
+	{ID: 512, Label: "Apple"},
+	{ID: 1201, Label: "Knife"},
+}
+
+templ ItemSpritePreview() {
+	<div class="space-y-8">
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">ItemSprite(id, class...)</h2>
+			<p class="text-sm text-slate-500">Resolves id via <code>ui.Sprites.Item</code>. Renders <code>/static/item/&lt;file&gt;.webp</code>; broken images show an X fallback.</p>
+			<div class="flex flex-wrap items-center gap-4">
+				for _, s := range itemSpritePreviews {
+					<div class="flex items-center gap-3 border border-slate-200 rounded-md px-3 py-2">
+						@ItemSprite(s.ID, "size-8")
+						<code class="text-xs text-slate-600">{ s.Label }</code>
+					</div>
+				}
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Inside Button</h2>
+			<div class="flex flex-wrap items-center gap-3">
+				@Button(ButtonProps{Variant: ButtonOutline, LeftIcon: ItemSprite(501)}) {
+					Use Red Potion
+				}
+				@Button(ButtonProps{Variant: ButtonOutline, LeftIcon: ItemSprite(512, "size-5")}) {
+					Eat Apple
+				}
+			</div>
+		</section>
+	</div>
+}
+
+func init() {
+	Register(Component{
+		Name:   "item-sprite",
+		Title:  "Item Sprite",
+		Render: ItemSpritePreview,
+	})
+}

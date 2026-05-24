@@ -1,0 +1,62 @@
+package ui
+
+type SelectOption struct {
+	Value    string
+	Label    string
+	Disabled bool
+}
+
+type SelectProps struct {
+	Attrs       templ.Attributes
+	Options     []SelectOption
+	Name        string
+	ID          string
+	Value       string
+	Placeholder string
+	Class       string
+	AriaLabel   string
+	Size        Size
+	Rounded     Size
+	Color       Color
+	Required    bool
+	Disabled    bool
+	Invalid     bool
+}
+
+func selectAttrs(p SelectProps) templ.Attributes {
+	attrs := templ.Attributes{}
+
+	if p.ID != "" {
+		attrs["id"] = p.ID
+	}
+
+	if p.Name != "" {
+		attrs["name"] = p.Name
+	}
+
+	if p.AriaLabel != "" {
+		attrs["aria-label"] = p.AriaLabel
+	}
+
+	if p.Invalid {
+		attrs["aria-invalid"] = "true"
+	}
+
+	return MergeAttr(attrs, p.Attrs)
+}
+
+templ Select(p SelectProps) {
+	<select
+		class={ controlClasses(p.Size, p.Rounded, p.Color, p.Invalid, p.Class) }
+		required?={ p.Required }
+		disabled?={ p.Disabled }
+		{ selectAttrs(p)... }
+	>
+		if p.Placeholder != "" {
+			<option value="" disabled selected?={ p.Value == "" }>{ p.Placeholder }</option>
+		}
+		for _, opt := range p.Options {
+			<option value={ opt.Value } disabled?={ opt.Disabled } selected?={ opt.Value == p.Value }>{ opt.Label }</option>
+		}
+	</select>
+}

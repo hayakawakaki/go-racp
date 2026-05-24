@@ -1,0 +1,129 @@
+package ui
+
+templ iconSVG(class ...string) {
+	<svg class={ MergeWithDefault("size-4", class) } xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+		{ children... }
+	</svg>
+}
+
+templ Icon(name string, class ...string) {
+	switch name {
+		case "plus":
+			@iconSVG(class...) {
+				<path d="M12 5v14M5 12h14"></path>
+			}
+		case "x":
+			@iconSVG(class...) {
+				<path d="M18 6L6 18M6 6l12 12"></path>
+			}
+		case "check":
+			@iconSVG(class...) {
+				<path d="M20 6L9 17l-5-5"></path>
+			}
+		case "search":
+			@iconSVG(class...) {
+				<circle cx="11" cy="11" r="8"></circle>
+				<path d="M21 21l-4.35-4.35"></path>
+			}
+		case "trash":
+			@iconSVG(class...) {
+				<path d="M3 6h18"></path>
+				<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
+				<path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+			}
+		case "edit":
+			@iconSVG(class...) {
+				<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+				<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+			}
+		case "chevron-down":
+			@iconSVG(class...) {
+				<path d="M6 9l6 6 6-6"></path>
+			}
+		case "chevron-right":
+			@iconSVG(class...) {
+				<path d="M9 18l6-6-6-6"></path>
+			}
+		case "arrow-right":
+			@iconSVG(class...) {
+				<path d="M5 12h14M12 5l7 7-7 7"></path>
+			}
+	}
+}
+
+var iconSampleNames = []string{
+	"plus",
+	"x",
+	"check",
+	"search",
+	"trash",
+	"edit",
+	"chevron-down",
+	"chevron-right",
+	"arrow-right",
+}
+
+templ IconPreview() {
+	<div class="space-y-8">
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Icon(name, class...)</h2>
+			<p class="text-sm text-slate-500">Default <code>size-4</code>; inherits color via <code>currentColor</code>.</p>
+			<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+				for _, name := range iconSampleNames {
+					<div class="flex items-center gap-3 border border-slate-200 rounded-md px-3 py-2">
+						<span class="text-slate-700">
+							@Icon(name)
+						</span>
+						<code class="text-xs text-slate-600">{ name }</code>
+					</div>
+				}
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Class overrides (size, color)</h2>
+			<div class="flex flex-wrap items-end gap-4">
+				<span class="text-slate-900">
+					@Icon("check")
+				</span>
+				<span class="text-slate-900">
+					@Icon("check", "size-6")
+				</span>
+				<span class="text-blue-600">
+					@Icon("check", "size-8")
+				</span>
+				<span class="text-red-600">
+					@Icon("trash", "size-8")
+				</span>
+				<span class="text-yellow-700">
+					@Icon("search", "size-8")
+				</span>
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Inside Button</h2>
+			<div class="flex flex-wrap items-center gap-3">
+				@Button(ButtonProps{Color: ColorBlue, LeftIcon: Icon("plus")}) {
+					New item
+				}
+				@Button(ButtonProps{Variant: ButtonOutline, LeftIcon: Icon("edit")}) {
+					Edit
+				}
+				@Button(ButtonProps{Color: ColorRed, LeftIcon: Icon("trash")}) {
+					Delete
+				}
+				@Button(ButtonProps{Variant: ButtonGhost, AriaLabel: "Close", LeftIcon: Icon("x")})
+				@Button(ButtonProps{Variant: ButtonOutline, RightIcon: Icon("chevron-down")}) {
+					Options
+				}
+			</div>
+		</section>
+	</div>
+}
+
+func init() {
+	Register(Component{
+		Name:   "icon",
+		Title:  "Icon",
+		Render: IconPreview,
+	})
+}
