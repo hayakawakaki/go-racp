@@ -50,6 +50,21 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
+    Alpine.data('pagination', () => ({
+        max: 1,
+        pattern: '?page=__PAGE__',
+        init() {
+            this.max = parseInt(this.$el.dataset.paginationMax, 10) || 1;
+            this.pattern = this.$el.dataset.paginationPattern || this.pattern;
+        },
+        go(value) {
+            let page = parseInt(value, 10);
+            if (!page || page < 1) page = 1;
+            if (page > this.max) page = this.max;
+            window.location.href = this.pattern.replace('__PAGE__', String(page));
+        },
+    }));
+
     Alpine.data('dropdown', () => ({
         open: false,
         toggle() {

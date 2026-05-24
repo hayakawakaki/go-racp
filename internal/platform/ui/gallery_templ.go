@@ -91,7 +91,7 @@ func galleryIndex(components []Component) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<main class=\"max-w-3xl mx-auto px-6 py-10 space-y-6\"><h1 class=\"text-2xl font-bold\">Components</h1>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<main class=\"max-w-3xl mx-auto px-6 py-10 space-y-6\"><h1 class=\"text-2xl font-bold\">Component Library</h1>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
