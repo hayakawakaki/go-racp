@@ -78,6 +78,25 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
+    Alpine.data('accordionItem', () => ({
+        open: false,
+        init() {
+            this.open = this.$el.dataset.state === 'open';
+        },
+        toggle() {
+            this.open = !this.open;
+        },
+        show() {
+            this.open = true;
+        },
+        close() {
+            this.open = false;
+        },
+        stateAttr() {
+            return this.open ? 'open' : 'closed';
+        },
+    }));
+
     Alpine.magic('toast', () => {
         return (type, message, duration, size) => {
             window.dispatchEvent(new CustomEvent('toast', {
