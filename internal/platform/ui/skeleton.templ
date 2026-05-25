@@ -1,0 +1,123 @@
+package ui
+
+type SkeletonProps struct {
+	Attrs templ.Attributes
+	Class string
+}
+
+func skeletonClasses(p SkeletonProps) string {
+	return Merge("block animate-pulse rounded-md bg-slate-200 dark:bg-slate-800", p.Class)
+}
+
+templ Skeleton(p SkeletonProps) {
+	<div class={ skeletonClasses(p) } aria-hidden="true" { p.Attrs... }></div>
+}
+
+templ SkeletonPreview() {
+	<div class="space-y-8">
+		<section class="space-y-3">
+			<h2 class="text-lg font-semibold">Idea</h2>
+			<p class="text-sm text-slate-500 dark:text-slate-400">Skeleton is a single primitive — a pulsing rectangle. Shape it via Class to match the real content that will replace it (text line, circle, card, etc).</p>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Text lines</h2>
+			<div class="max-w-md space-y-2">
+				@Skeleton(SkeletonProps{Class: "h-4 w-2/3"})
+				@Skeleton(SkeletonProps{Class: "h-4 w-full"})
+				@Skeleton(SkeletonProps{Class: "h-4 w-5/6"})
+				@Skeleton(SkeletonProps{Class: "h-4 w-1/2"})
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Shapes</h2>
+			<div class="flex flex-wrap items-center gap-4">
+				@Skeleton(SkeletonProps{Class: "size-12 rounded-full"})
+				@Skeleton(SkeletonProps{Class: "size-16 rounded-md"})
+				@Skeleton(SkeletonProps{Class: "h-24 w-40 rounded-lg"})
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">List row (matches real content)</h2>
+			<div class="max-w-md space-y-3">
+				for range 3 {
+					<div class="flex items-center gap-3">
+						@Skeleton(SkeletonProps{Class: "size-10 rounded-full shrink-0"})
+						<div class="flex-1 space-y-2">
+							@Skeleton(SkeletonProps{Class: "h-4 w-1/2"})
+							@Skeleton(SkeletonProps{Class: "h-3 w-3/4"})
+						</div>
+					</div>
+				}
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Card placeholder</h2>
+			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+				for range 3 {
+					@Card(CardProps{Variant: CardOutline, Rounded: CardRoundedMD}) {
+						@Skeleton(SkeletonProps{Class: "h-32 w-full rounded-md"})
+						<div class="mt-4 space-y-2">
+							@Skeleton(SkeletonProps{Class: "h-4 w-3/4"})
+							@Skeleton(SkeletonProps{Class: "h-3 w-full"})
+							@Skeleton(SkeletonProps{Class: "h-3 w-5/6"})
+						</div>
+					}
+				}
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Table row placeholder</h2>
+			@Table(TableProps{}) {
+				@TableHeader() {
+					@TableRow(TableRowProps{}) {
+						@TableHead(TableHeadProps{}) { ID }
+						@TableHead(TableHeadProps{}) { Name }
+						@TableHead(TableHeadProps{}) { Status }
+						@TableHead(TableHeadProps{Align: TableAlignRight}) { Level }
+					}
+				}
+				@TableBody() {
+					for range 4 {
+						@TableRow(TableRowProps{}) {
+							@TableCell(TableCellProps{}) {
+								@Skeleton(SkeletonProps{Class: "h-4 w-6"})
+							}
+							@TableCell(TableCellProps{}) {
+								@Skeleton(SkeletonProps{Class: "h-4 w-32"})
+							}
+							@TableCell(TableCellProps{}) {
+								@Skeleton(SkeletonProps{Class: "h-5 w-16 rounded-full"})
+							}
+							@TableCell(TableCellProps{Align: TableAlignRight}) {
+								@Skeleton(SkeletonProps{Class: "ml-auto h-4 w-8"})
+							}
+						}
+					}
+				}
+			}
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">HTMX lazy-load (Attrs)</h2>
+			<p class="text-sm text-slate-500 dark:text-slate-400">Drop a Skeleton directly inside an Attrs-wired container — the server response replaces it on swap.</p>
+			<div
+				hx-get="/example"
+				hx-trigger="intersect once"
+				hx-swap="innerHTML"
+				class="max-w-md space-y-2"
+			>
+				@Skeleton(SkeletonProps{Class: "h-4 w-1/2"})
+				@Skeleton(SkeletonProps{Class: "h-4 w-full"})
+				@Skeleton(SkeletonProps{Class: "h-4 w-3/4"})
+			</div>
+		</section>
+	</div>
+}
+
+func init() {
+	Register(Component{
+		Name:   "skeleton",
+		Title:  "Skeleton",
+		Usage:  "@Skeleton(SkeletonProps{Class: \"h-4 w-32\"})",
+		Render: SkeletonPreview,
+	})
+}
