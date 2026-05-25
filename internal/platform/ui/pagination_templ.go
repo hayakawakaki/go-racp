@@ -82,7 +82,7 @@ func paginationPattern(p PaginationProps) string {
 	return "?page=" + paginationPagePlaceholder
 }
 
-func paginationHref(p PaginationProps, page int) templ.SafeURL {
+func paginationHref(p PaginationProps, page int) string {
 	if page < 1 {
 		page = 1
 	}
@@ -91,7 +91,7 @@ func paginationHref(p PaginationProps, page int) templ.SafeURL {
 		page = p.TotalPages
 	}
 
-	return templ.SafeURL(strings.ReplaceAll(paginationPattern(p), paginationPagePlaceholder, strconv.Itoa(page)))
+	return strings.ReplaceAll(paginationPattern(p), paginationPagePlaceholder, strconv.Itoa(page))
 }
 
 func paginationGroupSize(size PaginationSize) string {
@@ -161,7 +161,7 @@ func paginationStep(p PaginationProps, target int, label string, icon templ.Comp
 			AriaLabel: label,
 			LeftIcon:  icon,
 			Disabled:  target < 1 || target > p.TotalPages || target == p.Page,
-			Href:      string(paginationHref(p, target)),
+			Href:      paginationHref(p, target),
 			Attrs:     p.LinkAttrs,
 		}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {

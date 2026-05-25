@@ -70,7 +70,7 @@ templ BreadcrumbItem(p BreadcrumbItemProps) {
 				{ children... }
 			</span>
 		} else {
-			<a href={ templ.SafeURL(p.Href) } class={ breadcrumbLinkClasses() } { p.Attrs... }>
+			<a href={ p.Href } class={ breadcrumbLinkClasses() } { p.Attrs... }>
 				{ children... }
 			</a>
 		}
