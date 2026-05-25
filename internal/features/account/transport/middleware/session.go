@@ -32,6 +32,14 @@ func ContextWithSession(ctx context.Context, sess *domain.Session) context.Conte
 	return context.WithValue(ctx, sessionKey, sess)
 }
 
+func FromContext(ctx context.Context) (*domain.Session, bool) {
+	return SessionFromContext(ctx)
+}
+
+func WithSessionContext(ctx context.Context, sess *domain.Session) context.Context {
+	return ContextWithSession(ctx, sess)
+}
+
 // ClearSessionCookie clears the HTTP session cookie (`racp_session`) so the browser removes it.
 // The secure parameter controls whether the cookie's Secure attribute is set.
 func ClearSessionCookie(w http.ResponseWriter, secure bool) {

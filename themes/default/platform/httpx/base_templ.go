@@ -69,20 +69,30 @@ func Base(layout platformhttpx.Layout, title string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</title><link rel=\"stylesheet\" href=\"/static/css/app.css\"><script src=\"/themes/default/static/vendor/htmx-2.0.9.min.js\" defer></script><script src=\"/themes/default/static/js/components.js\" defer></script><script src=\"/themes/default/static/vendor/alpine-3.15.12.min.js\" defer></script></head><body class=\"min-h-screen bg-gray-100 text-gray-900 font-sans antialiased\" hx-headers=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</title><link rel=\"stylesheet\" href=\"/static/css/app.css\"><link rel=\"preload\" href=\"/themes/default/static/fonts/plus-jakarta-sans-latin-wght-normal.woff2\" as=\"font\" type=\"font/woff2\" crossorigin=\"anonymous\"><script src=\"/themes/default/static/vendor/htmx-2.0.9.min.js\" defer></script><script src=\"/themes/default/static/js/components.js\" defer></script><script src=\"/themes/default/static/vendor/alpine-3.15.12.min.js\" defer></script></head><body class=\"min-h-screen font-sans antialiased bg-body text-font\" hx-headers=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(security.HxHeadersValue(ctx))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/platform/httpx/base.templ`, Line: 24, Col: 44}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/platform/httpx/base.templ`, Line: 25, Col: 44}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\"><main class=\"min-h-screen flex items-center justify-center p-4\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if platformhttpx.ActiveHeader != nil {
+			templ_7745c5c3_Err = platformhttpx.ActiveHeader(layout).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<main class=\"container mx-auto bg-surface bg-grain border border-border rounded-md mt-6 px-6 py-8\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -90,7 +100,7 @@ func Base(layout platformhttpx.Layout, title string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</main></body></html>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</main></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

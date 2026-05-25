@@ -15,6 +15,7 @@ import (
 
 const adminGroup = "Admin"
 
+//nolint:govet // GeneralConfig trailing bool forces alignment cost
 type Registry struct {
 	hiddenLayout         httpx.Layout
 	sessSvc              middleware.SessionValidator
