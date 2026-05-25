@@ -1,0 +1,199 @@
+package ui
+
+type BreadcrumbSize string
+
+const (
+	BreadcrumbSizeSM BreadcrumbSize = "sm"
+	BreadcrumbSizeMD BreadcrumbSize = "md"
+	BreadcrumbSizeLG BreadcrumbSize = "lg"
+)
+
+type BreadcrumbProps struct {
+	Attrs templ.Attributes
+	Class string
+	Size  BreadcrumbSize
+}
+
+type BreadcrumbItemProps struct {
+	Attrs   templ.Attributes
+	Href    string
+	Class   string
+	Current bool
+}
+
+func breadcrumbNavClasses(p BreadcrumbProps) string {
+	return Merge("group/breadcrumb uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500", p.Class)
+}
+
+func breadcrumbListClasses() string {
+	return "flex flex-wrap items-center gap-y-1 group-data-[size=sm]/breadcrumb:text-[10px] group-data-[size=md]/breadcrumb:text-xs group-data-[size=lg]/breadcrumb:text-sm"
+}
+
+func breadcrumbItemClasses(p BreadcrumbItemProps) string {
+	base := "flex items-center before:content-['/'] before:text-slate-300 dark:before:text-slate-600 first:before:hidden"
+	sizing := "group-data-[size=sm]/breadcrumb:before:mx-1.5 group-data-[size=md]/breadcrumb:before:mx-2 group-data-[size=lg]/breadcrumb:before:mx-2.5"
+
+	return Merge(base, sizing, p.Class)
+}
+
+func breadcrumbLinkClasses() string {
+	return "transition-colors hover:text-slate-700 dark:hover:text-slate-200 focus-visible:outline-none focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-slate-400 dark:focus-visible:ring-slate-500"
+}
+
+func breadcrumbCurrentClasses() string {
+	return "text-slate-500 dark:text-slate-300"
+}
+
+func breadcrumbSizeAttr(s BreadcrumbSize) string {
+	switch s {
+	case BreadcrumbSizeSM:
+		return "sm"
+	case BreadcrumbSizeLG:
+		return "lg"
+	default:
+		return "md"
+	}
+}
+
+templ Breadcrumb(p BreadcrumbProps) {
+	<nav aria-label="Breadcrumb" class={ breadcrumbNavClasses(p) } data-size={ breadcrumbSizeAttr(p.Size) } { p.Attrs... }>
+		<ol class={ breadcrumbListClasses() }>
+			{ children... }
+		</ol>
+	</nav>
+}
+
+templ BreadcrumbItem(p BreadcrumbItemProps) {
+	<li class={ breadcrumbItemClasses(p) }>
+		if p.Current || p.Href == "" {
+			<span aria-current?={ p.Current } class={ breadcrumbCurrentClasses() } { p.Attrs... }>
+				{ children... }
+			</span>
+		} else {
+			<a href={ p.Href } class={ breadcrumbLinkClasses() } { p.Attrs... }>
+				{ children... }
+			</a>
+		}
+	</li>
+}
+
+templ BreadcrumbPreview() {
+	<div class="space-y-8">
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Basic</h2>
+			@Breadcrumb(BreadcrumbProps{}) {
+				@BreadcrumbItem(BreadcrumbItemProps{Href: "/items"}) {
+					Item Database
+				}
+				@BreadcrumbItem(BreadcrumbItemProps{Current: true}) {
+					Red Potion
+				}
+			}
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Sizes</h2>
+			<div class="flex flex-col items-start gap-3">
+				@Breadcrumb(BreadcrumbProps{Size: BreadcrumbSizeSM}) {
+					@BreadcrumbItem(BreadcrumbItemProps{Href: "/items"}) {
+						Item Database
+					}
+					@BreadcrumbItem(BreadcrumbItemProps{Current: true}) {
+						Red Potion
+					}
+				}
+				@Breadcrumb(BreadcrumbProps{Size: BreadcrumbSizeMD}) {
+					@BreadcrumbItem(BreadcrumbItemProps{Href: "/items"}) {
+						Item Database
+					}
+					@BreadcrumbItem(BreadcrumbItemProps{Current: true}) {
+						Red Potion
+					}
+				}
+				@Breadcrumb(BreadcrumbProps{Size: BreadcrumbSizeLG}) {
+					@BreadcrumbItem(BreadcrumbItemProps{Href: "/items"}) {
+						Item Database
+					}
+					@BreadcrumbItem(BreadcrumbItemProps{Current: true}) {
+						Red Potion
+					}
+				}
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Multi-level</h2>
+			@Breadcrumb(BreadcrumbProps{}) {
+				@BreadcrumbItem(BreadcrumbItemProps{Href: "/"}) {
+					Home
+				}
+				@BreadcrumbItem(BreadcrumbItemProps{Href: "/admin"}) {
+					Admin
+				}
+				@BreadcrumbItem(BreadcrumbItemProps{Href: "/admin/users"}) {
+					Users
+				}
+				@BreadcrumbItem(BreadcrumbItemProps{Current: true}) {
+					testuser
+				}
+			}
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Non-link parent</h2>
+			<p class="text-sm text-slate-500 dark:text-slate-400">Omit Href to render the item as plain text instead of a link.</p>
+			@Breadcrumb(BreadcrumbProps{}) {
+				@BreadcrumbItem(BreadcrumbItemProps{}) {
+					Settings
+				}
+				@BreadcrumbItem(BreadcrumbItemProps{Href: "/settings/profile"}) {
+					Profile
+				}
+				@BreadcrumbItem(BreadcrumbItemProps{Current: true}) {
+					Edit
+				}
+			}
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Long labels (wraps)</h2>
+			<div class="max-w-xs">
+				@Breadcrumb(BreadcrumbProps{}) {
+					@BreadcrumbItem(BreadcrumbItemProps{Href: "/items"}) {
+						Item Database
+					}
+					@BreadcrumbItem(BreadcrumbItemProps{Href: "/items?type=consumable"}) {
+						Consumables
+					}
+					@BreadcrumbItem(BreadcrumbItemProps{Current: true}) {
+						A very long item name that wraps
+					}
+				}
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">HTMX (Attrs)</h2>
+			<p class="text-sm text-slate-500 dark:text-slate-400">Wire HTMX onto a link via Attrs to swap content without a full page load.</p>
+			@Breadcrumb(BreadcrumbProps{}) {
+				@BreadcrumbItem(BreadcrumbItemProps{
+					Href: "/items",
+					Attrs: templ.Attributes{
+						"hx-get":    "/items",
+						"hx-target": "#results",
+						"hx-swap":   "innerHTML",
+					},
+				}) {
+					Item Database
+				}
+				@BreadcrumbItem(BreadcrumbItemProps{Current: true}) {
+					Red Potion
+				}
+			}
+		</section>
+	</div>
+}
+
+func init() {
+	Register(Component{
+		Name:   "breadcrumb",
+		Title:  "Breadcrumb",
+		Usage:  "@Breadcrumb(BreadcrumbProps{})",
+		Render: BreadcrumbPreview,
+	})
+}

@@ -1,0 +1,325 @@
+package ui
+
+type AccordionSize string
+
+const (
+	AccordionSizeSM AccordionSize = "sm"
+	AccordionSizeMD AccordionSize = "md"
+	AccordionSizeLG AccordionSize = "lg"
+)
+
+type AccordionProps struct {
+	Attrs templ.Attributes
+	Class string
+	Size  AccordionSize
+}
+
+type AccordionItemProps struct {
+	Attrs templ.Attributes
+	Class string
+	Open  bool
+}
+
+type AccordionTriggerProps struct {
+	Attrs templ.Attributes
+	Class string
+}
+
+type AccordionContentProps struct {
+	Attrs templ.Attributes
+	Class string
+}
+
+func accordionClasses(p AccordionProps) string {
+	return Merge("group/accordion flex w-full flex-col", p.Class)
+}
+
+func accordionItemClasses(p AccordionItemProps) string {
+	return Merge("group/item border-b border-slate-200 last:border-b-0 dark:border-slate-700", p.Class)
+}
+
+func accordionStateAttr(open bool) string {
+	if open {
+		return "open"
+	}
+
+	return "closed"
+}
+
+func accordionSizeAttr(s AccordionSize) string {
+	switch s {
+	case AccordionSizeSM:
+		return "sm"
+	case AccordionSizeLG:
+		return "lg"
+	default:
+		return "md"
+	}
+}
+
+func accordionTriggerClasses(p AccordionTriggerProps) string {
+	base := "group/trigger flex w-full items-center justify-between gap-3 text-left font-medium text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:focus-visible:ring-slate-500"
+	sizing := "group-data-[size=sm]/accordion:px-3 group-data-[size=sm]/accordion:py-2 group-data-[size=sm]/accordion:text-xs group-data-[size=md]/accordion:px-4 group-data-[size=md]/accordion:py-3 group-data-[size=md]/accordion:text-sm group-data-[size=lg]/accordion:px-5 group-data-[size=lg]/accordion:py-4 group-data-[size=lg]/accordion:text-base"
+
+	return Merge(base, sizing, p.Class)
+}
+
+func accordionContentClasses(p AccordionContentProps) string {
+	base := "text-slate-600 dark:text-slate-400"
+	sizing := "group-data-[size=sm]/accordion:px-3 group-data-[size=sm]/accordion:pt-0.5 group-data-[size=sm]/accordion:pb-3 group-data-[size=sm]/accordion:text-xs group-data-[size=md]/accordion:px-4 group-data-[size=md]/accordion:pt-1 group-data-[size=md]/accordion:pb-4 group-data-[size=md]/accordion:text-sm group-data-[size=lg]/accordion:px-5 group-data-[size=lg]/accordion:pt-1.5 group-data-[size=lg]/accordion:pb-5 group-data-[size=lg]/accordion:text-base"
+
+	return Merge(base, sizing, p.Class)
+}
+
+templ Accordion(p AccordionProps) {
+	<div class={ accordionClasses(p) } data-size={ accordionSizeAttr(p.Size) } { p.Attrs... }>
+		{ children... }
+	</div>
+}
+
+templ AccordionItem(p AccordionItemProps) {
+	<div
+		x-data="accordionItem"
+		data-state={ accordionStateAttr(p.Open) }
+		:data-state="stateAttr()"
+		class={ accordionItemClasses(p) }
+		{ p.Attrs... }
+	>
+		{ children... }
+	</div>
+}
+
+templ AccordionTrigger(p AccordionTriggerProps) {
+	<button
+		type="button"
+		@click="toggle()"
+		:aria-expanded="open"
+		class={ accordionTriggerClasses(p) }
+		{ p.Attrs... }
+	>
+		<span class="min-w-0 flex-1">
+			{ children... }
+		</span>
+		@Icon("chevron-down", "shrink-0 text-slate-500 dark:text-slate-400 transition-transform group-aria-expanded/trigger:rotate-180 group-data-[size=sm]/accordion:size-3.5 group-data-[size=md]/accordion:size-4 group-data-[size=lg]/accordion:size-5")
+	</button>
+}
+
+templ AccordionContent(p AccordionContentProps) {
+	<div
+		class="grid grid-rows-[0fr] transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none group-data-[state=open]/item:grid-rows-[1fr]"
+		role="region"
+		{ p.Attrs... }
+	>
+		<div class="overflow-hidden">
+			<div class={ accordionContentClasses(p) }>
+				{ children... }
+			</div>
+		</div>
+	</div>
+}
+
+templ AccordionPreview() {
+	<div class="space-y-8">
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Basic</h2>
+			@Accordion(AccordionProps{}) {
+				@AccordionItem(AccordionItemProps{}) {
+					@AccordionTrigger(AccordionTriggerProps{}) {
+						Section one
+					}
+					@AccordionContent(AccordionContentProps{}) {
+						Body text for the first section. Click the header to collapse it.
+					}
+				}
+				@AccordionItem(AccordionItemProps{}) {
+					@AccordionTrigger(AccordionTriggerProps{}) {
+						Section two
+					}
+					@AccordionContent(AccordionContentProps{}) {
+						Body text for the second section. Each item opens and closes independently.
+					}
+				}
+				@AccordionItem(AccordionItemProps{}) {
+					@AccordionTrigger(AccordionTriggerProps{}) {
+						Section three
+					}
+					@AccordionContent(AccordionContentProps{}) {
+						Body text for the third section.
+					}
+				}
+			}
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Sizes</h2>
+			<div class="flex flex-col gap-6">
+				@Accordion(AccordionProps{Size: AccordionSizeSM}) {
+					@AccordionItem(AccordionItemProps{}) {
+						@AccordionTrigger(AccordionTriggerProps{}) {
+							Small
+						}
+						@AccordionContent(AccordionContentProps{}) {
+							Compact spacing and text. Suited for dense sidebar nav.
+						}
+					}
+					@AccordionItem(AccordionItemProps{}) {
+						@AccordionTrigger(AccordionTriggerProps{}) {
+							Another small item
+						}
+						@AccordionContent(AccordionContentProps{}) {
+							Body text.
+						}
+					}
+				}
+				@Accordion(AccordionProps{Size: AccordionSizeMD}) {
+					@AccordionItem(AccordionItemProps{}) {
+						@AccordionTrigger(AccordionTriggerProps{}) {
+							Medium (default)
+						}
+						@AccordionContent(AccordionContentProps{}) {
+							Default spacing and text size.
+						}
+					}
+					@AccordionItem(AccordionItemProps{}) {
+						@AccordionTrigger(AccordionTriggerProps{}) {
+							Another medium item
+						}
+						@AccordionContent(AccordionContentProps{}) {
+							Body text.
+						}
+					}
+				}
+				@Accordion(AccordionProps{Size: AccordionSizeLG}) {
+					@AccordionItem(AccordionItemProps{}) {
+						@AccordionTrigger(AccordionTriggerProps{}) {
+							Large
+						}
+						@AccordionContent(AccordionContentProps{}) {
+							Roomier spacing and bigger text. Suited for landing or FAQ sections.
+						}
+					}
+					@AccordionItem(AccordionItemProps{}) {
+						@AccordionTrigger(AccordionTriggerProps{}) {
+							Another large item
+						}
+						@AccordionContent(AccordionContentProps{}) {
+							Body text.
+						}
+					}
+				}
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Default open</h2>
+			@Accordion(AccordionProps{}) {
+				@AccordionItem(AccordionItemProps{Open: true}) {
+					@AccordionTrigger(AccordionTriggerProps{}) {
+						Open by default
+					}
+					@AccordionContent(AccordionContentProps{}) {
+						Pass Open: true on AccordionItem to expand it on first render.
+					}
+				}
+				@AccordionItem(AccordionItemProps{}) {
+					@AccordionTrigger(AccordionTriggerProps{}) {
+						Closed by default
+					}
+					@AccordionContent(AccordionContentProps{}) {
+						Items are closed unless Open is true.
+					}
+				}
+			}
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Rich trigger content</h2>
+			@Accordion(AccordionProps{}) {
+				@AccordionItem(AccordionItemProps{}) {
+					@AccordionTrigger(AccordionTriggerProps{}) {
+						<span class="flex items-center gap-2">
+							@Icon("edit", "size-4 text-slate-500 dark:text-slate-400")
+							Item with icon
+						</span>
+					}
+					@AccordionContent(AccordionContentProps{}) {
+						<div class="space-y-2">
+							<p>Trigger children can hold any markup. Icons sit cleanly next to text.</p>
+							<p>Content children can be arbitrary HTML: paragraphs, lists, forms, anything.</p>
+						</div>
+					}
+				}
+				@AccordionItem(AccordionItemProps{}) {
+					@AccordionTrigger(AccordionTriggerProps{}) {
+						<span class="flex items-center gap-2">
+							@Icon("trash", "size-4 text-red-500")
+							Item with action
+						</span>
+					}
+					@AccordionContent(AccordionContentProps{}) {
+						<div class="flex items-center gap-3">
+							<p class="flex-1">Drop any component into the content slot, including buttons.</p>
+							@Button(ButtonProps{Color: ButtonColorRed, Size: ButtonSizeSM}) {
+								Action
+							}
+						</div>
+					}
+				}
+			}
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Nested in a card</h2>
+			@Card(CardProps{Class: "max-w-xl"}) {
+				@CardHeader() {
+					@CardTitle() {
+						Card with accordion
+					}
+				}
+				@Accordion(AccordionProps{}) {
+					@AccordionItem(AccordionItemProps{}) {
+						@AccordionTrigger(AccordionTriggerProps{}) {
+							First question
+						}
+						@AccordionContent(AccordionContentProps{}) {
+							First answer.
+						}
+					}
+					@AccordionItem(AccordionItemProps{}) {
+						@AccordionTrigger(AccordionTriggerProps{}) {
+							Second question
+						}
+						@AccordionContent(AccordionContentProps{}) {
+							Second answer.
+						}
+					}
+				}
+			}
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">HTMX content (Attrs)</h2>
+			<p class="text-sm text-slate-500 dark:text-slate-400">Lazy-load the panel body on first expand by wiring AccordionContent with Attrs.</p>
+			@Accordion(AccordionProps{}) {
+				@AccordionItem(AccordionItemProps{}) {
+					@AccordionTrigger(AccordionTriggerProps{}) {
+						Lazy-loaded section
+					}
+					@AccordionContent(AccordionContentProps{
+						Attrs: templ.Attributes{
+							"hx-get":     "/example",
+							"hx-trigger": "intersect once",
+							"hx-swap":    "innerHTML",
+						},
+					}) {
+						Loading...
+					}
+				}
+			}
+		</section>
+	</div>
+}
+
+func init() {
+	Register(Component{
+		Name:   "accordion",
+		Title:  "Accordion",
+		Usage:  "@Accordion(AccordionProps{})",
+		Render: AccordionPreview,
+	})
+}

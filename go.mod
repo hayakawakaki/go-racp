@@ -3,6 +3,7 @@ module github.com/hayakawakaki/go-racp
 go 1.26.3
 
 require (
+	github.com/Oudwins/tailwind-merge-go v0.2.1
 	github.com/a-h/templ v0.3.1001
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/go-sql-driver/mysql v1.10.0

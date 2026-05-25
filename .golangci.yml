@@ -111,6 +111,10 @@ linters:
       - path: domain/
         linters:
           - dupl
+      - path: internal/platform/ui/
+        linters:
+          - dupl
+          - goconst
       - path: _test\.go
         linters:
           - dupl

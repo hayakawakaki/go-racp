@@ -1,0 +1,183 @@
+package ui
+
+type NavbarProps struct {
+	Attrs   templ.Attributes
+	Brand   templ.Component
+	Actions templ.Component
+	Class   string
+}
+
+func navbarClasses(p NavbarProps) string {
+	return Merge("relative w-full bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800", p.Class)
+}
+
+templ Navbar(p NavbarProps) {
+	<header x-data="nav" @keydown.escape.window="close()" class={ navbarClasses(p) } { p.Attrs... }>
+		<div class="relative flex h-14 items-center gap-4 px-4">
+			if p.Brand != nil {
+				@p.Brand
+			}
+			<div
+				:data-open="openAttr()"
+				class="absolute top-full inset-x-0 hidden flex-col gap-1 data-[open=true]:flex z-30 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-3 shadow-sm lg:static lg:top-auto lg:inset-auto lg:flex lg:flex-row lg:items-center lg:gap-1 lg:bg-transparent lg:border-b-0 lg:p-0 lg:shadow-none"
+			>
+				{ children... }
+			</div>
+			<div class="ml-auto flex items-center gap-2">
+				if p.Actions != nil {
+					@p.Actions
+				}
+				<button
+					type="button"
+					@click="toggle()"
+					aria-label="Toggle navigation"
+					class="lg:hidden inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:focus-visible:ring-slate-500"
+				>
+					@Icon("menu")
+				</button>
+			</div>
+		</div>
+	</header>
+}
+
+templ navbarThemeToggle() {
+	@ThemeSwitcher(ThemeSwitcherProps{}) {
+		@Button(ButtonProps{
+			Variant:   ButtonGhost,
+			Size:      ButtonSizeSM,
+			AriaLabel: "Toggle theme",
+			Attrs:     templ.Attributes{"@click": "toggle()"},
+		}) {
+			<span x-show="!dark">
+				@Icon("moon")
+			</span>
+			<span x-show="dark">
+				@Icon("sun")
+			</span>
+		}
+	}
+}
+
+templ NavbarPreview() {
+	<div class="space-y-8">
+		<section class="space-y-3">
+			<h2 class="text-lg font-semibold">Basic (resize to mobile / tablet to see burger)</h2>
+			<p class="text-sm text-slate-500 dark:text-slate-400">Below lg (1024px), the burger replaces the inline nav items and toggles a dropdown panel below the header. ESC closes.</p>
+			<div class="overflow-hidden rounded-md border border-slate-200 dark:border-slate-700">
+				@Navbar(NavbarProps{
+					Brand:   Brand(BrandProps{Title: "My App", Href: "#"}),
+					Actions: navbarThemeToggle(),
+				}) {
+					@NavItem(NavItemProps{Href: "#home", Active: true}) {
+						Home
+					}
+					@NavItem(NavItemProps{Href: "#items"}) {
+						Items
+					}
+					@NavItem(NavItemProps{Href: "#mobs"}) {
+						Monsters
+					}
+					@NavItem(NavItemProps{Href: "#news"}) {
+						News
+					}
+				}
+				<div class="bg-slate-50 dark:bg-slate-950 p-6">
+					<p class="text-sm text-slate-600 dark:text-slate-400">Page content sits below the navbar.</p>
+				</div>
+			</div>
+		</section>
+		<section class="space-y-3">
+			<h2 class="text-lg font-semibold">With logo brand</h2>
+			<div class="overflow-hidden rounded-md border border-slate-200 dark:border-slate-700">
+				@Navbar(NavbarProps{
+					Brand: Brand(BrandProps{
+						Title: "My App",
+						Logo:  Icon("plus", "size-7 text-blue-600"),
+						Href:  "#",
+					}),
+					Actions: navbarThemeToggle(),
+				}) {
+					@NavItem(NavItemProps{Href: "#dashboard", Active: true}) {
+						Dashboard
+					}
+					@NavItem(NavItemProps{Href: "#accounts"}) {
+						Accounts
+					}
+					@NavItem(NavItemProps{Href: "#settings"}) {
+						Settings
+					}
+				}
+				<div class="bg-slate-50 dark:bg-slate-950 p-6">
+					<p class="text-sm text-slate-600 dark:text-slate-400">The brand title sits inside an sr-only span when a Logo is provided.</p>
+				</div>
+			</div>
+		</section>
+		<section class="space-y-3">
+			<h2 class="text-lg font-semibold">Without actions</h2>
+			<div class="overflow-hidden rounded-md border border-slate-200 dark:border-slate-700">
+				@Navbar(NavbarProps{
+					Brand: Brand(BrandProps{Title: "Plain", Href: "#"}),
+				}) {
+					@NavItem(NavItemProps{Href: "#a"}) {
+						Section A
+					}
+					@NavItem(NavItemProps{Href: "#b"}) {
+						Section B
+					}
+				}
+				<div class="bg-slate-50 dark:bg-slate-950 p-6">
+					<p class="text-sm text-slate-600 dark:text-slate-400">Omit Actions when you don't need a right-side toggle / login button.</p>
+				</div>
+			</div>
+		</section>
+		<section class="space-y-3">
+			<h2 class="text-lg font-semibold">With rich actions</h2>
+			<div class="overflow-hidden rounded-md border border-slate-200 dark:border-slate-700">
+				@Navbar(NavbarProps{
+					Brand:   Brand(BrandProps{Title: "Store", Href: "#"}),
+					Actions: navbarRichActions(),
+				}) {
+					@NavItem(NavItemProps{Href: "#catalog", Active: true}) {
+						Catalog
+					}
+					@NavItem(NavItemProps{Href: "#orders"}) {
+						Orders
+					}
+				}
+				<div class="bg-slate-50 dark:bg-slate-950 p-6">
+					<p class="text-sm text-slate-600 dark:text-slate-400">Pass any composition into actions, theme toggle, login button, avatar, etc.</p>
+				</div>
+			</div>
+		</section>
+		<section class="space-y-3">
+			<h2 class="text-lg font-semibold">Notes</h2>
+			<ul class="list-disc space-y-1 pl-5 text-sm text-slate-600 dark:text-slate-400">
+				<li>Navbar uses the same <code class="font-mono text-xs px-1 rounded bg-slate-100 dark:bg-slate-800">nav</code> Alpine factory as Sidebar, each instance owns its own scope.</li>
+				<li>Children are the nav items. They render inline on lg+ and collapse into a dropdown panel below the header on smaller screens.</li>
+				<li>Brand and Actions are slot props (templ.Component values). They render in the always-visible top row.</li>
+				<li>Note: You can't use sidebar and navbar together, it shares the same alpine actions.</li>
+			</ul>
+		</section>
+	</div>
+}
+
+templ navbarRichActions() {
+	<div class="flex items-center gap-2">
+		@navbarThemeToggle()
+		@Button(ButtonProps{Variant: ButtonGhost, Size: ButtonSizeSM, Href: "#login"}) {
+			Sign in
+		}
+		@Button(ButtonProps{Color: ButtonColorBlue, Size: ButtonSizeSM, Href: "#signup"}) {
+			Sign up
+		}
+	</div>
+}
+
+func init() {
+	Register(Component{
+		Name:   "navbar",
+		Title:  "Navbar",
+		Usage:  "@Navbar(NavbarProps{Brand: Brand(...), Actions: ...}) { @NavItem ... }",
+		Render: NavbarPreview,
+	})
+}

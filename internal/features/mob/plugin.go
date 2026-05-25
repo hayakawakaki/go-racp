@@ -14,6 +14,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/refdata"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 	"github.com/hayakawakaki/go-racp/internal/platform/theme"
+	"github.com/hayakawakaki/go-racp/internal/platform/ui"
 )
 
 const mobCacheFileName = "mob-snapshot.gob"
@@ -43,12 +44,28 @@ func init() {
 
 func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 	service := BuildService(in)
+
 	handler := transport.NewHandler(service, transport.HandlerConfig{
 		Logger:       in.Logger,
 		General:      in.Config.App.General,
 		ItemLookupFn: currentItemLookup,
 		Theme:        theme.Active,
 	})
+
+	// Mob sprite component helper
+	ui.Sprites.Mob = func(id int) string {
+		mob, err := service.Get(context.Background(), id)
+		if err != nil || mob == nil {
+			return ""
+		}
+
+		if sprite, ok := domain.LookupSprite(mob.AegisName); ok {
+			return sprite
+		}
+
+		return ""
+	}
+
 	handler.RegisterRoutes(reg, mux)
 	startDevWatcher(in, service)
 }

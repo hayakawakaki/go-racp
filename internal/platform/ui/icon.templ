@@ -1,0 +1,57 @@
+package ui
+
+templ IconPreview() {
+	<div class="space-y-8">
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Icon(name, class...)</h2>
+			<p class="text-sm text-slate-500 dark:text-slate-400">Default <code>size-4</code>; inherits color via <code>currentColor</code>. Drop an SVG into <code>internal/platform/ui/icons/</code> to register it automatically.</p>
+			<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+				for _, name := range IconNames() {
+					<div class="flex items-center gap-3 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-2">
+						<span class="text-slate-700 dark:text-slate-300">
+							@Icon(name)
+						</span>
+						<code class="text-xs text-slate-600 dark:text-slate-400">{ name }</code>
+					</div>
+				}
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Class overrides (size, color)</h2>
+			<div class="flex flex-wrap items-end gap-4">
+				@Icon("check")
+				@Icon("check", "size-6")
+				@Icon("check", "size-8 text-blue-600")
+				@Icon("trash", "size-8 text-red-600")
+				@Icon("search", "size-8 text-yellow-700")
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Inside Button</h2>
+			<div class="flex flex-wrap items-center gap-3">
+				@Button(ButtonProps{Color: ButtonColorBlue, LeftIcon: Icon("plus")}) {
+					New item
+				}
+				@Button(ButtonProps{Variant: ButtonOutline, LeftIcon: Icon("edit")}) {
+					Edit
+				}
+				@Button(ButtonProps{Color: ButtonColorRed, LeftIcon: Icon("trash")}) {
+					Delete
+				}
+				@Button(ButtonProps{Variant: ButtonGhost, AriaLabel: "Close", LeftIcon: Icon("x")})
+				@Button(ButtonProps{Variant: ButtonOutline, RightIcon: Icon("chevron-down")}) {
+					Options
+				}
+			</div>
+		</section>
+	</div>
+}
+
+func init() {
+	Register(Component{
+		Name:   "icon",
+		Title:  "Icon",
+		Usage:  "Icon(name, class...)",
+		Render: IconPreview,
+	})
+}

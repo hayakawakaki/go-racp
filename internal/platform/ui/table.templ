@@ -1,0 +1,413 @@
+package ui
+
+type TableSize string
+
+const (
+	TableSizeSM TableSize = "sm"
+	TableSizeMD TableSize = "md"
+	TableSizeLG TableSize = "lg"
+)
+
+type TableAlign string
+
+const (
+	TableAlignLeft   TableAlign = "left"
+	TableAlignCenter TableAlign = "center"
+	TableAlignRight  TableAlign = "right"
+)
+
+type TableProps struct {
+	Attrs    templ.Attributes
+	Class    string
+	Size     TableSize
+	Striped  bool
+	Hover    bool
+	Bordered bool
+}
+
+type TableRowProps struct {
+	Attrs templ.Attributes
+	Class string
+}
+
+type TableHeadProps struct {
+	Attrs templ.Attributes
+	Class string
+	Align TableAlign
+}
+
+type TableCellProps struct {
+	Attrs templ.Attributes
+	Class string
+	Align TableAlign
+}
+
+func tableSizeClasses(size TableSize) string {
+	switch size {
+	case TableSizeSM:
+		return "text-xs [&_th]:px-3 [&_th]:py-1.5 [&_td]:px-3 [&_td]:py-1.5"
+	case TableSizeLG:
+		return "text-base [&_th]:px-5 [&_th]:py-3 [&_td]:px-5 [&_td]:py-3"
+	default:
+		return "text-sm [&_th]:px-4 [&_th]:py-2 [&_td]:px-4 [&_td]:py-2"
+	}
+}
+
+func tableClasses(p TableProps) string {
+	classes := []string{
+		"w-full caption-bottom text-slate-700 dark:text-slate-300 border-collapse",
+		tableSizeClasses(p.Size),
+	}
+
+	if p.Striped {
+		classes = append(classes, "[&_tbody>tr:nth-child(odd)]:bg-slate-50 dark:[&_tbody>tr:nth-child(odd)]:bg-slate-800/40")
+	}
+
+	if p.Hover {
+		classes = append(classes, "[&_tbody>tr]:transition-colors [&_tbody>tr:hover]:bg-slate-100 dark:[&_tbody>tr:hover]:bg-slate-800/60")
+	}
+
+	if p.Bordered {
+		classes = append(classes, "border border-slate-200 dark:border-slate-700 [&_th]:border [&_td]:border [&_th]:border-slate-200 [&_td]:border-slate-200 dark:[&_th]:border-slate-700 dark:[&_td]:border-slate-700")
+	}
+
+	classes = append(classes, p.Class)
+
+	return Merge(classes...)
+}
+
+func tableAlignClass(a TableAlign) string {
+	switch a {
+	case TableAlignCenter:
+		return "text-center"
+	case TableAlignRight:
+		return "text-right"
+	default:
+		return "text-left"
+	}
+}
+
+func tableHeadClasses(p TableHeadProps) string {
+	return Merge("font-medium text-slate-900 dark:text-slate-100 align-middle", tableAlignClass(p.Align), p.Class)
+}
+
+func tableCellClasses(p TableCellProps) string {
+	return Merge("align-middle", tableAlignClass(p.Align), p.Class)
+}
+
+templ Table(p TableProps) {
+	<div class="w-full overflow-x-auto">
+		<table class={ tableClasses(p) } { p.Attrs... }>
+			{ children... }
+		</table>
+	</div>
+}
+
+templ TableHeader(class ...string) {
+	<thead class={ MergeWithDefault("[&_tr]:border-b-2 [&_tr]:border-slate-300 dark:[&_tr]:border-slate-600", class) }>
+		{ children... }
+	</thead>
+}
+
+templ TableBody(class ...string) {
+	<tbody class={ MergeWithDefault("[&_tr]:border-b [&_tr]:border-slate-200 dark:[&_tr]:border-slate-700 [&_tr:last-child]:border-0", class) }>
+		{ children... }
+	</tbody>
+}
+
+templ TableFooter(class ...string) {
+	<tfoot class={ MergeWithDefault("bg-slate-50 dark:bg-slate-800/50 [&_tr]:border-t-2 [&_tr]:border-slate-300 dark:[&_tr]:border-slate-600 font-medium", class) }>
+		{ children... }
+	</tfoot>
+}
+
+templ TableRow(p TableRowProps) {
+	<tr class={ Merge("transition-colors", p.Class) } { p.Attrs... }>
+		{ children... }
+	</tr>
+}
+
+templ TableHead(p TableHeadProps) {
+	<th class={ tableHeadClasses(p) } { p.Attrs... }>
+		{ children... }
+	</th>
+}
+
+templ TableCell(p TableCellProps) {
+	<td class={ tableCellClasses(p) } { p.Attrs... }>
+		{ children... }
+	</td>
+}
+
+templ TableCaption(class ...string) {
+	<caption class={ MergeWithDefault("mt-4 text-sm text-slate-500 dark:text-slate-400 text-left", class) }>
+		{ children... }
+	</caption>
+}
+
+templ TablePreview() {
+	<div class="space-y-8">
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Basic</h2>
+			@Table(TableProps{}) {
+				@TableHeader() {
+					@TableRow(TableRowProps{}) {
+						@TableHead(TableHeadProps{}) { ID }
+						@TableHead(TableHeadProps{}) { Name }
+						@TableHead(TableHeadProps{}) { Status }
+						@TableHead(TableHeadProps{Align: TableAlignRight}) { Level }
+					}
+				}
+				@TableBody() {
+					@TableRow(TableRowProps{}) {
+						@TableCell(TableCellProps{}) { 1 }
+						@TableCell(TableCellProps{}) { Banana }
+						@TableCell(TableCellProps{}) {
+							@Badge(BadgeProps{Variant: BadgeSubtle, Color: BadgeColorGreen}) {
+								Active
+							}
+						}
+						@TableCell(TableCellProps{Align: TableAlignRight, Class: "font-mono tabular-nums"}) { 99 }
+					}
+					@TableRow(TableRowProps{}) {
+						@TableCell(TableCellProps{}) { 2 }
+						@TableCell(TableCellProps{}) { Lemon }
+						@TableCell(TableCellProps{}) {
+							@Badge(BadgeProps{Variant: BadgeSubtle, Color: BadgeColorZinc}) {
+								Inactive
+							}
+						}
+						@TableCell(TableCellProps{Align: TableAlignRight, Class: "font-mono tabular-nums"}) { 85 }
+					}
+					@TableRow(TableRowProps{}) {
+						@TableCell(TableCellProps{}) { 3 }
+						@TableCell(TableCellProps{}) { Kiwi }
+						@TableCell(TableCellProps{}) {
+							@Badge(BadgeProps{Variant: BadgeSubtle, Color: BadgeColorGreen}) {
+								Active
+							}
+						}
+						@TableCell(TableCellProps{Align: TableAlignRight, Class: "font-mono tabular-nums"}) { 92 }
+					}
+				}
+			}
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Striped + Hover</h2>
+			@Table(TableProps{Striped: true, Hover: true}) {
+				@TableHeader() {
+					@TableRow(TableRowProps{}) {
+						@TableHead(TableHeadProps{}) { Item }
+						@TableHead(TableHeadProps{}) { Type }
+						@TableHead(TableHeadProps{Align: TableAlignRight}) { Weight }
+					}
+				}
+				@TableBody() {
+					@TableRow(TableRowProps{}) {
+						@TableCell(TableCellProps{}) { Red Potion }
+						@TableCell(TableCellProps{}) { Consumable }
+						@TableCell(TableCellProps{Align: TableAlignRight, Class: "font-mono tabular-nums"}) { 7 }
+					}
+					@TableRow(TableRowProps{}) {
+						@TableCell(TableCellProps{}) { Apple }
+						@TableCell(TableCellProps{}) { Consumable }
+						@TableCell(TableCellProps{Align: TableAlignRight, Class: "font-mono tabular-nums"}) { 2 }
+					}
+					@TableRow(TableRowProps{}) {
+						@TableCell(TableCellProps{}) { Sword }
+						@TableCell(TableCellProps{}) { Weapon }
+						@TableCell(TableCellProps{Align: TableAlignRight, Class: "font-mono tabular-nums"}) { 140 }
+					}
+					@TableRow(TableRowProps{}) {
+						@TableCell(TableCellProps{}) { Robe }
+						@TableCell(TableCellProps{}) { Armor }
+						@TableCell(TableCellProps{Align: TableAlignRight, Class: "font-mono tabular-nums"}) { 70 }
+					}
+				}
+			}
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Bordered</h2>
+			@Table(TableProps{Bordered: true}) {
+				@TableHeader() {
+					@TableRow(TableRowProps{}) {
+						@TableHead(TableHeadProps{}) { Setting }
+						@TableHead(TableHeadProps{}) { Value }
+					}
+				}
+				@TableBody() {
+					@TableRow(TableRowProps{}) {
+						@TableCell(TableCellProps{}) { Server name }
+						@TableCell(TableCellProps{Class: "font-mono"}) { Default }
+					}
+					@TableRow(TableRowProps{}) {
+						@TableCell(TableCellProps{}) { Drop rate }
+						@TableCell(TableCellProps{Class: "font-mono"}) { 1x }
+					}
+					@TableRow(TableRowProps{}) {
+						@TableCell(TableCellProps{}) { Max level }
+						@TableCell(TableCellProps{Class: "font-mono"}) { 99 }
+					}
+				}
+			}
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Sizes</h2>
+			<div class="space-y-6">
+				<div class="space-y-2">
+					<p class="text-xs uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Small</p>
+					@Table(TableProps{Size: TableSizeSM, Hover: true}) {
+						@TableHeader() {
+							@TableRow(TableRowProps{}) {
+								@TableHead(TableHeadProps{}) { Key }
+								@TableHead(TableHeadProps{}) { Value }
+							}
+						}
+						@TableBody() {
+							@TableRow(TableRowProps{}) {
+								@TableCell(TableCellProps{}) { rate }
+								@TableCell(TableCellProps{Class: "font-mono"}) { 1.0 }
+							}
+							@TableRow(TableRowProps{}) {
+								@TableCell(TableCellProps{}) { cap }
+								@TableCell(TableCellProps{Class: "font-mono"}) { 100 }
+							}
+						}
+					}
+				</div>
+				<div class="space-y-2">
+					<p class="text-xs uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Medium (default)</p>
+					@Table(TableProps{Hover: true}) {
+						@TableHeader() {
+							@TableRow(TableRowProps{}) {
+								@TableHead(TableHeadProps{}) { Key }
+								@TableHead(TableHeadProps{}) { Value }
+							}
+						}
+						@TableBody() {
+							@TableRow(TableRowProps{}) {
+								@TableCell(TableCellProps{}) { rate }
+								@TableCell(TableCellProps{Class: "font-mono"}) { 1.0 }
+							}
+							@TableRow(TableRowProps{}) {
+								@TableCell(TableCellProps{}) { cap }
+								@TableCell(TableCellProps{Class: "font-mono"}) { 100 }
+							}
+						}
+					}
+				</div>
+				<div class="space-y-2">
+					<p class="text-xs uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Large</p>
+					@Table(TableProps{Size: TableSizeLG, Hover: true}) {
+						@TableHeader() {
+							@TableRow(TableRowProps{}) {
+								@TableHead(TableHeadProps{}) { Key }
+								@TableHead(TableHeadProps{}) { Value }
+							}
+						}
+						@TableBody() {
+							@TableRow(TableRowProps{}) {
+								@TableCell(TableCellProps{}) { rate }
+								@TableCell(TableCellProps{Class: "font-mono"}) { 1.0 }
+							}
+							@TableRow(TableRowProps{}) {
+								@TableCell(TableCellProps{}) { cap }
+								@TableCell(TableCellProps{Class: "font-mono"}) { 100 }
+							}
+						}
+					}
+				</div>
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">With footer + caption</h2>
+			@Table(TableProps{Striped: true}) {
+				@TableCaption() {
+					Sales for the previous month.
+				}
+				@TableHeader() {
+					@TableRow(TableRowProps{}) {
+						@TableHead(TableHeadProps{}) { Product }
+						@TableHead(TableHeadProps{Align: TableAlignRight}) { Units }
+						@TableHead(TableHeadProps{Align: TableAlignRight}) { Revenue }
+					}
+				}
+				@TableBody() {
+					@TableRow(TableRowProps{}) {
+						@TableCell(TableCellProps{}) { Widget A }
+						@TableCell(TableCellProps{Align: TableAlignRight, Class: "font-mono tabular-nums"}) { 120 }
+						@TableCell(TableCellProps{Align: TableAlignRight, Class: "font-mono tabular-nums"}) { $1,200 }
+					}
+					@TableRow(TableRowProps{}) {
+						@TableCell(TableCellProps{}) { Widget B }
+						@TableCell(TableCellProps{Align: TableAlignRight, Class: "font-mono tabular-nums"}) { 85 }
+						@TableCell(TableCellProps{Align: TableAlignRight, Class: "font-mono tabular-nums"}) { $1,700 }
+					}
+					@TableRow(TableRowProps{}) {
+						@TableCell(TableCellProps{}) { Widget C }
+						@TableCell(TableCellProps{Align: TableAlignRight, Class: "font-mono tabular-nums"}) { 42 }
+						@TableCell(TableCellProps{Align: TableAlignRight, Class: "font-mono tabular-nums"}) { $1,260 }
+					}
+				}
+				@TableFooter() {
+					@TableRow(TableRowProps{}) {
+						@TableCell(TableCellProps{}) { Total }
+						@TableCell(TableCellProps{Align: TableAlignRight, Class: "font-mono tabular-nums"}) { 247 }
+						@TableCell(TableCellProps{Align: TableAlignRight, Class: "font-mono tabular-nums"}) { $4,160 }
+					}
+				}
+			}
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">With actions</h2>
+			@Table(TableProps{Hover: true}) {
+				@TableHeader() {
+					@TableRow(TableRowProps{}) {
+						@TableHead(TableHeadProps{}) { Name }
+						@TableHead(TableHeadProps{}) { Role }
+						@TableHead(TableHeadProps{Align: TableAlignRight}) { Actions }
+					}
+				}
+				@TableBody() {
+					@TableRow(TableRowProps{}) {
+						@TableCell(TableCellProps{}) { testuser }
+						@TableCell(TableCellProps{}) {
+							@Badge(BadgeProps{Variant: BadgeOutline, Color: BadgeColorBlue}) {
+								Admin
+							}
+						}
+						@TableCell(TableCellProps{Align: TableAlignRight}) {
+							<div class="inline-flex items-center gap-1">
+								@Button(ButtonProps{Variant: ButtonGhost, Size: ButtonSizeSM, AriaLabel: "Edit", LeftIcon: Icon("edit")})
+								@Button(ButtonProps{Variant: ButtonGhost, Size: ButtonSizeSM, AriaLabel: "Delete", LeftIcon: Icon("trash")})
+							</div>
+						}
+					}
+					@TableRow(TableRowProps{}) {
+						@TableCell(TableCellProps{}) { kaki }
+						@TableCell(TableCellProps{}) {
+							@Badge(BadgeProps{Variant: BadgeOutline, Color: BadgeColorZinc}) {
+								Player
+							}
+						}
+						@TableCell(TableCellProps{Align: TableAlignRight}) {
+							<div class="inline-flex items-center gap-1">
+								@Button(ButtonProps{Variant: ButtonGhost, Size: ButtonSizeSM, AriaLabel: "Edit", LeftIcon: Icon("edit")})
+								@Button(ButtonProps{Variant: ButtonGhost, Size: ButtonSizeSM, AriaLabel: "Delete", LeftIcon: Icon("trash")})
+							</div>
+						}
+					}
+				}
+			}
+		</section>
+	</div>
+}
+
+func init() {
+	Register(Component{
+		Name:   "table",
+		Title:  "Table",
+		Usage:  "@Table(TableProps{}) { @TableHeader { ... } @TableBody { ... } }",
+		Render: TablePreview,
+	})
+}

@@ -1,0 +1,357 @@
+package ui
+
+type TabsVariant string
+
+const (
+	TabsLine  TabsVariant = "line"
+	TabsPills TabsVariant = "pills"
+)
+
+type TabsSize string
+
+const (
+	TabsSizeSM TabsSize = "sm"
+	TabsSizeMD TabsSize = "md"
+	TabsSizeLG TabsSize = "lg"
+)
+
+type TabsProps struct {
+	Attrs   templ.Attributes
+	Class   string
+	Default string
+	Variant TabsVariant
+	Size    TabsSize
+}
+
+type TabsListProps struct {
+	Attrs templ.Attributes
+	Class string
+}
+
+type TabsTriggerProps struct {
+	Attrs templ.Attributes
+	Class string
+	Value string
+}
+
+type TabsContentProps struct {
+	Attrs templ.Attributes
+	Class string
+	Value string
+}
+
+func tabsVariantAttr(v TabsVariant) string {
+	if v == TabsPills {
+		return "pills"
+	}
+
+	return "line"
+}
+
+func tabsSizeAttr(s TabsSize) string {
+	switch s {
+	case TabsSizeSM:
+		return "sm"
+	case TabsSizeLG:
+		return "lg"
+	default:
+		return "md"
+	}
+}
+
+func tabsClasses(p TabsProps) string {
+	return Merge("group/tabs w-full", p.Class)
+}
+
+func tabsListClasses(p TabsListProps) string {
+	line := "group-data-[variant=line]/tabs:flex group-data-[variant=line]/tabs:items-center group-data-[variant=line]/tabs:gap-1 group-data-[variant=line]/tabs:border-b group-data-[variant=line]/tabs:border-slate-200 dark:group-data-[variant=line]/tabs:border-slate-700"
+	pills := "group-data-[variant=pills]/tabs:inline-flex group-data-[variant=pills]/tabs:items-center group-data-[variant=pills]/tabs:gap-1 group-data-[variant=pills]/tabs:rounded-lg group-data-[variant=pills]/tabs:bg-slate-100 dark:group-data-[variant=pills]/tabs:bg-slate-800 group-data-[variant=pills]/tabs:p-1"
+
+	return Merge(line, pills, p.Class)
+}
+
+func tabsTriggerClasses(p TabsTriggerProps) string {
+	base := "inline-flex items-center justify-center transition-colors cursor-pointer text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:focus-visible:ring-slate-500"
+	sizing := "group-data-[size=sm]/tabs:px-2.5 group-data-[size=sm]/tabs:py-1 group-data-[size=sm]/tabs:text-xs group-data-[size=md]/tabs:px-3 group-data-[size=md]/tabs:py-1.5 group-data-[size=md]/tabs:text-sm group-data-[size=lg]/tabs:px-4 group-data-[size=lg]/tabs:py-2 group-data-[size=lg]/tabs:text-base"
+	line := "group-data-[variant=line]/tabs:border-b-2 group-data-[variant=line]/tabs:-mb-px group-data-[variant=line]/tabs:border-transparent group-data-[variant=line]/tabs:font-medium aria-selected:group-data-[variant=line]/tabs:border-slate-900 aria-selected:group-data-[variant=line]/tabs:text-slate-900 dark:aria-selected:group-data-[variant=line]/tabs:border-slate-100 dark:aria-selected:group-data-[variant=line]/tabs:text-slate-100"
+	pills := "group-data-[variant=pills]/tabs:rounded-md group-data-[variant=pills]/tabs:font-medium aria-selected:group-data-[variant=pills]/tabs:bg-white dark:aria-selected:group-data-[variant=pills]/tabs:bg-slate-700 aria-selected:group-data-[variant=pills]/tabs:text-slate-900 dark:aria-selected:group-data-[variant=pills]/tabs:text-slate-100 aria-selected:group-data-[variant=pills]/tabs:shadow-sm"
+
+	return Merge(base, sizing, line, pills, p.Class)
+}
+
+func tabsContentClasses(p TabsContentProps) string {
+	return Merge("mt-3 focus-visible:outline-none", p.Class)
+}
+
+templ Tabs(p TabsProps) {
+	<div
+		x-data="tabs"
+		data-tabs-default={ p.Default }
+		data-variant={ tabsVariantAttr(p.Variant) }
+		data-size={ tabsSizeAttr(p.Size) }
+		class={ tabsClasses(p) }
+		{ p.Attrs... }
+	>
+		{ children... }
+	</div>
+}
+
+templ TabsList(p TabsListProps) {
+	<div role="tablist" class={ tabsListClasses(p) } { p.Attrs... }>
+		{ children... }
+	</div>
+}
+
+templ TabsTrigger(p TabsTriggerProps) {
+	<button
+		type="button"
+		role="tab"
+		data-tab-value={ p.Value }
+		@click={ "select('" + p.Value + "')" }
+		:aria-selected={ "isActive('" + p.Value + "')" }
+		class={ tabsTriggerClasses(p) }
+		{ p.Attrs... }
+	>
+		{ children... }
+	</button>
+}
+
+templ TabsContent(p TabsContentProps) {
+	<div
+		role="tabpanel"
+		x-show={ "isActive('" + p.Value + "')" }
+		x-cloak
+		class={ tabsContentClasses(p) }
+		{ p.Attrs... }
+	>
+		{ children... }
+	</div>
+}
+
+templ TabsPreview() {
+	<div class="space-y-8">
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Basic (line)</h2>
+			@Tabs(TabsProps{}) {
+				@TabsList(TabsListProps{}) {
+					@TabsTrigger(TabsTriggerProps{Value: "stats"}) {
+						Stats
+					}
+					@TabsTrigger(TabsTriggerProps{Value: "equipment"}) {
+						Equipment
+					}
+					@TabsTrigger(TabsTriggerProps{Value: "skills"}) {
+						Skills
+					}
+				}
+				@TabsContent(TabsContentProps{Value: "stats"}) {
+					<p class="text-sm text-slate-600 dark:text-slate-400">Body for the Stats tab. Replace with any markup.</p>
+				}
+				@TabsContent(TabsContentProps{Value: "equipment"}) {
+					<p class="text-sm text-slate-600 dark:text-slate-400">Body for the Equipment tab.</p>
+				}
+				@TabsContent(TabsContentProps{Value: "skills"}) {
+					<p class="text-sm text-slate-600 dark:text-slate-400">Body for the Skills tab.</p>
+				}
+			}
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Pills</h2>
+			@Tabs(TabsProps{Variant: TabsPills}) {
+				@TabsList(TabsListProps{}) {
+					@TabsTrigger(TabsTriggerProps{Value: "overview"}) {
+						Overview
+					}
+					@TabsTrigger(TabsTriggerProps{Value: "settings"}) {
+						Settings
+					}
+					@TabsTrigger(TabsTriggerProps{Value: "advanced"}) {
+						Advanced
+					}
+				}
+				@TabsContent(TabsContentProps{Value: "overview"}) {
+					<p class="text-sm text-slate-600 dark:text-slate-400">Overview panel.</p>
+				}
+				@TabsContent(TabsContentProps{Value: "settings"}) {
+					<p class="text-sm text-slate-600 dark:text-slate-400">Settings panel.</p>
+				}
+				@TabsContent(TabsContentProps{Value: "advanced"}) {
+					<p class="text-sm text-slate-600 dark:text-slate-400">Advanced panel.</p>
+				}
+			}
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Default tab</h2>
+			<p class="text-sm text-slate-500 dark:text-slate-400">Pass Default to tab to open on first render. No input = first tab.</p>
+			@Tabs(TabsProps{Default: "third"}) {
+				@TabsList(TabsListProps{}) {
+					@TabsTrigger(TabsTriggerProps{Value: "first"}) {
+						First
+					}
+					@TabsTrigger(TabsTriggerProps{Value: "second"}) {
+						Second
+					}
+					@TabsTrigger(TabsTriggerProps{Value: "third"}) {
+						Third (opens by default)
+					}
+				}
+				@TabsContent(TabsContentProps{Value: "first"}) {
+					<p class="text-sm text-slate-600 dark:text-slate-400">First.</p>
+				}
+				@TabsContent(TabsContentProps{Value: "second"}) {
+					<p class="text-sm text-slate-600 dark:text-slate-400">Second.</p>
+				}
+				@TabsContent(TabsContentProps{Value: "third"}) {
+					<p class="text-sm text-slate-600 dark:text-slate-400">Third.</p>
+				}
+			}
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Sizes</h2>
+			<div class="space-y-6">
+				<div class="space-y-2">
+					<p class="text-xs uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Small</p>
+					@Tabs(TabsProps{Size: TabsSizeSM}) {
+						@TabsList(TabsListProps{}) {
+							@TabsTrigger(TabsTriggerProps{Value: "a"}) { One }
+							@TabsTrigger(TabsTriggerProps{Value: "b"}) { Two }
+							@TabsTrigger(TabsTriggerProps{Value: "c"}) { Three }
+						}
+						@TabsContent(TabsContentProps{Value: "a"}) {
+							<p class="text-xs text-slate-600 dark:text-slate-400">Small body.</p>
+						}
+						@TabsContent(TabsContentProps{Value: "b"}) {
+							<p class="text-xs text-slate-600 dark:text-slate-400">Small body.</p>
+						}
+						@TabsContent(TabsContentProps{Value: "c"}) {
+							<p class="text-xs text-slate-600 dark:text-slate-400">Small body.</p>
+						}
+					}
+				</div>
+				<div class="space-y-2">
+					<p class="text-xs uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Medium (default)</p>
+					@Tabs(TabsProps{Size: TabsSizeMD}) {
+						@TabsList(TabsListProps{}) {
+							@TabsTrigger(TabsTriggerProps{Value: "a"}) { One }
+							@TabsTrigger(TabsTriggerProps{Value: "b"}) { Two }
+							@TabsTrigger(TabsTriggerProps{Value: "c"}) { Three }
+						}
+						@TabsContent(TabsContentProps{Value: "a"}) {
+							<p class="text-sm text-slate-600 dark:text-slate-400">Medium body.</p>
+						}
+						@TabsContent(TabsContentProps{Value: "b"}) {
+							<p class="text-sm text-slate-600 dark:text-slate-400">Medium body.</p>
+						}
+						@TabsContent(TabsContentProps{Value: "c"}) {
+							<p class="text-sm text-slate-600 dark:text-slate-400">Medium body.</p>
+						}
+					}
+				</div>
+				<div class="space-y-2">
+					<p class="text-xs uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Large</p>
+					@Tabs(TabsProps{Size: TabsSizeLG}) {
+						@TabsList(TabsListProps{}) {
+							@TabsTrigger(TabsTriggerProps{Value: "a"}) { One }
+							@TabsTrigger(TabsTriggerProps{Value: "b"}) { Two }
+							@TabsTrigger(TabsTriggerProps{Value: "c"}) { Three }
+						}
+						@TabsContent(TabsContentProps{Value: "a"}) {
+							<p class="text-base text-slate-600 dark:text-slate-400">Large body.</p>
+						}
+						@TabsContent(TabsContentProps{Value: "b"}) {
+							<p class="text-base text-slate-600 dark:text-slate-400">Large body.</p>
+						}
+						@TabsContent(TabsContentProps{Value: "c"}) {
+							<p class="text-base text-slate-600 dark:text-slate-400">Large body.</p>
+						}
+					}
+				</div>
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Rich content + composition</h2>
+			@Tabs(TabsProps{Variant: TabsPills, Default: "members"}) {
+				@TabsList(TabsListProps{}) {
+					@TabsTrigger(TabsTriggerProps{Value: "members"}) {
+						<span class="flex items-center gap-2">
+							@Icon("plus", "size-3.5")
+							Members
+						</span>
+					}
+					@TabsTrigger(TabsTriggerProps{Value: "logs"}) {
+						<span class="flex items-center gap-2">
+							@Icon("search", "size-3.5")
+							Logs
+						</span>
+					}
+				}
+				@TabsContent(TabsContentProps{Value: "members"}) {
+					@Table(TableProps{Hover: true}) {
+						@TableHeader() {
+							@TableRow(TableRowProps{}) {
+								@TableHead(TableHeadProps{}) { Name }
+								@TableHead(TableHeadProps{}) { Role }
+							}
+						}
+						@TableBody() {
+							@TableRow(TableRowProps{}) {
+								@TableCell(TableCellProps{}) { testuser }
+								@TableCell(TableCellProps{}) {
+									@Badge(BadgeProps{Variant: BadgeOutline, Color: BadgeColorBlue}) {
+										Admin
+									}
+								}
+							}
+							@TableRow(TableRowProps{}) {
+								@TableCell(TableCellProps{}) { kaki }
+								@TableCell(TableCellProps{}) {
+									@Badge(BadgeProps{Variant: BadgeOutline, Color: BadgeColorZinc}) {
+										Player
+									}
+								}
+							}
+						}
+					}
+				}
+				@TabsContent(TabsContentProps{Value: "logs"}) {
+					<ul class="text-sm text-slate-600 dark:text-slate-400 space-y-1">
+						<li>2026-05-25 10:14 - testuser logged in</li>
+						<li>2026-05-25 10:02 - kaki updated profile</li>
+					</ul>
+				}
+			}
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">HTMX content (Attrs)</h2>
+			<p class="text-sm text-slate-500 dark:text-slate-400">Lazy-load tab content on first reveal by adding HTMX attrs to TabsContent.</p>
+			@Tabs(TabsProps{}) {
+				@TabsList(TabsListProps{}) {
+					@TabsTrigger(TabsTriggerProps{Value: "summary"}) { Summary }
+					@TabsTrigger(TabsTriggerProps{Value: "history"}) { History }
+				}
+				@TabsContent(TabsContentProps{Value: "summary"}) {
+					<p class="text-sm text-slate-600 dark:text-slate-400">Inline content for the summary tab.</p>
+				}
+				@TabsContent(TabsContentProps{
+					Value: "history",
+					Attrs: templ.Attributes{
+						"hx-get":     "/example",
+						"hx-trigger": "intersect once",
+						"hx-swap":    "innerHTML",
+					},
+				}) {
+					<p class="text-sm text-slate-500 dark:text-slate-400">Loading...</p>
+				}
+			}
+		</section>
+	</div>
+}
+
+func init() {
+	Register(Component{
+		Name:   "tabs",
+		Title:  "Tabs",
+		Usage:  "@Tabs(TabsProps{}) { @TabsList { @TabsTrigger { ... } } @TabsContent(...) { ... } }",
+		Render: TabsPreview,
+	})
+}

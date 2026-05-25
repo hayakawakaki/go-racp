@@ -1,0 +1,314 @@
+package ui
+
+import "strconv"
+
+type InputType string
+
+const (
+	InputTypeText          InputType = "text"
+	InputTypeEmail         InputType = "email"
+	InputTypePassword      InputType = "password"
+	InputTypeNumber        InputType = "number"
+	InputTypeTel           InputType = "tel"
+	InputTypeURL           InputType = "url"
+	InputTypeDate          InputType = "date"
+	InputTypeTime          InputType = "time"
+	InputTypeDateTimeLocal InputType = "datetime-local"
+	InputTypeSearch        InputType = "search"
+	InputTypeColor         InputType = "color"
+	InputTypeFile          InputType = "file"
+	InputTypeHidden        InputType = "hidden"
+)
+
+type InputColor string
+
+const (
+	InputColorNeutral InputColor = "neutral"
+	InputColorBlue    InputColor = "blue"
+	InputColorRed     InputColor = "red"
+	InputColorYellow  InputColor = "yellow"
+	InputColorGreen   InputColor = "green"
+	InputColorOrange  InputColor = "orange"
+	InputColorPurple  InputColor = "purple"
+	InputColorPink    InputColor = "pink"
+	InputColorIndigo  InputColor = "indigo"
+	InputColorTeal    InputColor = "teal"
+	InputColorZinc    InputColor = "zinc"
+	InputColorStone   InputColor = "stone"
+)
+
+type InputSize string
+
+const (
+	InputSizeSM InputSize = "sm"
+	InputSizeMD InputSize = "md"
+	InputSizeLG InputSize = "lg"
+)
+
+type InputRounded string
+
+const (
+	InputRoundedSM InputRounded = "sm"
+	InputRoundedMD InputRounded = "md"
+	InputRoundedLG InputRounded = "lg"
+	InputRoundedXL InputRounded = "xl"
+)
+
+type InputProps struct {
+	Attrs        templ.Attributes
+	LeftIcon     templ.Component
+	RightIcon    templ.Component
+	Type         InputType
+	Name         string
+	ID           string
+	Value        string
+	Placeholder  string
+	AutoComplete string
+	Pattern      string
+	Min          string
+	Max          string
+	Step         string
+	Class        string
+	AriaLabel    string
+	Size         InputSize
+	Rounded      InputRounded
+	Color        InputColor
+	MinLength    int
+	MaxLength    int
+	Required     bool
+	Disabled     bool
+	ReadOnly     bool
+	Invalid      bool
+}
+
+var inputFocusRings = map[InputColor]string{
+	InputColorBlue:   "focus-visible:ring-blue-500",
+	InputColorRed:    "focus-visible:ring-red-500",
+	InputColorYellow: "focus-visible:ring-yellow-500",
+	InputColorGreen:  "focus-visible:ring-green-500",
+	InputColorOrange: "focus-visible:ring-orange-500",
+	InputColorPurple: "focus-visible:ring-purple-500",
+	InputColorPink:   "focus-visible:ring-pink-500",
+	InputColorIndigo: "focus-visible:ring-indigo-500",
+	InputColorTeal:   "focus-visible:ring-teal-500",
+	InputColorZinc:   "focus-visible:ring-zinc-700",
+	InputColorStone:  "focus-visible:ring-stone-600",
+}
+
+func inputFocusRing(color InputColor) string {
+	if ring, ok := inputFocusRings[color]; ok {
+		return ring
+	}
+
+	return "focus-visible:ring-slate-400"
+}
+
+func inputRoundedClass(r InputRounded) string {
+	switch r {
+	case InputRoundedSM:
+		return "rounded-sm"
+	case InputRoundedMD:
+		return "rounded-md"
+	case InputRoundedLG:
+		return "rounded-lg"
+	case InputRoundedXL:
+		return "rounded-xl"
+	default:
+		return ""
+	}
+}
+
+func inputPaddingClasses(p InputProps) string {
+	var leftPad, rightPad, vertical, text string
+
+	switch p.Size {
+	case InputSizeSM:
+		vertical = "py-1"
+		text = "text-sm"
+		if p.LeftIcon != nil {
+			leftPad = "pl-8"
+		} else {
+			leftPad = "pl-2"
+		}
+		if p.RightIcon != nil {
+			rightPad = "pr-8"
+		} else {
+			rightPad = "pr-2"
+		}
+	case InputSizeLG:
+		vertical = "py-2.5"
+		text = "text-base"
+		if p.LeftIcon != nil {
+			leftPad = "pl-11"
+		} else {
+			leftPad = "pl-4"
+		}
+		if p.RightIcon != nil {
+			rightPad = "pr-11"
+		} else {
+			rightPad = "pr-4"
+		}
+	default:
+		vertical = "py-2"
+		text = "text-sm"
+		if p.LeftIcon != nil {
+			leftPad = "pl-9"
+		} else {
+			leftPad = "pl-3"
+		}
+		if p.RightIcon != nil {
+			rightPad = "pr-9"
+		} else {
+			rightPad = "pr-3"
+		}
+	}
+
+	return Merge(leftPad, rightPad, vertical, text)
+}
+
+func inputClasses(p InputProps) string {
+	base := "block w-full bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-inset disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-slate-400 dark:placeholder:text-slate-500"
+
+	var stateClasses string
+
+	if p.Invalid {
+		stateClasses = "border-red-500 focus-visible:ring-red-500"
+	} else {
+		stateClasses = "border-slate-300 dark:border-slate-600 " + inputFocusRing(p.Color)
+	}
+
+	return Merge(base, inputPaddingClasses(p), inputRoundedClass(p.Rounded), stateClasses, p.Class)
+}
+
+func inputIconWrapClasses(p InputProps, side string) string {
+	base := "absolute top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500 group-has-[:disabled]:opacity-50 flex items-center"
+
+	var pos string
+
+	switch p.Size {
+	case InputSizeSM:
+		if side == "right" {
+			pos = "right-2"
+		} else {
+			pos = "left-2"
+		}
+	case InputSizeLG:
+		if side == "right" {
+			pos = "right-3.5"
+		} else {
+			pos = "left-3.5"
+		}
+	default:
+		if side == "right" {
+			pos = "right-3"
+		} else {
+			pos = "left-3"
+		}
+	}
+
+	return Merge(base, pos)
+}
+
+func inputHasIcons(p InputProps) bool {
+	return p.LeftIcon != nil || p.RightIcon != nil
+}
+
+func inputType(p InputProps) string {
+	if p.Type == "" {
+		return string(InputTypeText)
+	}
+
+	return string(p.Type)
+}
+
+func inputAttrs(p InputProps) templ.Attributes {
+	attrs := templ.Attributes{}
+
+	if p.ID != "" {
+		attrs["id"] = p.ID
+	}
+
+	if p.Name != "" {
+		attrs["name"] = p.Name
+	}
+
+	if p.Value != "" {
+		attrs["value"] = p.Value
+	}
+
+	if p.Placeholder != "" {
+		attrs["placeholder"] = p.Placeholder
+	}
+
+	if p.AutoComplete != "" {
+		attrs["autocomplete"] = p.AutoComplete
+	}
+
+	if p.Pattern != "" {
+		attrs["pattern"] = p.Pattern
+	}
+
+	if p.Min != "" {
+		attrs["min"] = p.Min
+	}
+
+	if p.Max != "" {
+		attrs["max"] = p.Max
+	}
+
+	if p.Step != "" {
+		attrs["step"] = p.Step
+	}
+
+	if p.MinLength > 0 {
+		attrs["minlength"] = strconv.Itoa(p.MinLength)
+	}
+
+	if p.MaxLength > 0 {
+		attrs["maxlength"] = strconv.Itoa(p.MaxLength)
+	}
+
+	if p.AriaLabel != "" {
+		attrs["aria-label"] = p.AriaLabel
+	}
+
+	if p.Invalid {
+		attrs["aria-invalid"] = "true"
+	}
+
+	return MergeAttr(attrs, p.Attrs)
+}
+
+templ Input(p InputProps) {
+	if inputHasIcons(p) {
+		<div class="group relative">
+			if p.LeftIcon != nil {
+				<span class={ inputIconWrapClasses(p, "left") }>
+					@p.LeftIcon
+				</span>
+			}
+			<input
+				type={ inputType(p) }
+				class={ inputClasses(p) }
+				required?={ p.Required }
+				disabled?={ p.Disabled }
+				readonly?={ p.ReadOnly }
+				{ inputAttrs(p)... }
+			/>
+			if p.RightIcon != nil {
+				<span class={ inputIconWrapClasses(p, "right") }>
+					@p.RightIcon
+				</span>
+			}
+		</div>
+	} else {
+		<input
+			type={ inputType(p) }
+			class={ inputClasses(p) }
+			required?={ p.Required }
+			disabled?={ p.Disabled }
+			readonly?={ p.ReadOnly }
+			{ inputAttrs(p)... }
+		/>
+	}
+}

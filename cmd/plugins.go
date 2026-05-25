@@ -16,4 +16,5 @@ import (
 	_ "github.com/hayakawakaki/go-racp/internal/features/stall"
 	_ "github.com/hayakawakaki/go-racp/internal/features/tickets"
 	_ "github.com/hayakawakaki/go-racp/internal/platform/theme"
+	_ "github.com/hayakawakaki/go-racp/internal/platform/ui"
 )

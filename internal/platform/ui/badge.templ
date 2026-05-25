@@ -1,0 +1,308 @@
+package ui
+
+type BadgeVariant string
+
+const (
+	BadgeSolid   BadgeVariant = "solid"
+	BadgeOutline BadgeVariant = "outline"
+	BadgeSubtle  BadgeVariant = "subtle"
+)
+
+type BadgeColor string
+
+const (
+	BadgeColorNeutral BadgeColor = "neutral"
+	BadgeColorBlue    BadgeColor = "blue"
+	BadgeColorRed     BadgeColor = "red"
+	BadgeColorYellow  BadgeColor = "yellow"
+	BadgeColorGreen   BadgeColor = "green"
+	BadgeColorOrange  BadgeColor = "orange"
+	BadgeColorPurple  BadgeColor = "purple"
+	BadgeColorPink    BadgeColor = "pink"
+	BadgeColorIndigo  BadgeColor = "indigo"
+	BadgeColorTeal    BadgeColor = "teal"
+	BadgeColorZinc    BadgeColor = "zinc"
+	BadgeColorStone   BadgeColor = "stone"
+)
+
+type BadgeSize string
+
+const (
+	BadgeSizeSM BadgeSize = "sm"
+	BadgeSizeMD BadgeSize = "md"
+	BadgeSizeLG BadgeSize = "lg"
+)
+
+type BadgeRounded string
+
+const (
+	BadgeRoundedSM   BadgeRounded = "sm"
+	BadgeRoundedMD   BadgeRounded = "md"
+	BadgeRoundedLG   BadgeRounded = "lg"
+	BadgeRoundedFull BadgeRounded = "full"
+)
+
+type BadgeProps struct {
+	Attrs   templ.Attributes
+	Variant BadgeVariant
+	Color   BadgeColor
+	Size    BadgeSize
+	Rounded BadgeRounded
+	Class   string
+}
+
+func badgeClasses(p BadgeProps) string {
+	variant := p.Variant
+	if variant == "" {
+		variant = BadgeSolid
+	}
+
+	color := p.Color
+	if color == "" {
+		color = BadgeColorNeutral
+	}
+
+	size := p.Size
+	if size == "" {
+		size = BadgeSizeMD
+	}
+
+	base := "inline-flex items-center gap-1 font-medium whitespace-nowrap leading-none [&_svg]:translate-y-px"
+
+	var sizeClasses string
+
+	switch size {
+	case BadgeSizeSM:
+		sizeClasses = "text-[10px] px-1.5 py-1"
+	case BadgeSizeLG:
+		sizeClasses = "text-sm px-2.5 py-1.5"
+	default:
+		sizeClasses = "text-xs px-2 py-1"
+	}
+
+	return Merge(base, sizeClasses, badgeRoundedClass(p.Rounded), badgeVariantClasses(variant, color), p.Class)
+}
+
+func badgeRoundedClass(r BadgeRounded) string {
+	switch r {
+	case BadgeRoundedSM:
+		return "rounded-sm"
+	case BadgeRoundedMD:
+		return "rounded-md"
+	case BadgeRoundedLG:
+		return "rounded-lg"
+	case BadgeRoundedFull:
+		return "rounded-full"
+	default:
+		return ""
+	}
+}
+
+var badgeClassMap = map[BadgeVariant]map[BadgeColor]string{
+	BadgeSolid: {
+		BadgeColorNeutral: "bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900",
+		BadgeColorBlue:    "bg-blue-600 text-white",
+		BadgeColorRed:     "bg-red-600 text-white",
+		BadgeColorYellow:  "bg-yellow-400 text-yellow-950",
+		BadgeColorGreen:   "bg-green-600 text-white",
+		BadgeColorOrange:  "bg-orange-500 text-white",
+		BadgeColorPurple:  "bg-purple-600 text-white",
+		BadgeColorPink:    "bg-pink-600 text-white",
+		BadgeColorIndigo:  "bg-indigo-600 text-white",
+		BadgeColorTeal:    "bg-teal-600 text-white",
+		BadgeColorZinc:    "bg-zinc-800 text-white",
+		BadgeColorStone:   "bg-stone-800 text-white",
+	},
+	BadgeOutline: {
+		BadgeColorNeutral: "bg-transparent border border-slate-300 text-slate-700 dark:border-slate-600 dark:text-slate-300",
+		BadgeColorBlue:    "bg-transparent border border-blue-300 text-blue-700",
+		BadgeColorRed:     "bg-transparent border border-red-300 text-red-700",
+		BadgeColorYellow:  "bg-transparent border border-yellow-300 text-yellow-700",
+		BadgeColorGreen:   "bg-transparent border border-green-300 text-green-700",
+		BadgeColorOrange:  "bg-transparent border border-orange-300 text-orange-700",
+		BadgeColorPurple:  "bg-transparent border border-purple-300 text-purple-700",
+		BadgeColorPink:    "bg-transparent border border-pink-300 text-pink-700",
+		BadgeColorIndigo:  "bg-transparent border border-indigo-300 text-indigo-700",
+		BadgeColorTeal:    "bg-transparent border border-teal-300 text-teal-700",
+		BadgeColorZinc:    "bg-transparent border border-zinc-400 text-zinc-800",
+		BadgeColorStone:   "bg-transparent border border-stone-400 text-stone-800",
+	},
+	BadgeSubtle: {
+		BadgeColorNeutral: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
+		BadgeColorBlue:    "bg-blue-100 text-blue-800",
+		BadgeColorRed:     "bg-red-100 text-red-800",
+		BadgeColorYellow:  "bg-yellow-100 text-yellow-900",
+		BadgeColorGreen:   "bg-green-100 text-green-800",
+		BadgeColorOrange:  "bg-orange-100 text-orange-800",
+		BadgeColorPurple:  "bg-purple-100 text-purple-800",
+		BadgeColorPink:    "bg-pink-100 text-pink-800",
+		BadgeColorIndigo:  "bg-indigo-100 text-indigo-800",
+		BadgeColorTeal:    "bg-teal-100 text-teal-800",
+		BadgeColorZinc:    "bg-zinc-200 text-zinc-800",
+		BadgeColorStone:   "bg-stone-200 text-stone-800",
+	},
+}
+
+func badgeVariantClasses(variant BadgeVariant, color BadgeColor) string {
+	return badgeClassMap[variant][color]
+}
+
+templ Badge(p BadgeProps) {
+	<span class={ badgeClasses(p) } { p.Attrs... }>
+		{ children... }
+	</span>
+}
+
+templ BadgePreview() {
+	<div class="space-y-8">
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Variants</h2>
+			<div class="flex flex-wrap items-center gap-3">
+				@Badge(BadgeProps{Variant: BadgeSolid, Color: BadgeColorBlue, Rounded: BadgeRoundedMD}) {
+					Solid
+				}
+				@Badge(BadgeProps{Variant: BadgeOutline, Color: BadgeColorBlue, Rounded: BadgeRoundedMD}) {
+					Outline
+				}
+				@Badge(BadgeProps{Variant: BadgeSubtle, Color: BadgeColorBlue, Rounded: BadgeRoundedMD}) {
+					Subtle
+				}
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Rounded</h2>
+			<div class="flex flex-wrap items-center gap-3">
+				@Badge(BadgeProps{Variant: BadgeSubtle, Color: BadgeColorBlue}) {
+					Square
+				}
+				@Badge(BadgeProps{Variant: BadgeSubtle, Color: BadgeColorBlue, Rounded: BadgeRoundedSM}) {
+					rounded-sm
+				}
+				@Badge(BadgeProps{Variant: BadgeSubtle, Color: BadgeColorBlue, Rounded: BadgeRoundedMD}) {
+					rounded-md
+				}
+				@Badge(BadgeProps{Variant: BadgeSubtle, Color: BadgeColorBlue, Rounded: BadgeRoundedLG}) {
+					rounded-lg
+				}
+				@Badge(BadgeProps{Variant: BadgeSubtle, Color: BadgeColorBlue, Rounded: BadgeRoundedFull}) {
+					Pill
+				}
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Colors (subtle)</h2>
+			<div class="flex flex-wrap items-center gap-2">
+				@Badge(BadgeProps{Variant: BadgeSubtle, Color: BadgeColorNeutral, Rounded: BadgeRoundedFull}) {
+					neutral
+				}
+				@Badge(BadgeProps{Variant: BadgeSubtle, Color: BadgeColorBlue, Rounded: BadgeRoundedFull}) {
+					blue
+				}
+				@Badge(BadgeProps{Variant: BadgeSubtle, Color: BadgeColorRed, Rounded: BadgeRoundedFull}) {
+					red
+				}
+				@Badge(BadgeProps{Variant: BadgeSubtle, Color: BadgeColorYellow, Rounded: BadgeRoundedFull}) {
+					yellow
+				}
+				@Badge(BadgeProps{Variant: BadgeSubtle, Color: BadgeColorGreen, Rounded: BadgeRoundedFull}) {
+					green
+				}
+				@Badge(BadgeProps{Variant: BadgeSubtle, Color: BadgeColorOrange, Rounded: BadgeRoundedFull}) {
+					orange
+				}
+				@Badge(BadgeProps{Variant: BadgeSubtle, Color: BadgeColorPurple, Rounded: BadgeRoundedFull}) {
+					purple
+				}
+				@Badge(BadgeProps{Variant: BadgeSubtle, Color: BadgeColorPink, Rounded: BadgeRoundedFull}) {
+					pink
+				}
+				@Badge(BadgeProps{Variant: BadgeSubtle, Color: BadgeColorIndigo, Rounded: BadgeRoundedFull}) {
+					indigo
+				}
+				@Badge(BadgeProps{Variant: BadgeSubtle, Color: BadgeColorTeal, Rounded: BadgeRoundedFull}) {
+					teal
+				}
+				@Badge(BadgeProps{Variant: BadgeSubtle, Color: BadgeColorZinc, Rounded: BadgeRoundedFull}) {
+					zinc
+				}
+				@Badge(BadgeProps{Variant: BadgeSubtle, Color: BadgeColorStone, Rounded: BadgeRoundedFull}) {
+					stone
+				}
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Colors (solid)</h2>
+			<div class="flex flex-wrap items-center gap-2">
+				@Badge(BadgeProps{Color: BadgeColorBlue, Rounded: BadgeRoundedFull}) {
+					bug
+				}
+				@Badge(BadgeProps{Color: BadgeColorRed, Rounded: BadgeRoundedFull}) {
+					critical
+				}
+				@Badge(BadgeProps{Color: BadgeColorGreen, Rounded: BadgeRoundedFull}) {
+					ready
+				}
+				@Badge(BadgeProps{Color: BadgeColorYellow, Rounded: BadgeRoundedFull}) {
+					review
+				}
+				@Badge(BadgeProps{Color: BadgeColorPurple, Rounded: BadgeRoundedFull}) {
+					feature
+				}
+				@Badge(BadgeProps{Color: BadgeColorOrange, Rounded: BadgeRoundedFull}) {
+					stale
+				}
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Sizes</h2>
+			<div class="flex flex-wrap items-center gap-3">
+				@Badge(BadgeProps{Variant: BadgeSubtle, Color: BadgeColorBlue, Size: BadgeSizeSM, Rounded: BadgeRoundedFull}) {
+					small
+				}
+				@Badge(BadgeProps{Variant: BadgeSubtle, Color: BadgeColorBlue, Size: BadgeSizeMD, Rounded: BadgeRoundedFull}) {
+					medium
+				}
+				@Badge(BadgeProps{Variant: BadgeSubtle, Color: BadgeColorBlue, Size: BadgeSizeLG, Rounded: BadgeRoundedFull}) {
+					large
+				}
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">With icon</h2>
+			<div class="flex flex-wrap items-center gap-3">
+				@Badge(BadgeProps{Variant: BadgeSubtle, Color: BadgeColorGreen, Rounded: BadgeRoundedFull}) {
+					@Icon("check", "size-3")
+					verified
+				}
+				@Badge(BadgeProps{Variant: BadgeSubtle, Color: BadgeColorRed, Rounded: BadgeRoundedFull}) {
+					@Icon("x", "size-3")
+					rejected
+				}
+				@Badge(BadgeProps{Variant: BadgeOutline, Color: BadgeColorBlue, Rounded: BadgeRoundedFull}) {
+					new
+					@Icon("arrow-right", "size-3")
+				}
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Class override (uppercase, tracking)</h2>
+			<div class="flex flex-wrap items-center gap-3">
+				@Badge(BadgeProps{Variant: BadgeSubtle, Color: BadgeColorBlue, Rounded: BadgeRoundedFull, Class: "uppercase tracking-wider"}) {
+					beta
+				}
+				@Badge(BadgeProps{Color: BadgeColorRed, Rounded: BadgeRoundedSM, Class: "uppercase tracking-widest font-bold"}) {
+					alert
+				}
+			</div>
+		</section>
+	</div>
+}
+
+func init() {
+	Register(Component{
+		Name:   "badge",
+		Title:  "Badge",
+		Usage:  "@Badge(BadgeProps{})",
+		Render: BadgePreview,
+	})
+}

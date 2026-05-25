@@ -1,0 +1,213 @@
+package ui
+
+type NavItemSize string
+
+const (
+	NavItemSizeSM NavItemSize = "sm"
+	NavItemSizeMD NavItemSize = "md"
+	NavItemSizeLG NavItemSize = "lg"
+)
+
+type NavItemProps struct {
+	Attrs    templ.Attributes
+	Icon     templ.Component
+	Href     string
+	Class    string
+	Size     NavItemSize
+	Active   bool
+	Disabled bool
+}
+
+func navItemSizeClasses(size NavItemSize) string {
+	switch size {
+	case NavItemSizeSM:
+		return "gap-2 px-2 py-1 text-xs"
+	case NavItemSizeLG:
+		return "gap-3 px-4 py-3 text-base"
+	default:
+		return "gap-3 px-3 py-2 text-sm"
+	}
+}
+
+func navItemIconClasses(size NavItemSize) string {
+	base := "shrink-0 text-slate-500 dark:text-slate-400"
+
+	switch size {
+	case NavItemSizeSM:
+		return base + " [&>svg]:size-3.5"
+	case NavItemSizeLG:
+		return base + " [&>svg]:size-5"
+	default:
+		return base + " [&>svg]:size-4"
+	}
+}
+
+func navItemClasses(p NavItemProps) string {
+	base := "flex items-center rounded-md text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:focus-visible:ring-slate-500"
+
+	var state string
+
+	switch {
+	case p.Disabled:
+		state = "text-slate-400 dark:text-slate-600 cursor-not-allowed pointer-events-none"
+	case p.Active:
+		state = "bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-slate-100 font-medium"
+	default:
+		state = "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 cursor-pointer"
+	}
+
+	return Merge(base, navItemSizeClasses(p.Size), state, p.Class)
+}
+
+func navItemAttrs(p NavItemProps) templ.Attributes {
+	attrs := templ.Attributes{}
+
+	if p.Active {
+		attrs["aria-current"] = "page"
+	}
+
+	return MergeAttr(attrs, p.Attrs)
+}
+
+templ NavItem(p NavItemProps) {
+	if p.Href != "" && !p.Disabled {
+		<a href={ p.Href } class={ navItemClasses(p) } { navItemAttrs(p)... }>
+			if p.Icon != nil {
+				<span class={ navItemIconClasses(p.Size) }>
+					@p.Icon
+				</span>
+			}
+			<span class="flex-1 truncate">
+				{ children... }
+			</span>
+		</a>
+	} else {
+		<button type="button" class={ navItemClasses(p) } disabled?={ p.Disabled } { navItemAttrs(p)... }>
+			if p.Icon != nil {
+				<span class={ navItemIconClasses(p.Size) }>
+					@p.Icon
+				</span>
+			}
+			<span class="flex-1 truncate">
+				{ children... }
+			</span>
+		</button>
+	}
+}
+
+templ NavItemPreview() {
+	<div class="space-y-8">
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Basic (vertical stack)</h2>
+			<div class="flex w-64 flex-col gap-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2">
+				@NavItem(NavItemProps{Href: "/dashboard", Icon: Icon("search"), Active: true}) {
+					Dashboard
+				}
+				@NavItem(NavItemProps{Href: "/items", Icon: Icon("edit")}) {
+					Items
+				}
+				@NavItem(NavItemProps{Href: "/accounts", Icon: Icon("plus")}) {
+					Accounts
+				}
+				@NavItem(NavItemProps{Href: "/settings", Icon: Icon("check"), Disabled: true}) {
+					Settings (disabled)
+				}
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Without icons</h2>
+			<div class="flex w-64 flex-col gap-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2">
+				@NavItem(NavItemProps{Href: "/profile", Active: true}) {
+					Profile
+				}
+				@NavItem(NavItemProps{Href: "/billing"}) {
+					Billing
+				}
+				@NavItem(NavItemProps{Href: "/logout"}) {
+					Sign out
+				}
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Horizontal (navbar context)</h2>
+			<div class="flex items-center gap-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2">
+				@NavItem(NavItemProps{Href: "/", Active: true}) {
+					Home
+				}
+				@NavItem(NavItemProps{Href: "/items"}) {
+					Items
+				}
+				@NavItem(NavItemProps{Href: "/mobs"}) {
+					Monsters
+				}
+				@NavItem(NavItemProps{Href: "/news"}) {
+					News
+				}
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Sizes</h2>
+			<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+				<div class="space-y-2">
+					<p class="text-xs uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Small</p>
+					<div class="flex w-56 flex-col gap-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2">
+						@NavItem(NavItemProps{Size: NavItemSizeSM, Href: "#dashboard", Icon: Icon("search"), Active: true}) {
+							Dashboard
+						}
+						@NavItem(NavItemProps{Size: NavItemSizeSM, Href: "#items", Icon: Icon("edit")}) {
+							Items
+						}
+						@NavItem(NavItemProps{Size: NavItemSizeSM, Href: "#mobs", Icon: Icon("plus")}) {
+							Monsters
+						}
+					</div>
+				</div>
+				<div class="space-y-2">
+					<p class="text-xs uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Medium (default)</p>
+					<div class="flex w-56 flex-col gap-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2">
+						@NavItem(NavItemProps{Href: "#dashboard", Icon: Icon("search"), Active: true}) {
+							Dashboard
+						}
+						@NavItem(NavItemProps{Href: "#items", Icon: Icon("edit")}) {
+							Items
+						}
+						@NavItem(NavItemProps{Href: "#mobs", Icon: Icon("plus")}) {
+							Monsters
+						}
+					</div>
+				</div>
+				<div class="space-y-2">
+					<p class="text-xs uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Large</p>
+					<div class="flex w-56 flex-col gap-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2">
+						@NavItem(NavItemProps{Size: NavItemSizeLG, Href: "#dashboard", Icon: Icon("search"), Active: true}) {
+							Dashboard
+						}
+						@NavItem(NavItemProps{Size: NavItemSizeLG, Href: "#items", Icon: Icon("edit")}) {
+							Items
+						}
+						@NavItem(NavItemProps{Size: NavItemSizeLG, Href: "#mobs", Icon: Icon("plus")}) {
+							Monsters
+						}
+					</div>
+				</div>
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">As button (no Href)</h2>
+			<div class="flex w-64 flex-col gap-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2">
+				@NavItem(NavItemProps{Icon: Icon("trash"), Attrs: templ.Attributes{"@click": "$toast('info', 'Clicked')"}}) {
+					Delete account
+				}
+			</div>
+		</section>
+	</div>
+}
+
+func init() {
+	Register(Component{
+		Name:   "nav-item",
+		Title:  "Nav Item",
+		Usage:  "@NavItem(NavItemProps{}) { ... }",
+		Render: NavItemPreview,
+	})
+}

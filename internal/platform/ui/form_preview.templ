@@ -1,0 +1,150 @@
+package ui
+
+var formPreviewFoods = []SelectOption{
+	{Value: "apple", Label: "Apple"},
+	{Value: "banana", Label: "Banana"},
+	{Value: "orange", Label: "Orange"},
+}
+
+templ FormPreview() {
+	<div class="space-y-10 max-w-xl">
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Simple form</h2>
+			@Form(FormProps{Action: "/account", Title: "Account"}) {
+				@Field(FieldProps{Label: "Username", For: "f-username", Required: true, Help: "3-20 characters."}) {
+					@Input(InputProps{ID: "f-username", Name: "username", Required: true, MinLength: 3, MaxLength: 20})
+				}
+				@Field(FieldProps{Label: "Email", For: "f-email", Required: true}) {
+					@Input(InputProps{ID: "f-email", Name: "email", Type: InputTypeEmail, Required: true, AutoComplete: "email"})
+				}
+				@Field(FieldProps{Label: "Favorite food", For: "f-food"}) {
+					@Select(SelectProps{ID: "f-food", Name: "food", Placeholder: "Select a food", Options: formPreviewFoods})
+				}
+				@Field(FieldProps{Label: "Bio", For: "f-bio", Help: "Optional, up to 500 chars."}) {
+					@TextArea(TextAreaProps{ID: "f-bio", Name: "bio", Rows: 4, MaxLength: 500})
+				}
+				<div class="flex justify-end gap-2">
+					@Button(ButtonProps{Variant: ButtonGhost, Type: ButtonTypeButton}) {
+						Cancel
+					}
+					@Button(ButtonProps{Color: ButtonColorBlue, Type: ButtonTypeSubmit}) {
+						Save
+					}
+				</div>
+			}
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Validation states</h2>
+			@Form(FormProps{Action: "/login", Method: "post"}) {
+				@Field(FieldProps{Label: "Email", For: "v-email", Required: true, Error: "Email is required."}) {
+					@Input(InputProps{ID: "v-email", Name: "email", Type: InputTypeEmail, Invalid: true})
+				}
+				@Field(FieldProps{Label: "Password", For: "v-password", Required: true, Error: "Must be at least 8 characters."}) {
+					@Input(InputProps{ID: "v-password", Name: "password", Type: InputTypePassword, Invalid: true, AutoComplete: "current-password"})
+				}
+				@Field(FieldProps{Label: "Favorite food", For: "v-food", Error: "Pick a food."}) {
+					@Select(SelectProps{ID: "v-food", Name: "food", Placeholder: "Select a food", Options: formPreviewFoods, Invalid: true})
+				}
+				@Field(FieldProps{Label: "Notes", For: "v-notes", Error: "Notes cannot be empty."}) {
+					@TextArea(TextAreaProps{ID: "v-notes", Name: "notes", Invalid: true, Rows: 3})
+				}
+			}
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Sizes</h2>
+			<div class="space-y-3">
+				@Input(InputProps{Size: InputSizeSM, Placeholder: "Small"})
+				@Input(InputProps{Size: InputSizeMD, Placeholder: "Medium (default)"})
+				@Input(InputProps{Size: InputSizeLG, Placeholder: "Large"})
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Icons</h2>
+			<div class="space-y-3">
+				@Input(InputProps{LeftIcon: Icon("search"), Placeholder: "Search items..."})
+				@Input(InputProps{RightIcon: Icon("chevron-down"), Placeholder: "Trailing chevron"})
+				@Input(InputProps{LeftIcon: Icon("search"), RightIcon: Icon("x"), Placeholder: "Both sides"})
+				@Input(InputProps{LeftIcon: Icon("alert-circle"), Placeholder: "Invalid with icon", Invalid: true})
+				@Input(InputProps{LeftIcon: Icon("edit"), Placeholder: "Disabled", Disabled: true})
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Icons across sizes</h2>
+			<div class="space-y-3">
+				@Input(InputProps{Size: InputSizeSM, LeftIcon: Icon("search"), Placeholder: "Small with icon"})
+				@Input(InputProps{Size: InputSizeMD, LeftIcon: Icon("search"), Placeholder: "Medium with icon"})
+				@Input(InputProps{Size: InputSizeLG, LeftIcon: Icon("search"), Placeholder: "Large with icon"})
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Rounded</h2>
+			<div class="space-y-3">
+				@Input(InputProps{Placeholder: "None (default)"})
+				@Input(InputProps{Rounded: InputRoundedSM, Placeholder: "rounded-sm"})
+				@Input(InputProps{Rounded: InputRoundedMD, Placeholder: "rounded-md"})
+				@Input(InputProps{Rounded: InputRoundedLG, Placeholder: "rounded-lg"})
+				@Input(InputProps{Rounded: InputRoundedXL, Placeholder: "rounded-xl"})
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Focus accent (Color)</h2>
+			<div class="space-y-3">
+				@Input(InputProps{Color: InputColorBlue, Placeholder: "Blue focus"})
+				@Input(InputProps{Color: InputColorGreen, Placeholder: "Green focus"})
+				@Input(InputProps{Color: InputColorPurple, Placeholder: "Purple focus"})
+				@Input(InputProps{Color: InputColorZinc, Placeholder: "Zinc focus"})
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Input types</h2>
+			<div class="space-y-3">
+				@Input(InputProps{Type: InputTypeText, Placeholder: "text"})
+				@Input(InputProps{Type: InputTypeEmail, Placeholder: "email"})
+				@Input(InputProps{Type: InputTypePassword, Placeholder: "password"})
+				@Input(InputProps{Type: InputTypeNumber, Placeholder: "number", Min: "0", Max: "100", Step: "1"})
+				@Input(InputProps{Type: InputTypeTel, Placeholder: "tel"})
+				@Input(InputProps{Type: InputTypeURL, Placeholder: "url"})
+				@Input(InputProps{Type: InputTypeSearch, Placeholder: "search"})
+				@Input(InputProps{Type: InputTypeDate})
+				@Input(InputProps{Type: InputTypeTime})
+				@Input(InputProps{Type: InputTypeColor, Class: "w-16 h-10 p-1"})
+				@Input(InputProps{Type: InputTypeFile})
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Disabled / Read-only</h2>
+			<div class="space-y-3">
+				@Input(InputProps{Placeholder: "Disabled", Disabled: true})
+				@Input(InputProps{Value: "Read-only value", ReadOnly: true})
+				@Select(SelectProps{Placeholder: "Disabled select", Options: formPreviewFoods, Disabled: true})
+				@TextArea(TextAreaProps{Value: "Disabled textarea", Disabled: true, Rows: 2})
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">HTMX wiring</h2>
+			@Form(FormProps{
+				Action: "/search",
+				Method: "get",
+				Attrs: templ.Attributes{
+					"hx-get":     "/search",
+					"hx-target":  "#search-results",
+					"hx-trigger": "input changed delay:300ms from:input",
+				},
+			}) {
+				@Field(FieldProps{Label: "Search", For: "h-q"}) {
+					@Input(InputProps{ID: "h-q", Name: "q", Type: InputTypeSearch, Placeholder: "Type to search…"})
+				}
+				<div id="search-results" class="text-sm text-slate-500 dark:text-slate-400">Results render here</div>
+			}
+		</section>
+	</div>
+}
+
+func init() {
+	Register(Component{
+		Name:   "form",
+		Title:  "Form",
+		Usage:  "@Field(FieldProps{}) { @Input(...) }",
+		Render: FormPreview,
+	})
+}

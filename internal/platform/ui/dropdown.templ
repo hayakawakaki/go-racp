@@ -1,0 +1,337 @@
+package ui
+
+type DropdownAlign string
+
+const (
+	DropdownAlignStart  DropdownAlign = "start"
+	DropdownAlignCenter DropdownAlign = "center"
+	DropdownAlignEnd    DropdownAlign = "end"
+)
+
+type DropdownSide string
+
+const (
+	DropdownSideBottom DropdownSide = "bottom"
+	DropdownSideTop    DropdownSide = "top"
+)
+
+type DropdownProps struct {
+	Attrs templ.Attributes
+	Class string
+}
+
+type DropdownMenuProps struct {
+	Attrs templ.Attributes
+	Align DropdownAlign
+	Side  DropdownSide
+	Class string
+}
+
+type DropdownItemProps struct {
+	Attrs       templ.Attributes
+	Href        string
+	Class       string
+	Destructive bool
+	Disabled    bool
+}
+
+func dropdownMenuClasses(p DropdownMenuProps) string {
+	align := p.Align
+	if align == "" {
+		align = DropdownAlignStart
+	}
+
+	side := p.Side
+	if side == "" {
+		side = DropdownSideBottom
+	}
+
+	base := "absolute z-40 min-w-[12rem] rounded-md border border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-700 shadow-lg p-1 flex flex-col"
+
+	var sideClass string
+
+	switch side {
+	case DropdownSideTop:
+		sideClass = "bottom-full mb-1"
+	default:
+		sideClass = "top-full mt-1"
+	}
+
+	var alignClass string
+
+	switch align {
+	case DropdownAlignEnd:
+		alignClass = "right-0"
+	case DropdownAlignCenter:
+		alignClass = "left-1/2 -translate-x-1/2"
+	default:
+		alignClass = "left-0"
+	}
+
+	return Merge(base, sideClass, alignClass, p.Class)
+}
+
+func dropdownItemClasses(p DropdownItemProps) string {
+	base := "flex items-center gap-2 px-3 py-1.5 text-sm rounded-sm w-full text-left transition-colors cursor-pointer"
+
+	var state string
+
+	switch {
+	case p.Disabled:
+		state = "text-slate-400 cursor-not-allowed pointer-events-none dark:text-slate-500"
+	case p.Destructive:
+		state = "text-red-700 hover:bg-red-50 active:bg-red-100 dark:text-red-400 dark:hover:bg-red-950 dark:active:bg-red-900"
+	default:
+		state = "text-slate-700 hover:bg-slate-100 active:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-800 dark:active:bg-slate-700"
+	}
+
+	return Merge(base, state, p.Class)
+}
+
+templ Dropdown(p DropdownProps) {
+	<div
+		x-data="dropdown"
+		@click.outside="close()"
+		@keydown.escape.window="close()"
+		class={ Merge("relative inline-block", p.Class) }
+		{ p.Attrs... }
+	>
+		{ children... }
+	</div>
+}
+
+templ DropdownTrigger(class ...string) {
+	<div @click="toggle()" class={ MergeWithDefault("inline-block", class) }>
+		{ children... }
+	</div>
+}
+
+templ DropdownMenu(p DropdownMenuProps) {
+	<div
+		x-show="open"
+		x-cloak
+		x-transition
+		style="display: none"
+		class={ dropdownMenuClasses(p) }
+		role="menu"
+		{ p.Attrs... }
+	>
+		{ children... }
+	</div>
+}
+
+templ DropdownItem(p DropdownItemProps) {
+	if p.Href != "" && !p.Disabled {
+		<a href={ p.Href } @click="close()" class={ dropdownItemClasses(p) } role="menuitem" { p.Attrs... }>
+			{ children... }
+		</a>
+	} else {
+		<button type="button" @click="close()" disabled?={ p.Disabled } class={ dropdownItemClasses(p) } role="menuitem" { p.Attrs... }>
+			{ children... }
+		</button>
+	}
+}
+
+templ DropdownSeparator() {
+	<hr class="my-1 border-slate-200 dark:border-slate-700" role="separator"/>
+}
+
+templ DropdownLabel(class ...string) {
+	<div class={ MergeWithDefault("px-3 py-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide", class) }>
+		{ children... }
+	</div>
+}
+
+templ DropdownPreview() {
+	<div class="space-y-8 pb-64">
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Basic</h2>
+			<div class="flex flex-wrap items-start gap-3">
+				@Dropdown(DropdownProps{}) {
+					@DropdownTrigger() {
+						@Button(ButtonProps{Variant: ButtonOutline, RightIcon: Icon("chevron-down")}) {
+							Options
+						}
+					}
+					@DropdownMenu(DropdownMenuProps{}) {
+						@DropdownItem(DropdownItemProps{}) {
+							New item
+						}
+						@DropdownItem(DropdownItemProps{}) {
+							Duplicate
+						}
+						@DropdownItem(DropdownItemProps{}) {
+							Archive
+						}
+					}
+				}
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">With icons, label, separator, destructive</h2>
+			<div class="flex flex-wrap items-start gap-3">
+				@Dropdown(DropdownProps{}) {
+					@DropdownTrigger() {
+						@Button(ButtonProps{Variant: ButtonOutline, LeftIcon: Icon("edit"), RightIcon: Icon("chevron-down")}) {
+							Edit
+						}
+					}
+					@DropdownMenu(DropdownMenuProps{}) {
+						@DropdownLabel() {
+							Actions
+						}
+						@DropdownItem(DropdownItemProps{}) {
+							@Icon("edit", "size-4")
+							Rename
+						}
+						@DropdownItem(DropdownItemProps{}) {
+							@Icon("plus", "size-4")
+							Duplicate
+						}
+						@DropdownSeparator()
+						@DropdownItem(DropdownItemProps{Destructive: true}) {
+							@Icon("trash", "size-4")
+							Delete
+						}
+					}
+				}
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Disabled item</h2>
+			<div class="flex flex-wrap items-start gap-3">
+				@Dropdown(DropdownProps{}) {
+					@DropdownTrigger() {
+						@Button(ButtonProps{Variant: ButtonOutline, RightIcon: Icon("chevron-down")}) {
+							Menu
+						}
+					}
+					@DropdownMenu(DropdownMenuProps{}) {
+						@DropdownItem(DropdownItemProps{}) {
+							Available
+						}
+						@DropdownItem(DropdownItemProps{Disabled: true}) {
+							Not available
+						}
+						@DropdownItem(DropdownItemProps{}) {
+							Also available
+						}
+					}
+				}
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Alignment</h2>
+			<div class="flex flex-wrap items-start gap-12">
+				@Dropdown(DropdownProps{}) {
+					@DropdownTrigger() {
+						@Button(ButtonProps{Variant: ButtonOutline, RightIcon: Icon("chevron-down")}) {
+							Align start (default)
+						}
+					}
+					@DropdownMenu(DropdownMenuProps{Align: DropdownAlignStart}) {
+						@DropdownItem(DropdownItemProps{}) {
+							First
+						}
+						@DropdownItem(DropdownItemProps{}) {
+							Second
+						}
+					}
+				}
+				@Dropdown(DropdownProps{}) {
+					@DropdownTrigger() {
+						@Button(ButtonProps{Variant: ButtonOutline, Size: ButtonSizeSM, AriaLabel: "More", LeftIcon: Icon("plus")})
+					}
+					@DropdownMenu(DropdownMenuProps{Align: DropdownAlignCenter}) {
+						@DropdownItem(DropdownItemProps{}) {
+							Center
+						}
+						@DropdownItem(DropdownItemProps{}) {
+							under
+						}
+						@DropdownItem(DropdownItemProps{}) {
+							small trigger
+						}
+					}
+				}
+				@Dropdown(DropdownProps{}) {
+					@DropdownTrigger() {
+						@Button(ButtonProps{Variant: ButtonOutline, RightIcon: Icon("chevron-down")}) {
+							Align end
+						}
+					}
+					@DropdownMenu(DropdownMenuProps{Align: DropdownAlignEnd}) {
+						@DropdownItem(DropdownItemProps{}) {
+							First
+						}
+						@DropdownItem(DropdownItemProps{}) {
+							Second
+						}
+					}
+				}
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Side (top vs bottom)</h2>
+			<div class="flex flex-wrap items-start gap-3">
+				@Dropdown(DropdownProps{}) {
+					@DropdownTrigger() {
+						@Button(ButtonProps{Variant: ButtonOutline}) {
+							Bottom (default)
+						}
+					}
+					@DropdownMenu(DropdownMenuProps{Side: DropdownSideBottom}) {
+						@DropdownItem(DropdownItemProps{}) {
+							Opens below
+						}
+					}
+				}
+				@Dropdown(DropdownProps{}) {
+					@DropdownTrigger() {
+						@Button(ButtonProps{Variant: ButtonOutline}) {
+							Top
+						}
+					}
+					@DropdownMenu(DropdownMenuProps{Side: DropdownSideTop}) {
+						@DropdownItem(DropdownItemProps{}) {
+							Opens above
+						}
+					}
+				}
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Link items (href)</h2>
+			<div class="flex flex-wrap items-start gap-3">
+				@Dropdown(DropdownProps{}) {
+					@DropdownTrigger() {
+						@Button(ButtonProps{Variant: ButtonOutline, RightIcon: Icon("chevron-down")}) {
+							Navigate
+						}
+					}
+					@DropdownMenu(DropdownMenuProps{}) {
+						@DropdownItem(DropdownItemProps{Href: "/news"}) {
+							News
+						}
+						@DropdownItem(DropdownItemProps{Href: "/items"}) {
+							Items
+						}
+						@DropdownItem(DropdownItemProps{Href: "https://example.com", Attrs: templ.Attributes{"target": "_blank", "rel": "noopener noreferrer"}}) {
+							@Icon("arrow-right", "size-4")
+							External
+						}
+					}
+				}
+			</div>
+		</section>
+	</div>
+}
+
+func init() {
+	Register(Component{
+		Name:   "dropdown",
+		Title:  "Dropdown",
+		Usage:  "@Dropdown(DropdownProps{})",
+		Render: DropdownPreview,
+	})
+}

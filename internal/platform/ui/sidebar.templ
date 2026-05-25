@@ -1,0 +1,158 @@
+package ui
+
+type SidebarProps struct {
+	Attrs templ.Attributes
+	Class string
+}
+
+func sidebarAsideClasses(p SidebarProps) string {
+	base := "fixed inset-y-0 left-0 z-40 w-64 -translate-x-full data-[open=true]:translate-x-0 transition-transform duration-200 flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:transition-none"
+
+	return Merge(base, p.Class)
+}
+
+templ Sidebar(p SidebarProps) {
+	<div x-data="nav">
+		<button
+			type="button"
+			x-show="!open"
+			x-cloak
+			@click="show()"
+			aria-label="Open sidebar"
+			class="fixed top-4 left-4 z-30 inline-flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 lg:hidden"
+		>
+			@Icon("menu")
+		</button>
+		<div
+			x-show="open"
+			x-cloak
+			@click="close()"
+			class="fixed inset-0 bg-black/40 z-30 lg:hidden"
+		></div>
+		<aside
+			:data-open="openAttr()"
+			@keydown.escape.window="close()"
+			class={ sidebarAsideClasses(p) }
+			{ p.Attrs... }
+		>
+			{ children... }
+		</aside>
+	</div>
+}
+
+templ SidebarHeader(class ...string) {
+	<div class={ MergeWithDefault("flex items-center gap-2 px-4 py-4 border-b border-slate-200 dark:border-slate-800", class) }>
+		{ children... }
+	</div>
+}
+
+templ SidebarContent(class ...string) {
+	<div class={ MergeWithDefault("flex-1 overflow-y-auto px-2 py-3 space-y-1", class) }>
+		{ children... }
+	</div>
+}
+
+templ SidebarFooter(class ...string) {
+	<div class={ MergeWithDefault("px-4 py-3 border-t border-slate-200 dark:border-slate-800", class) }>
+		{ children... }
+	</div>
+}
+
+templ SidebarGroupLabel(class ...string) {
+	<p class={ MergeWithDefault("px-3 pb-1 pt-3 text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400", class) }>
+		{ children... }
+	</p>
+}
+
+templ SidebarPreview() {
+	<div class="space-y-6">
+		<section class="space-y-3">
+			<h2 class="text-lg font-semibold">Live demo (resize to mobile / tablet to see burger + drawer)</h2>
+			<p class="text-sm text-slate-500 dark:text-slate-400">Below lg (1024px), the sidebar slides in from the left. Tap the burger top-left, click the backdrop or press ESC to close. Static on lg+.</p>
+			<div class="flex min-h-[500px] overflow-hidden rounded-md border border-slate-200 dark:border-slate-700">
+				@Sidebar(SidebarProps{Class: "lg:relative lg:h-auto lg:min-h-full"}) {
+					@SidebarHeader() {
+						@Brand(BrandProps{
+							Title: "My Panel",
+							Logo:  Icon("plus", "size-7 text-blue-600"),
+							Href:  "#",
+						})
+					}
+					@SidebarContent() {
+						@SidebarGroupLabel() {
+							Overview
+						}
+						@NavItem(NavItemProps{Href: "#dashboard", Icon: Icon("search"), Active: true}) {
+							Dashboard
+						}
+						@NavItem(NavItemProps{Href: "#activity", Icon: Icon("edit")}) {
+							Activity
+						}
+						@SidebarGroupLabel() {
+							Manage
+						}
+						@NavItem(NavItemProps{Href: "#accounts", Icon: Icon("plus")}) {
+							Accounts
+						}
+						@NavItem(NavItemProps{Href: "#items", Icon: Icon("check")}) {
+							Items
+						}
+						@NavItem(NavItemProps{Href: "#mobs", Icon: Icon("trash")}) {
+							Monsters
+						}
+						@SidebarGroupLabel() {
+							System
+						}
+						@NavItem(NavItemProps{Href: "#config", Icon: Icon("info")}) {
+							Configuration
+						}
+						@NavItem(NavItemProps{Href: "#logs", Icon: Icon("alert-circle"), Disabled: true}) {
+							Logs (soon)
+						}
+					}
+					@SidebarFooter() {
+						@ThemeSwitcher(ThemeSwitcherProps{}) {
+							@Button(ButtonProps{
+								Variant:   ButtonGhost,
+								Size:      ButtonSizeSM,
+								AriaLabel: "Toggle theme",
+								Attrs:     templ.Attributes{"@click": "toggle()"},
+							}) {
+								<span x-show="!dark" class="flex items-center gap-2">
+									@Icon("moon")
+									Dark mode
+								</span>
+								<span x-show="dark" class="flex items-center gap-2">
+									@Icon("sun")
+									Light mode
+								</span>
+							}
+						}
+					}
+				}
+				<div class="flex-1 bg-slate-50 dark:bg-slate-950 p-6">
+					<h3 class="text-base font-semibold">Main content</h3>
+					<p class="mt-2 text-sm text-slate-600 dark:text-slate-400">This is where your page renders next to the sidebar.</p>
+				</div>
+			</div>
+		</section>
+		<section class="space-y-3">
+			<h2 class="text-lg font-semibold">Notes</h2>
+			<ul class="list-disc space-y-1 pl-5 text-sm text-slate-600 dark:text-slate-400">
+				<li>Sidebar is self-contained: built-in burger (fixed top-left), backdrop, and ESC handler active below lg breakpoint (mobile + tablet).</li>
+				<li>The wrapping layout must be <code class="font-mono text-xs px-1 rounded bg-slate-100 dark:bg-slate-800">flex</code>-row so the sidebar and main content sit side-by-side on desktop.</li>
+				<li>On desktop the aside is <code class="font-mono text-xs">lg:sticky lg:top-0 lg:h-screen</code> so it stays put while content scrolls.</li>
+				<li>If you're already showing a Navbar, hide the built-in burger via Class and add your own trigger inside the Navbar.</li>
+			</ul>
+		</section>
+	</div>
+}
+
+func init() {
+	Register(Component{
+		Name:   "sidebar",
+		Title:  "Sidebar",
+		Usage:  "@Sidebar(SidebarProps{}) { @SidebarHeader { ... } @SidebarContent { @NavItem ... } }",
+		Render: SidebarPreview,
+	})
+}

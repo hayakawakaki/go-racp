@@ -1,0 +1,11 @@
+package ui
+
+type IconImgProps struct {
+	Src   string
+	Alt   string
+	Class string
+}
+
+templ IconImg(p IconImgProps) {
+	<img src={ p.Src } alt={ p.Alt } class={ Merge("size-4 object-contain", p.Class) }/>
+}
