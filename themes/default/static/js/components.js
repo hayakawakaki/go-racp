@@ -129,6 +129,23 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
+    Alpine.data('tabs', () => ({
+        active: '',
+        init() {
+            this.active = this.$el.dataset.tabsDefault || '';
+            if (!this.active) {
+                const first = this.$el.querySelector('[data-tab-value]');
+                if (first) this.active = first.dataset.tabValue;
+            }
+        },
+        select(value) {
+            this.active = value;
+        },
+        isActive(value) {
+            return this.active === value;
+        },
+    }));
+
     Alpine.magic('toast', () => {
         return (type, message, duration, size) => {
             window.dispatchEvent(new CustomEvent('toast', {
