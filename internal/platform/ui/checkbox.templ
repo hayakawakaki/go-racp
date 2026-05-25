@@ -1,0 +1,221 @@
+package ui
+
+type CheckboxColor string
+
+const (
+	CheckboxColorNeutral CheckboxColor = "neutral"
+	CheckboxColorBlue    CheckboxColor = "blue"
+	CheckboxColorRed     CheckboxColor = "red"
+	CheckboxColorYellow  CheckboxColor = "yellow"
+	CheckboxColorGreen   CheckboxColor = "green"
+	CheckboxColorOrange  CheckboxColor = "orange"
+	CheckboxColorPurple  CheckboxColor = "purple"
+	CheckboxColorPink    CheckboxColor = "pink"
+	CheckboxColorIndigo  CheckboxColor = "indigo"
+	CheckboxColorTeal    CheckboxColor = "teal"
+	CheckboxColorZinc    CheckboxColor = "zinc"
+	CheckboxColorStone   CheckboxColor = "stone"
+)
+
+type CheckboxSize string
+
+const (
+	CheckboxSizeSM CheckboxSize = "sm"
+	CheckboxSizeMD CheckboxSize = "md"
+	CheckboxSizeLG CheckboxSize = "lg"
+)
+
+type CheckboxProps struct {
+	Attrs     templ.Attributes
+	Label     string
+	Name      string
+	Value     string
+	ID        string
+	AriaLabel string
+	Class     string
+	Size      CheckboxSize
+	Color     CheckboxColor
+	Checked   bool
+	Disabled  bool
+	Required  bool
+}
+
+var checkboxColorMap = map[CheckboxColor]string{
+	CheckboxColorNeutral: "peer-checked:bg-slate-700 peer-checked:border-slate-700 peer-focus-visible:ring-slate-500 dark:peer-checked:bg-slate-300 dark:peer-checked:border-slate-300",
+	CheckboxColorBlue:    "peer-checked:bg-blue-600 peer-checked:border-blue-600 peer-focus-visible:ring-blue-500",
+	CheckboxColorRed:     "peer-checked:bg-red-600 peer-checked:border-red-600 peer-focus-visible:ring-red-500",
+	CheckboxColorYellow:  "peer-checked:bg-yellow-500 peer-checked:border-yellow-500 peer-focus-visible:ring-yellow-500",
+	CheckboxColorGreen:   "peer-checked:bg-green-600 peer-checked:border-green-600 peer-focus-visible:ring-green-500",
+	CheckboxColorOrange:  "peer-checked:bg-orange-500 peer-checked:border-orange-500 peer-focus-visible:ring-orange-500",
+	CheckboxColorPurple:  "peer-checked:bg-purple-600 peer-checked:border-purple-600 peer-focus-visible:ring-purple-500",
+	CheckboxColorPink:    "peer-checked:bg-pink-600 peer-checked:border-pink-600 peer-focus-visible:ring-pink-500",
+	CheckboxColorIndigo:  "peer-checked:bg-indigo-600 peer-checked:border-indigo-600 peer-focus-visible:ring-indigo-500",
+	CheckboxColorTeal:    "peer-checked:bg-teal-600 peer-checked:border-teal-600 peer-focus-visible:ring-teal-500",
+	CheckboxColorZinc:    "peer-checked:bg-zinc-800 peer-checked:border-zinc-800 peer-focus-visible:ring-zinc-500",
+	CheckboxColorStone:   "peer-checked:bg-stone-800 peer-checked:border-stone-800 peer-focus-visible:ring-stone-500",
+}
+
+func checkboxColorClasses(color CheckboxColor) string {
+	if c, ok := checkboxColorMap[color]; ok {
+		return c
+	}
+
+	return checkboxColorMap[CheckboxColorBlue]
+}
+
+func checkboxBoxClasses(p CheckboxProps) string {
+	size := p.Size
+	if size == "" {
+		size = CheckboxSizeMD
+	}
+
+	color := p.Color
+	if color == "" {
+		color = CheckboxColorBlue
+	}
+
+	var sizeClasses string
+
+	switch size {
+	case CheckboxSizeSM:
+		sizeClasses = "size-3.5 [&_svg]:size-2.5"
+	case CheckboxSizeLG:
+		sizeClasses = "size-5 [&_svg]:size-3.5"
+	default:
+		sizeClasses = "size-4 [&_svg]:size-3"
+	}
+
+	base := "shrink-0 inline-flex items-center justify-center rounded-sm border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 transition-colors " +
+		"peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2 dark:peer-focus-visible:ring-offset-slate-900 " +
+		"peer-disabled:opacity-50 " +
+		"peer-checked:[&_svg]:opacity-100 [&_svg]:opacity-0 [&_svg]:text-white [&_svg]:transition-opacity"
+
+	return Merge(base, sizeClasses, checkboxColorClasses(color))
+}
+
+func checkboxLabelClasses(p CheckboxProps) string {
+	base := "text-sm text-slate-900 dark:text-slate-100 select-none"
+
+	if p.Disabled {
+		base += " opacity-50"
+	}
+
+	return base
+}
+
+func checkboxOuterClasses(p CheckboxProps) string {
+	base := "inline-flex items-center gap-2"
+
+	if p.Disabled {
+		base += " cursor-not-allowed"
+	} else {
+		base += " cursor-pointer"
+	}
+
+	return Merge(base, p.Class)
+}
+
+func checkboxAttrs(p CheckboxProps) templ.Attributes {
+	attrs := templ.Attributes{}
+
+	if p.ID != "" {
+		attrs["id"] = p.ID
+	}
+
+	if p.Name != "" {
+		attrs["name"] = p.Name
+	}
+
+	if p.Value != "" {
+		attrs["value"] = p.Value
+	}
+
+	if p.AriaLabel != "" {
+		attrs["aria-label"] = p.AriaLabel
+	}
+
+	return MergeAttr(attrs, p.Attrs)
+}
+
+templ Checkbox(p CheckboxProps) {
+	<label class={ checkboxOuterClasses(p) }>
+		<input
+			type="checkbox"
+			class="peer sr-only"
+			checked?={ p.Checked }
+			disabled?={ p.Disabled }
+			required?={ p.Required }
+			{ checkboxAttrs(p)... }
+		/>
+		<span class={ checkboxBoxClasses(p) }>
+			@Icon("check")
+		</span>
+		if p.Label != "" {
+			<span class={ checkboxLabelClasses(p) }>{ p.Label }</span>
+		}
+	</label>
+}
+
+templ CheckboxPreview() {
+	<div class="space-y-8">
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Basic</h2>
+			<div class="flex flex-col items-start gap-3">
+				@Checkbox(CheckboxProps{Label: "Off (default)"})
+				@Checkbox(CheckboxProps{Label: "Checked", Checked: true})
+				@Checkbox(CheckboxProps{AriaLabel: "Unlabeled checkbox"})
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Colors</h2>
+			<div class="flex flex-wrap items-center gap-6">
+				@Checkbox(CheckboxProps{Label: "Blue", Color: CheckboxColorBlue, Checked: true})
+				@Checkbox(CheckboxProps{Label: "Green", Color: CheckboxColorGreen, Checked: true})
+				@Checkbox(CheckboxProps{Label: "Red", Color: CheckboxColorRed, Checked: true})
+				@Checkbox(CheckboxProps{Label: "Purple", Color: CheckboxColorPurple, Checked: true})
+				@Checkbox(CheckboxProps{Label: "Yellow", Color: CheckboxColorYellow, Checked: true})
+				@Checkbox(CheckboxProps{Label: "Neutral", Color: CheckboxColorNeutral, Checked: true})
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Sizes</h2>
+			<div class="flex flex-wrap items-center gap-6">
+				@Checkbox(CheckboxProps{Label: "Small", Size: CheckboxSizeSM, Checked: true})
+				@Checkbox(CheckboxProps{Label: "Medium (default)", Size: CheckboxSizeMD, Checked: true})
+				@Checkbox(CheckboxProps{Label: "Large", Size: CheckboxSizeLG, Checked: true})
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Disabled</h2>
+			<div class="flex flex-wrap items-center gap-6">
+				@Checkbox(CheckboxProps{Label: "Off, disabled", Disabled: true})
+				@Checkbox(CheckboxProps{Label: "On, disabled", Checked: true, Disabled: true})
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Inside a Field (with help text)</h2>
+			<div class="max-w-md">
+				@Field(FieldProps{Help: "Required to continue."}) {
+					@Checkbox(CheckboxProps{Label: "I agree to the terms", Name: "agree"})
+				}
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Vertical list</h2>
+			<div class="flex flex-col gap-2">
+				@Checkbox(CheckboxProps{Label: "Send weekly digest", Name: "digest", Checked: true})
+				@Checkbox(CheckboxProps{Label: "Notify on login from a new device", Name: "login_alert", Checked: true})
+				@Checkbox(CheckboxProps{Label: "Marketing emails", Name: "marketing"})
+			</div>
+		</section>
+	</div>
+}
+
+func init() {
+	Register(Component{
+		Name:   "checkbox",
+		Title:  "Checkbox",
+		Usage:  "@Checkbox(CheckboxProps{})",
+		Render: CheckboxPreview,
+	})
+}
