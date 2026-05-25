@@ -12,10 +12,12 @@ const adminRoleName = "Admin"
 
 // ProjectRoot walks up from the current working directory and returns the first ancestor containing go.mod.
 func ProjectRoot() (string, error) {
-	dir, err := os.Getwd()
+	cwd, err := os.Getwd()
 	if err != nil {
 		return "", fmt.Errorf("get working directory: %w", err)
 	}
+
+	dir := cwd
 	for {
 		_, statErr := os.Stat(filepath.Join(dir, "go.mod"))
 		if statErr == nil {
@@ -26,7 +28,7 @@ func ProjectRoot() (string, error) {
 		}
 		parent := filepath.Dir(dir)
 		if parent == dir {
-			return "", fmt.Errorf("project root (go.mod): %w", fs.ErrNotExist)
+			return cwd, nil
 		}
 		dir = parent
 	}

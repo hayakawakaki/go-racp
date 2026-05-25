@@ -47,7 +47,7 @@ func main() {
 	fmt.Printf("  1. Edit themes/%s/theme.yml. Fill in Author.Name (DisplayName defaults to %q)\n", *name, *name+" Theme")
 	fmt.Printf("  2. Add files under themes/%s/ to override defaults (see GUIDE_AUTHORING_THEMES.md)\n", *name)
 	fmt.Printf("  3. For any pages added under themes/%s/pages/, add a matching ThemePages.<X> entry to themes/%s/access.yml\n", *name, *name)
-	fmt.Printf("  4. Set 'Theme: %s' in config.yml when ready to activate\n", *name)
+	fmt.Printf("  4. Set 'Theme: %s' in conf/app.yml (under the App: block) when ready to activate\n", *name)
 }
 
 func createDirs(root string) error {

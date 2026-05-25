@@ -16,8 +16,7 @@
 #              share one token bucket. The bucket keys by session.UserID when Roles
 #              excludes "Public", otherwise by client IP.
 #
-# Declare Custom Roles in config.yml under UserRoles:
-
+# Declare Custom Roles in roles.yml under UserRoles:
 
 Account:
   View:

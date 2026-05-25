@@ -1,0 +1,28 @@
+# Authentication behavior
+Auth:
+  AllowTempBannedLogin: true
+
+# Session/Token Lifetime
+TTL:
+  Session: "24h"
+  Verification: "30m"
+  PasswordReset: "1h"
+  EmailChange: "24h"
+
+# Action Cooldowns
+Cooldown:
+  VerificationResend: "60s"
+  PasswordResetRequest: "30m"
+  PasswordChange: "168h"
+  EmailChangeRequest: "60s"
+  EmailChange: "336h"
+  TicketOpen: "30m"
+  CharacterLookReset: "24h"
+  CharacterLocationReset: "1h"
+
+# Background cleanup of rolling-history tables
+#   LoginAttempts: how long failed-login audit rows are kept before purging
+#   SweepInterval: how often the background sweeper runs
+Retention:
+  LoginAttempts: "720h"
+  SweepInterval: "1h"

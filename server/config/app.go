@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -157,8 +158,8 @@ type AppConfig struct {
 	UserRoles        RolesConfig            `yaml:"UserRoles"`
 	TicketCategories TicketCategoriesConfig `yaml:"TicketCategories"`
 	NewsCategories   NewsCategoriesConfig   `yaml:"NewsCategories"`
-	General          GeneralConfig          `yaml:"GeneralConfig"`
-	Mailer           MailerConfig           `yaml:"MailerConfig"`
+	General          GeneralConfig          `yaml:"App"`
+	Mailer           MailerConfig           `yaml:"Mailer"`
 	DefaultLocation  DefaultLocationConfig  `yaml:"DefaultLocation"`
 	ItemDB           ItemDBConfig           `yaml:"ItemDB"`
 	MobDB            MobDBConfig            `yaml:"MobDB"`
@@ -226,27 +227,42 @@ func appConfigDefaults() *AppConfig {
 	}
 }
 
-// ProcessAppConfig loads config.yml from the project root, applying defaults for missing keys.
+var appConfigFiles = []string{
+	"app.yml",
+	"auth.yml",
+	"security.yml",
+	"roles.yml",
+	"tickets.yml",
+	"news.yml",
+	"datasources.yml",
+	"polling.yml",
+}
+
 func ProcessAppConfig() *AppConfig {
-	cfgPath, err := GetTargetFilePath("config.yml")
+	anchor, err := GetTargetFilePath("conf/" + appConfigFiles[0])
 	if err != nil {
-		panic(fmt.Errorf("missing config.yml: %w", err))
+		panic(fmt.Errorf("locate conf/%s: %w", appConfigFiles[0], err))
 	}
 
+	return loadAppConfigFromDir(filepath.Dir(anchor))
+}
+
+func loadAppConfigFromDir(dir string) *AppConfig {
 	cfg := appConfigDefaults()
-	//nolint:gosec // G304: cfgPath comes from GetTargetFilePath which walks the project tree from os.Getwd
-	data, err := os.ReadFile(cfgPath)
-	if err != nil {
-		panic(err)
-	}
-
-	// skip unmarshal on empty input
-	if len(data) > 0 {
+	for _, name := range appConfigFiles {
+		path := filepath.Join(dir, name)
+		//nolint:gosec // G304: path is built from a fixed allowlist (appConfigFiles) joined to an operator-controlled directory.
+		data, err := os.ReadFile(path)
+		if err != nil {
+			panic(fmt.Errorf("read conf/%s: %w", name, err))
+		}
+		if len(data) == 0 {
+			continue
+		}
 		if err := yaml.Unmarshal(data, cfg); err != nil {
-			panic(err)
+			panic(fmt.Errorf("parse conf/%s: %w", name, err))
 		}
 	}
-
 	validateAppConfig(cfg)
 	return cfg
 }
@@ -274,14 +290,14 @@ func validateAppConfig(cfg *AppConfig) {
 		}
 	}
 	if cfg.Mailer.FromAddress == "" {
-		panic(fmt.Errorf("MailerConfig.FromAddress is required"))
+		panic(fmt.Errorf("Mailer.FromAddress is required"))
 	}
 	if cfg.General.Timezone == "" {
-		panic(fmt.Errorf("GeneralConfig.Timezone is required"))
+		panic(fmt.Errorf("App.Timezone is required"))
 	}
 	loc, err := time.LoadLocation(cfg.General.Timezone)
 	if err != nil {
-		panic(fmt.Errorf("GeneralConfig.Timezone %q is not a valid IANA timezone: %w", cfg.General.Timezone, err))
+		panic(fmt.Errorf("App.Timezone %q is not a valid IANA timezone: %w", cfg.General.Timezone, err))
 	}
 	cfg.General.location = loc
 
@@ -304,7 +320,7 @@ func validateAppConfig(cfg *AppConfig) {
 
 func validateBrandingAndNavbar(cfg *GeneralConfig) {
 	if cfg.Branding.Logo != "" && !strings.HasPrefix(cfg.Branding.Logo, "/") {
-		panic(fmt.Errorf("GeneralConfig.Branding.Logo %q must start with %q", cfg.Branding.Logo, "/"))
+		panic(fmt.Errorf("App.Branding.Logo %q must start with %q", cfg.Branding.Logo, "/"))
 	}
 	for i, item := range cfg.Navbar.Items {
 		validateNavItem(item, i, false)
@@ -313,15 +329,15 @@ func validateBrandingAndNavbar(cfg *GeneralConfig) {
 
 func validateNavItem(item NavItem, index int, isChild bool) {
 	if item.Label == "" {
-		panic(fmt.Errorf("GeneralConfig.Navbar.Items[%d].Label is required", index))
+		panic(fmt.Errorf("App.Navbar.Items[%d].Label is required", index))
 	}
 	hasHref := item.Href != ""
 	hasChildren := len(item.Children) > 0
 	if hasHref == hasChildren {
-		panic(fmt.Errorf("GeneralConfig.Navbar.Items[%d] (%q) must have exactly one of Href or Children", index, item.Label))
+		panic(fmt.Errorf("App.Navbar.Items[%d] (%q) must have exactly one of Href or Children", index, item.Label))
 	}
 	if isChild && hasChildren {
-		panic(fmt.Errorf("GeneralConfig.Navbar.Items[%d] (%q) may not nest Children beyond one level", index, item.Label))
+		panic(fmt.Errorf("App.Navbar.Items[%d] (%q) may not nest Children beyond one level", index, item.Label))
 	}
 	for j, child := range item.Children {
 		validateNavItem(child, j, true)
@@ -331,7 +347,7 @@ func validateNavItem(item NavItem, index int, isChild bool) {
 func validateTheme(cfg *GeneralConfig) {
 	cfg.Theme = cmp.Or(cfg.Theme, "default")
 	if !themeNameRe.MatchString(cfg.Theme) {
-		panic(fmt.Errorf("GeneralConfig.Theme %q must match %s", cfg.Theme, themeNameRe))
+		panic(fmt.Errorf("App.Theme %q must match %s", cfg.Theme, themeNameRe))
 	}
 }
 

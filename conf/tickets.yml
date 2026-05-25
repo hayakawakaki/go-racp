@@ -1,0 +1,20 @@
+# Ticketing related config
+TicketLimits:
+  MaxOpenPerPlayer: 5
+
+TicketCategories:
+  BugReport:
+    Display: "Bug Report"
+    Roles: ["Moderator", "Enforcer"]
+  AccountHelp:
+    Display: "Account Help"
+    Roles: ["Moderator"]
+  Donation:
+    Display: "Donation"
+    Roles: ["Moderator"]
+  Other:
+    Display: "Other"
+    Roles: ["*"]
+
+Tickets:
+  StaffPollInterval: "30s"

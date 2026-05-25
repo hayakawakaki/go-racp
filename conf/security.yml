@@ -1,0 +1,20 @@
+# Security headers and reverse-proxy trust
+# TrustedProxyCIDRs: reverse proxies whose X-Forwarded-For header we trust.
+#   Defaults cover the common shapes:
+#     127.0.0.1/32, ::1/128  - nginx on the same host as the panel binary
+#     172.16.0.0/12          - host nginx -> docker bridge -> panel container
+#   Setting this key REPLACES the defaults, so include the entries you still
+#   want when you add your own. Extra cases:
+#     Cloudflare:               add the v4 + v6 list from cloudflare.com/ips
+#     nginx on a separate host: add that host's address
+#   The origin's firewall should also be restricted to the same upstream,
+#   otherwise X-Forwarded-For can be spoofed by bypassing the proxy.
+Security:
+  TrustedProxyCIDRs: ["127.0.0.1/32", "::1/128", "172.16.0.0/12"]
+  HSTSMaxAge: 604800
+  HSTSIncludeSubdomains: true
+  HSTSPreload: false
+  CSPExtraScriptSrc: []
+  CSPExtraStyleSrc: []
+  CSPExtraImgSrc: ["https://i.imgur.com"]
+  TrustedOrigins: []

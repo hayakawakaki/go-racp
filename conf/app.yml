@@ -1,0 +1,34 @@
+# UI Related Stuffs
+App:
+  ServerName: "GoCP"
+  Timezone: "UTC"
+  Theme: "default"
+  Gepard: false
+  Branding:
+    Logo: ""
+    Discord: "https://discord.gg/"
+  Navbar:
+    Items:
+      - Label: "Home"
+        Href: "/"
+        Icon: "home"
+      - Label: "News"
+        Href: "/news"
+        Icon: "news"
+      - Label: "Database"
+        Icon: "db"
+        Children:
+          - Label: "Item Database"
+            Href: "/items"
+          - Label: "Mob Database"
+            Href: "/mobs"
+
+# Mail Stuffs
+Mailer:
+  FromAddress: "noreply@your-server.example"
+
+# Default save location used by /characters/{id}/location
+DefaultLocation:
+  Map: "prontera"
+  X: 156
+  Y: 191
