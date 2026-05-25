@@ -1,0 +1,47 @@
+@font-face {
+	font-family: "Plus Jakarta Sans";
+	src: url("/themes/default/static/fonts/plus-jakarta-sans-latin-wght-normal.woff2") format("woff2-variations");
+	font-weight: 200 800;
+	font-style: normal;
+	font-display: swap;
+}
+
+@theme {
+	--breakpoint-*: initial;
+	--breakpoint-sm: 40rem;
+	--breakpoint-md: 48rem;
+	--breakpoint-lg: 64rem;
+	--breakpoint-xl: 80rem;
+	--breakpoint-2xl: 96rem;
+	--breakpoint-3xl: 112rem;
+
+	--font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+
+	--color-body: #FAFAFA;
+	--color-surface: #FFFFFF;
+	--color-border: #E5E5E5;
+	--color-font: #09090B;
+	--color-font-muted: #71717A;
+	--color-accent-brand: #4F46E5;
+	--color-accent-on-surface: #4338CA;
+	--color-accent-wash: #EEF2FF;
+}
+
+@layer base {
+	.dark {
+		--color-body: #0E0E10;
+		--color-surface: #17171A;
+		--color-border: #2A2A2E;
+		--color-font: #FAFAFA;
+		--color-font-muted: #9C9A91;
+		--color-accent-on-surface: #A5B4FC;
+		--color-accent-wash: rgba(49, 46, 129, 0.30);
+	}
+}
+
+@utility bg-grain {
+	background-image: url("/themes/default/static/img/grain.svg");
+	background-repeat: repeat;
+	background-size: 1024px 1024px;
+	background-attachment: fixed;
+}

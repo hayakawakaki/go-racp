@@ -6,4 +6,5 @@ var (
 	ActiveBase    func(layout Layout, title string) templ.Component
 	ActivePage404 func(layout Layout) templ.Component
 	ActivePage429 func(layout Layout) templ.Component
+	ActiveHeader  func(layout Layout) templ.Component
 )

@@ -5,6 +5,8 @@
 @source "../../internal/**/*.templ";
 @source "../../internal/**/*.go";
 
+@import "../../themes/default/static/css/theme.css";
+
 /* Alpine */
 [x-cloak] { display: none !important; }
 

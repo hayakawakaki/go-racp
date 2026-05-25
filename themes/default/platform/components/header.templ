@@ -1,0 +1,241 @@
+package components
+
+import (
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/security"
+	"github.com/hayakawakaki/go-racp/internal/platform/ui"
+	"github.com/hayakawakaki/go-racp/internal/platform/viewer"
+	"github.com/hayakawakaki/go-racp/server/config"
+)
+
+func navIcon(name string) templ.Component {
+	if name == "" {
+		return nil
+	}
+	return ui.Icon(name)
+}
+
+templ Header(layout httpx.Layout) {
+	@ui.Navbar(ui.NavbarProps{
+		Brand:   headerBrand(layout),
+		Actions: headerActions(layout),
+		Class:   "bg-body border-b border-border bg-grain [&>div]:container [&>div]:mx-auto [&>div]:h-20",
+	}) {
+		for _, item := range layout.Navbar.Items {
+			if len(item.Children) > 0 {
+				@headerDropdown(item)
+			} else {
+				@ui.NavItem(ui.NavItemProps{Href: item.Href, Size: ui.NavItemSizeLG, Icon: navIcon(item.Icon), Class: "text-font"}) {
+					{ item.Label }
+				}
+			}
+		}
+		@headerMobileActions(layout)
+	}
+}
+
+templ headerBrand(layout httpx.Layout) {
+	if layout.Branding.Logo != "" {
+		@ui.Brand(ui.BrandProps{
+			Title: layout.ServerName,
+			Href:  "/",
+			Logo:  headerLogo(layout.Branding.Logo),
+			Class: "mr-10",
+		})
+	} else {
+		@ui.Brand(ui.BrandProps{
+			Title: layout.ServerName,
+			Href:  "/",
+			Class: "mr-10",
+		})
+	}
+}
+
+templ headerLogo(src string) {
+	<img src={ src } alt="" class="h-7 w-auto"/>
+}
+
+templ headerDropdown(item config.NavItem) {
+	<div class="hidden lg:block">
+		@ui.Dropdown(ui.DropdownProps{}) {
+			@ui.DropdownTrigger() {
+				@ui.Button(ui.ButtonProps{Variant: ui.ButtonGhost, Size: ui.ButtonSizeLG, Rounded: ui.ButtonRoundedMD, Class: "px-4 font-normal text-font"}) {
+					if item.Icon != "" {
+						@ui.Icon(item.Icon, "h-4 w-4")
+					}
+					{ item.Label }
+					@ui.Icon("chevron-down", "h-4 w-4")
+				}
+			}
+			@ui.DropdownMenu(ui.DropdownMenuProps{}) {
+				for _, child := range item.Children {
+					@ui.DropdownItem(ui.DropdownItemProps{Href: child.Href, Class: "px-4 py-3 text-base text-font"}) {
+						{ child.Label }
+					}
+				}
+			}
+		}
+	</div>
+	<div class="lg:hidden w-full">
+		@ui.Accordion(ui.AccordionProps{Size: ui.AccordionSizeLG, Class: "border-0"}) {
+			@ui.AccordionItem(ui.AccordionItemProps{Class: "border-0"}) {
+				@ui.AccordionTrigger(ui.AccordionTriggerProps{Class: "rounded-md"}) {
+					<span class="flex items-center gap-3">
+						if item.Icon != "" {
+							@ui.Icon(item.Icon, "h-5 w-5")
+						}
+						{ item.Label }
+					</span>
+				}
+				@ui.AccordionContent(ui.AccordionContentProps{}) {
+					<ul class="flex flex-col gap-1">
+						for _, child := range item.Children {
+							<li>
+								<a href={ child.Href } class="block rounded-md px-4 py-3 text-base text-font hover:bg-accent-wash transition-colors">
+									{ child.Label }
+								</a>
+							</li>
+						}
+					</ul>
+				}
+			}
+		}
+	</div>
+}
+
+templ headerActions(layout httpx.Layout) {
+	<div class="hidden lg:flex items-center gap-2">
+		<div class="flex items-center">
+			@ui.ThemeSwitcher(ui.ThemeSwitcherProps{}) {
+				@ui.Button(ui.ButtonProps{Variant: ui.ButtonGhost, Size: ui.ButtonSizeLG, Rounded: ui.ButtonRoundedMD, Class: "px-4", Attrs: templ.Attributes{"@click": "toggle()"}}) {
+					<span x-show="!dark">@ui.Icon("moon", "h-5 w-5")</span>
+					<span x-show="dark">@ui.Icon("sun", "h-5 w-5")</span>
+				}
+			}
+			if layout.Branding.Discord != "" {
+				@ui.Button(ui.ButtonProps{
+					Variant:   ui.ButtonGhost,
+					Size:      ui.ButtonSizeLG,
+					Rounded:   ui.ButtonRoundedMD,
+					Class:     "px-4",
+					Href:      layout.Branding.Discord,
+					Target:    "_blank",
+					AriaLabel: "Join Discord",
+				}) {
+					@ui.Icon("discord", "h-5 w-5")
+				}
+			}
+		</div>
+		if _, ok := viewer.UserFromContext(ctx); ok {
+			@ui.Dropdown(ui.DropdownProps{}) {
+				@ui.DropdownTrigger() {
+					@ui.Button(ui.ButtonProps{
+						Variant: ui.ButtonSolid,
+						Color:   ui.ButtonColorIndigo,
+						Size:    ui.ButtonSizeLG,
+						Rounded: ui.ButtonRoundedMD,
+						Class:   "font-semibold",
+					}) {
+						Account
+						@ui.Icon("chevron-down", "h-4 w-4 ml-1")
+					}
+				}
+				@ui.DropdownMenu(ui.DropdownMenuProps{}) {
+					@ui.DropdownItem(ui.DropdownItemProps{Href: "/account", Class: "px-4 py-3 text-base text-font"}) {
+						View Account
+					}
+					<form hx-post="/logout" method="post" action="/logout" role="none">
+						@security.HiddenField()
+						<button
+							type="submit"
+							role="menuitem"
+							class="flex items-center gap-2 px-4 py-3 text-base rounded-sm w-full text-left transition-colors cursor-pointer text-red-700 hover:bg-red-50 active:bg-red-100 dark:text-red-400 dark:hover:bg-red-950 dark:active:bg-red-900"
+						>
+							Logout
+						</button>
+					</form>
+				}
+			}
+		} else {
+			@ui.Button(ui.ButtonProps{Variant: ui.ButtonGhost, Size: ui.ButtonSizeLG, Rounded: ui.ButtonRoundedMD, Href: "/login"}) {
+				Login
+			}
+			@ui.Button(ui.ButtonProps{
+				Variant: ui.ButtonSolid,
+				Color:   ui.ButtonColorIndigo,
+				Size:    ui.ButtonSizeLG,
+				Rounded: ui.ButtonRoundedMD,
+				Href:    "/register",
+				Class:   "font-semibold",
+			}) {
+				Register
+			}
+		}
+	</div>
+}
+
+templ headerMobileActions(layout httpx.Layout) {
+	<div class="lg:hidden mt-2 pt-3 border-t border-border flex flex-col gap-2">
+		<div class="flex items-center justify-center gap-2">
+			@ui.ThemeSwitcher(ui.ThemeSwitcherProps{}) {
+				@ui.Button(ui.ButtonProps{Variant: ui.ButtonGhost, Size: ui.ButtonSizeLG, Rounded: ui.ButtonRoundedMD, Class: "px-4", Attrs: templ.Attributes{"@click": "toggle()"}}) {
+					<span x-show="!dark">@ui.Icon("moon", "h-5 w-5")</span>
+					<span x-show="dark">@ui.Icon("sun", "h-5 w-5")</span>
+				}
+			}
+			if layout.Branding.Discord != "" {
+				@ui.Button(ui.ButtonProps{
+					Variant:   ui.ButtonGhost,
+					Size:      ui.ButtonSizeLG,
+					Rounded:   ui.ButtonRoundedMD,
+					Class:     "px-4",
+					Href:      layout.Branding.Discord,
+					Target:    "_blank",
+					AriaLabel: "Join Discord",
+				}) {
+					@ui.Icon("discord", "h-5 w-5")
+				}
+			}
+		</div>
+		if _, ok := viewer.UserFromContext(ctx); ok {
+			@ui.Button(ui.ButtonProps{
+				Variant: ui.ButtonOutline,
+				Size:    ui.ButtonSizeLG,
+				Rounded: ui.ButtonRoundedMD,
+				Href:    "/account",
+				Class:   "w-full justify-center",
+			}) {
+				View Account
+			}
+			<form hx-post="/logout" method="post" action="/logout">
+				@security.HiddenField()
+				<button
+					type="submit"
+					class="w-full rounded-md border border-red-300 dark:border-red-700 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 px-6 py-3 text-base font-medium transition-colors cursor-pointer"
+				>
+					Logout
+				</button>
+			</form>
+		} else {
+			@ui.Button(ui.ButtonProps{
+				Variant: ui.ButtonGhost,
+				Size:    ui.ButtonSizeLG,
+				Rounded: ui.ButtonRoundedMD,
+				Href:    "/login",
+				Class:   "w-full justify-center",
+			}) {
+				Login
+			}
+			@ui.Button(ui.ButtonProps{
+				Variant: ui.ButtonSolid,
+				Color:   ui.ButtonColorIndigo,
+				Size:    ui.ButtonSizeLG,
+				Rounded: ui.ButtonRoundedMD,
+				Href:    "/register",
+				Class:   "w-full justify-center font-semibold",
+			}) {
+				Register
+			}
+		}
+	</div>
+}
