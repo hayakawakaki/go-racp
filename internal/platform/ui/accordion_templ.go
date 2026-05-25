@@ -1768,6 +1768,7 @@ func init() {
 	Register(Component{
 		Name:   "accordion",
 		Title:  "Accordion",
+		Usage:  "@Accordion(AccordionProps{})",
 		Render: AccordionPreview,
 	})
 }

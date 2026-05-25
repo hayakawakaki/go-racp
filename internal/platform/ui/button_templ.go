@@ -2707,6 +2707,7 @@ func init() {
 	Register(Component{
 		Name:   "button",
 		Title:  "Button",
+		Usage:  "@Button(ButtonProps{})",
 		Render: ButtonPreview,
 	})
 }

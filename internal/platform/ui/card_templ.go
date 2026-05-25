@@ -2331,6 +2331,7 @@ func init() {
 	Register(Component{
 		Name:   "card",
 		Title:  "Card",
+		Usage:  "@Card(CardProps{})",
 		Render: CardPreview,
 	})
 }

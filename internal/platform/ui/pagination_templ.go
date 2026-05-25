@@ -474,6 +474,7 @@ func init() {
 	Register(Component{
 		Name:   "pagination",
 		Title:  "Pagination",
+		Usage:  "@Pagination(PaginationProps{})",
 		Render: PaginationPreview,
 	})
 }

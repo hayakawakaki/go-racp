@@ -1,0 +1,222 @@
+package ui
+
+type TooltipSide string
+
+const (
+	TooltipSideTop    TooltipSide = "top"
+	TooltipSideBottom TooltipSide = "bottom"
+	TooltipSideLeft   TooltipSide = "left"
+	TooltipSideRight  TooltipSide = "right"
+)
+
+type TooltipProps struct {
+	Attrs templ.Attributes
+	Class string
+}
+
+type TooltipTriggerProps struct {
+	Attrs templ.Attributes
+	Class string
+}
+
+type TooltipContentProps struct {
+	Attrs   templ.Attributes
+	Side    TooltipSide
+	Class   string
+	NoArrow bool
+}
+
+func tooltipClasses(p TooltipProps) string {
+	return Merge("group/tooltip relative inline-block", p.Class)
+}
+
+func tooltipTriggerClasses(p TooltipTriggerProps) string {
+	return Merge("inline-block", p.Class)
+}
+
+func tooltipSideClasses(side TooltipSide) string {
+	switch side {
+	case TooltipSideBottom:
+		return "top-full mt-2 left-1/2 -translate-x-1/2"
+	case TooltipSideLeft:
+		return "right-full mr-2 top-1/2 -translate-y-1/2"
+	case TooltipSideRight:
+		return "left-full ml-2 top-1/2 -translate-y-1/2"
+	default:
+		return "bottom-full mb-2 left-1/2 -translate-x-1/2"
+	}
+}
+
+func tooltipArrowClasses(side TooltipSide) string {
+	base := "absolute size-2 rotate-45 bg-slate-900 dark:bg-slate-100"
+
+	switch side {
+	case TooltipSideBottom:
+		return Merge(base, "bottom-full left-1/2 -translate-x-1/2 translate-y-1/2")
+	case TooltipSideLeft:
+		return Merge(base, "left-full top-1/2 -translate-y-1/2 -translate-x-1/2")
+	case TooltipSideRight:
+		return Merge(base, "right-full top-1/2 -translate-y-1/2 translate-x-1/2")
+	default:
+		return Merge(base, "top-full left-1/2 -translate-x-1/2 -translate-y-1/2")
+	}
+}
+
+func tooltipContentClasses(p TooltipContentProps) string {
+	side := p.Side
+	if side == "" {
+		side = TooltipSideTop
+	}
+
+	base := "absolute z-50 px-2 py-1 text-xs font-medium whitespace-nowrap rounded-md bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-lg opacity-0 invisible pointer-events-none transition-opacity duration-150 motion-reduce:transition-none group-hover/tooltip:opacity-100 group-hover/tooltip:visible group-focus-within/tooltip:opacity-100 group-focus-within/tooltip:visible"
+
+	return Merge(base, tooltipSideClasses(side), p.Class)
+}
+
+templ Tooltip(p TooltipProps) {
+	<div class={ tooltipClasses(p) } { p.Attrs... }>
+		{ children... }
+	</div>
+}
+
+templ TooltipTrigger(p TooltipTriggerProps) {
+	<span class={ tooltipTriggerClasses(p) } { p.Attrs... }>
+		{ children... }
+	</span>
+}
+
+templ TooltipContent(p TooltipContentProps) {
+	<span class={ tooltipContentClasses(p) } role="tooltip" { p.Attrs... }>
+		if !p.NoArrow {
+			<span class={ tooltipArrowClasses(tooltipResolvedSide(p.Side)) } aria-hidden="true"></span>
+		}
+		{ children... }
+	</span>
+}
+
+func tooltipResolvedSide(s TooltipSide) TooltipSide {
+	if s == "" {
+		return TooltipSideTop
+	}
+
+	return s
+}
+
+templ TooltipPreview() {
+	<div class="space-y-8">
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Basic</h2>
+			<p class="text-sm text-slate-500 dark:text-slate-400">Hover (or keyboard-focus) the trigger.</p>
+			<div class="flex flex-wrap items-center gap-12 py-8">
+				@Tooltip(TooltipProps{}) {
+					@TooltipTrigger(TooltipTriggerProps{}) {
+						@Button(ButtonProps{Variant: ButtonOutline}) {
+							Hover me
+						}
+					}
+					@TooltipContent(TooltipContentProps{}) {
+						Helpful hint
+					}
+				}
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Sides</h2>
+			<div class="flex flex-wrap items-center justify-center gap-12 py-12">
+				@Tooltip(TooltipProps{}) {
+					@TooltipTrigger(TooltipTriggerProps{}) {
+						@Button(ButtonProps{Variant: ButtonOutline}) {
+							Top
+						}
+					}
+					@TooltipContent(TooltipContentProps{Side: TooltipSideTop}) {
+						Above the trigger
+					}
+				}
+				@Tooltip(TooltipProps{}) {
+					@TooltipTrigger(TooltipTriggerProps{}) {
+						@Button(ButtonProps{Variant: ButtonOutline}) {
+							Bottom
+						}
+					}
+					@TooltipContent(TooltipContentProps{Side: TooltipSideBottom}) {
+						Below the trigger
+					}
+				}
+				@Tooltip(TooltipProps{}) {
+					@TooltipTrigger(TooltipTriggerProps{}) {
+						@Button(ButtonProps{Variant: ButtonOutline}) {
+							Left
+						}
+					}
+					@TooltipContent(TooltipContentProps{Side: TooltipSideLeft}) {
+						Left of the trigger
+					}
+				}
+				@Tooltip(TooltipProps{}) {
+					@TooltipTrigger(TooltipTriggerProps{}) {
+						@Button(ButtonProps{Variant: ButtonOutline}) {
+							Right
+						}
+					}
+					@TooltipContent(TooltipContentProps{Side: TooltipSideRight}) {
+						Right of the trigger
+					}
+				}
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">On an icon button</h2>
+			<div class="flex flex-wrap items-center gap-6 py-6">
+				@Tooltip(TooltipProps{}) {
+					@TooltipTrigger(TooltipTriggerProps{}) {
+						@Button(ButtonProps{Variant: ButtonGhost, AriaLabel: "Edit", LeftIcon: Icon("edit")})
+					}
+					@TooltipContent(TooltipContentProps{}) {
+						Edit
+					}
+				}
+				@Tooltip(TooltipProps{}) {
+					@TooltipTrigger(TooltipTriggerProps{}) {
+						@Button(ButtonProps{Variant: ButtonGhost, AriaLabel: "Delete", LeftIcon: Icon("trash")})
+					}
+					@TooltipContent(TooltipContentProps{}) {
+						Delete
+					}
+				}
+				@Tooltip(TooltipProps{}) {
+					@TooltipTrigger(TooltipTriggerProps{}) {
+						@Button(ButtonProps{Variant: ButtonGhost, AriaLabel: "Search", LeftIcon: Icon("search")})
+					}
+					@TooltipContent(TooltipContentProps{}) {
+						Search
+					}
+				}
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">No arrow</h2>
+			<div class="py-6">
+				@Tooltip(TooltipProps{}) {
+					@TooltipTrigger(TooltipTriggerProps{}) {
+						@Button(ButtonProps{Variant: ButtonOutline}) {
+							Without arrow
+						}
+					}
+					@TooltipContent(TooltipContentProps{NoArrow: true}) {
+						Plain tooltip
+					}
+				}
+			</div>
+		</section>
+	</div>
+}
+
+func init() {
+	Register(Component{
+		Name:   "tooltip",
+		Title:  "Tooltip",
+		Usage:  "@Tooltip(TooltipProps{})",
+		Render: TooltipPreview,
+	})
+}

@@ -112,6 +112,7 @@ func init() {
 	Register(Component{
 		Name:   "mob-sprite",
 		Title:  "Mob Sprite",
+		Usage:  "@MobSprite(id, class...)",
 		Render: MobSpritePreview,
 	})
 }

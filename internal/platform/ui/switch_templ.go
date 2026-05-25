@@ -412,6 +412,7 @@ func init() {
 	Register(Component{
 		Name:   "switch",
 		Title:  "Switch",
+		Usage:  "@Switch(SwitchProps{})",
 		Render: SwitchPreview,
 	})
 }

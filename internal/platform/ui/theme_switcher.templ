@@ -1,0 +1,122 @@
+package ui
+
+type ThemeSwitcherProps struct {
+	Attrs templ.Attributes
+	Class string
+}
+
+func themeSwitcherClasses(p ThemeSwitcherProps) string {
+	return Merge("inline-flex items-center gap-2", p.Class)
+}
+
+templ ThemeSwitcher(p ThemeSwitcherProps) {
+	<div x-data="theme" x-cloak class={ themeSwitcherClasses(p) } { p.Attrs... }>
+		{ children... }
+	</div>
+}
+
+templ ThemeSwitcherPreview() {
+	<div class="space-y-8">
+		<section class="space-y-3">
+			<h2 class="text-lg font-semibold">Functionality, not a single UI</h2>
+			<p class="text-sm text-slate-500 dark:text-slate-400">
+				<code class="font-mono text-xs px-1 rounded bg-slate-100 dark:bg-slate-800">ThemeSwitcher</code> is a thin wrapper that exposes the <code class="font-mono text-xs px-1 rounded bg-slate-100 dark:bg-slate-800">theme</code> Alpine factory (<code class="font-mono text-xs px-1 rounded bg-slate-100 dark:bg-slate-800">dark</code>, <code class="font-mono text-xs px-1 rounded bg-slate-100 dark:bg-slate-800">toggle()</code>) to whatever you put inside. Drop in any UI.
+			</p>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Icon button (sun / moon)</h2>
+			@ThemeSwitcher(ThemeSwitcherProps{}) {
+				@Button(ButtonProps{
+					Variant:   ButtonGhost,
+					AriaLabel: "Toggle theme",
+					Attrs:     templ.Attributes{"@click": "toggle()"},
+				}) {
+					<span x-show="!dark">
+						@Icon("moon")
+					</span>
+					<span x-show="dark">
+						@Icon("sun")
+					</span>
+				}
+			}
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Switch + label</h2>
+			@ThemeSwitcher(ThemeSwitcherProps{}) {
+				<span class="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Dark</span>
+				@Switch(SwitchProps{
+					AriaLabel: "Toggle dark mode",
+					Size:      SwitchSizeSM,
+					Color:     SwitchColorNeutral,
+					Attrs: templ.Attributes{
+						":checked": "dark",
+						"@change":  "toggle()",
+					},
+				})
+			}
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Text button</h2>
+			@ThemeSwitcher(ThemeSwitcherProps{}) {
+				@Button(ButtonProps{
+					Variant: ButtonOutline,
+					Size:    ButtonSizeSM,
+					Attrs:   templ.Attributes{"@click": "toggle()"},
+				}) {
+					<span x-show="!dark">Switch to dark</span>
+					<span x-show="dark">Switch to light</span>
+				}
+			}
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">In a pill</h2>
+			@ThemeSwitcher(ThemeSwitcherProps{
+				Class: "rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5 shadow-sm",
+			}) {
+				<span class="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Dark</span>
+				@Switch(SwitchProps{
+					AriaLabel: "Toggle dark mode",
+					Size:      SwitchSizeSM,
+					Color:     SwitchColorNeutral,
+					Attrs: templ.Attributes{
+						":checked": "dark",
+						"@change":  "toggle()",
+					},
+				})
+			}
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">In a header row</h2>
+			<div class="flex items-center justify-between gap-4 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3">
+				<div class="space-y-0.5">
+					<p class="font-semibold">My App</p>
+					<p class="text-xs text-slate-500 dark:text-slate-400">Header example</p>
+				</div>
+				@ThemeSwitcher(ThemeSwitcherProps{}) {
+					@Button(ButtonProps{
+						Variant:   ButtonGhost,
+						Size:      ButtonSizeSM,
+						AriaLabel: "Toggle theme",
+						Attrs:     templ.Attributes{"@click": "toggle()"},
+					}) {
+						<span x-show="!dark">
+							@Icon("moon")
+						</span>
+						<span x-show="dark">
+							@Icon("sun")
+						</span>
+					}
+				}
+			</div>
+		</section>
+	</div>
+}
+
+func init() {
+	Register(Component{
+		Name:   "theme-switcher",
+		Title:  "Theme Switcher",
+		Usage:  "@ThemeSwitcher(ThemeSwitcherProps{}) { ... }",
+		Render: ThemeSwitcherPreview,
+	})
+}

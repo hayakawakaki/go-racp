@@ -1010,6 +1010,7 @@ func init() {
 	Register(Component{
 		Name:   "breadcrumb",
 		Title:  "Breadcrumb",
+		Usage:  "@Breadcrumb(BreadcrumbProps{})",
 		Render: BreadcrumbPreview,
 	})
 }

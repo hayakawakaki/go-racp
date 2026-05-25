@@ -1,4 +1,36 @@
+(function () {
+    var stored = null;
+    try { stored = localStorage.getItem('theme'); } catch (e) { stored = null; }
+    var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var dark = stored === 'dark' || (stored === null && prefersDark);
+    if (dark) {
+        document.documentElement.classList.add('dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+    }
+})();
+
 document.addEventListener('alpine:init', () => {
+    Alpine.data('theme', () => ({
+        dark: false,
+        init() {
+            this.dark = document.documentElement.classList.contains('dark');
+        },
+        toggle() {
+            this.dark = !this.dark;
+            this.apply();
+        },
+        apply() {
+            if (this.dark) {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+            }
+        },
+    }));
+
     Alpine.data('modal', () => ({
         open: false,
         init() {

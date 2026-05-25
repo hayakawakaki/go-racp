@@ -11,6 +11,7 @@ type Component struct {
 	Render func() templ.Component
 	Name   string
 	Title  string
+	Usage  string
 }
 
 var registry = map[string]Component{}

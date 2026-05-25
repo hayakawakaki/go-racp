@@ -527,6 +527,7 @@ func init() {
 	Register(Component{
 		Name:   "form",
 		Title:  "Form",
+		Usage:  "@Field(FieldProps{}) { @Input(...) }",
 		Render: FormPreview,
 	})
 }

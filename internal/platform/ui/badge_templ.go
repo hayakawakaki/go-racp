@@ -1039,6 +1039,7 @@ func init() {
 	Register(Component{
 		Name:   "badge",
 		Title:  "Badge",
+		Usage:  "@Badge(BadgeProps{})",
 		Render: BadgePreview,
 	})
 }

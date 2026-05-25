@@ -192,6 +192,7 @@ func init() {
 	Register(Component{
 		Name:   "icon",
 		Title:  "Icon",
+		Usage:  "Icon(name, class...)",
 		Render: IconPreview,
 	})
 }

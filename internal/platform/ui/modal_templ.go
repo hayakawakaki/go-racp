@@ -2564,6 +2564,7 @@ func init() {
 	Register(Component{
 		Name:   "modal",
 		Title:  "Modal",
+		Usage:  "@Modal(ModalProps{})",
 		Render: ModalPreview,
 	})
 }

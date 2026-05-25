@@ -413,6 +413,7 @@ func init() {
 	Register(Component{
 		Name:   "toast",
 		Title:  "Toast",
+		Usage:  "@ToastContainer(ToastContainerProps{})",
 		Render: ToastPreview,
 	})
 }

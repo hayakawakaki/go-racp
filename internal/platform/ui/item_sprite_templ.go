@@ -160,6 +160,7 @@ func init() {
 	Register(Component{
 		Name:   "item-sprite",
 		Title:  "Item Sprite",
+		Usage:  "@ItemSprite(id, class...)",
 		Render: ItemSpritePreview,
 	})
 }

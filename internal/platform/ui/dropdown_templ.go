@@ -1807,6 +1807,7 @@ func init() {
 	Register(Component{
 		Name:   "dropdown",
 		Title:  "Dropdown",
+		Usage:  "@Dropdown(DropdownProps{})",
 		Render: DropdownPreview,
 	})
 }
