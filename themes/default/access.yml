@@ -2,6 +2,8 @@
 # Contains only ThemePages.* entries (other groups belong in root access.yml).
 
 ThemePages:
+  Index:
+    Roles: ["Public"]
   Rates:
     Roles: ["Public"]
   ServerInfo:

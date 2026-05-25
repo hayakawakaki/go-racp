@@ -9,7 +9,6 @@ import (
 	adminstate "github.com/hayakawakaki/go-racp/internal/features/admin/transport/state"
 	characterstate "github.com/hayakawakaki/go-racp/internal/features/character/transport/state"
 	guildstate "github.com/hayakawakaki/go-racp/internal/features/guild/transport/state"
-	homestate "github.com/hayakawakaki/go-racp/internal/features/home/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/features/item/app"
 	itemstate "github.com/hayakawakaki/go-racp/internal/features/item/transport/state"
 	mobapp "github.com/hayakawakaki/go-racp/internal/features/mob/app"
@@ -24,7 +23,6 @@ import (
 	admin "github.com/hayakawakaki/go-racp/themes/default/features/admin/transport"
 	character "github.com/hayakawakaki/go-racp/themes/default/features/character/transport"
 	guild "github.com/hayakawakaki/go-racp/themes/default/features/guild/transport"
-	home "github.com/hayakawakaki/go-racp/themes/default/features/home/transport"
 	item "github.com/hayakawakaki/go-racp/themes/default/features/item/transport"
 	mob "github.com/hayakawakaki/go-racp/themes/default/features/mob/transport"
 	news "github.com/hayakawakaki/go-racp/themes/default/features/news/transport"
@@ -171,10 +169,6 @@ func (DefaultTheme) GuildListPage(layout httpx.Layout, state guildstate.ListStat
 
 func (DefaultTheme) GuildListContent(state guildstate.ListState) templ.Component {
 	return guild.GuildListContent(state)
-}
-
-func (DefaultTheme) HomePage(layout httpx.Layout, state homestate.HomeState) templ.Component {
-	return home.HomePage(layout, state)
 }
 
 func (DefaultTheme) ItemDetailPage(layout httpx.Layout, state itemstate.DetailState) templ.Component {

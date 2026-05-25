@@ -986,15 +986,20 @@ func writeThemePages(themeDir, themeName, module string, pages []pageEntry) erro
 	} else {
 		fmt.Fprintf(&b, "func MountRoutes(reg *routes.Registry, mux *http.ServeMux, layout httpx.Layout) {\n")
 		for _, p := range pages {
+			pattern := p.Route
+			if pattern == "/" {
+				pattern = "GET /{$}"
+			}
+
 			switch p.Kind {
 			case templFileType:
-				fmt.Fprintf(&b, "\treg.Wrap(mux, %q, %q, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n", p.Tag, p.Route)
+				fmt.Fprintf(&b, "\treg.Wrap(mux, %q, %q, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n", p.Tag, pattern)
 				fmt.Fprintf(&b, "\t\tif err := pages.%s(themepage.BuildCtx(r, layout)).Render(r.Context(), w); err != nil {\n", p.FuncName)
 				fmt.Fprintf(&b, "\t\t\thttp.Error(w, %q, http.StatusInternalServerError)\n", "render error")
 				fmt.Fprintf(&b, "\t\t}\n")
 				fmt.Fprintf(&b, "\t}))\n")
 			case mdFileType:
-				fmt.Fprintf(&b, "\treg.Wrap(mux, %q, %q, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n", p.Tag, p.Route)
+				fmt.Fprintf(&b, "\treg.Wrap(mux, %q, %q, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n", p.Tag, pattern)
 				fmt.Fprintf(&b, "\t\tif err := themepage.RenderMarkdownPageFrom(w, r, layout, %q, %q, precomputedHTML%s); err != nil {\n", p.Title, p.FilePath, p.VarName)
 				fmt.Fprintf(&b, "\t\t\thttp.Error(w, %q, http.StatusInternalServerError)\n", "render error")
 				fmt.Fprintf(&b, "\t\t}\n")

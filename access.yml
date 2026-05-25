@@ -19,10 +19,6 @@
 # Declare Custom Roles in config.yml under UserRoles:
 
 
-Home:
-  View:
-    Roles: ["Public"]
-
 Account:
   View:
     Roles: ["*"]

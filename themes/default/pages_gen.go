@@ -35,6 +35,11 @@ func mustRead(fs embed.FS, path string) []byte {
 }
 
 func MountRoutes(reg *routes.Registry, mux *http.ServeMux, layout httpx.Layout) {
+	reg.Wrap(mux, "ThemePages.Index", "GET /{$}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := pages.Index(themepage.BuildCtx(r, layout)).Render(r.Context(), w); err != nil {
+			http.Error(w, "render error", http.StatusInternalServerError)
+		}
+	}))
 	reg.Wrap(mux, "ThemePages.Rates", "/rates", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := pages.Rates(themepage.BuildCtx(r, layout)).Render(r.Context(), w); err != nil {
 			http.Error(w, "render error", http.StatusInternalServerError)

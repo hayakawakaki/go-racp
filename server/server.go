@@ -137,6 +137,7 @@ func Start() error {
 	mux.HandleFunc("GET /healthz", health.New(mainDB, logsDB, postgres.NewHealthPinger(cpPool), logger))
 	plugin.MountAll(reg, mux, in)
 	reg.Finalize()
+
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		httpx.Render404(w, r, logger, layout)
 	})

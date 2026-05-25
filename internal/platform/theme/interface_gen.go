@@ -9,7 +9,6 @@ import (
 	adminstate "github.com/hayakawakaki/go-racp/internal/features/admin/transport/state"
 	characterstate "github.com/hayakawakaki/go-racp/internal/features/character/transport/state"
 	guildstate "github.com/hayakawakaki/go-racp/internal/features/guild/transport/state"
-	homestate "github.com/hayakawakaki/go-racp/internal/features/home/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/features/item/app"
 	itemstate "github.com/hayakawakaki/go-racp/internal/features/item/transport/state"
 	mobapp "github.com/hayakawakaki/go-racp/internal/features/mob/app"
@@ -57,7 +56,6 @@ type Theme interface {
 	GuildDetailContent(state guildstate.DetailState) templ.Component
 	GuildListPage(layout httpx.Layout, state guildstate.ListState) templ.Component
 	GuildListContent(state guildstate.ListState) templ.Component
-	HomePage(layout httpx.Layout, state homestate.HomeState) templ.Component
 	ItemDetailPage(layout httpx.Layout, state itemstate.DetailState) templ.Component
 	ItemListPage(layout httpx.Layout, state itemstate.ListState) templ.Component
 	ItemNotFoundPage(layout httpx.Layout, id string) templ.Component

@@ -5,5 +5,5 @@ package themesdefault
 const (
 	ThemeName    = "default"
 	ThemeVersion = "1.0"
-	PageCount    = 2
+	PageCount    = 3
 )
