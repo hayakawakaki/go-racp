@@ -5,7 +5,8 @@ COPY go.mod go.sum* ./
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -o main ./cmd/main.go \
+RUN ACTIVE_THEME=$(go run ./cmd/read_theme) \
+    && CGO_ENABLED=0 GOOS=linux go build -trimpath -tags "theme_${ACTIVE_THEME}" -o main ./cmd \
     && CGO_ENABLED=0 GOOS=linux go build -trimpath -o /out/goose github.com/pressly/goose/v3/cmd/goose
 
 FROM alpine:3.23

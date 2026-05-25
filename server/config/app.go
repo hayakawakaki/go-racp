@@ -239,11 +239,12 @@ var appConfigFiles = []string{
 }
 
 func ProcessAppConfig() *AppConfig {
-	root, err := ProjectRoot()
+	anchor, err := GetTargetFilePath("conf/" + appConfigFiles[0])
 	if err != nil {
-		panic(fmt.Errorf("locate project root: %w", err))
+		panic(fmt.Errorf("locate conf/%s: %w", appConfigFiles[0], err))
 	}
-	return loadAppConfigFromDir(filepath.Join(root, "conf"))
+
+	return loadAppConfigFromDir(filepath.Dir(anchor))
 }
 
 func loadAppConfigFromDir(dir string) *AppConfig {
