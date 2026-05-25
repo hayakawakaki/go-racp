@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/hayakawakaki/go-racp/internal/features/account/domain"
+	"github.com/hayakawakaki/go-racp/internal/platform/viewer"
 )
 
 const SessionCookieName = "racp_session"
@@ -76,6 +77,7 @@ func WithSession(sessSvc SessionValidator, logger *slog.Logger, secure bool) fun
 			}
 
 			ctx := context.WithValue(r.Context(), sessionKey, sess)
+			ctx = viewer.WithUser(ctx, &viewer.User{ID: sess.UserID})
 			next(w, r.WithContext(ctx))
 		}
 	}
