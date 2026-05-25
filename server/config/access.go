@@ -92,7 +92,7 @@ func (c AccessConfig) ManageRoles(group string) []string {
 func ProcessAccessConfig(themeData []byte) AccessConfig {
 	rootCfg := AccessConfig{}
 
-	cfgPath, err := GetTargetFilePath("access.yml")
+	cfgPath, err := GetTargetFilePath("conf/access.yml")
 	if err != nil {
 		if !errors.Is(err, fs.ErrNotExist) {
 			panic(fmt.Errorf("locate access.yml: %w", err))

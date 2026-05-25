@@ -1,10 +1,114 @@
 package config
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 )
+
+func writeConfDir(t *testing.T, files map[string]string) string {
+	t.Helper()
+	dir := filepath.Join(t.TempDir(), "conf")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	for name, body := range files {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o600); err != nil {
+			t.Fatalf("write %s: %v", name, err)
+		}
+	}
+	return dir
+}
+
+func validConfFiles() map[string]string {
+	return map[string]string{
+		"app.yml": `App:
+  ServerName: "Test Panel"
+  Timezone: "UTC"
+  Theme: "default"
+  Gepard: false
+  Branding:
+    Logo: ""
+    Discord: "https://discord.gg/test"
+  Navbar:
+    Items:
+      - Label: "Home"
+        Href: "/"
+        Icon: "home"
+Mailer:
+  FromAddress: "noreply@test.example"
+DefaultLocation:
+  Map: "prontera"
+  X: 156
+  Y: 191
+`,
+		"auth.yml": `Auth:
+  AllowTempBannedLogin: true
+TTL:
+  Session: "24h"
+  Verification: "30m"
+  PasswordReset: "1h"
+  EmailChange: "24h"
+Cooldown:
+  VerificationResend: "60s"
+  PasswordResetRequest: "30m"
+  PasswordChange: "168h"
+  EmailChangeRequest: "60s"
+  EmailChange: "336h"
+  TicketOpen: "30m"
+  CharacterLookReset: "24h"
+  CharacterLocationReset: "1h"
+Retention:
+  LoginAttempts: "720h"
+  SweepInterval: "1h"
+`,
+		"security.yml": `Security:
+  TrustedProxyCIDRs: ["127.0.0.1/32"]
+  HSTSMaxAge: 604800
+  HSTSIncludeSubdomains: true
+  HSTSPreload: false
+  CSPExtraScriptSrc: []
+  CSPExtraStyleSrc: []
+  CSPExtraImgSrc: []
+  TrustedOrigins: []
+`,
+		"roles.yml": `UserRoles:
+  Moderator: 20
+  Enforcer: 10
+`,
+		"tickets.yml": `TicketLimits:
+  MaxOpenPerPlayer: 5
+TicketCategories:
+  Other:
+    Display: "Other"
+    Roles: ["*"]
+Tickets:
+  StaffPollInterval: "30s"
+`,
+		"news.yml": `NewsCategories:
+  Announcement:
+    Display: "Announcement"
+`,
+		"datasources.yml": `ItemDB:
+  YAML:
+    Path: "data/"
+    Files: ["item_db.yml"]
+MobDB:
+  YAML:
+    Path: "data/"
+    Files: ["mob_db.yml"]
+`,
+		"polling.yml": `Vendor:
+  PollInterval: "30s"
+Metrics:
+  OnlinePollInterval: "1m"
+  GeneralPollInterval: "1h"
+  PeakWindows: ["daily", "weekly", "monthly", "all_time"]
+`,
+	}
+}
 
 func mustPanic(t *testing.T, fn func()) string {
 	t.Helper()
@@ -188,5 +292,118 @@ func TestValidateTheme_RejectsInvalidNames(t *testing.T) {
 				t.Errorf("panic message = %q, want substring %q", msg, tt.wantContain)
 			}
 		})
+	}
+}
+
+func TestLoadAppConfigFromDir_ReadsAllSections(t *testing.T) {
+	t.Parallel()
+	dir := writeConfDir(t, validConfFiles())
+
+	cfg := loadAppConfigFromDir(dir)
+
+	if cfg.General.ServerName != "Test Panel" {
+		t.Errorf("General.ServerName = %q, want %q", cfg.General.ServerName, "Test Panel")
+	}
+	if !cfg.Auth.AllowTempBannedLogin {
+		t.Errorf("Auth.AllowTempBannedLogin = false, want true")
+	}
+	if cfg.TTL.Session != 24*time.Hour {
+		t.Errorf("TTL.Session = %v, want 24h", cfg.TTL.Session)
+	}
+	if cfg.Security.HSTSMaxAge != 604800 {
+		t.Errorf("Security.HSTSMaxAge = %d, want 604800", cfg.Security.HSTSMaxAge)
+	}
+	if cfg.UserRoles["Moderator"] != 20 {
+		t.Errorf("UserRoles.Moderator = %d, want 20", cfg.UserRoles["Moderator"])
+	}
+	if cfg.TicketLimits.MaxOpenPerPlayer != 5 {
+		t.Errorf("TicketLimits.MaxOpenPerPlayer = %d, want 5", cfg.TicketLimits.MaxOpenPerPlayer)
+	}
+	if _, ok := cfg.NewsCategories["Announcement"]; !ok {
+		t.Errorf("NewsCategories missing Announcement")
+	}
+	if cfg.ItemDB.YAML.Path != "data/" {
+		t.Errorf("ItemDB.YAML.Path = %q, want %q", cfg.ItemDB.YAML.Path, "data/")
+	}
+	if cfg.Vendor.PollInterval != 30*time.Second {
+		t.Errorf("Vendor.PollInterval = %v, want 30s", cfg.Vendor.PollInterval)
+	}
+	if cfg.Mailer.FromAddress != "noreply@test.example" {
+		t.Errorf("Mailer.FromAddress = %q, want %q", cfg.Mailer.FromAddress, "noreply@test.example")
+	}
+}
+
+func TestLoadAppConfigFromDir_PanicsOnMissingFile(t *testing.T) {
+	t.Parallel()
+
+	names := []string{
+		"app.yml", "auth.yml", "security.yml", "roles.yml",
+		"tickets.yml", "news.yml", "datasources.yml", "polling.yml",
+	}
+	for _, missing := range names {
+		t.Run("missing_"+missing, func(t *testing.T) {
+			t.Parallel()
+			files := validConfFiles()
+			delete(files, missing)
+			dir := writeConfDir(t, files)
+
+			msg := mustPanic(t, func() { loadAppConfigFromDir(dir) })
+			if !strings.Contains(msg, missing) {
+				t.Errorf("panic message = %q, want substring %q", msg, missing)
+			}
+		})
+	}
+}
+
+func TestLoadAppConfigFromDir_TolereratesEmptyFiles(t *testing.T) {
+	t.Parallel()
+
+	empty := map[string]string{
+		"app.yml": "", "auth.yml": "", "security.yml": "",
+		"roles.yml": "", "tickets.yml": "", "news.yml": "",
+		"datasources.yml": "", "polling.yml": "",
+	}
+	dir := writeConfDir(t, empty)
+
+	cfg := loadAppConfigFromDir(dir)
+
+	if cfg.General.ServerName != "Go Control Panel" {
+		t.Errorf("General.ServerName default = %q, want %q", cfg.General.ServerName, "Go Control Panel")
+	}
+	if cfg.Mailer.FromAddress != "noreply@gocp.com" {
+		t.Errorf("Mailer.FromAddress default = %q, want %q", cfg.Mailer.FromAddress, "noreply@gocp.com")
+	}
+	if cfg.UserRoles["Moderator"] != 20 {
+		t.Errorf("UserRoles.Moderator default = %d, want 20", cfg.UserRoles["Moderator"])
+	}
+	if cfg.TTL.Session != 24*time.Hour {
+		t.Errorf("TTL.Session default = %v, want 24h", cfg.TTL.Session)
+	}
+}
+
+func TestLoadAppConfigFromDir_AppAndMailerTagsUnmarshal(t *testing.T) {
+	t.Parallel()
+
+	files := validConfFiles()
+	files["app.yml"] = `App:
+  ServerName: "Renamed Server"
+  Timezone: "UTC"
+  Theme: "default"
+Mailer:
+  FromAddress: "ops@renamed.test"
+DefaultLocation:
+  Map: "prontera"
+  X: 156
+  Y: 191
+`
+	dir := writeConfDir(t, files)
+
+	cfg := loadAppConfigFromDir(dir)
+
+	if cfg.General.ServerName != "Renamed Server" {
+		t.Errorf("App: tag did not route to General field: ServerName = %q", cfg.General.ServerName)
+	}
+	if cfg.Mailer.FromAddress != "ops@renamed.test" {
+		t.Errorf("Mailer: tag did not route to Mailer field: FromAddress = %q", cfg.Mailer.FromAddress)
 	}
 }

@@ -129,7 +129,7 @@ func (r *Registry) lookup(group, action string) (resolvedEntry, bool) {
 	for _, name := range cfgEntry.Roles {
 		role, ok := r.resolver.GetRole(name)
 		if !ok {
-			panic(fmt.Errorf("routes: access.yml entry %q.%q references unknown role %q. Add it under UserRoles in config.yml", group, action, name))
+			panic(fmt.Errorf("routes: access.yml entry %q.%q references unknown role %q. Add it under UserRoles in conf/roles.yml", group, action, name))
 		}
 		roles = append(roles, role)
 	}

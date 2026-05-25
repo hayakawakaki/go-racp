@@ -1,0 +1,9 @@
+# Vendor polling cadence (clamped to [5s, 10m])
+Vendor:
+  PollInterval: "30s"
+
+# Metrics polling (online clamped to [10s, 1h]; general clamped to [5m, 24h])
+Metrics:
+  OnlinePollInterval: "1m"
+  GeneralPollInterval: "1h"
+  PeakWindows: ["daily", "weekly", "monthly", "all_time"]
