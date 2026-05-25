@@ -1,10 +1,10 @@
 package components
 
 import (
-	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/security"
 	"github.com/hayakawakaki/go-racp/internal/platform/ui"
+	"github.com/hayakawakaki/go-racp/internal/platform/viewer"
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 
@@ -126,7 +126,7 @@ templ headerActions(layout httpx.Layout) {
 				}
 			}
 		</div>
-		if _, ok := middleware.SessionFromContext(ctx); ok {
+		if _, ok := viewer.UserFromContext(ctx); ok {
 			@ui.Dropdown(ui.DropdownProps{}) {
 				@ui.DropdownTrigger() {
 					@ui.Button(ui.ButtonProps{
@@ -197,7 +197,7 @@ templ headerMobileActions(layout httpx.Layout) {
 				}
 			}
 		</div>
-		if _, ok := middleware.SessionFromContext(ctx); ok {
+		if _, ok := viewer.UserFromContext(ctx); ok {
 			@ui.Button(ui.ButtonProps{
 				Variant: ui.ButtonOutline,
 				Size:    ui.ButtonSizeLG,

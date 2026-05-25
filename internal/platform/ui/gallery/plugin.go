@@ -1,4 +1,4 @@
-package ui
+package gallery
 
 import (
 	"net/http"
@@ -7,6 +7,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/plugin"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
+	"github.com/hayakawakaki/go-racp/internal/platform/ui"
 )
 
 func init() {
@@ -22,16 +23,16 @@ func mount(_ *routes.Registry, mux *http.ServeMux, in *infra.Infra) {
 	}
 
 	mux.HandleFunc("GET /_dev/components", func(w http.ResponseWriter, r *http.Request) {
-		httpx.RenderHTML(w, r, in.Logger, galleryIndex(List()))
+		httpx.RenderHTML(w, r, in.Logger, ui.GalleryIndex(ui.List()))
 	})
 
 	mux.HandleFunc("GET /_dev/components/{name}", func(w http.ResponseWriter, r *http.Request) {
-		c, ok := Get(r.PathValue("name"))
+		c, ok := ui.Get(r.PathValue("name"))
 		if !ok {
 			http.NotFound(w, r)
 			return
 		}
 
-		httpx.RenderHTML(w, r, in.Logger, galleryDetail(c))
+		httpx.RenderHTML(w, r, in.Logger, ui.GalleryDetail(c))
 	})
 }
