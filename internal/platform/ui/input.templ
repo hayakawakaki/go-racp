@@ -56,6 +56,8 @@ const (
 
 type InputProps struct {
 	Attrs        templ.Attributes
+	LeftIcon     templ.Component
+	RightIcon    templ.Component
 	Type         InputType
 	Name         string
 	ID           string
@@ -116,19 +118,56 @@ func inputRoundedClass(r InputRounded) string {
 	}
 }
 
-func inputClasses(p InputProps) string {
-	base := "block w-full bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-inset disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-slate-400 dark:placeholder:text-slate-500"
-
-	var sizeClasses string
+func inputPaddingClasses(p InputProps) string {
+	var leftPad, rightPad, vertical, text string
 
 	switch p.Size {
 	case InputSizeSM:
-		sizeClasses = "px-2 py-1 text-sm"
+		vertical = "py-1"
+		text = "text-sm"
+		if p.LeftIcon != nil {
+			leftPad = "pl-8"
+		} else {
+			leftPad = "pl-2"
+		}
+		if p.RightIcon != nil {
+			rightPad = "pr-8"
+		} else {
+			rightPad = "pr-2"
+		}
 	case InputSizeLG:
-		sizeClasses = "px-4 py-2.5 text-base"
+		vertical = "py-2.5"
+		text = "text-base"
+		if p.LeftIcon != nil {
+			leftPad = "pl-11"
+		} else {
+			leftPad = "pl-4"
+		}
+		if p.RightIcon != nil {
+			rightPad = "pr-11"
+		} else {
+			rightPad = "pr-4"
+		}
 	default:
-		sizeClasses = "px-3 py-2 text-sm"
+		vertical = "py-2"
+		text = "text-sm"
+		if p.LeftIcon != nil {
+			leftPad = "pl-9"
+		} else {
+			leftPad = "pl-3"
+		}
+		if p.RightIcon != nil {
+			rightPad = "pr-9"
+		} else {
+			rightPad = "pr-3"
+		}
 	}
+
+	return Merge(leftPad, rightPad, vertical, text)
+}
+
+func inputClasses(p InputProps) string {
+	base := "block w-full bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-inset disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-slate-400 dark:placeholder:text-slate-500"
 
 	var stateClasses string
 
@@ -138,7 +177,40 @@ func inputClasses(p InputProps) string {
 		stateClasses = "border-slate-300 dark:border-slate-600 " + inputFocusRing(p.Color)
 	}
 
-	return Merge(base, sizeClasses, inputRoundedClass(p.Rounded), stateClasses, p.Class)
+	return Merge(base, inputPaddingClasses(p), inputRoundedClass(p.Rounded), stateClasses, p.Class)
+}
+
+func inputIconWrapClasses(p InputProps, side string) string {
+	base := "absolute top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500 group-has-[:disabled]:opacity-50 flex items-center"
+
+	var pos string
+
+	switch p.Size {
+	case InputSizeSM:
+		if side == "right" {
+			pos = "right-2"
+		} else {
+			pos = "left-2"
+		}
+	case InputSizeLG:
+		if side == "right" {
+			pos = "right-3.5"
+		} else {
+			pos = "left-3.5"
+		}
+	default:
+		if side == "right" {
+			pos = "right-3"
+		} else {
+			pos = "left-3"
+		}
+	}
+
+	return Merge(base, pos)
+}
+
+func inputHasIcons(p InputProps) bool {
+	return p.LeftIcon != nil || p.RightIcon != nil
 }
 
 func inputType(p InputProps) string {
@@ -208,12 +280,35 @@ func inputAttrs(p InputProps) templ.Attributes {
 }
 
 templ Input(p InputProps) {
-	<input
-		type={ inputType(p) }
-		class={ inputClasses(p) }
-		required?={ p.Required }
-		disabled?={ p.Disabled }
-		readonly?={ p.ReadOnly }
-		{ inputAttrs(p)... }
-	/>
+	if inputHasIcons(p) {
+		<div class="group relative">
+			if p.LeftIcon != nil {
+				<span class={ inputIconWrapClasses(p, "left") }>
+					@p.LeftIcon
+				</span>
+			}
+			<input
+				type={ inputType(p) }
+				class={ inputClasses(p) }
+				required?={ p.Required }
+				disabled?={ p.Disabled }
+				readonly?={ p.ReadOnly }
+				{ inputAttrs(p)... }
+			/>
+			if p.RightIcon != nil {
+				<span class={ inputIconWrapClasses(p, "right") }>
+					@p.RightIcon
+				</span>
+			}
+		</div>
+	} else {
+		<input
+			type={ inputType(p) }
+			class={ inputClasses(p) }
+			required?={ p.Required }
+			disabled?={ p.Disabled }
+			readonly?={ p.ReadOnly }
+			{ inputAttrs(p)... }
+		/>
+	}
 }

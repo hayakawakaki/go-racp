@@ -59,6 +59,24 @@ templ FormPreview() {
 			</div>
 		</section>
 		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Icons</h2>
+			<div class="space-y-3">
+				@Input(InputProps{LeftIcon: Icon("search"), Placeholder: "Search items..."})
+				@Input(InputProps{RightIcon: Icon("chevron-down"), Placeholder: "Trailing chevron"})
+				@Input(InputProps{LeftIcon: Icon("search"), RightIcon: Icon("x"), Placeholder: "Both sides"})
+				@Input(InputProps{LeftIcon: Icon("alert-circle"), Placeholder: "Invalid with icon", Invalid: true})
+				@Input(InputProps{LeftIcon: Icon("edit"), Placeholder: "Disabled", Disabled: true})
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Icons across sizes</h2>
+			<div class="space-y-3">
+				@Input(InputProps{Size: InputSizeSM, LeftIcon: Icon("search"), Placeholder: "Small with icon"})
+				@Input(InputProps{Size: InputSizeMD, LeftIcon: Icon("search"), Placeholder: "Medium with icon"})
+				@Input(InputProps{Size: InputSizeLG, LeftIcon: Icon("search"), Placeholder: "Large with icon"})
+			</div>
+		</section>
+		<section class="space-y-4">
 			<h2 class="text-lg font-semibold">Rounded</h2>
 			<div class="space-y-3">
 				@Input(InputProps{Placeholder: "None (default)"})
