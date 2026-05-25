@@ -1,0 +1,100 @@
+package ui
+
+type BrandProps struct {
+	Attrs templ.Attributes
+	Logo  templ.Component
+	Title string
+	Href  string
+	Class string
+}
+
+func brandClasses(p BrandProps) string {
+	return Merge("text-base font-semibold tracking-tight text-slate-900 dark:text-slate-100", p.Class)
+}
+
+func brandLinkClasses() string {
+	return "inline-flex items-center gap-2 rounded-md transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:focus-visible:ring-slate-500"
+}
+
+templ Brand(p BrandProps) {
+	<h1 class={ brandClasses(p) } { p.Attrs... }>
+		if p.Href != "" {
+			<a href={ p.Href } class={ brandLinkClasses() }>
+				@brandInner(p)
+			</a>
+		} else {
+			<span class="inline-flex items-center gap-2">
+				@brandInner(p)
+			</span>
+		}
+	</h1>
+}
+
+templ brandInner(p BrandProps) {
+	if p.Logo != nil {
+		<span class="sr-only">{ p.Title }</span>
+		@p.Logo
+	} else {
+		{ p.Title }
+	}
+}
+
+templ BrandPreview() {
+	<div class="space-y-8">
+		<section class="space-y-3">
+			<h2 class="text-lg font-semibold">Title only</h2>
+			<p class="text-sm text-slate-500 dark:text-slate-400">No logo — the title renders as the visible h1 text.</p>
+			@Brand(BrandProps{Title: "My App", Href: "/"})
+		</section>
+		<section class="space-y-3">
+			<h2 class="text-lg font-semibold">Logo + SEO-friendly hidden title</h2>
+			<p class="text-sm text-slate-500 dark:text-slate-400">
+				When a Logo is provided, the title sits inside the h1 as <code class="font-mono text-xs px-1 rounded bg-slate-100 dark:bg-slate-800">sr-only</code> — invisible on screen but still indexed by search engines and announced by screen readers.
+			</p>
+			@Brand(BrandProps{
+				Title: "My App",
+				Logo:  Icon("plus", "size-7 text-blue-600"),
+				Href:  "/",
+			})
+		</section>
+		<section class="space-y-3">
+			<h2 class="text-lg font-semibold">Logo + visible title side-by-side</h2>
+			<p class="text-sm text-slate-500 dark:text-slate-400">
+				Need both? Skip the Logo prop and inline a wordmark via Class or wrap the brand markup yourself. For most apps the two layouts above cover it.
+			</p>
+		</section>
+		<section class="space-y-3">
+			<h2 class="text-lg font-semibold">Without link</h2>
+			<p class="text-sm text-slate-500 dark:text-slate-400">Omit Href to render the brand as plain text instead of an anchor.</p>
+			@Brand(BrandProps{Title: "My App"})
+		</section>
+		<section class="space-y-3">
+			<h2 class="text-lg font-semibold">Inside a Sidebar header (preview)</h2>
+			<div class="w-72 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+				<div class="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 px-4 py-4">
+					@Brand(BrandProps{
+						Title: "Control Panel",
+						Logo:  Icon("plus", "size-7 text-blue-600"),
+						Href:  "#",
+					})
+				</div>
+				<div class="p-4 text-sm text-slate-500 dark:text-slate-400">Sidebar contents below.</div>
+			</div>
+		</section>
+		<section class="space-y-3">
+			<h2 class="text-lg font-semibold">Heading hierarchy note</h2>
+			<p class="text-sm text-slate-500 dark:text-slate-400">
+				Brand renders an h1. Keep page-specific titles as h2 so each page still has exactly one h1.
+			</p>
+		</section>
+	</div>
+}
+
+func init() {
+	Register(Component{
+		Name:   "brand",
+		Title:  "Brand",
+		Usage:  "@Brand(BrandProps{Title: \"...\", Logo: Icon(...), Href: \"/\"})",
+		Render: BrandPreview,
+	})
+}

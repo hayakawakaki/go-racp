@@ -136,6 +136,22 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
+    Alpine.data('nav', () => ({
+        open: false,
+        toggle() {
+            this.open = !this.open;
+        },
+        show() {
+            this.open = true;
+        },
+        close() {
+            this.open = false;
+        },
+        openAttr() {
+            return this.open ? 'true' : 'false';
+        },
+    }));
+
     Alpine.data('tabs', () => ({
         active: '',
         init() {
