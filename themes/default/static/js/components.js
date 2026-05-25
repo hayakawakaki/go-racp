@@ -129,6 +129,13 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
+    Alpine.data('alert', () => ({
+        open: true,
+        dismiss() {
+            this.open = false;
+        },
+    }));
+
     Alpine.data('tabs', () => ({
         active: '',
         init() {

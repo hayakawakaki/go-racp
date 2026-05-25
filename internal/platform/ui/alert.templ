@@ -1,0 +1,282 @@
+package ui
+
+type AlertVariant string
+
+const (
+	AlertNeutral AlertVariant = "neutral"
+	AlertInfo    AlertVariant = "info"
+	AlertSuccess AlertVariant = "success"
+	AlertWarning AlertVariant = "warning"
+	AlertError   AlertVariant = "error"
+)
+
+type AlertProps struct {
+	Attrs       templ.Attributes
+	Class       string
+	Variant     AlertVariant
+	Icon        templ.Component
+	NoIcon      bool
+	Dismissible bool
+}
+
+var alertVariantMap = map[AlertVariant]string{
+	AlertNeutral: "border-slate-200 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 [&_svg]:text-slate-500 dark:[&_svg]:text-slate-400",
+	AlertInfo:    "border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-100 [&_svg]:text-blue-600 dark:[&_svg]:text-blue-400",
+	AlertSuccess: "border-green-200 bg-green-50 text-green-900 dark:border-green-900 dark:bg-green-950 dark:text-green-100 [&_svg]:text-green-600 dark:[&_svg]:text-green-400",
+	AlertWarning: "border-yellow-200 bg-yellow-50 text-yellow-900 dark:border-yellow-900 dark:bg-yellow-950 dark:text-yellow-100 [&_svg]:text-yellow-700 dark:[&_svg]:text-yellow-400",
+	AlertError:   "border-red-200 bg-red-50 text-red-900 dark:border-red-900 dark:bg-red-950 dark:text-red-100 [&_svg]:text-red-600 dark:[&_svg]:text-red-400",
+}
+
+func alertVariantClasses(v AlertVariant) string {
+	if c, ok := alertVariantMap[v]; ok {
+		return c
+	}
+
+	return alertVariantMap[AlertInfo]
+}
+
+func alertClasses(p AlertProps) string {
+	variant := p.Variant
+	if variant == "" {
+		variant = AlertInfo
+	}
+
+	base := "relative flex items-start gap-3 rounded-md border p-4"
+
+	return Merge(base, alertVariantClasses(variant), p.Class)
+}
+
+func alertHasIcon(p AlertProps) bool {
+	if p.NoIcon {
+		return false
+	}
+
+	if p.Icon != nil {
+		return true
+	}
+
+	return p.Variant != AlertNeutral && p.Variant != ""
+}
+
+func alertIconComponent(p AlertProps) templ.Component {
+	if p.Icon != nil {
+		return p.Icon
+	}
+
+	switch p.Variant {
+	case AlertSuccess:
+		return Icon("check")
+	case AlertWarning:
+		return Icon("alert-triangle")
+	case AlertError:
+		return Icon("alert-circle")
+	case AlertInfo:
+		return Icon("info")
+	}
+
+	return nil
+}
+
+func alertAttrs(p AlertProps) templ.Attributes {
+	attrs := templ.Attributes{}
+
+	if p.Dismissible {
+		attrs["x-data"] = "alert"
+		attrs["x-show"] = "open"
+		attrs["x-cloak"] = true
+	}
+
+	return MergeAttr(attrs, p.Attrs)
+}
+
+templ Alert(p AlertProps) {
+	<div role="alert" class={ alertClasses(p) } { alertAttrs(p)... }>
+		if alertHasIcon(p) {
+			<span class="shrink-0 mt-0.5 [&>svg]:size-5">
+				@alertIconComponent(p)
+			</span>
+		}
+		<div class="flex-1 min-w-0">
+			{ children... }
+		</div>
+		if p.Dismissible {
+			<button
+				type="button"
+				@click="dismiss()"
+				aria-label="Dismiss"
+				class="shrink-0 -m-1 p-1 rounded-md transition-colors hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
+			>
+				@Icon("x", "size-4")
+			</button>
+		}
+	</div>
+}
+
+templ AlertTitle(class ...string) {
+	<h3 class={ MergeWithDefault("font-medium leading-tight", class) }>
+		{ children... }
+	</h3>
+}
+
+templ AlertDescription(class ...string) {
+	<div class={ MergeWithDefault("text-sm mt-1 opacity-90", class) }>
+		{ children... }
+	</div>
+}
+
+templ AlertPreview() {
+	<div class="space-y-8">
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Variants</h2>
+			<div class="space-y-3">
+				@Alert(AlertProps{Variant: AlertInfo}) {
+					@AlertTitle() {
+						Heads up
+					}
+					@AlertDescription() {
+						Server restart is scheduled for tonight at 02:00 UTC.
+					}
+				}
+				@Alert(AlertProps{Variant: AlertSuccess}) {
+					@AlertTitle() {
+						Saved
+					}
+					@AlertDescription() {
+						Youre changes were applied successfully.
+					}
+				}
+				@Alert(AlertProps{Variant: AlertWarning}) {
+					@AlertTitle() {
+						Loading
+					}
+					@AlertDescription() {
+						Server is on maintenance
+					}
+				}
+				@Alert(AlertProps{Variant: AlertError}) {
+					@AlertTitle() {
+						Connection failed
+					}
+					@AlertDescription() {
+						Unable to reach the database. Check your configuration and try again.
+					}
+				}
+				@Alert(AlertProps{Variant: AlertNeutral}) {
+					@AlertTitle() {
+						Note
+					}
+					@AlertDescription() {
+						Welcome
+					}
+				}
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Title only</h2>
+			<div class="space-y-3">
+				@Alert(AlertProps{Variant: AlertInfo}) {
+					@AlertTitle() {
+						A short standalone message.
+					}
+				}
+				@Alert(AlertProps{Variant: AlertSuccess}) {
+					@AlertTitle() {
+						Build passed.
+					}
+				}
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Description only</h2>
+			<div class="space-y-3">
+				@Alert(AlertProps{Variant: AlertWarning}) {
+					@AlertDescription() {
+						Compact body-only alert. Useful for inline form errors.
+					}
+				}
+				@Alert(AlertProps{Variant: AlertError}) {
+					@AlertDescription() {
+						Invalid value. Try again.
+					}
+				}
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">No icon</h2>
+			<div class="space-y-3">
+				@Alert(AlertProps{Variant: AlertInfo, NoIcon: true}) {
+					@AlertTitle() {
+						Without the leading icon
+					}
+					@AlertDescription() {
+						Pass NoIcon: true to suppress the variant icon.
+					}
+				}
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Custom icon</h2>
+			<div class="space-y-3">
+				@Alert(AlertProps{Variant: AlertNeutral, Icon: Icon("edit")}) {
+					@AlertTitle() {
+						Draft saved
+					}
+					@AlertDescription() {
+						Pass any Icon component via Icon to override the variant default.
+					}
+				}
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">Dismissible</h2>
+			<p class="text-sm text-slate-500 dark:text-slate-400">Backed by the <code class="font-mono text-xs px-1 rounded bg-slate-100 dark:bg-slate-800">alert</code> Click the X to dismiss. Refresh to bring it back.</p>
+			<div class="space-y-3">
+				@Alert(AlertProps{Variant: AlertInfo, Dismissible: true}) {
+					@AlertTitle() {
+						You can dismiss this one
+					}
+					@AlertDescription() {
+						State is per instance and resets on reload.
+					}
+				}
+				@Alert(AlertProps{Variant: AlertSuccess, Dismissible: true}) {
+					@AlertDescription() {
+						Compact dismissible alert with no title.
+					}
+				}
+			</div>
+		</section>
+		<section class="space-y-4">
+			<h2 class="text-lg font-semibold">With actions</h2>
+			@Alert(AlertProps{Variant: AlertWarning}) {
+				<div class="flex items-start justify-between gap-4">
+					<div class="space-y-1">
+						@AlertTitle() {
+							Storage almost full
+						}
+						@AlertDescription() {
+							You've used 92% of your quota. Free up space or upgrade.
+						}
+					</div>
+					<div class="flex items-center gap-2 shrink-0">
+						@Button(ButtonProps{Variant: ButtonOutline, Size: ButtonSizeSM}) {
+							Manage
+						}
+						@Button(ButtonProps{Color: ButtonColorYellow, Size: ButtonSizeSM}) {
+							Upgrade
+						}
+					</div>
+				</div>
+			}
+		</section>
+	</div>
+}
+
+func init() {
+	Register(Component{
+		Name:   "alert",
+		Title:  "Alert",
+		Usage:  "@Alert(AlertProps{}) { @AlertTitle { ... } @AlertDescription { ... } }",
+		Render: AlertPreview,
+	})
+}
