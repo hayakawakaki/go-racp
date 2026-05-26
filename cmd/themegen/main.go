@@ -798,9 +798,29 @@ func emitActiveFallback(themeName, appVersion, themeMin string) string {
 }
 
 func writeActiveFallback(outDir, themeName, appVersion string, mf manifest.Manifest) error {
-	source := emitActiveFallback(themeName, appVersion, mf.Compatible.Min)
-	outPath := filepath.Join(outDir, "active_"+themeName+"_gen.go")
-	return writeIfChanged(outPath, []byte(source))
+	activeSource := emitActiveFallback(themeName, appVersion, mf.Compatible.Min)
+	activePath := filepath.Join(outDir, "active_"+themeName+"_gen.go")
+	if err := writeIfChanged(activePath, []byte(activeSource)); err != nil {
+		return fmt.Errorf("write fallback active: %w", err)
+	}
+
+	stubSource := emitFallbackOverrideStub(themeName)
+	stubPath := filepath.Join(outDir, themeName+"_gen.go")
+	if err := writeIfChanged(stubPath, []byte(stubSource)); err != nil {
+		return fmt.Errorf("write fallback override stub: %w", err)
+	}
+
+	return nil
+}
+
+func emitFallbackOverrideStub(themeName string) string {
+	var b strings.Builder
+
+	b.WriteString(generatedHeader)
+	fmt.Fprintf(&b, "//go:build theme_%s\n\n", themeName)
+	b.WriteString("package theme\n")
+
+	return b.String()
 }
 
 type pageEntry struct {

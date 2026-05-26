@@ -11,7 +11,7 @@ import (
 
 const defaultThemeName = "default"
 
-var themeNameRe = regexp.MustCompile(`^[a-z0-9_]+$`)
+var themeNameRe = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 
 func main() {
 	data, err := os.ReadFile("conf/app.yml")

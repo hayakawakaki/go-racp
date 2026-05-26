@@ -245,7 +245,6 @@ func TestValidateTheme_AcceptsValidNames(t *testing.T) {
 		{name: "lowercase letters", in: "sample", want: "sample"},
 		{name: "lowercase with digits", in: "theme01", want: "theme01"},
 		{name: "lowercase with underscore", in: "my_theme", want: "my_theme"},
-		{name: "all digits", in: "42", want: "42"},
 		{name: "single letter", in: "x", want: "x"},
 	}
 
@@ -281,6 +280,9 @@ func TestValidateTheme_RejectsInvalidNames(t *testing.T) {
 		{name: "shell injection semicolon", in: "default; rm -rf /", wantContain: "must match"},
 		{name: "shell injection backtick", in: "default`whoami`", wantContain: "must match"},
 		{name: "newline rejected", in: "default\n", wantContain: "must match"},
+		{name: "leading digit rejected", in: "2024_summer", wantContain: "must match"},
+		{name: "all digits rejected", in: "42", wantContain: "must match"},
+		{name: "leading underscore rejected", in: "_theme", wantContain: "must match"},
 	}
 
 	for _, tt := range tests {

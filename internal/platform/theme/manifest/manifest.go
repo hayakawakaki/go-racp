@@ -27,7 +27,7 @@ type ManifestCompatibility struct {
 }
 
 var (
-	nameRe      = regexp.MustCompile(`^[a-z0-9_]+$`)
+	nameRe      = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 	versionRe   = regexp.MustCompile(`^(\d+)\.(\d+)$`)
 	nameStripRe = regexp.MustCompile(`[^a-z0-9_]`)
 )

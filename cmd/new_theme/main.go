@@ -15,7 +15,7 @@ import (
 //go:embed templates/*.tmpl
 var templates embed.FS
 
-var nameRe = regexp.MustCompile(`^[a-z0-9_]+$`)
+var nameRe = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 
 func main() {
 	name := flag.String("name", "", "theme name (lowercase slug)")
@@ -26,7 +26,7 @@ func main() {
 	}
 
 	if !nameRe.MatchString(*name) {
-		log.Fatalf("new_theme: name %q must match ^[a-z0-9_]+$ (lowercase letters, digits, underscores)", *name)
+		log.Fatalf("new_theme: name %q must match ^[a-z][a-z0-9_]*$ (lowercase letters, digits, underscores; must start with a letter)", *name)
 	}
 
 	root := filepath.Join("themes", *name)
