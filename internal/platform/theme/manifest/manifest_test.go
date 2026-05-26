@@ -47,8 +47,8 @@ func TestParseManifest(t *testing.T) {
 		},
 		{
 			name: "with author URL",
-			input: `Name: midnight
-DisplayName: "Midnight"
+			input: `Name: sample
+DisplayName: "Sample"
 Version: "1.2"
 Author:
   Name: "kaki"
