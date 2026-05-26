@@ -8,7 +8,7 @@ tmp_dir = "tmp"
     "go tool templ generate",
     "tailwindcss -i ./static/css/tailwind.css -o ./static/css/app.css",
   ]
-  cmd = "go build -tags theme_default -o ./tmp/racp.exe ./cmd"
+  cmd = "go build -tags theme_$(go run ./cmd/read_theme) -o ./tmp/racp.exe ./cmd"
   bin = "./tmp/racp.exe"
   include_ext = ["go", "templ", "yml", "md", "templ"]
   exclude_dir = ["tmp", "docs", "docker", ".git", ".claude", "node_modules", "static/vendor", "testdata", "data"]
