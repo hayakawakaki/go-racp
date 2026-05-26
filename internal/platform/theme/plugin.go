@@ -14,7 +14,6 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 	"github.com/hayakawakaki/go-racp/internal/platform/themecfg"
 	"github.com/hayakawakaki/go-racp/internal/platform/themepage"
-	themesdefault "github.com/hayakawakaki/go-racp/themes/default"
 )
 
 func init() {
@@ -25,48 +24,52 @@ func init() {
 }
 
 func mount(reg *routes.Registry, mux *http.ServeMux, in *infra.Infra) {
-	activeTheme := in.Config.App.General.Theme
-
-	if err := themecfg.LoadCfg(activeTheme); err != nil {
+	if err := themecfg.LoadCfg(ActiveName); err != nil {
 		panic(fmt.Errorf("theme: load config: %w", err))
 	}
 
 	devMode := in.Config.Env.Mode == "development"
 
 	themepage.DevMode = devMode
-	themepage.DiskRoot = filepath.Join("themes", "default")
+	themepage.DiskRoot = filepath.Join("themes", ActiveName)
 
-	urlPrefix := "/themes/" + activeTheme + "/static/"
-
-	var handler http.Handler
-
-	if devMode {
-		handler = http.FileServer(http.Dir("themes/" + activeTheme + "/static"))
-	} else {
-		sub, err := fs.Sub(themesdefault.Static, "static")
-		if err != nil {
-			panic("theme: fs.Sub themes/default/static: " + err.Error())
-		}
-
-		handler = http.FileServer(http.FS(sub))
+	mountStaticHandler(mux, devMode, ActiveName, ActiveStatic)
+	if ActiveName != DefaultName {
+		mountStaticHandler(mux, devMode, DefaultName, DefaultStatic)
 	}
 
-	mux.Handle(urlPrefix, http.StripPrefix(urlPrefix, handler))
-
 	layout := httpx.Layout{GeneralConfig: in.Config.App.General}
-	themesdefault.MountRoutes(reg, mux, layout)
+	ActiveMountRoutes(reg, mux, layout)
 
 	if devMode {
 		mux.HandleFunc("GET /_dev/routes", devRoutesHandler(reg))
 	}
 
 	in.Logger.Info("theme",
-		"name", themesdefault.ThemeName,
-		"version", themesdefault.ThemeVersion,
-		"pages", themesdefault.PageCount,
-		"prefix", urlPrefix,
+		"name", ActiveName,
+		"version", ActiveVersion,
+		"pages", ActivePageCount,
+		"prefix", "/themes/"+ActiveName+"/static/",
 		"mode", in.Config.Env.Mode,
 	)
+}
+
+func mountStaticHandler(mux *http.ServeMux, devMode bool, themeName string, embedded fs.FS) {
+	urlPrefix := "/themes/" + themeName + "/static/"
+
+	var handler http.Handler
+	if devMode {
+		handler = http.FileServer(http.Dir("themes/" + themeName + "/static"))
+	} else {
+		sub, err := fs.Sub(embedded, "static")
+		if err != nil {
+			panic("theme: fs.Sub themes/" + themeName + "/static: " + err.Error())
+		}
+
+		handler = http.FileServer(http.FS(sub))
+	}
+
+	mux.Handle(urlPrefix, http.StripPrefix(urlPrefix, handler))
 }
 
 func devRoutesHandler(reg *routes.Registry) http.HandlerFunc {
