@@ -9,10 +9,13 @@ import (
 
 type Kind int
 
+const childrenKey = "Children"
+
 const (
 	KindScalar Kind = iota
 	KindStruct
 	KindSlice
+	KindNull
 )
 
 type FieldSpec struct {
@@ -65,7 +68,7 @@ func inferNode(node ast.Node) (*TypeSpec, error) {
 	case *ast.BoolNode:
 		return &TypeSpec{Kind: KindScalar, Scalar: "bool"}, nil
 	case *ast.NullNode:
-		return &TypeSpec{Kind: KindScalar, Scalar: "string"}, nil
+		return &TypeSpec{Kind: KindNull}, nil
 	case *ast.MappingValueNode:
 		return inferNode(n.Value)
 	default:
@@ -115,13 +118,33 @@ func inferSequence(node *ast.SequenceNode) (*TypeSpec, error) {
 }
 
 func mergeShapes(specs []*TypeSpec) (*TypeSpec, error) {
-	base := specs[0]
-	for _, s := range specs[1:] {
+	nonNull := filterNonNull(specs)
+	if len(nonNull) == 0 {
+		return &TypeSpec{Kind: KindNull}, nil
+	}
+
+	base := nonNull[0]
+	for _, s := range nonNull[1:] {
 		if s.Kind != base.Kind {
 			return nil, fmt.Errorf("heterogeneous list: mixed kinds")
 		}
 	}
 
+	return mergeByKind(base, nonNull)
+}
+
+func filterNonNull(specs []*TypeSpec) []*TypeSpec {
+	out := make([]*TypeSpec, 0, len(specs))
+	for _, s := range specs {
+		if s.Kind != KindNull {
+			out = append(out, s)
+		}
+	}
+
+	return out
+}
+
+func mergeByKind(base *TypeSpec, specs []*TypeSpec) (*TypeSpec, error) {
 	switch base.Kind {
 	case KindScalar:
 		for _, s := range specs[1:] {
@@ -320,10 +343,17 @@ func applySliceCandidates(root *TypeSpec, candidates map[string]*TypeSpec) {
 		}
 		for i := range spec.Fields {
 			field := &spec.Fields[i]
-			if field.Type.Kind == KindSlice && field.Type.Element == nil {
-				if resolved, ok := candidates[field.Name]; ok {
+			resolved, ok := candidates[field.Name]
+			if !ok {
+				continue
+			}
+			switch field.Type.Kind {
+			case KindSlice:
+				if field.Type.Element == nil {
 					field.Type.Element = resolved
 				}
+			case KindNull:
+				field.Type = &TypeSpec{Kind: KindSlice, Element: resolved}
 			}
 		}
 	})
@@ -361,7 +391,7 @@ func assignNames(spec *TypeSpec, parentName string) {
 }
 
 func singularize(parent, field string) string {
-	if field == "Children" && parent != "" && parent != configTypeName {
+	if field == childrenKey && parent != "" && parent != configTypeName {
 		return parent
 	}
 	candidate := field

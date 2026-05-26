@@ -408,3 +408,75 @@ func TestInferFromYAML_EmptyListResolvedByPopulatedSibling(t *testing.T) {
 		}
 	}
 }
+
+func TestInferFromYAML_NullElementMergesWithPopulatedSibling(t *testing.T) {
+	t.Parallel()
+
+	input := `Navbar:
+  Items:
+    - Label: "Home"
+      Subitems:
+    - Label: "Database"
+      Subitems:
+        - Label: "Items"
+          Subitems:
+`
+	spec, err := inferFromYAML([]byte(input))
+	if err != nil {
+		t.Fatalf("inferFromYAML: %v", err)
+	}
+
+	types := finalize(spec)
+
+	var navbarItem *TypeSpec
+	for i := range types {
+		if types[i].Name == "NavbarItem" {
+			navbarItem = &types[i]
+		}
+	}
+	if navbarItem == nil {
+		t.Fatalf("expected NavbarItem type, got %v", namesOf(types))
+	}
+
+	var subitems *FieldSpec
+	for i := range navbarItem.Fields {
+		if navbarItem.Fields[i].Name == "Subitems" {
+			subitems = &navbarItem.Fields[i]
+		}
+	}
+	if subitems == nil {
+		t.Fatalf("NavbarItem missing Subitems field")
+	}
+	if subitems.Type.Kind != KindSlice {
+		t.Fatalf("Subitems Kind = %v, want slice", subitems.Type.Kind)
+	}
+	if subitems.Type.Element == nil {
+		t.Fatal("Subitems element nil; expected resolution from populated sibling")
+	}
+	if subitems.Type.Element.Name != "NavbarItem" {
+		t.Errorf("Subitems element = %q, want NavbarItem (recursion)", subitems.Type.Element.Name)
+	}
+}
+
+func TestInferFromYAML_StandaloneNullFieldEmitsString(t *testing.T) {
+	t.Parallel()
+
+	input := `Brand:
+  Logo:
+  Discord: "x"
+`
+	spec, err := inferFromYAML([]byte(input))
+	if err != nil {
+		t.Fatalf("inferFromYAML: %v", err)
+	}
+
+	types := finalize(spec)
+	source := emitConfigGen("default", types)
+
+	if !strings.Contains(source, "Logo") {
+		t.Errorf("emitted source missing Logo field:\n%s", source)
+	}
+	if !strings.Contains(source, "Discord") {
+		t.Errorf("emitted source missing Discord field:\n%s", source)
+	}
+}

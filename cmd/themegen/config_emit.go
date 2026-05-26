@@ -84,6 +84,8 @@ func goType(spec *TypeSpec) string {
 		return "[]" + goType(spec.Element)
 	case KindStruct:
 		return spec.Name
+	case KindNull:
+		return "string"
 	}
 	return "any"
 }
