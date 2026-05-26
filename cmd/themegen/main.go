@@ -99,7 +99,11 @@ func main() {
 		log.Fatalf("themegen: write default: %v", err)
 	}
 
-	if err = writeActiveDefault(*out); err != nil {
+	if err = writeThemeOverrides(*themesDir, *out, *module, discovered); err != nil {
+		log.Fatalf("themegen: write theme overrides: %v", err)
+	}
+
+	if err = writeActiveDefault(*out, *module); err != nil {
 		log.Fatalf("themegen: write active_default: %v", err)
 	}
 
@@ -108,7 +112,7 @@ func main() {
 		log.Fatalf("themegen: read app version: %v", err)
 	}
 
-	registers, err := writeThemeRegisters(*themesDir, *module, appVersion)
+	registers, err := writeThemeRegisters(*themesDir, *out, *module, appVersion)
 	if err != nil {
 		log.Fatalf("themegen: write theme registers: %v", err)
 	}
@@ -433,21 +437,282 @@ func writeDefault(outDir string, comps []Component) error {
 	return writeIfChanged(filepath.Join(outDir, "default_gen.go"), []byte(b.String()))
 }
 
-func writeActiveDefault(outDir string) error {
-	body := generatedHeader + `package theme
+func emitThemeOverride(themeName string, overrides []Component) string {
+	var b strings.Builder
 
-import (
-	_ "github.com/hayakawakaki/go-racp/themes/default/platform/httpx"
-)
+	b.WriteString(generatedHeader)
+	fmt.Fprintf(&b, "//go:build theme_%s\n\n", themeName)
+	b.WriteString("package theme\n\n")
 
-var Active Theme = DefaultTheme{}
-`
+	imports, err := uniqueImports(overrides)
+	if err != nil {
+		panic(fmt.Sprintf("themegen: collect imports for %s: %v", themeName, err))
+	}
 
-	return writeIfChanged(filepath.Join(outDir, "active_default_gen.go"), []byte(body))
+	b.WriteString("import (\n")
+	b.WriteString("\t\"github.com/a-h/templ\"\n")
+	for _, imp := range imports {
+		b.WriteString(formatImport(imp))
+	}
+	b.WriteString(")\n\n")
+
+	structName := pascalCase(themeName) + "Theme"
+	fmt.Fprintf(&b, "type %s struct{ DefaultTheme }\n\n", structName)
+	fmt.Fprintf(&b, "var _ Theme = %s{}\n\n", structName)
+
+	for _, c := range overrides {
+		fmt.Fprintf(&b, "func (%s) %s(%s) templ.Component {\n", structName, c.Method, c.Params)
+		fmt.Fprintf(&b, "\treturn %s.%s(%s)\n", c.ImportName, c.FuncName, c.Args)
+		b.WriteString("}\n\n")
+	}
+
+	return b.String()
 }
 
-//nolint:cyclop // per-theme orchestration
-func writeThemeRegisters(themesDir, module, appVersion string) (int, error) {
+func pascalCase(s string) string {
+	if s == "" {
+		return ""
+	}
+
+	parts := strings.FieldsFunc(s, func(r rune) bool {
+		return r == '_' || r == '-'
+	})
+
+	var b strings.Builder
+	for _, p := range parts {
+		if p == "" {
+			continue
+		}
+		b.WriteString(strings.ToUpper(p[:1]))
+		if len(p) > 1 {
+			b.WriteString(p[1:])
+		}
+	}
+
+	return b.String()
+}
+
+func emitActiveOverride(themeName, module string, hasHTTPXOverrides bool) string {
+	var b strings.Builder
+
+	b.WriteString(generatedHeader)
+	fmt.Fprintf(&b, "//go:build theme_%s\n\n", themeName)
+	b.WriteString("package theme\n\n")
+
+	pkgAlias := "themes" + themeName
+
+	b.WriteString("import (\n")
+	fmt.Fprintf(&b, "\t%s %q\n", pkgAlias, module+"/themes/"+themeName)
+	if hasHTTPXOverrides {
+		fmt.Fprintf(&b, "\t_ %q\n", module+"/themes/"+themeName+"/platform/httpx")
+	}
+	b.WriteString(")\n\n")
+
+	structName := pascalCase(themeName) + "Theme"
+	b.WriteString("func init() {\n")
+	fmt.Fprintf(&b, "\tActive = %s{}\n", structName)
+	fmt.Fprintf(&b, "\tActiveName = %s.ThemeName\n", pkgAlias)
+	fmt.Fprintf(&b, "\tActiveVersion = %s.ThemeVersion\n", pkgAlias)
+	fmt.Fprintf(&b, "\tActivePageCount = %s.PageCount\n", pkgAlias)
+	fmt.Fprintf(&b, "\tActiveStatic = %s.Static\n", pkgAlias)
+	fmt.Fprintf(&b, "\tActiveMountRoutes = %s.MountRoutes\n", pkgAlias)
+	fmt.Fprintf(&b, "\tActiveAccessYAML = %s.AccessYAML\n", pkgAlias)
+	b.WriteString("}\n")
+
+	return b.String()
+}
+
+func writeThemeOverrides(themesDir, outDir, module string, defaultComps []Component) error {
+	entries, err := os.ReadDir(themesDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+
+		return fmt.Errorf("read themes dir %s: %w", themesDir, err)
+	}
+
+	appVersion, err := readAppVersion()
+	if err != nil {
+		return fmt.Errorf("read app version: %w", err)
+	}
+
+	defaultMethods := map[string]bool{}
+	for _, c := range defaultComps {
+		defaultMethods[c.Method] = true
+	}
+
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+
+		themeName := entry.Name()
+		if themeName == defaultThemeName {
+			continue
+		}
+
+		if err := writeThemeOverride(themeName, themesDir, outDir, module, appVersion, defaultMethods); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func writeThemeOverride(themeName, themesDir, outDir, module, appVersion string, defaultMethods map[string]bool) error {
+	_, proceed, err := gateThemeCompat(themesDir, outDir, themeName, appVersion)
+	if err != nil {
+		return err
+	}
+	if !proceed {
+		return nil
+	}
+
+	themeDir := filepath.Join(themesDir, themeName)
+	overrides, err := scanThemeOverrides(themeDir, themeName, module, defaultMethods)
+	if err != nil {
+		return err
+	}
+
+	source := emitThemeOverride(themeName, overrides)
+	outPath := filepath.Join(outDir, themeName+"_gen.go")
+	if writeErr := writeIfChanged(outPath, []byte(source)); writeErr != nil {
+		return fmt.Errorf("write %s: %w", outPath, writeErr)
+	}
+
+	hasHTTPX, err := themeHasHTTPXOverrides(themeDir)
+	if err != nil {
+		return err
+	}
+
+	activeSource := emitActiveOverride(themeName, module, hasHTTPX)
+	activeOutPath := filepath.Join(outDir, "active_"+themeName+"_gen.go")
+	if writeErr := writeIfChanged(activeOutPath, []byte(activeSource)); writeErr != nil {
+		return fmt.Errorf("write %s: %w", activeOutPath, writeErr)
+	}
+
+	return nil
+}
+
+func themeHasHTTPXOverrides(themeDir string) (bool, error) {
+	httpxDir := filepath.Join(themeDir, "platform", "httpx")
+	info, err := os.Stat(httpxDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+
+		return false, fmt.Errorf("stat %s: %w", httpxDir, err)
+	}
+	if !info.IsDir() {
+		return false, nil
+	}
+
+	overrides, err := discoverPlatformOverrides(httpxDir)
+	if err != nil {
+		return false, fmt.Errorf("discover overrides %s: %w", httpxDir, err)
+	}
+
+	return len(overrides) > 0, nil
+}
+
+func gateThemeCompat(themesDir, outDir, themeName, appVersion string) (manifest.Manifest, bool, error) {
+	themeDir := filepath.Join(themesDir, themeName)
+
+	mf, err := readManifest(themeDir)
+	if err != nil {
+		return manifest.Manifest{}, false, fmt.Errorf("theme %s: %w", themeName, err)
+	}
+
+	if themeName == defaultThemeName {
+		return mf, true, nil
+	}
+
+	compatible, err := manifest.VersionAtLeast(appVersion, mf.Compatible.Min)
+	if err != nil {
+		return manifest.Manifest{}, false, fmt.Errorf("theme %s: compat check: %w", themeName, err)
+	}
+
+	if !compatible {
+		if fallbackErr := writeActiveFallback(outDir, themeName, appVersion, mf); fallbackErr != nil {
+			return manifest.Manifest{}, false, fmt.Errorf("theme %s: write fallback: %w", themeName, fallbackErr)
+		}
+
+		return mf, false, nil
+	}
+
+	return mf, true, nil
+}
+
+func scanThemeOverrides(themeDir, themeName, module string, defaultMethods map[string]bool) ([]Component, error) {
+	featuresDir := filepath.Join(themeDir, "features")
+	info, err := os.Stat(featuresDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+
+		return nil, fmt.Errorf("theme %s: stat features dir: %w", themeName, err)
+	}
+	if !info.IsDir() {
+		return nil, nil
+	}
+
+	scanned, err := scan([]string{featuresDir}, module)
+	if err != nil {
+		return nil, fmt.Errorf("scan %s: %w", themeName, err)
+	}
+
+	var overrides []Component
+	for _, c := range scanned {
+		if defaultMethods[c.Method] {
+			overrides = append(overrides, c)
+		}
+	}
+
+	return overrides, nil
+}
+
+func emitActiveDefault(module string) string {
+	var b strings.Builder
+
+	b.WriteString(generatedHeader)
+	b.WriteString("package theme\n\n")
+
+	b.WriteString("import (\n")
+	fmt.Fprintf(&b, "\tthemesdefault %q\n", module+"/themes/default")
+	fmt.Fprintf(&b, "\t_ %q\n", module+"/themes/default/platform/httpx")
+	b.WriteString(")\n\n")
+
+	b.WriteString("var Active Theme = DefaultTheme{}\n\n")
+
+	b.WriteString("var (\n")
+	b.WriteString("\tDefaultName        = themesdefault.ThemeName\n")
+	b.WriteString("\tDefaultVersion     = themesdefault.ThemeVersion\n")
+	b.WriteString("\tDefaultPageCount   = themesdefault.PageCount\n")
+	b.WriteString("\tDefaultStatic      = themesdefault.Static\n")
+	b.WriteString("\tDefaultMountRoutes = themesdefault.MountRoutes\n")
+	b.WriteString("\tDefaultAccessYAML  = themesdefault.AccessYAML\n")
+	b.WriteString(")\n\n")
+
+	b.WriteString("var (\n")
+	b.WriteString("\tActiveName        = DefaultName\n")
+	b.WriteString("\tActiveVersion     = DefaultVersion\n")
+	b.WriteString("\tActivePageCount   = DefaultPageCount\n")
+	b.WriteString("\tActiveStatic      = DefaultStatic\n")
+	b.WriteString("\tActiveMountRoutes = DefaultMountRoutes\n")
+	b.WriteString("\tActiveAccessYAML  = DefaultAccessYAML\n")
+	b.WriteString(")\n")
+
+	return b.String()
+}
+
+func writeActiveDefault(outDir, module string) error {
+	return writeIfChanged(filepath.Join(outDir, "active_default_gen.go"), []byte(emitActiveDefault(module)))
+}
+
+func writeThemeRegisters(themesDir, outDir, module, appVersion string) (int, error) {
 	entries, err := os.ReadDir(themesDir)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -463,61 +728,99 @@ func writeThemeRegisters(themesDir, module, appVersion string) (int, error) {
 			continue
 		}
 
-		themeName := entry.Name()
-		themeDir := filepath.Join(themesDir, themeName)
-
-		mf, err := readManifest(themeDir)
+		wrote, err := writeThemeRegister(themesDir, outDir, entry.Name(), module, appVersion)
 		if err != nil {
-			return count, fmt.Errorf("theme %s: %w", themeName, err)
+			return count, err
 		}
-
-		if themeName != defaultThemeName {
-			compatible, compatErr := manifest.VersionAtLeast(appVersion, mf.Compatible.Min)
-			if compatErr != nil {
-				return count, fmt.Errorf("theme %s: compat check: %w", themeName, compatErr)
-			}
-
-			if !compatible {
-				if fallbackErr := writeActiveFallback(themeName, module, appVersion, mf); fallbackErr != nil {
-					return count, fmt.Errorf("theme %s: write fallback: %w", themeName, fallbackErr)
-				}
-
-				continue
-			}
+		if wrote {
+			count++
 		}
-
-		httpxDir := filepath.Join(themeDir, "platform", "httpx")
-		info, err := os.Stat(httpxDir)
-		if err != nil || !info.IsDir() {
-			continue
-		}
-
-		overrides, err := discoverPlatformOverrides(httpxDir)
-		if err != nil {
-			return count, fmt.Errorf("discover overrides %s: %w", themeName, err)
-		}
-
-		if len(overrides) == 0 {
-			continue
-		}
-
-		if err := writeRegister(themeName, httpxDir, module, overrides); err != nil {
-			return count, fmt.Errorf("write register %s: %w", themeName, err)
-		}
-
-		count++
 	}
 
 	return count, nil
 }
 
-func writeActiveFallback(themeName, module, appVersion string, mf manifest.Manifest) error {
-	_ = themeName
-	_ = module
-	_ = appVersion
-	_ = mf
+func writeThemeRegister(themesDir, outDir, themeName, module, appVersion string) (bool, error) {
+	_, proceed, err := gateThemeCompat(themesDir, outDir, themeName, appVersion)
+	if err != nil {
+		return false, err
+	}
+	if !proceed {
+		return false, nil
+	}
+
+	themeDir := filepath.Join(themesDir, themeName)
+	httpxDir := filepath.Join(themeDir, "platform", "httpx")
+	info, err := os.Stat(httpxDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+
+		return false, fmt.Errorf("stat %s: %w", httpxDir, err)
+	}
+	if !info.IsDir() {
+		return false, nil
+	}
+
+	overrides, err := discoverPlatformOverrides(httpxDir)
+	if err != nil {
+		return false, fmt.Errorf("discover overrides %s: %w", themeName, err)
+	}
+
+	if len(overrides) == 0 {
+		return false, nil
+	}
+
+	if err := writeRegister(themeName, httpxDir, module, overrides); err != nil {
+		return false, fmt.Errorf("write register %s: %w", themeName, err)
+	}
+
+	return true, nil
+}
+
+func emitActiveFallback(themeName, appVersion, themeMin string) string {
+	var b strings.Builder
+
+	b.WriteString(generatedHeader)
+	fmt.Fprintf(&b, "//go:build theme_%s\n\n", themeName)
+	b.WriteString("package theme\n\n")
+	b.WriteString("import \"log/slog\"\n\n")
+	b.WriteString("func init() {\n")
+	b.WriteString("\tslog.Warn(\"theme: requested theme not compatible with app version, falling back to default\",\n")
+	fmt.Fprintf(&b, "\t\t\"theme\", %q,\n", themeName)
+	fmt.Fprintf(&b, "\t\t\"theme_min\", %q,\n", themeMin)
+	fmt.Fprintf(&b, "\t\t\"app_version\", %q,\n", appVersion)
+	b.WriteString("\t)\n")
+	b.WriteString("}\n")
+
+	return b.String()
+}
+
+func writeActiveFallback(outDir, themeName, appVersion string, mf manifest.Manifest) error {
+	activeSource := emitActiveFallback(themeName, appVersion, mf.Compatible.Min)
+	activePath := filepath.Join(outDir, "active_"+themeName+"_gen.go")
+	if err := writeIfChanged(activePath, []byte(activeSource)); err != nil {
+		return fmt.Errorf("write fallback active: %w", err)
+	}
+
+	stubSource := emitFallbackOverrideStub(themeName)
+	stubPath := filepath.Join(outDir, themeName+"_gen.go")
+	if err := writeIfChanged(stubPath, []byte(stubSource)); err != nil {
+		return fmt.Errorf("write fallback override stub: %w", err)
+	}
 
 	return nil
+}
+
+func emitFallbackOverrideStub(themeName string) string {
+	var b strings.Builder
+
+	b.WriteString(generatedHeader)
+	fmt.Fprintf(&b, "//go:build theme_%s\n\n", themeName)
+	b.WriteString("package theme\n")
+
+	return b.String()
 }
 
 type pageEntry struct {
@@ -635,25 +938,26 @@ func writeAllThemePages(themesDir, module string) (int, error) {
 
 		accessPath := filepath.Join(themeDir, "access.yml")
 
-		if _, err := os.Stat(accessPath); err != nil {
+		if _, statErr := os.Stat(accessPath); statErr != nil {
 			return count, fmt.Errorf("theme %s: missing access.yml at %s, every theme requires this file (may be empty except for header comment)", themeName, accessPath)
 		}
 
 		embedPath := filepath.Join(themeDir, "access_embed.go")
 
-		if _, err := os.Stat(embedPath); err != nil {
+		if _, statErr := os.Stat(embedPath); statErr != nil {
 			return count, fmt.Errorf("theme %s: missing access_embed.go at %s, every theme requires this file to embed access.yml", themeName, embedPath)
 		}
 
 		pagesDir := filepath.Join(themeDir, "pages")
-		info, err := os.Stat(pagesDir)
-		if err != nil || !info.IsDir() {
-			continue
-		}
+		info, statErr := os.Stat(pagesDir)
+		hasPages := statErr == nil && info.IsDir()
 
-		pages, err := collectThemePages(pagesDir)
-		if err != nil {
-			return count, fmt.Errorf("theme %s: %w", themeName, err)
+		var pages []pageEntry
+		if hasPages {
+			pages, err = collectThemePages(pagesDir)
+			if err != nil {
+				return count, fmt.Errorf("theme %s: %w", themeName, err)
+			}
 		}
 
 		if err = writeThemePages(themeDir, themeName, module, pages); err != nil {
@@ -1083,44 +1387,57 @@ func writeAllThemeConfigs(themesDir, outDir string) (int, error) {
 		return 0, fmt.Errorf("read themes dir %s: %w", themesDir, err)
 	}
 
-	count := 0
+	specs, err := collectThemeConfigSpecs(themesDir, entries)
+	if err != nil {
+		return 0, err
+	}
+
+	if len(specs) == 0 {
+		return 0, nil
+	}
+
+	merged, err := mergeShapes(specs)
+	if err != nil {
+		return 0, fmt.Errorf("union theme configs: %w", err)
+	}
+
+	types := finalize(merged)
+	source := emitConfigGen("default", types)
+
+	outPath := filepath.Join(outDir, "config_default_gen.go")
+	if err := writeIfChanged(outPath, []byte(source)); err != nil {
+		return 0, fmt.Errorf("write %s: %w", outPath, err)
+	}
+
+	return 1, nil
+}
+
+func collectThemeConfigSpecs(themesDir string, entries []os.DirEntry) ([]*TypeSpec, error) {
+	specs := []*TypeSpec{}
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			continue
 		}
 
 		themeName := entry.Name()
-		if themeName != defaultThemeName {
-			continue
-		}
-
-		themeDir := filepath.Join(themesDir, themeName)
-		configPath := filepath.Join(themeDir, "config.yml")
+		configPath := filepath.Join(themesDir, themeName, "config.yml")
 
 		data, err := os.ReadFile(configPath) //nolint:gosec // path joined from fixed themes dir + entry name
 		if err != nil {
 			if os.IsNotExist(err) {
-				data = nil
-			} else {
-				return count, fmt.Errorf("theme %s: read config.yml: %w", themeName, err)
+				continue
 			}
+
+			return nil, fmt.Errorf("theme %s: read config.yml: %w", themeName, err)
 		}
 
 		spec, err := inferFromYAML(data)
 		if err != nil {
-			return count, fmt.Errorf("theme %s: infer config: %w", themeName, err)
+			return nil, fmt.Errorf("theme %s: infer config: %w", themeName, err)
 		}
 
-		types := finalize(spec)
-		source := emitConfigGen(themeName, types)
-
-		outPath := filepath.Join(outDir, "config_"+themeName+"_gen.go")
-		if err := writeIfChanged(outPath, []byte(source)); err != nil {
-			return count, fmt.Errorf("theme %s: %w", themeName, err)
-		}
-
-		count++
+		specs = append(specs, spec)
 	}
 
-	return count, nil
+	return specs, nil
 }

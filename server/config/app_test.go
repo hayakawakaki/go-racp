@@ -242,10 +242,9 @@ func TestValidateTheme_AcceptsValidNames(t *testing.T) {
 	}{
 		{name: "default theme", in: "default", want: "default"},
 		{name: "empty falls back to default", in: "", want: "default"},
-		{name: "lowercase letters", in: "midnight", want: "midnight"},
+		{name: "lowercase letters", in: "sample", want: "sample"},
 		{name: "lowercase with digits", in: "theme01", want: "theme01"},
 		{name: "lowercase with underscore", in: "my_theme", want: "my_theme"},
-		{name: "all digits", in: "42", want: "42"},
 		{name: "single letter", in: "x", want: "x"},
 	}
 
@@ -269,18 +268,21 @@ func TestValidateTheme_RejectsInvalidNames(t *testing.T) {
 		in          string
 		wantContain string
 	}{
-		{name: "uppercase letter", in: "Midnight", wantContain: "must match"},
+		{name: "uppercase letter", in: "Sample", wantContain: "must match"},
 		{name: "all uppercase", in: "DEFAULT", wantContain: "must match"},
 		{name: "space inside", in: "my theme", wantContain: "must match"},
-		{name: "leading space", in: " midnight", wantContain: "must match"},
-		{name: "trailing space", in: "midnight ", wantContain: "must match"},
+		{name: "leading space", in: " sample", wantContain: "must match"},
+		{name: "trailing space", in: "sample ", wantContain: "must match"},
 		{name: "hyphen rejected", in: "my-theme", wantContain: "must match"},
 		{name: "dot rejected", in: "my.theme", wantContain: "must match"},
 		{name: "slash rejected", in: "my/theme", wantContain: "must match"},
-		{name: "exclamation rejected", in: "midnight!", wantContain: "must match"},
+		{name: "exclamation rejected", in: "sample!", wantContain: "must match"},
 		{name: "shell injection semicolon", in: "default; rm -rf /", wantContain: "must match"},
 		{name: "shell injection backtick", in: "default`whoami`", wantContain: "must match"},
 		{name: "newline rejected", in: "default\n", wantContain: "must match"},
+		{name: "leading digit rejected", in: "2024_summer", wantContain: "must match"},
+		{name: "all digits rejected", in: "42", wantContain: "must match"},
+		{name: "leading underscore rejected", in: "_theme", wantContain: "must match"},
 	}
 
 	for _, tt := range tests {

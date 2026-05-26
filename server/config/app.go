@@ -14,7 +14,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/refdata"
 )
 
-var themeNameRe = regexp.MustCompile(`^[a-z0-9_]+$`)
+var themeNameRe = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 
 // GeneralConfig holds UI/branding settings shared across every page.
 type GeneralConfig struct {

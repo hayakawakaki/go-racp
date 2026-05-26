@@ -102,7 +102,7 @@ func Start() error {
 		Config: cfg.App,
 	})
 
-	accessCfg := config.ProcessAccessConfig(theme.ActiveAccessYAML())
+	accessCfg := config.ProcessAccessConfig(theme.ActiveAccessYAML)
 	layout := httpx.Layout{GeneralConfig: cfg.App.General}
 
 	limiters, err := buildRateLimiters(in.ShutdownCtx, accessCfg, cfg.App.Security.TrustedProxyCIDRs, logger, layout)

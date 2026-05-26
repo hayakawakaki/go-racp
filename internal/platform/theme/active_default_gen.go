@@ -3,7 +3,26 @@
 package theme
 
 import (
+	themesdefault "github.com/hayakawakaki/go-racp/themes/default"
 	_ "github.com/hayakawakaki/go-racp/themes/default/platform/httpx"
 )
 
 var Active Theme = DefaultTheme{}
+
+var (
+	DefaultName        = themesdefault.ThemeName
+	DefaultVersion     = themesdefault.ThemeVersion
+	DefaultPageCount   = themesdefault.PageCount
+	DefaultStatic      = themesdefault.Static
+	DefaultMountRoutes = themesdefault.MountRoutes
+	DefaultAccessYAML  = themesdefault.AccessYAML
+)
+
+var (
+	ActiveName        = DefaultName
+	ActiveVersion     = DefaultVersion
+	ActivePageCount   = DefaultPageCount
+	ActiveStatic      = DefaultStatic
+	ActiveMountRoutes = DefaultMountRoutes
+	ActiveAccessYAML  = DefaultAccessYAML
+)

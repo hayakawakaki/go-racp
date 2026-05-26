@@ -11,21 +11,35 @@ import (
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 
-func LoadCfg(themeName string) error {
+const defaultThemeName = "default"
+
+func LoadCfg(activeTheme string) error {
 	root, err := config.ProjectRoot()
 	if err != nil {
 		return fmt.Errorf("locate project root: %w", err)
 	}
 
-	return loadCfgFromDir(filepath.Join(root, "themes", themeName))
+	return loadCfgLayered(filepath.Join(root, "themes"), activeTheme)
 }
 
-func loadCfgFromDir(dir string) error {
+func loadCfgLayered(themesDir, activeTheme string) error {
 	Cfg = Config{}
 
-	path := filepath.Join(dir, "config.yml")
+	if err := overlayThemeConfig(themesDir, defaultThemeName); err != nil {
+		return err
+	}
 
-	data, err := os.ReadFile(path) //nolint:gosec // path joined from caller-supplied themes dir and fixed filename
+	if activeTheme == defaultThemeName {
+		return nil
+	}
+
+	return overlayThemeConfig(themesDir, activeTheme)
+}
+
+func overlayThemeConfig(themesDir, themeName string) error {
+	path := filepath.Join(themesDir, themeName, "config.yml")
+
+	data, err := os.ReadFile(path) //nolint:gosec // path joined from themes dir + theme name + fixed filename
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			return nil
