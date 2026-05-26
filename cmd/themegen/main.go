@@ -558,25 +558,15 @@ func writeThemeOverrides(themesDir, outDir, module string, defaultComps []Compon
 }
 
 func writeThemeOverride(themeName, themesDir, outDir, module, appVersion string, defaultMethods map[string]bool) error {
-	themeDir := filepath.Join(themesDir, themeName)
-	mf, err := readManifest(themeDir)
+	_, proceed, err := gateThemeCompat(themesDir, outDir, themeName, appVersion)
 	if err != nil {
-		return fmt.Errorf("theme %s: %w", themeName, err)
+		return err
 	}
-
-	compatible, err := manifest.VersionAtLeast(appVersion, mf.Compatible.Min)
-	if err != nil {
-		return fmt.Errorf("theme %s: compat check: %w", themeName, err)
-	}
-
-	if !compatible {
-		if fallbackErr := writeActiveFallback(outDir, themeName, appVersion, mf); fallbackErr != nil {
-			return fmt.Errorf("theme %s: write fallback: %w", themeName, fallbackErr)
-		}
-
+	if !proceed {
 		return nil
 	}
 
+	themeDir := filepath.Join(themesDir, themeName)
 	overrides, err := scanThemeOverrides(themeDir, themeName, module, defaultMethods)
 	if err != nil {
 		return err
@@ -595,6 +585,34 @@ func writeThemeOverride(themeName, themesDir, outDir, module, appVersion string,
 	}
 
 	return nil
+}
+
+func gateThemeCompat(themesDir, outDir, themeName, appVersion string) (manifest.Manifest, bool, error) {
+	themeDir := filepath.Join(themesDir, themeName)
+
+	mf, err := readManifest(themeDir)
+	if err != nil {
+		return manifest.Manifest{}, false, fmt.Errorf("theme %s: %w", themeName, err)
+	}
+
+	if themeName == defaultThemeName {
+		return mf, true, nil
+	}
+
+	compatible, err := manifest.VersionAtLeast(appVersion, mf.Compatible.Min)
+	if err != nil {
+		return manifest.Manifest{}, false, fmt.Errorf("theme %s: compat check: %w", themeName, err)
+	}
+
+	if !compatible {
+		if fallbackErr := writeActiveFallback(outDir, themeName, appVersion, mf); fallbackErr != nil {
+			return manifest.Manifest{}, false, fmt.Errorf("theme %s: write fallback: %w", themeName, fallbackErr)
+		}
+
+		return mf, false, nil
+	}
+
+	return mf, true, nil
 }
 
 func scanThemeOverrides(themeDir, themeName, module string, defaultMethods map[string]bool) ([]Component, error) {
@@ -662,7 +680,6 @@ func writeActiveDefault(outDir, module string) error {
 	return writeIfChanged(filepath.Join(outDir, "active_default_gen.go"), []byte(emitActiveDefault(module)))
 }
 
-//nolint:cyclop // per-theme orchestration
 func writeThemeRegisters(themesDir, outDir, module, appVersion string) (int, error) {
 	entries, err := os.ReadDir(themesDir)
 	if err != nil {
@@ -679,52 +696,55 @@ func writeThemeRegisters(themesDir, outDir, module, appVersion string) (int, err
 			continue
 		}
 
-		themeName := entry.Name()
-		themeDir := filepath.Join(themesDir, themeName)
-
-		mf, err := readManifest(themeDir)
+		wrote, err := writeThemeRegister(themesDir, outDir, entry.Name(), module, appVersion)
 		if err != nil {
-			return count, fmt.Errorf("theme %s: %w", themeName, err)
+			return count, err
 		}
-
-		if themeName != defaultThemeName {
-			compatible, compatErr := manifest.VersionAtLeast(appVersion, mf.Compatible.Min)
-			if compatErr != nil {
-				return count, fmt.Errorf("theme %s: compat check: %w", themeName, compatErr)
-			}
-
-			if !compatible {
-				if fallbackErr := writeActiveFallback(outDir, themeName, appVersion, mf); fallbackErr != nil {
-					return count, fmt.Errorf("theme %s: write fallback: %w", themeName, fallbackErr)
-				}
-
-				continue
-			}
+		if wrote {
+			count++
 		}
-
-		httpxDir := filepath.Join(themeDir, "platform", "httpx")
-		info, err := os.Stat(httpxDir)
-		if err != nil || !info.IsDir() {
-			continue
-		}
-
-		overrides, err := discoverPlatformOverrides(httpxDir)
-		if err != nil {
-			return count, fmt.Errorf("discover overrides %s: %w", themeName, err)
-		}
-
-		if len(overrides) == 0 {
-			continue
-		}
-
-		if err := writeRegister(themeName, httpxDir, module, overrides); err != nil {
-			return count, fmt.Errorf("write register %s: %w", themeName, err)
-		}
-
-		count++
 	}
 
 	return count, nil
+}
+
+func writeThemeRegister(themesDir, outDir, themeName, module, appVersion string) (bool, error) {
+	_, proceed, err := gateThemeCompat(themesDir, outDir, themeName, appVersion)
+	if err != nil {
+		return false, err
+	}
+	if !proceed {
+		return false, nil
+	}
+
+	themeDir := filepath.Join(themesDir, themeName)
+	httpxDir := filepath.Join(themeDir, "platform", "httpx")
+	info, err := os.Stat(httpxDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+
+		return false, fmt.Errorf("stat %s: %w", httpxDir, err)
+	}
+	if !info.IsDir() {
+		return false, nil
+	}
+
+	overrides, err := discoverPlatformOverrides(httpxDir)
+	if err != nil {
+		return false, fmt.Errorf("discover overrides %s: %w", themeName, err)
+	}
+
+	if len(overrides) == 0 {
+		return false, nil
+	}
+
+	if err := writeRegister(themeName, httpxDir, module, overrides); err != nil {
+		return false, fmt.Errorf("write register %s: %w", themeName, err)
+	}
+
+	return true, nil
 }
 
 func emitActiveFallback(themeName, appVersion, themeMin string) string {
