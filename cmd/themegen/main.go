@@ -451,12 +451,14 @@ func emitThemeOverride(themeName string, overrides []Component) string {
 		panic(fmt.Sprintf("themegen: collect imports for %s: %v", themeName, err))
 	}
 
-	b.WriteString("import (\n")
-	b.WriteString("\t\"github.com/a-h/templ\"\n")
-	for _, imp := range imports {
-		b.WriteString(formatImport(imp))
+	if len(overrides) > 0 {
+		b.WriteString("import (\n")
+		b.WriteString("\t\"github.com/a-h/templ\"\n")
+		for _, imp := range imports {
+			b.WriteString(formatImport(imp))
+		}
+		b.WriteString(")\n\n")
 	}
-	b.WriteString(")\n\n")
 
 	structName := pascalCase(themeName) + "Theme"
 	fmt.Fprintf(&b, "type %s struct{ DefaultTheme }\n\n", structName)
