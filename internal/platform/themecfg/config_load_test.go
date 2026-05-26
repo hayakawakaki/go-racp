@@ -3,7 +3,6 @@ package themecfg
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 )
 
@@ -49,17 +48,17 @@ Navbar:
 	}
 }
 
-func TestLoadCfgFromDir_MissingFilePanics(t *testing.T) {
-	t.Parallel()
-
+func TestLoadCfgFromDir_MissingFileTolerated(t *testing.T) {
 	dir := t.TempDir()
 
-	err := loadCfgFromDir(dir)
-	if err == nil {
-		t.Fatal("expected error, got nil")
+	Cfg = Config{Branding: Branding{Logo: "stale"}}
+	t.Cleanup(func() { Cfg = Config{} })
+
+	if err := loadCfgFromDir(dir); err != nil {
+		t.Fatalf("loadCfgFromDir: %v", err)
 	}
-	if !strings.Contains(err.Error(), "config.yml") {
-		t.Errorf("error = %q, want substring %q", err.Error(), "config.yml")
+	if Cfg.Branding.Logo != "" {
+		t.Errorf("Cfg.Branding.Logo = %q, want zero (loader should reset)", Cfg.Branding.Logo)
 	}
 }
 

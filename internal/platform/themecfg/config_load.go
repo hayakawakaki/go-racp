@@ -1,7 +1,9 @@
 package themecfg
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -19,10 +21,16 @@ func LoadCfg(themeName string) error {
 }
 
 func loadCfgFromDir(dir string) error {
+	Cfg = Config{}
+
 	path := filepath.Join(dir, "config.yml")
 
 	data, err := os.ReadFile(path) //nolint:gosec // path joined from caller-supplied themes dir and fixed filename
 	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil
+		}
+
 		return fmt.Errorf("read %s: %w", path, err)
 	}
 
