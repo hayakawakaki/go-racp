@@ -3,8 +3,10 @@ package main
 import (
 	"bytes"
 	"cmp"
+	"errors"
 	"flag"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
@@ -622,6 +624,11 @@ func gateThemeCompat(themesDir, outDir, themeName, appVersion string) (manifest.
 
 	mf, err := readManifest(themeDir)
 	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			fmt.Fprintf(os.Stderr, "themegen: skipping theme %q: theme.yml not found (half-scaffolded directory?)\n", themeName)
+			return manifest.Manifest{}, false, nil
+		}
+
 		return manifest.Manifest{}, false, fmt.Errorf("theme %s: %w", themeName, err)
 	}
 

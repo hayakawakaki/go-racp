@@ -45,9 +45,10 @@ func main() {
 
 	fmt.Printf("themes/%s/ created. Next steps:\n", *name)
 	fmt.Printf("  1. Edit themes/%s/theme.yml. Fill in Author.Name (DisplayName defaults to %q)\n", *name, *name+" Theme")
-	fmt.Printf("  2. Add files under themes/%s/ to override defaults (see GUIDE_AUTHORING_THEMES.md)\n", *name)
-	fmt.Printf("  3. For any pages added under themes/%s/pages/, add a matching ThemePages.<X> entry to themes/%s/access.yml\n", *name, *name)
-	fmt.Printf("  4. Set 'Theme: %s' in conf/app.yml (under the App: block) when ready to activate\n", *name)
+	fmt.Printf("  2. Edit themes/%s/config.yml to override Branding, Navbar, and other keys you care about.\n", *name)
+	fmt.Printf("  3. Add files under themes/%s/ to override defaults.\n", *name)
+	fmt.Printf("  4. For any pages added under themes/%s/pages/, add a matching ThemePages.<X> entry to themes/%s/access.yml\n", *name, *name)
+	fmt.Printf("  5. Set 'Theme: %s' in conf/app.yml (under the App: block) when ready to activate\n", *name)
 }
 
 func createDirs(root string) error {
@@ -77,6 +78,7 @@ func createDirs(root string) error {
 func renderTemplates(root string, data map[string]string) error {
 	files := map[string]string{
 		"theme.yml":       "theme.yml.tmpl",
+		"config.yml":      "config.yml.tmpl",
 		"access.yml":      "access.yml.tmpl",
 		"pages_embed.go":  "pages_embed.go.tmpl",
 		"static_embed.go": "static_embed.go.tmpl",

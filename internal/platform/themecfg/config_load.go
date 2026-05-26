@@ -52,9 +52,11 @@ func overlayThemeConfig(themesDir, themeName string) error {
 		return nil
 	}
 
-	if err := yaml.Unmarshal(data, &Cfg); err != nil {
+	local := Cfg
+	if err := yaml.Unmarshal(data, &local); err != nil {
 		return fmt.Errorf("parse %s: %w", path, err)
 	}
+	Cfg = local
 
 	return nil
 }

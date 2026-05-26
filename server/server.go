@@ -45,7 +45,7 @@ func Start() error {
 
 	// Logger
 	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
-	logger.Info("theme: active", "name", cfg.App.General.Theme)
+	logger.Info("theme: active", "name", theme.ActiveName)
 
 	// Mailer (constructed before any defer-cleanup steps so a failure here can log.Fatal cleanly)
 	mailClient, err := mailer.NewClient(cfg.Env.SMTPHost, cfg.Env.SMTPPort, cfg.Env.Mode != "development")
