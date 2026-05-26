@@ -3,9 +3,9 @@ package components
 import (
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/security"
+	"github.com/hayakawakaki/go-racp/internal/platform/themecfg"
 	"github.com/hayakawakaki/go-racp/internal/platform/ui"
 	"github.com/hayakawakaki/go-racp/internal/platform/viewer"
-	"github.com/hayakawakaki/go-racp/server/config"
 )
 
 func navIcon(name string) templ.Component {
@@ -21,8 +21,8 @@ templ Header(layout httpx.Layout) {
 		Actions: headerActions(layout),
 		Class:   "bg-body border-b border-border bg-grain [&>div]:container [&>div]:mx-auto [&>div]:h-20",
 	}) {
-		for _, item := range layout.Navbar.Items {
-			if len(item.Children) > 0 {
+		for _, item := range themecfg.Cfg.Navbar.Items {
+			if len(item.Subitems) > 0 {
 				@headerDropdown(item)
 			} else {
 				@ui.NavItem(ui.NavItemProps{Href: item.Href, Size: ui.NavItemSizeLG, Icon: navIcon(item.Icon), Class: "text-font"}) {
@@ -35,11 +35,11 @@ templ Header(layout httpx.Layout) {
 }
 
 templ headerBrand(layout httpx.Layout) {
-	if layout.Branding.Logo != "" {
+	if themecfg.Cfg.Branding.Logo != "" {
 		@ui.Brand(ui.BrandProps{
 			Title: layout.ServerName,
 			Href:  "/",
-			Logo:  headerLogo(layout.Branding.Logo),
+			Logo:  headerLogo(themecfg.Cfg.Branding.Logo),
 			Class: "mr-10",
 		})
 	} else {
@@ -55,7 +55,7 @@ templ headerLogo(src string) {
 	<img src={ src } alt="" class="h-7 w-auto"/>
 }
 
-templ headerDropdown(item config.NavItem) {
+templ headerDropdown(item themecfg.NavbarItem) {
 	<div class="hidden lg:block">
 		@ui.Dropdown(ui.DropdownProps{}) {
 			@ui.DropdownTrigger() {
@@ -68,7 +68,7 @@ templ headerDropdown(item config.NavItem) {
 				}
 			}
 			@ui.DropdownMenu(ui.DropdownMenuProps{}) {
-				for _, child := range item.Children {
+				for _, child := range item.Subitems {
 					@ui.DropdownItem(ui.DropdownItemProps{Href: child.Href, Class: "px-4 py-3 text-base text-font"}) {
 						{ child.Label }
 					}
@@ -89,7 +89,7 @@ templ headerDropdown(item config.NavItem) {
 				}
 				@ui.AccordionContent(ui.AccordionContentProps{}) {
 					<ul class="flex flex-col gap-1">
-						for _, child := range item.Children {
+						for _, child := range item.Subitems {
 							<li>
 								<a href={ child.Href } class="block rounded-md px-4 py-3 text-base text-font hover:bg-accent-wash transition-colors">
 									{ child.Label }
@@ -112,13 +112,13 @@ templ headerActions(layout httpx.Layout) {
 					<span x-show="dark">@ui.Icon("sun", "h-5 w-5")</span>
 				}
 			}
-			if layout.Branding.Discord != "" {
+			if themecfg.Cfg.Branding.Discord != "" {
 				@ui.Button(ui.ButtonProps{
 					Variant:   ui.ButtonGhost,
 					Size:      ui.ButtonSizeLG,
 					Rounded:   ui.ButtonRoundedMD,
 					Class:     "px-4",
-					Href:      layout.Branding.Discord,
+					Href:      themecfg.Cfg.Branding.Discord,
 					Target:    "_blank",
 					AriaLabel: "Join Discord",
 				}) {
@@ -183,13 +183,13 @@ templ headerMobileActions(layout httpx.Layout) {
 					<span x-show="dark">@ui.Icon("sun", "h-5 w-5")</span>
 				}
 			}
-			if layout.Branding.Discord != "" {
+			if themecfg.Cfg.Branding.Discord != "" {
 				@ui.Button(ui.ButtonProps{
 					Variant:   ui.ButtonGhost,
 					Size:      ui.ButtonSizeLG,
 					Rounded:   ui.ButtonRoundedMD,
 					Class:     "px-4",
-					Href:      layout.Branding.Discord,
+					Href:      themecfg.Cfg.Branding.Discord,
 					Target:    "_blank",
 					AriaLabel: "Join Discord",
 				}) {

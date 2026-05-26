@@ -23,6 +23,8 @@ const (
 
 	templFileType = "templ"
 	mdFileType    = "md"
+
+	defaultThemeName = "default"
 )
 
 var (
@@ -116,7 +118,12 @@ func main() {
 		log.Fatalf("themegen: write theme pages: %v", err)
 	}
 
-	fmt.Printf("themegen: %d components, %d theme registers, %d theme page tables\n", len(discovered), registers, pages)
+	configs, err := writeAllThemeConfigs(*themesDir, "internal/platform/themecfg")
+	if err != nil {
+		log.Fatalf("themegen: write theme configs: %v", err)
+	}
+
+	fmt.Printf("themegen: %d components, %d theme registers, %d theme page tables, %d theme configs\n", len(discovered), registers, pages, configs)
 
 	if len(changedFiles) == 0 {
 		fmt.Println("themegen: no files changed")
@@ -464,7 +471,7 @@ func writeThemeRegisters(themesDir, module, appVersion string) (int, error) {
 			return count, fmt.Errorf("theme %s: %w", themeName, err)
 		}
 
-		if themeName != "default" {
+		if themeName != defaultThemeName {
 			compatible, compatErr := manifest.VersionAtLeast(appVersion, mf.Compatible.Min)
 			if compatErr != nil {
 				return count, fmt.Errorf("theme %s: compat check: %w", themeName, compatErr)
@@ -1053,7 +1060,7 @@ func writeRegister(themeName, dir, module string, overrides []string) error {
 	b.WriteString("package httpx\n\n")
 	b.WriteString("import (\n")
 	fmt.Fprintf(&b, "\tplatformhttpx %q\n", module+"/internal/platform/httpx")
-	if themeName != "default" {
+	if themeName != defaultThemeName {
 		fmt.Fprintf(&b, "\t_ %q\n", module+"/themes/default/platform/httpx")
 	}
 	b.WriteString(")\n\n")
@@ -1064,4 +1071,56 @@ func writeRegister(themeName, dir, module string, overrides []string) error {
 	b.WriteString("}\n")
 
 	return writeIfChanged(filepath.Join(dir, "register.go"), []byte(b.String()))
+}
+
+func writeAllThemeConfigs(themesDir, outDir string) (int, error) {
+	entries, err := os.ReadDir(themesDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return 0, nil
+		}
+
+		return 0, fmt.Errorf("read themes dir %s: %w", themesDir, err)
+	}
+
+	count := 0
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+
+		themeName := entry.Name()
+		if themeName != defaultThemeName {
+			continue
+		}
+
+		themeDir := filepath.Join(themesDir, themeName)
+		configPath := filepath.Join(themeDir, "config.yml")
+
+		data, err := os.ReadFile(configPath) //nolint:gosec // path joined from fixed themes dir + entry name
+		if err != nil {
+			if os.IsNotExist(err) {
+				data = nil
+			} else {
+				return count, fmt.Errorf("theme %s: read config.yml: %w", themeName, err)
+			}
+		}
+
+		spec, err := inferFromYAML(data)
+		if err != nil {
+			return count, fmt.Errorf("theme %s: infer config: %w", themeName, err)
+		}
+
+		types := finalize(spec)
+		source := emitConfigGen(themeName, types)
+
+		outPath := filepath.Join(outDir, "config_"+themeName+"_gen.go")
+		if err := writeIfChanged(outPath, []byte(source)); err != nil {
+			return count, fmt.Errorf("theme %s: %w", themeName, err)
+		}
+
+		count++
+	}
+
+	return count, nil
 }

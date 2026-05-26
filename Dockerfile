@@ -18,6 +18,7 @@ COPY --from=builder /app/main .
 COPY --from=builder /out/goose .
 COPY --from=builder /app/migrations ./migrations
 COPY --from=builder /app/scripts ./scripts
+COPY --from=builder /app/themes ./themes
 COPY conf ./conf
 
 RUN chmod +x ./goose ./scripts/*.sh \

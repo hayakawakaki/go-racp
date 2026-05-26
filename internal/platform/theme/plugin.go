@@ -12,6 +12,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/plugin"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
+	"github.com/hayakawakaki/go-racp/internal/platform/themecfg"
 	"github.com/hayakawakaki/go-racp/internal/platform/themepage"
 	themesdefault "github.com/hayakawakaki/go-racp/themes/default"
 )
@@ -25,6 +26,11 @@ func init() {
 
 func mount(reg *routes.Registry, mux *http.ServeMux, in *infra.Infra) {
 	activeTheme := in.Config.App.General.Theme
+
+	if err := themecfg.LoadCfg(activeTheme); err != nil {
+		panic(fmt.Errorf("theme: load config: %w", err))
+	}
+
 	devMode := in.Config.Env.Mode == "development"
 
 	themepage.DevMode = devMode

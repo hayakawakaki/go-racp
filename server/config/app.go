@@ -19,28 +19,10 @@ var themeNameRe = regexp.MustCompile(`^[a-z0-9_]+$`)
 // GeneralConfig holds UI/branding settings shared across every page.
 type GeneralConfig struct {
 	location   *time.Location
-	ServerName string         `yaml:"ServerName"`
-	Timezone   string         `yaml:"Timezone"`
-	Theme      string         `yaml:"Theme"`
-	Branding   BrandingConfig `yaml:"Branding"`
-	Navbar     NavbarConfig   `yaml:"Navbar"`
-	Gepard     bool           `yaml:"Gepard"`
-}
-
-type BrandingConfig struct {
-	Logo    string `yaml:"Logo"`
-	Discord string `yaml:"Discord"`
-}
-
-type NavbarConfig struct {
-	Items []NavItem `yaml:"Items"`
-}
-
-type NavItem struct {
-	Label    string    `yaml:"Label"`
-	Href     string    `yaml:"Href"`
-	Icon     string    `yaml:"Icon"`
-	Children []NavItem `yaml:"Children"`
+	ServerName string `yaml:"ServerName"`
+	Timezone   string `yaml:"Timezone"`
+	Theme      string `yaml:"Theme"`
+	Gepard     bool   `yaml:"Gepard"`
 }
 
 func (g GeneralConfig) Location() *time.Location {
@@ -315,33 +297,6 @@ func validateAppConfig(cfg *AppConfig) {
 	validateMetricsConfig(&cfg.Metrics)
 	validateTrustedProxyCIDRs(cfg.Security.TrustedProxyCIDRs)
 	validateTheme(&cfg.General)
-	validateBrandingAndNavbar(&cfg.General)
-}
-
-func validateBrandingAndNavbar(cfg *GeneralConfig) {
-	if cfg.Branding.Logo != "" && !strings.HasPrefix(cfg.Branding.Logo, "/") {
-		panic(fmt.Errorf("App.Branding.Logo %q must start with %q", cfg.Branding.Logo, "/"))
-	}
-	for i, item := range cfg.Navbar.Items {
-		validateNavItem(item, i, false)
-	}
-}
-
-func validateNavItem(item NavItem, index int, isChild bool) {
-	if item.Label == "" {
-		panic(fmt.Errorf("App.Navbar.Items[%d].Label is required", index))
-	}
-	hasHref := item.Href != ""
-	hasChildren := len(item.Children) > 0
-	if hasHref == hasChildren {
-		panic(fmt.Errorf("App.Navbar.Items[%d] (%q) must have exactly one of Href or Children", index, item.Label))
-	}
-	if isChild && hasChildren {
-		panic(fmt.Errorf("App.Navbar.Items[%d] (%q) may not nest Children beyond one level", index, item.Label))
-	}
-	for j, child := range item.Children {
-		validateNavItem(child, j, true)
-	}
 }
 
 func validateTheme(cfg *GeneralConfig) {

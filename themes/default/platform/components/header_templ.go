@@ -11,9 +11,9 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/security"
+	"github.com/hayakawakaki/go-racp/internal/platform/themecfg"
 	"github.com/hayakawakaki/go-racp/internal/platform/ui"
 	"github.com/hayakawakaki/go-racp/internal/platform/viewer"
-	"github.com/hayakawakaki/go-racp/server/config"
 )
 
 func navIcon(name string) templ.Component {
@@ -56,8 +56,8 @@ func Header(layout httpx.Layout) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			for _, item := range layout.Navbar.Items {
-				if len(item.Children) > 0 {
+			for _, item := range themecfg.Cfg.Navbar.Items {
+				if len(item.Subitems) > 0 {
 					templ_7745c5c3_Err = headerDropdown(item).Render(ctx, templ_7745c5c3_Buffer)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
@@ -135,11 +135,11 @@ func headerBrand(layout httpx.Layout) templ.Component {
 			templ_7745c5c3_Var5 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		if layout.Branding.Logo != "" {
+		if themecfg.Cfg.Branding.Logo != "" {
 			templ_7745c5c3_Err = ui.Brand(ui.BrandProps{
 				Title: layout.ServerName,
 				Href:  "/",
-				Logo:  headerLogo(layout.Branding.Logo),
+				Logo:  headerLogo(themecfg.Cfg.Branding.Logo),
 				Class: "mr-10",
 			}).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
@@ -201,7 +201,7 @@ func headerLogo(src string) templ.Component {
 	})
 }
 
-func headerDropdown(item config.NavItem) templ.Component {
+func headerDropdown(item themecfg.NavbarItem) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -313,7 +313,7 @@ func headerDropdown(item config.NavItem) templ.Component {
 					}()
 				}
 				ctx = templ.InitializeContext(ctx)
-				for _, child := range item.Children {
+				for _, child := range item.Subitems {
 					templ_7745c5c3_Var14 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 						templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 						templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
@@ -443,7 +443,7 @@ func headerDropdown(item config.NavItem) templ.Component {
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					for _, child := range item.Children {
+					for _, child := range item.Subitems {
 						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<li><a href=\"")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
@@ -586,7 +586,7 @@ func headerActions(layout httpx.Layout) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if layout.Branding.Discord != "" {
+		if themecfg.Cfg.Branding.Discord != "" {
 			templ_7745c5c3_Var26 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 				templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 				templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
@@ -610,7 +610,7 @@ func headerActions(layout httpx.Layout) templ.Component {
 				Size:      ui.ButtonSizeLG,
 				Rounded:   ui.ButtonRoundedMD,
 				Class:     "px-4",
-				Href:      layout.Branding.Discord,
+				Href:      themecfg.Cfg.Branding.Discord,
 				Target:    "_blank",
 				AriaLabel: "Join Discord",
 			}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var26), templ_7745c5c3_Buffer)
@@ -893,7 +893,7 @@ func headerMobileActions(layout httpx.Layout) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if layout.Branding.Discord != "" {
+		if themecfg.Cfg.Branding.Discord != "" {
 			templ_7745c5c3_Var37 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 				templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 				templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
@@ -917,7 +917,7 @@ func headerMobileActions(layout httpx.Layout) templ.Component {
 				Size:      ui.ButtonSizeLG,
 				Rounded:   ui.ButtonRoundedMD,
 				Class:     "px-4",
-				Href:      layout.Branding.Discord,
+				Href:      themecfg.Cfg.Branding.Discord,
 				Target:    "_blank",
 				AriaLabel: "Join Discord",
 			}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var37), templ_7745c5c3_Buffer)
