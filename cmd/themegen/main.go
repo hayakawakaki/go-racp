@@ -492,7 +492,7 @@ func pascalCase(s string) string {
 	return b.String()
 }
 
-func emitActiveOverride(themeName, module string) string {
+func emitActiveOverride(themeName, module string, hasHTTPXOverrides bool) string {
 	var b strings.Builder
 
 	b.WriteString(generatedHeader)
@@ -503,7 +503,9 @@ func emitActiveOverride(themeName, module string) string {
 
 	b.WriteString("import (\n")
 	fmt.Fprintf(&b, "\t%s %q\n", pkgAlias, module+"/themes/"+themeName)
-	fmt.Fprintf(&b, "\t_ %q\n", module+"/themes/"+themeName+"/platform/httpx")
+	if hasHTTPXOverrides {
+		fmt.Fprintf(&b, "\t_ %q\n", module+"/themes/"+themeName+"/platform/httpx")
+	}
 	b.WriteString(")\n\n")
 
 	structName := pascalCase(themeName) + "Theme"
@@ -514,6 +516,7 @@ func emitActiveOverride(themeName, module string) string {
 	fmt.Fprintf(&b, "\tActivePageCount = %s.PageCount\n", pkgAlias)
 	fmt.Fprintf(&b, "\tActiveStatic = %s.Static\n", pkgAlias)
 	fmt.Fprintf(&b, "\tActiveMountRoutes = %s.MountRoutes\n", pkgAlias)
+	fmt.Fprintf(&b, "\tActiveAccessYAML = %s.AccessYAML\n", pkgAlias)
 	b.WriteString("}\n")
 
 	return b.String()
@@ -574,17 +577,44 @@ func writeThemeOverride(themeName, themesDir, outDir, module, appVersion string,
 
 	source := emitThemeOverride(themeName, overrides)
 	outPath := filepath.Join(outDir, themeName+"_gen.go")
-	if err := writeIfChanged(outPath, []byte(source)); err != nil {
-		return fmt.Errorf("write %s: %w", outPath, err)
+	if writeErr := writeIfChanged(outPath, []byte(source)); writeErr != nil {
+		return fmt.Errorf("write %s: %w", outPath, writeErr)
 	}
 
-	activeSource := emitActiveOverride(themeName, module)
+	hasHTTPX, err := themeHasHTTPXOverrides(themeDir)
+	if err != nil {
+		return err
+	}
+
+	activeSource := emitActiveOverride(themeName, module, hasHTTPX)
 	activeOutPath := filepath.Join(outDir, "active_"+themeName+"_gen.go")
-	if err := writeIfChanged(activeOutPath, []byte(activeSource)); err != nil {
-		return fmt.Errorf("write %s: %w", activeOutPath, err)
+	if writeErr := writeIfChanged(activeOutPath, []byte(activeSource)); writeErr != nil {
+		return fmt.Errorf("write %s: %w", activeOutPath, writeErr)
 	}
 
 	return nil
+}
+
+func themeHasHTTPXOverrides(themeDir string) (bool, error) {
+	httpxDir := filepath.Join(themeDir, "platform", "httpx")
+	info, err := os.Stat(httpxDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+
+		return false, fmt.Errorf("stat %s: %w", httpxDir, err)
+	}
+	if !info.IsDir() {
+		return false, nil
+	}
+
+	overrides, err := discoverPlatformOverrides(httpxDir)
+	if err != nil {
+		return false, fmt.Errorf("discover overrides %s: %w", httpxDir, err)
+	}
+
+	return len(overrides) > 0, nil
 }
 
 func gateThemeCompat(themesDir, outDir, themeName, appVersion string) (manifest.Manifest, bool, error) {
@@ -663,6 +693,7 @@ func emitActiveDefault(module string) string {
 	b.WriteString("\tDefaultPageCount   = themesdefault.PageCount\n")
 	b.WriteString("\tDefaultStatic      = themesdefault.Static\n")
 	b.WriteString("\tDefaultMountRoutes = themesdefault.MountRoutes\n")
+	b.WriteString("\tDefaultAccessYAML  = themesdefault.AccessYAML\n")
 	b.WriteString(")\n\n")
 
 	b.WriteString("var (\n")
@@ -671,6 +702,7 @@ func emitActiveDefault(module string) string {
 	b.WriteString("\tActivePageCount   = DefaultPageCount\n")
 	b.WriteString("\tActiveStatic      = DefaultStatic\n")
 	b.WriteString("\tActiveMountRoutes = DefaultMountRoutes\n")
+	b.WriteString("\tActiveAccessYAML  = DefaultAccessYAML\n")
 	b.WriteString(")\n")
 
 	return b.String()
@@ -886,25 +918,26 @@ func writeAllThemePages(themesDir, module string) (int, error) {
 
 		accessPath := filepath.Join(themeDir, "access.yml")
 
-		if _, err := os.Stat(accessPath); err != nil {
+		if _, statErr := os.Stat(accessPath); statErr != nil {
 			return count, fmt.Errorf("theme %s: missing access.yml at %s, every theme requires this file (may be empty except for header comment)", themeName, accessPath)
 		}
 
 		embedPath := filepath.Join(themeDir, "access_embed.go")
 
-		if _, err := os.Stat(embedPath); err != nil {
+		if _, statErr := os.Stat(embedPath); statErr != nil {
 			return count, fmt.Errorf("theme %s: missing access_embed.go at %s, every theme requires this file to embed access.yml", themeName, embedPath)
 		}
 
 		pagesDir := filepath.Join(themeDir, "pages")
-		info, err := os.Stat(pagesDir)
-		if err != nil || !info.IsDir() {
-			continue
-		}
+		info, statErr := os.Stat(pagesDir)
+		hasPages := statErr == nil && info.IsDir()
 
-		pages, err := collectThemePages(pagesDir)
-		if err != nil {
-			return count, fmt.Errorf("theme %s: %w", themeName, err)
+		var pages []pageEntry
+		if hasPages {
+			pages, err = collectThemePages(pagesDir)
+			if err != nil {
+				return count, fmt.Errorf("theme %s: %w", themeName, err)
+			}
 		}
 
 		if err = writeThemePages(themeDir, themeName, module, pages); err != nil {

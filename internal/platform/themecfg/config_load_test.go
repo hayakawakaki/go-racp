@@ -156,3 +156,65 @@ func TestLoadCfgLayered_MalformedDefaultErrors(t *testing.T) {
 		t.Fatal("expected error on malformed yaml, got nil")
 	}
 }
+
+func TestLoadCfgLayered_SliceOverlayReplacesNotAppends(t *testing.T) {
+	root := writeTwoThemeConfigs(t, `Navbar:
+  Items:
+    - Label: "Home"
+      Href: "/"
+      Icon: "home"
+      Subitems: []
+    - Label: "News"
+      Href: "/news"
+      Icon: "news"
+      Subitems: []
+`, `Navbar:
+  Items:
+    - Label: "Custom"
+      Href: "/custom"
+      Icon: "star"
+      Subitems: []
+`, "sample")
+
+	Cfg = Config{}
+	t.Cleanup(func() { Cfg = Config{} })
+
+	if err := loadCfgLayered(filepath.Join(root, "themes"), "sample"); err != nil {
+		t.Fatalf("loadCfgLayered: %v", err)
+	}
+
+	if len(Cfg.Navbar.Items) != 1 {
+		t.Errorf("Navbar.Items length = %d, want 1 (active overlay replaces default's slice wholesale, not appends)", len(Cfg.Navbar.Items))
+	}
+	if len(Cfg.Navbar.Items) > 0 && Cfg.Navbar.Items[0].Label != "Custom" {
+		t.Errorf("Navbar.Items[0].Label = %q, want %q", Cfg.Navbar.Items[0].Label, "Custom")
+	}
+}
+
+func TestLoadCfgLayered_ActiveOmittingSlicePreservesDefault(t *testing.T) {
+	root := writeTwoThemeConfigs(t, `Navbar:
+  Items:
+    - Label: "Home"
+      Href: "/"
+      Icon: "home"
+      Subitems: []
+Branding:
+  Logo: "/default-logo.svg"
+`, `Branding:
+  Logo: "/sample-logo.svg"
+`, "sample")
+
+	Cfg = Config{}
+	t.Cleanup(func() { Cfg = Config{} })
+
+	if err := loadCfgLayered(filepath.Join(root, "themes"), "sample"); err != nil {
+		t.Fatalf("loadCfgLayered: %v", err)
+	}
+
+	if len(Cfg.Navbar.Items) != 1 {
+		t.Errorf("Navbar.Items length = %d, want 1 (active omitted Navbar so default preserved)", len(Cfg.Navbar.Items))
+	}
+	if Cfg.Branding.Logo != "/sample-logo.svg" {
+		t.Errorf("Branding.Logo = %q, want sample's override", Cfg.Branding.Logo)
+	}
+}

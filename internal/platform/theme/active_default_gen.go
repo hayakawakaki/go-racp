@@ -15,6 +15,7 @@ var (
 	DefaultPageCount   = themesdefault.PageCount
 	DefaultStatic      = themesdefault.Static
 	DefaultMountRoutes = themesdefault.MountRoutes
+	DefaultAccessYAML  = themesdefault.AccessYAML
 )
 
 var (
@@ -23,4 +24,5 @@ var (
 	ActivePageCount   = DefaultPageCount
 	ActiveStatic      = DefaultStatic
 	ActiveMountRoutes = DefaultMountRoutes
+	ActiveAccessYAML  = DefaultAccessYAML
 )
