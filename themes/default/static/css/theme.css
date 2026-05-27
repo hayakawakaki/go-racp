@@ -31,7 +31,11 @@
 }
 
 @layer base {
+	:root {
+		color-scheme: light;
+	}
 	.dark {
+		color-scheme: dark;
 		--color-body: #0E0E10;
 		--color-surface: #17171A;
 		--color-bento: #0E0E10;

@@ -4,18 +4,45 @@ import (
 	accountselfstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/self/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/security"
+	"github.com/hayakawakaki/go-racp/internal/platform/ui"
+	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
 )
 
 templ AccountVerifyConfirmPage(layout httpx.Layout, state accountselfstate.VerifyConfirmState) {
 	@httpx.ActiveBase(layout, "Verify your email") {
-		<div class="w-full max-w-md bg-white rounded-lg shadow-md p-8">
-			<h1 class="text-2xl font-semibold mb-4 text-gray-900">Confirm email verification</h1>
-			<p class="text-gray-700 mb-4">Click the button below to verify your email and activate your account.</p>
-			<form method="post" action="/verify" class="space-y-4">
-				@security.HiddenField()
-				<input type="hidden" name="token" value={ state.Token }/>
-				<button type="submit" class="w-full rounded bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 transition">Verify my email</button>
-			</form>
+		<div class="max-w-xl mx-auto w-full">
+			@components.BentoCard(components.BentoCardProps{
+				Delay:   "0ms",
+				Padding: "p-8 lg:p-12",
+				Class:   "gap-5",
+			}) {
+				<div class="space-y-3">
+					@components.BentoLabel("text-[11px]") {
+						Email verification
+					}
+					<h1 class="text-3xl lg:text-4xl font-light tracking-tight text-font leading-tight">
+						Verify your email
+					</h1>
+					<p class="text-sm lg:text-base text-font-muted leading-relaxed">
+						Confirm to activate your account. This finishes the registration started from your inbox.
+					</p>
+				</div>
+				<form method="post" action="/verify" class="pt-2">
+					@security.HiddenField()
+					<input type="hidden" name="token" value={ state.Token }/>
+					@ui.Button(ui.ButtonProps{
+						Variant: ui.ButtonSolid,
+						Color:   ui.ButtonColorIndigo,
+						Size:    ui.ButtonSizeLG,
+						Rounded: ui.ButtonRoundedMD,
+						Type:    ui.ButtonTypeSubmit,
+						Class:   "w-full justify-center font-semibold",
+					}) {
+						Verify my email
+						@ui.Icon("arrow-right", "h-4 w-4 ml-1")
+					}
+				</form>
+			}
 		</div>
 	}
 }

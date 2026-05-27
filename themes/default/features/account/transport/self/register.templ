@@ -26,27 +26,27 @@ templ accountRegisterWelcome(layout httpx.Layout) {
 	}) {
 		<div class="flex-1 space-y-3">
 			@components.BentoLabel("text-[11px]") {
-				Join the server
+				Welcome
 			}
 			<h2 class="font-light tracking-tight text-font text-3xl md:text-4xl xl:text-5xl leading-[1.05]">
 				{ layout.ServerName }
 			</h2>
 			<p class="text-sm xl:text-base text-font-muted max-w-md leading-relaxed">
-				Create your account in a minute. You'll be able to play, manage characters, and track your progress on the panel.
+				Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
 			</p>
 		</div>
 		<ul class="space-y-3 text-sm">
 			<li class="flex items-start gap-3">
 				<span class="mt-1.5 size-1.5 rounded-full bg-emerald-500 shrink-0" aria-hidden="true"></span>
-				<span class="text-font-muted">Free to play, mid-rate pre-renewal</span>
+				<span class="text-font-muted">Lorem ipsum dolor sit amet</span>
 			</li>
 			<li class="flex items-start gap-3">
 				<span class="mt-1.5 size-1.5 rounded-full bg-sky-500 shrink-0" aria-hidden="true"></span>
-				<span class="text-font-muted">Active community on Discord</span>
+				<span class="text-font-muted">Consectetur adipiscing elit</span>
 			</li>
 			<li class="flex items-start gap-3">
 				<span class="mt-1.5 size-1.5 rounded-full bg-amber-500 shrink-0" aria-hidden="true"></span>
-				<span class="text-font-muted">Regular patches and competitive WoE</span>
+				<span class="text-font-muted">Sed do eiusmod tempor incididunt</span>
 			</li>
 		</ul>
 		<div class="space-y-2 pt-4 border-t border-border">
@@ -161,19 +161,25 @@ templ AccountRegisterForm(state accountselfstate.RegisterFormState) {
 				})
 			}
 			@ui.Field(ui.FieldProps{Label: "Gender", For: "reg-gender", Required: true, Error: state.Errors["gender"]}) {
-				@ui.Select(ui.SelectProps{
-					ID:       "reg-gender",
-					Name:     "gender",
-					Value:    state.Gender,
-					Required: true,
-					Invalid:  state.Errors["gender"] != "",
-					Rounded:  ui.SelectRoundedMD,
-					Color:    ui.SelectColorIndigo,
-					Options: []ui.SelectOption{
-						{Value: "M", Label: "Male"},
-						{Value: "F", Label: "Female"},
-					},
-				})
+				<div class="relative">
+					@ui.Select(ui.SelectProps{
+						ID:       "reg-gender",
+						Name:     "gender",
+						Value:    state.Gender,
+						Required: true,
+						Invalid:  state.Errors["gender"] != "",
+						Rounded:  ui.SelectRoundedMD,
+						Color:    ui.SelectColorIndigo,
+						Class:    "appearance-none pr-9",
+						Options: []ui.SelectOption{
+							{Value: "M", Label: "Male"},
+							{Value: "F", Label: "Female"},
+						},
+					})
+					<span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-font-muted">
+						@ui.Icon("chevron-down", "h-4 w-4")
+					</span>
+				</div>
 			}
 		</div>
 		@ui.Button(ui.ButtonProps{

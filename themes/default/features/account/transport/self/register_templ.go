@@ -124,7 +124,7 @@ func accountRegisterWelcome(layout httpx.Layout) templ.Component {
 					}()
 				}
 				ctx = templ.InitializeContext(ctx)
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "Join the server")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "Welcome")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -147,7 +147,7 @@ func accountRegisterWelcome(layout httpx.Layout) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</h2><p class=\"text-sm xl:text-base text-font-muted max-w-md leading-relaxed\">Create your account in a minute. You'll be able to play, manage characters, and track your progress on the panel.</p></div><ul class=\"space-y-3 text-sm\"><li class=\"flex items-start gap-3\"><span class=\"mt-1.5 size-1.5 rounded-full bg-emerald-500 shrink-0\" aria-hidden=\"true\"></span> <span class=\"text-font-muted\">Free to play, mid-rate pre-renewal</span></li><li class=\"flex items-start gap-3\"><span class=\"mt-1.5 size-1.5 rounded-full bg-sky-500 shrink-0\" aria-hidden=\"true\"></span> <span class=\"text-font-muted\">Active community on Discord</span></li><li class=\"flex items-start gap-3\"><span class=\"mt-1.5 size-1.5 rounded-full bg-amber-500 shrink-0\" aria-hidden=\"true\"></span> <span class=\"text-font-muted\">Regular patches and competitive WoE</span></li></ul><div class=\"space-y-2 pt-4 border-t border-border\"><p class=\"text-[11px] font-semibold tracking-[0.18em] uppercase text-font-muted\">Already have an account?</p><a href=\"/login\" class=\"inline-flex items-center gap-1.5 text-sm font-semibold text-accent-on-surface hover:underline underline-offset-4\">Sign in <span aria-hidden=\"true\">→</span></a></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</h2><p class=\"text-sm xl:text-base text-font-muted max-w-md leading-relaxed\">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p></div><ul class=\"space-y-3 text-sm\"><li class=\"flex items-start gap-3\"><span class=\"mt-1.5 size-1.5 rounded-full bg-emerald-500 shrink-0\" aria-hidden=\"true\"></span> <span class=\"text-font-muted\">Lorem ipsum dolor sit amet</span></li><li class=\"flex items-start gap-3\"><span class=\"mt-1.5 size-1.5 rounded-full bg-sky-500 shrink-0\" aria-hidden=\"true\"></span> <span class=\"text-font-muted\">Consectetur adipiscing elit</span></li><li class=\"flex items-start gap-3\"><span class=\"mt-1.5 size-1.5 rounded-full bg-amber-500 shrink-0\" aria-hidden=\"true\"></span> <span class=\"text-font-muted\">Sed do eiusmod tempor incididunt</span></li></ul><div class=\"space-y-2 pt-4 border-t border-border\"><p class=\"text-[11px] font-semibold tracking-[0.18em] uppercase text-font-muted\">Already have an account?</p><a href=\"/login\" class=\"inline-flex items-center gap-1.5 text-sm font-semibold text-accent-on-surface hover:underline underline-offset-4\">Sign in <span aria-hidden=\"true\">→</span></a></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -478,6 +478,10 @@ func AccountRegisterForm(state accountselfstate.RegisterFormState) templ.Compone
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<div class=\"relative\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
 			templ_7745c5c3_Err = ui.Select(ui.SelectProps{
 				ID:       "reg-gender",
 				Name:     "gender",
@@ -486,11 +490,24 @@ func AccountRegisterForm(state accountselfstate.RegisterFormState) templ.Compone
 				Invalid:  state.Errors["gender"] != "",
 				Rounded:  ui.SelectRoundedMD,
 				Color:    ui.SelectColorIndigo,
+				Class:    "appearance-none pr-9",
 				Options: []ui.SelectOption{
 					{Value: "M", Label: "Male"},
 					{Value: "F", Label: "Female"},
 				},
 			}).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<span class=\"pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-font-muted\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = ui.Icon("chevron-down", "h-4 w-4").Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</span></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -500,7 +517,7 @@ func AccountRegisterForm(state accountselfstate.RegisterFormState) templ.Compone
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -516,7 +533,7 @@ func AccountRegisterForm(state accountselfstate.RegisterFormState) templ.Compone
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "Create account")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "Create account")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -533,7 +550,7 @@ func AccountRegisterForm(state accountselfstate.RegisterFormState) templ.Compone
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<p class=\"text-sm text-center text-font-muted lg:hidden\">Already have an account? <a href=\"/login\" class=\"text-accent-on-surface hover:underline\">Sign in</a></p></form>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<p class=\"text-sm text-center text-font-muted lg:hidden\">Already have an account? <a href=\"/login\" class=\"text-accent-on-surface hover:underline\">Sign in</a></p></form>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -16,17 +16,16 @@ templ MobDetailPage(layout httpx.Layout, state mobstate.DetailState) {
 		<div class="max-w-5xl mx-auto w-full space-y-4 lg:space-y-6">
 			@mobDetailBreadcrumb(state)
 			@mobDetailHero(state)
-			<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-				@mobDetailStats(state)
-				if len(state.Exp) > 0 {
-					@mobDetailExp(state)
-				}
-			</div>
 			if len(state.Drops) > 0 {
-				@mobDropTable("Drops", state.Drops, "0ms")
+				<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+					@mobDetailStats(state)
+					@mobDropTable("Drops", state.Drops, "140ms")
+				</div>
+			} else {
+				@mobDetailStats(state)
 			}
 			if len(state.MvpDrops) > 0 {
-				@mobDropTable("MVP Drops", state.MvpDrops, "60ms")
+				@mobDropTable("MVP Drops", state.MvpDrops, "200ms")
 			}
 			if state.Mob.Modes != 0 {
 				@mobBitfieldSection("Modes", state.Mob.Modes.Display())
@@ -60,7 +59,7 @@ templ mobDetailHero(state mobstate.DetailState) {
 							{ state.Mob.Name }
 						</h1>
 						if state.Mob.IsMVP() {
-							<span class="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 dark:text-amber-300 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-amber-800">MVP</span>
+							<img src="/static/mob/mvp.webp" alt="MVP" class="h-10 lg:h-14 w-auto shrink-0"/>
 						}
 					</div>
 					<p class="text-xs text-font-muted tabular-nums font-mono">
@@ -72,6 +71,9 @@ templ mobDetailHero(state mobstate.DetailState) {
 					@mobHeroFact("Race", state.Mob.Race.Display())
 					@mobHeroFact("Element", elementDisplay(state.Mob))
 					@mobHeroFact("Size", state.Mob.Size.Display())
+					for _, row := range state.Exp {
+						@mobHeroFact(row.Label, row.Value)
+					}
 				</dl>
 			</div>
 		</div>
@@ -91,37 +93,14 @@ templ mobDetailStats(state mobstate.DetailState) {
 		Padding: "p-6 lg:p-8",
 		Class:   "gap-4",
 	}) {
-		<div class="flex items-baseline justify-between gap-3 pb-4 border-b border-border">
+		<div class="pb-4 border-b border-border">
 			@components.BentoLabel("text-[11px]") {
 				Stats
 			}
-			<span class="text-xs uppercase tracking-[0.18em] text-font-muted tabular-nums">{ fmt.Sprintf("%d fields", len(state.Stats)) }</span>
 		</div>
 		<dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6">
 			for _, row := range state.Stats {
 				<div class="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4 border-b border-border py-3 text-sm">
-					<dt class="text-font-muted">{ row.Label }</dt>
-					<dd class="text-right font-mono tabular-nums text-font">{ row.Value }</dd>
-				</div>
-			}
-		</dl>
-	}
-}
-
-templ mobDetailExp(state mobstate.DetailState) {
-	@components.BentoCard(components.BentoCardProps{
-		Delay:   "140ms",
-		Padding: "p-6 lg:p-8",
-		Class:   "gap-4",
-	}) {
-		<div class="flex items-baseline justify-between gap-3 pb-4 border-b border-border">
-			@components.BentoLabel("text-[11px]") {
-				Experience
-			}
-		</div>
-		<dl class="divide-y divide-border">
-			for _, row := range state.Exp {
-				<div class="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4 py-3 text-sm">
 					<dt class="text-font-muted">{ row.Label }</dt>
 					<dd class="text-right font-mono tabular-nums text-font">{ row.Value }</dd>
 				</div>
@@ -136,11 +115,10 @@ templ mobDropTable(title string, drops []mobstate.DropRow, delay string) {
 		Padding: "p-6 lg:p-8",
 		Class:   "gap-4",
 	}) {
-		<div class="flex items-baseline justify-between gap-3 pb-4 border-b border-border">
+		<div class="pb-4 border-b border-border">
 			@components.BentoLabel("text-[11px]") {
 				{ title }
 			}
-			<span class="text-xs uppercase tracking-[0.18em] text-font-muted tabular-nums">{ fmt.Sprintf("%d entries", len(drops)) }</span>
 		</div>
 		<ul class="grid grid-cols-1 md:grid-cols-2 gap-x-6 divide-y divide-border md:divide-y-0">
 			for _, drop := range drops {

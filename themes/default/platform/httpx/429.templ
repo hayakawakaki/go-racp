@@ -1,13 +1,25 @@
 package httpx
 
-import platformhttpx "github.com/hayakawakaki/go-racp/internal/platform/httpx"
+import (
+	platformhttpx "github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/ui"
+)
 
 templ Page429(layout platformhttpx.Layout) {
-	@Base(layout, "Rate Limited") {
-		<div class="w-full max-w-md bg-white rounded-lg shadow-md p-8 text-center">
-			<h1 class="text-6xl font-bold mb-2 text-red-600">Error 429</h1>
-			<p class="text-gray-700 mb-6">You are currently being rate-limited.</p>
-			<a href="/" class="inline-block rounded bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 transition">Return to Home</a>
+	@Base(layout, "Too Many Requests") {
+		<div class="max-w-3xl mx-auto w-full">
+			@errorHero("429", "You're moving too fast. The server needs a breather.") {
+				@ui.Button(ui.ButtonProps{
+					Variant: ui.ButtonSolid,
+					Color:   ui.ButtonColorIndigo,
+					Size:    ui.ButtonSizeLG,
+					Rounded: ui.ButtonRoundedMD,
+					Href:    "/",
+					Class:   "font-semibold",
+				}) {
+					Back to home
+				}
+			}
 		</div>
 	}
 }

@@ -102,14 +102,9 @@ templ mobListCard(mob *domain.Mob, delay string) {
 				@ui.MobSprite(mob.ID, "size-9")
 			</div>
 			<div class="flex-1 min-w-0 space-y-1">
-				<div class="flex items-center gap-2">
-					<p class="font-semibold text-sm text-font group-hover:text-accent-on-surface transition-colors truncate">
-						{ mob.Name }
-					</p>
-					if mob.IsMVP() {
-						<span class="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 dark:text-amber-300 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800 shrink-0">MVP</span>
-					}
-				</div>
+				<p class="font-semibold text-sm text-font group-hover:text-accent-on-surface transition-colors truncate">
+					{ mob.Name }
+				</p>
 				<p class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-font-muted">
 					<span class="font-mono tabular-nums">#{ fmt.Sprintf("%d", mob.ID) }</span>
 					<span class="text-font-muted/50">·</span>
@@ -120,6 +115,9 @@ templ mobListCard(mob *domain.Mob, delay string) {
 					<span>{ elementDisplay(mob) }</span>
 				</p>
 			</div>
+			if mob.IsMVP() {
+				<img src="/static/mob/mvp.webp" alt="MVP" class="h-10 lg:h-12 w-auto shrink-0"/>
+			}
 		</div>
 	</a>
 }

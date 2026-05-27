@@ -2,6 +2,7 @@ package httpx
 
 import (
 	"github.com/hayakawakaki/go-racp/internal/platform/security"
+	"github.com/hayakawakaki/go-racp/internal/platform/ui"
 	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
 
 	platformhttpx "github.com/hayakawakaki/go-racp/internal/platform/httpx"
@@ -29,6 +30,7 @@ templ Base(layout platformhttpx.Layout, title string) {
 			<main class="container mx-auto bg-surface bg-grain border border-border rounded-md my-6 px-6 py-8">
 				{ children... }
 			</main>
+			@ui.ToastContainer(ui.ToastContainerProps{})
 		</body>
 	</html>
 }

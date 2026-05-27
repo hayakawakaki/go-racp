@@ -36,10 +36,9 @@ templ StallLoadingContent(refreshURL string) {
 }
 
 templ StallListContent(state stallstate.ListState) {
-	<div id="vendors-list" class="grid grid-cols-1 gap-4 lg:gap-5 lg:grid-rows-[auto_1fr_auto] lg:h-[calc(100dvh-12.5rem)]">
+	<div id="vendors-list" class="space-y-4 lg:space-y-6">
 		@vendorsHeader(state)
 		@vendorsColumns(state)
-		@vendorsPagination(state)
 	</div>
 }
 
@@ -52,10 +51,10 @@ templ vendorsHeader(state stallstate.ListState) {
 		<div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
 			<div class="space-y-1">
 				<h1 class="text-2xl xl:text-3xl font-light tracking-tight text-font">Vendors</h1>
-				if state.Page.Total > 0 {
+				if vendorsTotal(state) > 0 {
 					<p class="text-sm text-font-muted tabular-nums">
-						{ fmt.Sprintf("%d", state.Page.Total) }
-						if state.Page.Total == 1 {
+						{ fmt.Sprintf("%d", vendorsTotal(state)) }
+						if vendorsTotal(state) == 1 {
 							vendor active
 						} else {
 							vendors active
@@ -107,34 +106,41 @@ templ vendorsHeader(state stallstate.ListState) {
 }
 
 templ vendorsColumns(state stallstate.ListState) {
-	<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5 lg:min-h-0">
-		@vendorsColumn("Buying", domain.VendorTypeBuying, state.Page.Vendors, "60ms")
-		@vendorsColumn("Selling", domain.VendorTypeSelling, state.Page.Vendors, "120ms")
+	<div class="flex flex-col lg:flex-row gap-4 lg:gap-5">
+		@vendorsColumn("Buying", state.BuyingPage, buyingHrefPattern(state), "60ms")
+		@vendorsColumn("Selling", state.SellingPage, sellingHrefPattern(state), "120ms")
 	</div>
 }
 
-templ vendorsColumn(title string, vt domain.VendorType, vendors []domain.Vendor, delay string) {
+templ vendorsColumn(title string, page domain.Page, hrefPattern, delay string) {
 	@components.BentoCard(components.BentoCardProps{
-		Delay:   delay,
-		Padding: "p-5 lg:p-6",
-		Class:   "gap-3 min-h-0",
+		Delay:        delay,
+		Padding:      "p-5 lg:p-6",
+		Class:        "gap-3",
+		WrapperClass: "lg:flex-1 lg:min-w-0",
 	}) {
-		<div class="flex items-baseline justify-between gap-3 pb-3 border-b border-border shrink-0">
+		<div class="flex items-center justify-between gap-3 pb-3 border-b border-border">
 			@components.BentoLabel("text-[11px]") {
 				{ title }
 			}
-			<span class={ vendorsColumnBadgeClass(vt) }>{ fmt.Sprintf("%d", countByType(vendors, vt)) }</span>
+			if page.TotalPages > 1 {
+				@ui.Pagination(ui.PaginationProps{
+					Page:        page.Page,
+					TotalPages:  page.TotalPages,
+					Size:        ui.PaginationSizeSM,
+					Color:       ui.PaginationColorIndigo,
+					HrefPattern: hrefPattern,
+				})
+			}
 		</div>
-		if countByType(vendors, vt) == 0 {
-			<div class="flex-1 flex items-center justify-center text-sm text-font-muted">
+		if len(page.Vendors) == 0 {
+			<div class="py-10 flex items-center justify-center text-sm text-font-muted">
 				No { title } vendors right now.
 			</div>
 		} else {
-			<ul class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden scrollbar-clean divide-y divide-border pr-1 -mr-1">
-				for _, v := range vendors {
-					if v.Type == vt {
-						@vendorRow(v)
-					}
+			<ul class="divide-y divide-border">
+				for _, v := range page.Vendors {
+					@vendorRow(v)
 				}
 			</ul>
 		}
@@ -142,40 +148,51 @@ templ vendorsColumn(title string, vt domain.VendorType, vendors []domain.Vendor,
 }
 
 templ vendorRow(v domain.Vendor) {
-	<li x-data="{ open: false }">
-		<button
-			type="button"
-			class="w-full text-left grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 py-3 transition-colors hover:bg-accent-wash rounded-md px-2 -mx-2"
-			hx-get={ fmt.Sprintf("/vendors/%s/%d/items", v.Type.String(), v.ID) }
-			hx-target={ "#" + rowID(v) + "-box" }
-			hx-swap="innerHTML"
-			hx-trigger="click once"
-			@click="open = !open"
-		>
-			<span class="min-w-0 space-y-0.5">
-				<span class="block truncate text-sm font-semibold text-font">{ v.StallName }</span>
-				<span class="block text-[11px] text-font-muted truncate">
+	<li>
+		@ui.Modal(ui.ModalProps{}) {
+			<button
+				type="button"
+				class="block w-full text-left space-y-0.5 py-3 transition-colors hover:bg-accent-wash rounded-md px-2 -mx-2 cursor-pointer"
+				@click="open = true"
+				hx-get={ fmt.Sprintf("/vendors/%s/%d/items", v.Type.String(), v.ID) }
+				hx-target={ "#" + rowID(v) + "-box" }
+				hx-swap="innerHTML"
+				hx-trigger="click once"
+			>
+				<span class="block truncate text-base font-semibold text-font">{ v.StallName }</span>
+				<span class="block text-sm text-font-muted truncate">
 					{ v.SellerName } · { v.VendorMap } { fmt.Sprintf("%d,%d", v.X, v.Y) }
 				</span>
-			</span>
-			<span class="font-mono tabular-nums text-xs text-font-muted shrink-0">{ fmt.Sprintf("%d", len(v.Items)) }</span>
-		</button>
-		<div x-show="open" x-cloak class="pl-2 pr-2 pb-3">
-			<div id={ rowID(v) + "-box" }></div>
-		</div>
+			</button>
+			@ui.ModalContent(ui.ModalContentProps{Size: ui.ModalSizeXL, Class: "bg-bento"}) {
+				@ui.ModalHeader("space-y-1 pr-10") {
+					@ui.ModalTitle("text-xl font-semibold tracking-tight text-font") {
+						{ v.StallName }
+					}
+					<div class="flex items-center gap-2 text-sm text-font-muted">
+						<span>{ v.SellerName }</span>
+						<span class="text-font-muted/50">·</span>
+						<span class="font-mono">{ fmt.Sprintf("%s %d/%d", v.VendorMap, v.X, v.Y) }</span>
+						<button
+							type="button"
+							x-data="{ copied: false }"
+							class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold text-font-muted hover:bg-accent-wash hover:text-accent-on-surface transition-colors data-[copied=true]:text-emerald-600 dark:data-[copied=true]:text-emerald-400"
+							:data-copied="copied"
+							aria-label="Copy location"
+							@click={ fmt.Sprintf("$copy('/navi %s %d/%d')", v.VendorMap, v.X, v.Y) }
+							@copied="copied = true"
+							@copy-reset="copied = false"
+						>
+							<span x-show="!copied">@ui.Icon("copy", "h-3.5 w-3.5")</span>
+							<span x-show="copied" x-cloak>@ui.Icon("check", "h-3.5 w-3.5")</span>
+							<span x-show="copied" x-cloak>Copied</span>
+						</button>
+					</div>
+				}
+				<div id={ rowID(v) + "-box" } class="text-sm text-font-muted">
+					Loading items&hellip;
+				</div>
+			}
+		}
 	</li>
-}
-
-templ vendorsPagination(state stallstate.ListState) {
-	if state.Page.TotalPages > 1 {
-		<div class="flex justify-end">
-			@ui.Pagination(ui.PaginationProps{
-				Page:        state.Page.Page,
-				TotalPages:  state.Page.TotalPages,
-				Size:        ui.PaginationSizeMD,
-				Color:       ui.PaginationColorIndigo,
-				HrefPattern: vendorsHrefPattern(state),
-			})
-		</div>
-	}
 }
