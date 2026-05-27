@@ -31,7 +31,7 @@ func itemCard(item *domain.Item, lines []string) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<article class=\"select-none rounded-md border border-gray-200 bg-white p-0.5 h-max max-w-[20rem]\" style=\"font-family: Gulim, Arial\"><div class=\"relative h-full overflow-hidden rounded-sm border border-gray-400/80 p-1.5 min-w-[278px]\"><div class=\"absolute left-0 top-0 z-0 w-full border-b border-gray-400/80\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<article class=\"select-none rounded-md border border-gray-200 bg-white text-black p-0.5 h-max max-w-[20rem]\" style=\"font-family: Gulim, Arial\"><div class=\"relative h-full overflow-hidden rounded-sm border border-gray-400/80 p-1.5 min-w-[278px]\"><div class=\"absolute left-0 top-0 z-0 w-full border-b border-gray-400/80\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

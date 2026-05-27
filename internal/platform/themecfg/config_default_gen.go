@@ -3,24 +3,46 @@
 package themecfg
 
 type Config struct {
-	Branding Branding `yaml:"Branding"`
-	Navbar   Navbar   `yaml:"Navbar"`
+	Branding    Branding  `yaml:"Branding"`
+	Navbar      Navbar    `yaml:"Navbar"`
+	Downloads   Downloads `yaml:"Downloads"`
 }
 
 type Branding struct {
-	Logo     string `yaml:"Logo"`
-	Discord  string `yaml:"Discord"`
+	Logo        string `yaml:"Logo"`
+	Discord     string `yaml:"Discord"`
 }
 
 type Navbar struct {
-	Items    []NavbarItem `yaml:"Items"`
+	Items       []NavbarItem `yaml:"Items"`
 }
 
 type NavbarItem struct {
-	Label    string       `yaml:"Label"`
-	Href     string       `yaml:"Href"`
-	Icon     string       `yaml:"Icon"`
-	Subitems []NavbarItem `yaml:"Subitems"`
+	Label       string       `yaml:"Label"`
+	Href        string       `yaml:"Href"`
+	Icon        string       `yaml:"Icon"`
+	Subitems    []NavbarItem `yaml:"Subitems"`
+}
+
+type Downloads struct {
+	Heading     string     `yaml:"Heading"`
+	Description string     `yaml:"Description"`
+	FullClient  FullClient `yaml:"FullClient"`
+	LiteClient  FullClient `yaml:"LiteClient"`
+}
+
+type FullClient struct {
+	Title       string             `yaml:"Title"`
+	Note        string             `yaml:"Note"`
+	Mirrors     []FullClientMirror `yaml:"Mirrors"`
+}
+
+type FullClientMirror struct {
+	Label       string `yaml:"Label"`
+	Icon        string `yaml:"Icon"`
+	Region      string `yaml:"Region"`
+	Size        string `yaml:"Size"`
+	Url         string `yaml:"Url"`
 }
 
 var Cfg Config

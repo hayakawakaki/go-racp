@@ -1,19 +1,11 @@
 package transport
 
 import (
-	"fmt"
 	"net/url"
 
 	itemstate "github.com/hayakawakaki/go-racp/internal/features/item/transport/state"
+	"github.com/hayakawakaki/go-racp/internal/platform/ui"
 )
-
-const droppedByPerPage = 10
-
-func droppedByAlpineState(count int) string {
-	pages := max((count+droppedByPerPage-1)/droppedByPerPage, 1)
-
-	return fmt.Sprintf("{ page: 1, perPage: %d, totalPages: %d }", droppedByPerPage, pages)
-}
 
 var itemTypeOptions = []string{
 	"Weapon", "Armor", "Card", "Healing", "Usable",
@@ -21,9 +13,18 @@ var itemTypeOptions = []string{
 	"ShadowGear", "Cash",
 }
 
-func pageURL(state itemstate.ListState, page int) string {
+func itemTypeSelectOptions() []ui.SelectOption {
+	out := make([]ui.SelectOption, 0, len(itemTypeOptions)+1)
+	out = append(out, ui.SelectOption{Value: "", Label: "All types"})
+	for _, name := range itemTypeOptions {
+		out = append(out, ui.SelectOption{Value: name, Label: name})
+	}
+	return out
+}
+
+func pageHrefPattern(state itemstate.ListState) string {
 	values := url.Values{}
-	values.Set("page", fmt.Sprintf("%d", page))
+	values.Set("page", "__PAGE__")
 	if state.Query != "" {
 		values.Set("q", state.Query)
 	}

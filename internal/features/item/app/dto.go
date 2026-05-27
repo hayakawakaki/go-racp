@@ -4,7 +4,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/features/item/domain"
 )
 
-const DefaultPerPage = 20
+const DefaultPerPage = 24
 
 type ItemDTO struct {
 	AegisName   string   `json:"aegis_name"`

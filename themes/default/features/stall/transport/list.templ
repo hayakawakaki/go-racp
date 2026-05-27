@@ -3,9 +3,11 @@ package transport
 import (
 	"fmt"
 
-	stallstate "github.com/hayakawakaki/go-racp/internal/features/stall/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/features/stall/domain"
+	stallstate "github.com/hayakawakaki/go-racp/internal/features/stall/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/ui"
+	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
 )
 
 templ StallListPage(layout httpx.Layout, state stallstate.ListState) {
@@ -21,105 +23,159 @@ templ StallLoadingPage(layout httpx.Layout, refreshURL string) {
 }
 
 templ StallLoadingContent(refreshURL string) {
-	<div class="space-y-4" hx-get={ refreshURL } hx-trigger="load delay:5s" hx-target="this" hx-swap="outerHTML">
-		<header class="flex items-center justify-between gap-4">
-			<h1 class="text-2xl font-semibold text-gray-900">Vendors</h1>
-		</header>
-		<p class="text-gray-500">Loading vendors&hellip;</p>
+	<div class="space-y-4 lg:space-y-6" hx-get={ refreshURL } hx-trigger="load delay:5s" hx-target="this" hx-swap="outerHTML">
+		@components.BentoCard(components.BentoCardProps{
+			Delay:   "0ms",
+			Padding: "p-10 lg:p-16",
+			Class:   "items-center justify-center text-center gap-2",
+		}) {
+			<p class="text-base font-semibold text-font">Loading vendors&hellip;</p>
+			<p class="text-sm text-font-muted">Pulling fresh data from the server.</p>
+		}
 	</div>
 }
 
 templ StallListContent(state stallstate.ListState) {
-	<div id="vendors-list" class="space-y-4">
-		<header class="flex items-center justify-between gap-4">
-			<h1 class="text-2xl font-semibold text-gray-900">Vendors</h1>
-			<form class="flex items-center gap-2" hx-get="/vendors" hx-target="#vendors-list" hx-swap="outerHTML" hx-push-url="true">
-				<label class="text-sm text-gray-600">Type</label>
-				<select name="type" class="rounded-md border border-gray-300 px-2 py-1 text-sm">
-					<option value="all" selected?={ state.Type == "" }>All</option>
-					<option value="selling" selected?={ state.Type == "selling" }>Selling</option>
-					<option value="buying" selected?={ state.Type == "buying" }>Buying</option>
-				</select>
-				<input
-					type="number"
-					name="item"
-					min="1"
-					value={ itemIDValue(state.ItemID) }
-					placeholder="Item ID"
-					class="w-32 rounded-md border border-gray-300 px-3 py-1.5 text-sm"
-				/>
-				<button type="submit" class="rounded-md bg-gray-900 px-3 py-1.5 text-sm text-white">Filter</button>
-				<a href="/vendors" class="text-sm text-gray-500 hover:underline">Reset</a>
-			</form>
-		</header>
-		<div class="overflow-hidden rounded-2xl ring-1 ring-gray-200 bg-white">
-			<table class="min-w-full text-sm">
-				<thead class="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
-					<tr>
-						<th class="px-4 py-2">Stall</th>
-						<th class="px-4 py-2">Type</th>
-						<th class="px-4 py-2">Seller</th>
-						<th class="px-4 py-2">Location</th>
-						<th class="px-4 py-2">Items</th>
-						<th class="px-4 py-2"></th>
-					</tr>
-				</thead>
-				for _, v := range state.Page.Vendors {
-					@vendorRow(v)
-				}
-				if len(state.Page.Vendors) == 0 {
-					<tbody>
-						<tr><td colspan="6" class="px-4 py-6 text-center text-gray-500">No vendors.</td></tr>
-					</tbody>
-				}
-			</table>
-		</div>
-		@pagination(state)
+	<div id="vendors-list" class="grid grid-cols-1 gap-4 lg:gap-5 lg:grid-rows-[auto_1fr_auto] lg:h-[calc(100dvh-12.5rem)]">
+		@vendorsHeader(state)
+		@vendorsColumns(state)
+		@vendorsPagination(state)
 	</div>
 }
 
-templ vendorRow(v domain.Vendor) {
-	<tbody x-data="{ open: false }">
-		<tr class="border-t border-gray-100" id={ rowID(v) }>
-			<td class="px-4 py-2">{ v.StallName }</td>
-			<td class="px-4 py-2">
-				<span class={ typeBadgeClass(v.Type) }>{ typeLabel(v.Type) }</span>
-			</td>
-			<td class="px-4 py-2">{ v.SellerName }</td>
-			<td class="px-4 py-2 font-mono">{ fmt.Sprintf("%s %d,%d", v.VendorMap, v.X, v.Y) }</td>
-			<td class="px-4 py-2 text-right">{ fmt.Sprintf("%d", len(v.Items)) }</td>
-			<td class="px-4 py-2 text-right">
-				<button
-					type="button"
-					class="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
-					hx-get={ fmt.Sprintf("/vendors/%s/%d/items", v.Type.String(), v.ID) }
-					hx-target={ "#" + rowID(v) + "-box" }
-					hx-swap="innerHTML"
-					hx-trigger="click once"
-					@click="open = !open"
-				>
-					<span x-text="open ? 'Close stall' : 'View stall'">View stall</span>
-				</button>
-			</td>
-		</tr>
-		<tr class="bg-gray-50" x-show="open" x-cloak>
-			<td colspan="6" class="px-4 py-0">
-				<div id={ rowID(v) + "-box" }></div>
-			</td>
-		</tr>
-	</tbody>
+templ vendorsHeader(state stallstate.ListState) {
+	@components.BentoCard(components.BentoCardProps{
+		Delay:   "0ms",
+		Padding: "p-5 lg:p-6",
+		Class:   "gap-4",
+	}) {
+		<div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+			<div class="space-y-1">
+				<h1 class="text-2xl xl:text-3xl font-light tracking-tight text-font">Vendors</h1>
+				if state.Page.Total > 0 {
+					<p class="text-sm text-font-muted tabular-nums">
+						{ fmt.Sprintf("%d", state.Page.Total) }
+						if state.Page.Total == 1 {
+							vendor active
+						} else {
+							vendors active
+						}
+						if state.ItemID > 0 {
+							matching the selected item
+						}
+					</p>
+				}
+			</div>
+			<form
+				class="flex flex-wrap items-center gap-2 lg:flex-nowrap"
+				hx-get="/vendors"
+				hx-target="#vendors-list"
+				hx-swap="outerHTML"
+				hx-push-url="true"
+			>
+				<label for="vendor-item" class="sr-only">Item ID</label>
+				@ui.Input(ui.InputProps{
+					ID:          "vendor-item",
+					Name:        "item",
+					Type:        ui.InputTypeNumber,
+					Value:       itemIDValue(state.ItemID),
+					Placeholder: "Item ID",
+					Min:         "1",
+					Size:        ui.InputSizeMD,
+					Rounded:     ui.InputRoundedMD,
+					Color:       ui.InputColorIndigo,
+					Class:       "w-32",
+				})
+				@ui.Button(ui.ButtonProps{
+					Variant: ui.ButtonSolid,
+					Color:   ui.ButtonColorIndigo,
+					Size:    ui.ButtonSizeMD,
+					Rounded: ui.ButtonRoundedMD,
+					Type:    ui.ButtonTypeSubmit,
+					Class:   "font-semibold",
+				}) {
+					Filter
+				}
+				if state.ItemID > 0 {
+					<a href="/vendors" class="text-sm text-font-muted hover:text-accent-on-surface transition-colors">
+						Reset
+					</a>
+				}
+			</form>
+		</div>
+	}
 }
 
-templ pagination(state stallstate.ListState) {
-	<nav class="flex justify-between text-sm">
-		<span class="text-gray-500">{ fmt.Sprintf("Page %d of %d - %d total", state.Page.Page, max(state.Page.TotalPages, 1), state.Page.Total) }</span>
-		<div class="flex gap-2">
-			if state.Page.Page > 1 {
-				<a class="rounded border px-2 py-1" href={ templ.SafeURL(pageURL(state.BaseURL, state.Page.Page-1, state.Type, state.ItemID)) }>Prev</a>
+templ vendorsColumns(state stallstate.ListState) {
+	<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5 lg:min-h-0">
+		@vendorsColumn("Buying", domain.VendorTypeBuying, state.Page.Vendors, "60ms")
+		@vendorsColumn("Selling", domain.VendorTypeSelling, state.Page.Vendors, "120ms")
+	</div>
+}
+
+templ vendorsColumn(title string, vt domain.VendorType, vendors []domain.Vendor, delay string) {
+	@components.BentoCard(components.BentoCardProps{
+		Delay:   delay,
+		Padding: "p-5 lg:p-6",
+		Class:   "gap-3 min-h-0",
+	}) {
+		<div class="flex items-baseline justify-between gap-3 pb-3 border-b border-border shrink-0">
+			@components.BentoLabel("text-[11px]") {
+				{ title }
 			}
-			if state.Page.Page < state.Page.TotalPages {
-				<a class="rounded border px-2 py-1" href={ templ.SafeURL(pageURL(state.BaseURL, state.Page.Page+1, state.Type, state.ItemID)) }>Next</a>
-			}
+			<span class={ vendorsColumnBadgeClass(vt) }>{ fmt.Sprintf("%d", countByType(vendors, vt)) }</span>
 		</div>
-	</nav>
+		if countByType(vendors, vt) == 0 {
+			<div class="flex-1 flex items-center justify-center text-sm text-font-muted">
+				No { title } vendors right now.
+			</div>
+		} else {
+			<ul class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden scrollbar-clean divide-y divide-border pr-1 -mr-1">
+				for _, v := range vendors {
+					if v.Type == vt {
+						@vendorRow(v)
+					}
+				}
+			</ul>
+		}
+	}
+}
+
+templ vendorRow(v domain.Vendor) {
+	<li x-data="{ open: false }">
+		<button
+			type="button"
+			class="w-full text-left grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 py-3 transition-colors hover:bg-accent-wash rounded-md px-2 -mx-2"
+			hx-get={ fmt.Sprintf("/vendors/%s/%d/items", v.Type.String(), v.ID) }
+			hx-target={ "#" + rowID(v) + "-box" }
+			hx-swap="innerHTML"
+			hx-trigger="click once"
+			@click="open = !open"
+		>
+			<span class="min-w-0 space-y-0.5">
+				<span class="block truncate text-sm font-semibold text-font">{ v.StallName }</span>
+				<span class="block text-[11px] text-font-muted truncate">
+					{ v.SellerName } · { v.VendorMap } { fmt.Sprintf("%d,%d", v.X, v.Y) }
+				</span>
+			</span>
+			<span class="font-mono tabular-nums text-xs text-font-muted shrink-0">{ fmt.Sprintf("%d", len(v.Items)) }</span>
+		</button>
+		<div x-show="open" x-cloak class="pl-2 pr-2 pb-3">
+			<div id={ rowID(v) + "-box" }></div>
+		</div>
+	</li>
+}
+
+templ vendorsPagination(state stallstate.ListState) {
+	if state.Page.TotalPages > 1 {
+		<div class="flex justify-end">
+			@ui.Pagination(ui.PaginationProps{
+				Page:        state.Page.Page,
+				TotalPages:  state.Page.TotalPages,
+				Size:        ui.PaginationSizeMD,
+				Color:       ui.PaginationColorIndigo,
+				HrefPattern: vendorsHrefPattern(state),
+			})
+		</div>
+	}
 }

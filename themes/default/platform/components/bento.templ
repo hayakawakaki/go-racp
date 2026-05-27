@@ -1,0 +1,45 @@
+package components
+
+import "github.com/hayakawakaki/go-racp/internal/platform/ui"
+
+type BentoCardProps struct {
+	Attrs        templ.Attributes
+	WrapperClass string
+	Delay        string
+	Padding      string
+	Class        string
+}
+
+func bentoCardClasses(p BentoCardProps) string {
+	pad := p.Padding
+	if pad == "" {
+		pad = "p-6"
+	}
+	return ui.Merge("h-full rounded-2xl border border-border bg-bento flex flex-col", pad, p.Class)
+}
+
+func bentoWrapperClasses(p BentoCardProps) string {
+	return ui.Merge("animate-fade-up min-w-0", p.WrapperClass)
+}
+
+func bentoWrapperStyle(p BentoCardProps) string {
+	delay := p.Delay
+	if delay == "" {
+		delay = "0ms"
+	}
+	return "animation-delay: " + delay
+}
+
+templ BentoCard(p BentoCardProps) {
+	<div class={ bentoWrapperClasses(p) } style={ bentoWrapperStyle(p) }>
+		<div class={ bentoCardClasses(p) } { p.Attrs... }>
+			{ children... }
+		</div>
+	</div>
+}
+
+templ BentoLabel(class ...string) {
+	<p class={ ui.MergeWithDefault("text-[11px] font-semibold tracking-[0.18em] uppercase text-font-muted", class) }>
+		{ children... }
+	</p>
+}

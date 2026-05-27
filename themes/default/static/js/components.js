@@ -169,6 +169,17 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
+    Alpine.data('serverClock', () => ({
+        now: '',
+        init() {
+            const tz = this.$el.dataset.tz || 'UTC';
+            const fmt = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false });
+            const update = () => { this.now = fmt.format(new Date()); };
+            update();
+            setInterval(update, 60000);
+        },
+    }));
+
     Alpine.magic('toast', () => {
         return (type, message, duration, size) => {
             window.dispatchEvent(new CustomEvent('toast', {

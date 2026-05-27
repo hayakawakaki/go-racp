@@ -1,0 +1,21 @@
+package components
+
+type ServerIndicatorProps struct {
+	Label string
+	Up    bool
+}
+
+func serverDotClasses(up bool) string {
+	base := "size-1.5 rounded-full"
+	if up {
+		return base + " bg-emerald-500"
+	}
+	return base + " bg-red-500"
+}
+
+templ ServerIndicator(p ServerIndicatorProps) {
+	<span class="flex items-center gap-1.5 text-[11px] text-font">
+		<span class={ serverDotClasses(p.Up) } aria-hidden="true"></span>
+		{ p.Label }
+	</span>
+}

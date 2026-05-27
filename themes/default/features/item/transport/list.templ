@@ -3,128 +3,142 @@ package transport
 import (
 	"fmt"
 
-	itemstate "github.com/hayakawakaki/go-racp/internal/features/item/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/features/item/domain"
+	itemstate "github.com/hayakawakaki/go-racp/internal/features/item/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/ui"
+	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
 )
 
 templ ItemListPage(layout httpx.Layout, state itemstate.ListState) {
 	@httpx.ActiveBase(layout, "Items") {
-		<div class="w-full max-w-5xl space-y-6">
-			<section class="rounded-2xl bg-white ring-1 ring-gray-200 px-8 py-7">
-				<div class="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-					<div>
-						<p class="text-xs uppercase tracking-[0.18em] text-gray-400">Item Database</p>
-						<h1 class="mt-2 text-3xl font-semibold tracking-tight text-gray-900">Items</h1>
-						if state.Page.Total > 0 {
-							<p class="mt-1 text-sm text-gray-500">
-								{ fmt.Sprintf("%d", state.Page.Total) }
-								if state.Page.Total == 1 {
-									item
-								} else {
-									items
-								}
-								if state.Query != "" || state.Type != "" {
-									matching your filters
-								}
-							</p>
-						}
-					</div>
-					<form method="get" action="/items" class="flex flex-wrap items-center gap-2">
-						<label for="item-query" class="sr-only">Search by name or ID</label>
-						<input
-							id="item-query"
-							type="text"
-							name="q"
-							autocomplete="off"
-							value={ state.Query }
-							placeholder="Name or ID"
-							class="w-48 rounded-full border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-900 focus:outline-none"
-						/>
-						<label for="item-type" class="sr-only">Filter by item type</label>
-						<select
-							id="item-type"
-							name="type"
-							autocomplete="off"
-							class="rounded-full border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 focus:border-gray-900 focus:outline-none"
-						>
-							<option value="">All types</option>
-							for _, name := range itemTypeOptions {
-								<option value={ name } selected?={ state.Type == name }>{ name }</option>
-							}
-						</select>
-						<button
-							type="submit"
-							class="rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-900 hover:text-gray-900"
-						>
-							Filter
-						</button>
-					</form>
-				</div>
-			</section>
-			<section class="rounded-2xl bg-white ring-1 ring-gray-200 px-8 py-7">
-				<header class="flex items-baseline justify-between border-b border-gray-100 pb-4">
-					<h2 class="text-lg font-semibold tracking-tight text-gray-900">Results</h2>
-					if state.Page.TotalPages > 1 {
-						<span class="text-xs uppercase tracking-[0.18em] text-gray-400">
-							{ fmt.Sprintf("Page %d of %d", state.Page.Page, state.Page.TotalPages) }
-						</span>
-					}
-				</header>
-				if state.Page.Total == 0 {
-					<p class="pt-6 text-sm text-gray-500">No items match your filters.</p>
-				} else {
-					<ul class="divide-y divide-gray-100">
-						for _, item := range state.Page.Items {
-							@itemRow(item)
-						}
-					</ul>
-					@pagination(state)
-				}
-			</section>
+		<div class="space-y-4 lg:space-y-6">
+			@itemListHeader(state)
+			@itemListResults(state)
 		</div>
 	}
 }
 
-templ itemRow(item *domain.Item) {
-	<li>
-		<a
-			href={ templ.SafeURL(fmt.Sprintf("/items/%d", item.ID)) }
-			class="grid grid-cols-[4rem_auto_minmax(0,1fr)_auto] items-center gap-x-4 py-3 text-sm transition hover:bg-gray-50"
-		>
-			<span class="font-mono text-xs text-gray-400">{ fmt.Sprintf("%d", item.ID) }</span>
-			@spriteBox(item.Image, "size-[25px]")
-			<span class="font-medium tracking-tight text-gray-900">{ item.ClientName + item.SlotSuffix() }</span>
-			<span class="text-right text-xs uppercase tracking-[0.14em] text-gray-400">{ item.Type.Display() }</span>
-		</a>
-	</li>
+templ itemListHeader(state itemstate.ListState) {
+	@components.BentoCard(components.BentoCardProps{
+		Delay:   "0ms",
+		Padding: "p-6 lg:p-8",
+		Class:   "gap-4",
+	}) {
+		<div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+			<div class="space-y-2">
+				<h1 class="text-3xl xl:text-4xl font-light tracking-tight text-font">Item Database</h1>
+				if state.Page.Total > 0 {
+					<p class="text-sm text-font-muted tabular-nums">
+						{ fmt.Sprintf("%d", state.Page.Total) }
+						if state.Page.Total == 1 {
+							item
+						} else {
+							items
+						}
+						if state.Query != "" || state.Type != "" {
+							matching your filters
+						}
+					</p>
+				}
+			</div>
+			<form method="get" action="/items" class="flex flex-wrap items-center gap-2 lg:flex-nowrap">
+				<label for="item-query" class="sr-only">Search by name or ID</label>
+				@ui.Input(ui.InputProps{
+					ID:          "item-query",
+					Name:        "q",
+					Type:        ui.InputTypeText,
+					Value:       state.Query,
+					Placeholder: "Name or ID",
+					Size:        ui.InputSizeMD,
+					Rounded:     ui.InputRoundedMD,
+					Color:       ui.InputColorIndigo,
+					Class:       "w-48",
+					LeftIcon:    ui.Icon("search", "h-4 w-4"),
+				})
+				<label for="item-type" class="sr-only">Filter by item type</label>
+				<div class="relative w-40">
+					@ui.Select(ui.SelectProps{
+						ID:      "item-type",
+						Name:    "type",
+						Value:   state.Type,
+						Size:    ui.SelectSizeMD,
+						Rounded: ui.SelectRoundedMD,
+						Color:   ui.SelectColorIndigo,
+						Class:   "w-full appearance-none pr-9",
+						Options: itemTypeSelectOptions(),
+					})
+					<span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-font-muted">
+						@ui.Icon("chevron-down", "h-4 w-4")
+					</span>
+				</div>
+				@ui.Button(ui.ButtonProps{
+					Variant: ui.ButtonSolid,
+					Color:   ui.ButtonColorIndigo,
+					Size:    ui.ButtonSizeMD,
+					Rounded: ui.ButtonRoundedMD,
+					Type:    ui.ButtonTypeSubmit,
+					Class:   "font-semibold",
+				}) {
+					Filter
+				}
+			</form>
+		</div>
+	}
 }
 
-templ pagination(state itemstate.ListState) {
-	<nav class="mt-6 flex items-center justify-between border-t border-gray-100 pt-4">
-		if state.Page.Page > 1 {
-			<a
-				href={ templ.SafeURL(pageURL(state, state.Page.Page-1)) }
-				class="rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-900 hover:text-gray-900"
-			>
-				Previous
-			</a>
-		} else {
-			<span class="rounded-full border border-gray-100 px-4 py-2 text-sm font-medium text-gray-300">Previous</span>
+templ itemListResults(state itemstate.ListState) {
+	if state.Page.Total == 0 {
+		@components.BentoCard(components.BentoCardProps{
+			Delay:   "80ms",
+			Padding: "p-10 lg:p-16",
+			Class:   "items-center justify-center text-center gap-2",
+		}) {
+			<p class="text-base font-semibold text-font">No items match your filters</p>
+			<p class="text-sm text-font-muted">Try a different name, ID, or type.</p>
 		}
-		<span class="text-xs uppercase tracking-[0.18em] text-gray-400">
-			{ fmt.Sprintf("%d / %d", state.Page.Page, state.Page.TotalPages) }
-		</span>
-		if state.Page.Page < state.Page.TotalPages {
-			<a
-				href={ templ.SafeURL(pageURL(state, state.Page.Page+1)) }
-				class="rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-900 hover:text-gray-900"
-			>
-				Next
-			</a>
-		} else {
-			<span class="rounded-full border border-gray-100 px-4 py-2 text-sm font-medium text-gray-300">Next</span>
-		}
-	</nav>
+	} else {
+		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-2 lg:gap-3">
+			for i, item := range state.Page.Items {
+				@itemListCard(item, fmt.Sprintf("%dms", 60+i*15))
+			}
+		</div>
+		@itemPagination(state)
+	}
 }
 
+templ itemListCard(item *domain.Item, delay string) {
+	<a
+		href={ templ.SafeURL(fmt.Sprintf("/items/%d", item.ID)) }
+		class="group block animate-fade-up"
+		style={ "animation-delay: " + delay }
+	>
+		<div class="h-full flex items-center gap-4 rounded-xl border border-border bg-bento p-3 lg:p-4 transition-colors hover:bg-accent-wash hover:border-accent-on-surface">
+			<div class="flex shrink-0 items-center justify-center size-12 rounded-md bg-surface border border-border">
+				@ui.ItemSprite(item.ID, "size-9")
+			</div>
+			<div class="flex-1 min-w-0 space-y-0.5">
+				<p class="font-semibold text-sm text-font group-hover:text-accent-on-surface transition-colors truncate">
+					{ item.ClientName + item.SlotSuffix() }
+				</p>
+				<p class="flex items-center gap-2 text-[11px] text-font-muted">
+					<span class="font-mono tabular-nums">#{ fmt.Sprintf("%d", item.ID) }</span>
+					<span class="text-font-muted/50">·</span>
+					<span class="uppercase tracking-wider">{ item.Type.Display() }</span>
+				</p>
+			</div>
+		</div>
+	</a>
+}
+
+templ itemPagination(state itemstate.ListState) {
+	<div class="flex justify-end">
+		@ui.Pagination(ui.PaginationProps{
+			Page:        state.Page.Page,
+			TotalPages:  state.Page.TotalPages,
+			Size:        ui.PaginationSizeMD,
+			Color:       ui.PaginationColorIndigo,
+			HrefPattern: pageHrefPattern(state),
+		})
+	</div>
+}

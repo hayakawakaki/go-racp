@@ -1,15 +1,185 @@
 package pages
 
 import (
+	"strings"
+	"time"
+
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/themepage"
+	"github.com/hayakawakaki/go-racp/internal/platform/ui"
+	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
 )
+
+func serverTimeNow(loc *time.Location) string {
+	return time.Now().In(loc).Format("15:04")
+}
+
+func serverTZShort(loc *time.Location) string {
+	return strings.ToLower(time.Now().In(loc).Format("MST"))
+}
+
+func serverTZName(layout httpx.Layout) string {
+	if layout.Timezone == "" {
+		return "UTC"
+	}
+	return layout.Timezone
+}
 
 templ Index(page themepage.Ctx) {
 	@httpx.ActiveBase(page.Layout, "Home") {
-		<div class="w-full max-w-md bg-white rounded-lg shadow-md p-8 text-center space-y-4">
-			<h1 class="text-2xl font-semibold text-gray-900">{ page.Layout.ServerName }</h1>
-			<p class="text-gray-700">Welcome to the control panel.</p>
+		<div class="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-5 lg:h-[calc(100dvh-12.5rem)]">
+			<div class="contents lg:flex lg:col-span-8 lg:flex-col lg:gap-5 lg:min-h-0">
+				@homeHero(page)
+				@homeNews()
+			</div>
+			<div class="contents lg:flex lg:col-span-4 lg:flex-col lg:gap-5 lg:min-h-0">
+				@homeStatus(page)
+				@homeQuickLinks()
+			</div>
+		</div>
+	}
+}
+
+templ homeHero(page themepage.Ctx) {
+	@components.BentoCard(components.BentoCardProps{
+		WrapperClass: "order-1 lg:flex-1 lg:min-h-0",
+		Delay:        "0ms",
+		Padding:      "p-8 lg:p-10",
+		Class:        "gap-6 lg:gap-8 min-h-[20rem] lg:min-h-0",
+	}) {
+		<div class="space-y-3 flex-1">
+			<h2 class="font-light tracking-tight text-font text-4xl md:text-5xl xl:text-6xl leading-[1.05]">
+				{ page.Layout.ServerName }
+			</h2>
+			<p class="text-base xl:text-lg text-font-muted max-w-xl leading-relaxed">
+				Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+			</p>
+		</div>
+		<div class="flex flex-wrap items-center gap-3">
+			@ui.Button(ui.ButtonProps{
+				Variant: ui.ButtonSolid,
+				Color:   ui.ButtonColorIndigo,
+				Size:    ui.ButtonSizeLG,
+				Rounded: ui.ButtonRoundedMD,
+				Href:    "/register",
+				Class:   "font-semibold",
+			}) {
+				Register
+				@ui.Icon("arrow-right", "h-4 w-4 ml-1")
+			}
+			@ui.Button(ui.ButtonProps{
+				Variant: ui.ButtonSolid,
+				Color:   ui.ButtonColorGreen,
+				Size:    ui.ButtonSizeLG,
+				Rounded: ui.ButtonRoundedMD,
+				Href:    "/download",
+				Class:   "font-semibold",
+			}) {
+				Download
+				@ui.Icon("arrow-right", "h-4 w-4 ml-1")
+			}
+		</div>
+	}
+}
+
+templ homeStatus(page themepage.Ctx) {
+	<div class="order-2 lg:flex-[3] lg:min-h-0 grid grid-cols-1 lg:grid-rows-[auto_1fr_1fr_1fr] gap-4 lg:gap-5">
+		<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-5">
+			@homeServers()
+			@homeTime(page)
+		</div>
+		<div class="grid grid-cols-3 gap-4 lg:gap-5">
+			@components.StatCell(components.StatCellProps{Label: "Online", Value: "1,284", Delay: "80ms", Accent: true})
+			@components.StatCell(components.StatCellProps{Label: "Vendors", Value: "312", Delay: "120ms"})
+			@components.StatCell(components.StatCellProps{Label: "Peak", Value: "1,847", Delay: "160ms"})
+		</div>
+		@components.StatCell(components.StatCellProps{Label: "Rates", Value: "5x / 5x / 3x", Sub: "base · job · drop", Delay: "200ms"})
+		<div class="grid grid-cols-2 gap-4 lg:gap-5">
+			@components.StatCell(components.StatCellProps{Label: "Accounts", Value: "18,002", Delay: "240ms"})
+			@components.StatCell(components.StatCellProps{Label: "Characters", Value: "12,401", Delay: "280ms"})
+		</div>
+	</div>
+}
+
+templ homeServers() {
+	@components.BentoCard(components.BentoCardProps{
+		Delay:   "40ms",
+		Padding: "px-4 py-3 lg:px-5 lg:py-3.5",
+		Class:   "gap-1.5",
+	}) {
+		@components.BentoLabel("text-[10px]") {
+			Servers
+		}
+		<div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+			@components.ServerIndicator(components.ServerIndicatorProps{Label: "Map", Up: true})
+			@components.ServerIndicator(components.ServerIndicatorProps{Label: "Char", Up: true})
+			@components.ServerIndicator(components.ServerIndicatorProps{Label: "Login", Up: true})
+			@components.ServerIndicator(components.ServerIndicatorProps{Label: "Web", Up: true})
+		</div>
+	}
+}
+
+templ homeTime(page themepage.Ctx) {
+	@components.BentoCard(components.BentoCardProps{
+		Delay:   "60ms",
+		Padding: "px-4 py-3 lg:px-5 lg:py-3.5",
+		Class:   "gap-1.5",
+		Attrs: templ.Attributes{
+			"x-data":  "serverClock",
+			"data-tz": serverTZName(page.Layout),
+		},
+	}) {
+		@components.BentoLabel("text-[10px]") {
+			Server time
+		}
+		<p class="text-sm font-light tabular-nums text-font flex items-baseline gap-1.5">
+			<span x-text="now">{ serverTimeNow(page.Layout.Location()) }</span>
+			<span class="text-[10px] text-font-muted tracking-wider uppercase">{ serverTZShort(page.Layout.Location()) }</span>
+		</p>
+	}
+}
+
+templ homeNews() {
+	@components.BentoCard(components.BentoCardProps{
+		WrapperClass: "order-3 lg:flex-1 lg:min-h-0",
+		Delay:        "340ms",
+		Padding:      "p-6 lg:p-8",
+		Class:        "gap-4 min-h-[18rem] lg:min-h-0",
+	}) {
+		<div class="flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center md:justify-between md:gap-x-4 md:gap-y-2">
+			@components.BentoLabel("text-sm") {
+				Latest news
+			}
+			<div class="flex flex-wrap items-center gap-1.5">
+				@components.NewsChip(components.NewsChipProps{Label: "All", Active: true})
+				@components.NewsChip(components.NewsChipProps{Label: "Announcement", Color: "sky"})
+				@components.NewsChip(components.NewsChipProps{Label: "Patch Notes", Color: "amber"})
+				@components.NewsChip(components.NewsChipProps{Label: "Event", Color: "rose"})
+			</div>
+		</div>
+		<ul class="flex-1 flex flex-col divide-y divide-border min-h-0">
+			@components.NewsRow(components.NewsRowProps{Date: "APR 14", Title: "Patch 1.4: balance pass on Lord Knight, Wizard, Priest", Href: "/news/patch-1-4"})
+			@components.NewsRow(components.NewsRowProps{Date: "APR 02", Title: "Anniversary event: double EXP weekend + new headgear", Href: "/news/anniversary-2026"})
+			@components.NewsRow(components.NewsRowProps{Date: "MAR 28", Title: "WoE schedule update: castles rotate Saturday", Href: "/news/woe-schedule-march"})
+		</ul>
+	}
+}
+
+templ homeQuickLinks() {
+	@components.BentoCard(components.BentoCardProps{
+		WrapperClass: "order-4 lg:flex-1 lg:min-h-0",
+		Delay:        "400ms",
+		Padding:      "p-5 lg:p-6",
+		Class:        "gap-4 min-h-[11rem] lg:min-h-0",
+	}) {
+		@components.BentoLabel() {
+			Quick links
+		}
+		<div class="flex items-stretch gap-2">
+			@components.LinkTile(components.LinkTileProps{Label: "Wiki", Href: "/wiki", Color: "sky"})
+			@components.LinkTile(components.LinkTileProps{Label: "Download", Href: "/download", Color: "emerald"})
+			@components.LinkTile(components.LinkTileProps{Label: "Item DB", Href: "/items", Color: "amber"})
+			@components.LinkTile(components.LinkTileProps{Label: "Mob DB", Href: "/mobs", Color: "rose"})
 		</div>
 	}
 }

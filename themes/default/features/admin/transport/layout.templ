@@ -1,54 +1,67 @@
 package transport
 
-import "github.com/hayakawakaki/go-racp/internal/platform/httpx"
+import (
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/ui"
+	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
+)
+
+type adminNavLink struct {
+	Label   string
+	Href    string
+	IconKey string
+}
+
+var adminNavLinks = []adminNavLink{
+	{Label: "Dashboard", Href: "/admin", IconKey: "home"},
+	{Label: "Users", Href: "/users", IconKey: "plus"},
+	{Label: "Guilds", Href: "/guilds", IconKey: "check"},
+	{Label: "Database", Href: "/admin/database", IconKey: "db"},
+}
 
 templ AdminLayout(layout httpx.Layout, pageTitle string, content templ.Component) {
 	@httpx.ActiveBase(layout, "Admin / "+pageTitle) {
-		<div class="w-full max-w-6xl flex gap-6 p-6" id="admin-shell">
-			<aside class="w-56 bg-white rounded-lg shadow-md p-4 flex-shrink-0">
-				<h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Admin</h2>
-				<nav class="flex flex-col gap-1">
-					<a
-						href="/admin"
-						hx-get="/admin"
-						hx-target="#admin-content"
-						hx-push-url="true"
-						class="px-3 py-2 rounded text-sm text-gray-900 hover:bg-gray-100"
-					>
-						Dashboard
-					</a>
-					<a
-						href="/users"
-						hx-get="/users"
-						hx-target="#admin-content"
-						hx-push-url="true"
-						class="px-3 py-2 rounded text-sm text-gray-900 hover:bg-gray-100"
-					>
-						Users
-					</a>
-					<a
-						href="/guilds"
-						hx-get="/guilds"
-						hx-target="#admin-content"
-						hx-push-url="true"
-						class="px-3 py-2 rounded text-sm text-gray-900 hover:bg-gray-100"
-					>
-						Guilds
-					</a>
-					<a
-						href="/admin/database"
-						hx-get="/admin/database"
-						hx-target="#admin-content"
-						hx-push-url="true"
-						class="px-3 py-2 rounded text-sm text-gray-900 hover:bg-gray-100"
-					>
-						Database
-					</a>
-				</nav>
-			</aside>
-			<section id="admin-content" class="flex-1 bg-white rounded-lg shadow-md p-6">
+		<div class="flex flex-col lg:flex-row gap-4 lg:gap-6" id="admin-shell">
+			@adminSidebar(pageTitle)
+			<section id="admin-content" class="flex-1 min-w-0">
 				@content
 			</section>
 		</div>
+	}
+}
+
+templ adminSidebar(pageTitle string) {
+	<aside class="lg:w-60 shrink-0 lg:sticky lg:top-6 lg:self-start">
+		@components.BentoCard(components.BentoCardProps{
+			Delay:   "0ms",
+			Padding: "p-4 lg:p-5",
+			Class:   "gap-4",
+		}) {
+			@components.BentoLabel("text-[10px]") {
+				Admin
+			}
+			<nav class="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible">
+				for _, link := range adminNavLinks {
+					@adminNavItem(link, pageTitle)
+				}
+			</nav>
+		}
+	</aside>
+}
+
+templ adminNavItem(link adminNavLink, pageTitle string) {
+	@ui.NavItem(ui.NavItemProps{
+		Href:   link.Href,
+		Icon:   ui.Icon(link.IconKey),
+		Size:   ui.NavItemSizeMD,
+		Active: pageTitle == link.Label,
+		Class:  "shrink-0 lg:w-full text-font hover:bg-accent-wash hover:text-accent-on-surface data-[active=true]:bg-accent-wash data-[active=true]:text-accent-on-surface",
+		Attrs: templ.Attributes{
+			"hx-get":      link.Href,
+			"hx-target":   "#admin-content",
+			"hx-push-url": "true",
+		},
+	}) {
+		{ link.Label }
 	}
 }

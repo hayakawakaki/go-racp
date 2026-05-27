@@ -4,12 +4,71 @@ import (
 	"time"
 )
 
-templ categoryChip(display string) {
-	<span class="inline-block text-xs font-medium px-2 py-0.5 rounded bg-blue-100 text-blue-800">{ display }</span>
+func newsCategoryColor(category string) string {
+	switch category {
+	case "Announcement", "announcement":
+		return "sky"
+	case "Patch", "Patch Notes", "patch":
+		return "amber"
+	case "Event", "event":
+		return "rose"
+	default:
+		return ""
+	}
+}
+
+func categoryChipClasses(color string) string {
+	base := "inline-block text-[11px] font-semibold tracking-wide px-2 py-0.5 rounded-md"
+	switch color {
+	case "sky":
+		return base + " bg-sky-100 text-sky-800 dark:bg-sky-950/40 dark:text-sky-300"
+	case "amber":
+		return base + " bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
+	case "rose":
+		return base + " bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300"
+	case "emerald":
+		return base + " bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"
+	default:
+		return base + " bg-accent-wash text-accent-on-surface"
+	}
+}
+
+func newsCategoryChipClasses(color string, active bool) string {
+	base := "px-3.5 py-2 rounded-md text-sm font-semibold tracking-wide transition-colors"
+	if active {
+		switch color {
+		case "sky":
+			return base + " bg-sky-600 text-white"
+		case "amber":
+			return base + " bg-amber-600 text-white"
+		case "rose":
+			return base + " bg-rose-600 text-white"
+		case "emerald":
+			return base + " bg-emerald-600 text-white"
+		default:
+			return base + " bg-accent-brand text-white"
+		}
+	}
+	switch color {
+	case "sky":
+		return base + " text-font-muted border border-border hover:bg-sky-50 dark:hover:bg-sky-950/30 hover:text-sky-700 dark:hover:text-sky-400 hover:border-sky-300 dark:hover:border-sky-700"
+	case "amber":
+		return base + " text-font-muted border border-border hover:bg-amber-50 dark:hover:bg-amber-950/30 hover:text-amber-700 dark:hover:text-amber-400 hover:border-amber-300 dark:hover:border-amber-700"
+	case "rose":
+		return base + " text-font-muted border border-border hover:bg-rose-50 dark:hover:bg-rose-950/30 hover:text-rose-700 dark:hover:text-rose-400 hover:border-rose-300 dark:hover:border-rose-700"
+	case "emerald":
+		return base + " text-font-muted border border-border hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-700 dark:hover:text-emerald-400 hover:border-emerald-300 dark:hover:border-emerald-700"
+	default:
+		return base + " text-font-muted border border-border hover:bg-accent-wash hover:text-accent-on-surface hover:border-accent-on-surface"
+	}
+}
+
+templ categoryChip(category, display string) {
+	<span class={ categoryChipClasses(newsCategoryColor(category)) }>{ display }</span>
 }
 
 templ postedAt(t time.Time) {
-	<time datetime={ t.UTC().Format(time.RFC3339) } class="text-xs text-gray-500">
+	<time datetime={ t.UTC().Format(time.RFC3339) } class="text-[11px] font-semibold tracking-[0.16em] uppercase text-font-muted tabular-nums">
 		{ t.UTC().Format("Jan 2, 2006") }
 	</time>
 }
