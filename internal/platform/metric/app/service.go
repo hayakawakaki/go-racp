@@ -18,6 +18,7 @@ type GeneralReader interface {
 
 type Reader struct {
 	online   *OnlinePoller
+	status   *StatusPoller
 	peaks    PeakReader
 	general  GeneralReader
 	location *time.Location
@@ -27,6 +28,7 @@ type Reader struct {
 
 type ReaderConfig struct {
 	Online   *OnlinePoller
+	Status   *StatusPoller
 	Peaks    PeakReader
 	General  GeneralReader
 	Location *time.Location
@@ -40,6 +42,7 @@ func NewReader(cfg ReaderConfig) *Reader {
 	}
 	return &Reader{
 		online:   cfg.Online,
+		status:   cfg.Status,
 		peaks:    cfg.Peaks,
 		general:  cfg.General,
 		windows:  cfg.Windows,
@@ -50,6 +53,13 @@ func NewReader(cfg ReaderConfig) *Reader {
 
 func (r *Reader) Online(_ context.Context) domain.OnlineSnapshot {
 	return r.online.Snapshot()
+}
+
+func (r *Reader) ServerStatus(_ context.Context) domain.ServerStatusSnapshot {
+	if r.status == nil {
+		return domain.ServerStatusSnapshot{}
+	}
+	return r.status.Snapshot()
 }
 
 func (r *Reader) Peaks(ctx context.Context) ([]domain.PeakRow, error) {

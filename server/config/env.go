@@ -32,6 +32,13 @@ type EnvConfig struct {
 
 	// Security
 	CSRFSecret string `env:"CSRF_SECRET" required:"true"`
+
+	// Server Status
+	ServerHost string `env:"SERVER_HOST" default:"127.0.0.1"`
+	LoginPort  int    `env:"LOGIN_PORT" default:"6900"`
+	CharPort   int    `env:"CHAR_PORT" default:"6121"`
+	MapPort    int    `env:"MAP_PORT" default:"5121"`
+	WebPort    int    `env:"WEB_PORT" default:"8888"`
 }
 
 // ProcessEnv loads the project .env file when present and populates an EnvConfig from environment variables, terminating the process via log.Fatal on a missing required value or type mismatch.

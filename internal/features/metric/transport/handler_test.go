@@ -16,15 +16,20 @@ import (
 )
 
 type fakeReader struct {
-	peaksErr   error
-	generalErr error
-	peaks      []domain.PeakRow
-	general    domain.GeneralSnapshot
-	online     domain.OnlineSnapshot
+	peaksErr     error
+	generalErr   error
+	peaks        []domain.PeakRow
+	serverStatus domain.ServerStatusSnapshot
+	general      domain.GeneralSnapshot
+	online       domain.OnlineSnapshot
 }
 
 func (f *fakeReader) Online(context.Context) domain.OnlineSnapshot {
 	return f.online
+}
+
+func (f *fakeReader) ServerStatus(context.Context) domain.ServerStatusSnapshot {
+	return f.serverStatus
 }
 
 func (f *fakeReader) Peaks(context.Context) ([]domain.PeakRow, error) {

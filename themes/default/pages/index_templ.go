@@ -30,6 +30,10 @@ type homeStats struct {
 	Peak       int
 	Accounts   int
 	Characters int
+	LoginUp    bool
+	CharUp     bool
+	MapUp      bool
+	WebUp      bool
 	Ready      bool
 }
 
@@ -43,6 +47,12 @@ func loadHomeStats(ctx context.Context) homeStats {
 	online := reader.Online(ctx)
 	s.Online = online.Total
 	s.Vendors = online.Vendor
+
+	status := reader.ServerStatus(ctx)
+	s.LoginUp = status.Login
+	s.CharUp = status.Char
+	s.MapUp = status.Map
+	s.WebUp = status.Web
 
 	if general, err := reader.General(ctx); err == nil {
 		s.Accounts = general.TotalAccounts
@@ -225,7 +235,7 @@ func homeHero(page themepage.Ctx) templ.Component {
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(page.Layout.ServerName)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/pages/index.templ`, Line: 133, Col: 28}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/pages/index.templ`, Line: 143, Col: 28}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
@@ -337,7 +347,7 @@ func homeStatus(page themepage.Ctx, stats homeStats) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = homeServers().Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = homeServers(stats).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -389,7 +399,7 @@ func homeStatus(page themepage.Ctx, stats homeStats) templ.Component {
 	})
 }
 
-func homeServers() templ.Component {
+func homeServers(stats homeStats) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -448,19 +458,19 @@ func homeServers() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.ServerIndicator(components.ServerIndicatorProps{Label: "Map", Up: true}).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.ServerIndicator(components.ServerIndicatorProps{Label: "Map", Up: stats.MapUp}).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.ServerIndicator(components.ServerIndicatorProps{Label: "Char", Up: true}).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.ServerIndicator(components.ServerIndicatorProps{Label: "Char", Up: stats.CharUp}).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.ServerIndicator(components.ServerIndicatorProps{Label: "Login", Up: true}).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.ServerIndicator(components.ServerIndicatorProps{Label: "Login", Up: stats.LoginUp}).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.ServerIndicator(components.ServerIndicatorProps{Label: "Web", Up: true}).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.ServerIndicator(components.ServerIndicatorProps{Label: "Web", Up: stats.WebUp}).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -544,7 +554,7 @@ func homeTime(page themepage.Ctx) templ.Component {
 			var templ_7745c5c3_Var15 string
 			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(serverTimeNow(page.Layout.Location()))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/pages/index.templ`, Line: 215, Col: 61}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/pages/index.templ`, Line: 225, Col: 61}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 			if templ_7745c5c3_Err != nil {
@@ -557,7 +567,7 @@ func homeTime(page themepage.Ctx) templ.Component {
 			var templ_7745c5c3_Var16 string
 			templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(serverTZShort(page.Layout.Location()))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/pages/index.templ`, Line: 216, Col: 109}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/pages/index.templ`, Line: 226, Col: 109}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 			if templ_7745c5c3_Err != nil {

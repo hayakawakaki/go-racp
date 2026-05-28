@@ -116,6 +116,7 @@ type MetricsConfig struct {
 	PeakWindows         []string      `yaml:"PeakWindows"`
 	OnlinePollInterval  time.Duration `yaml:"OnlinePollInterval"`
 	GeneralPollInterval time.Duration `yaml:"GeneralPollInterval"`
+	StatusPollInterval  time.Duration `yaml:"StatusPollInterval"`
 }
 
 type SecurityConfig struct {
@@ -198,6 +199,7 @@ func appConfigDefaults() *AppConfig {
 		Metrics: MetricsConfig{
 			OnlinePollInterval:  1 * time.Minute,
 			GeneralPollInterval: 1 * time.Hour,
+			StatusPollInterval:  1 * time.Minute,
 			PeakWindows:         defaultPeakWindows,
 		},
 		Security: SecurityConfig{
@@ -314,31 +316,32 @@ func validateTrustedProxyCIDRs(cidrs []string) {
 	}
 }
 
+func clampInterval(value, fallback, minimum, maximum time.Duration) time.Duration {
+	switch {
+	case value <= 0:
+		return fallback
+	case value < minimum:
+		return minimum
+	case value > maximum:
+		return maximum
+	default:
+		return value
+	}
+}
+
 func validateMetricsConfig(cfg *MetricsConfig) {
 	const (
 		minOnline  = 10 * time.Second
 		maxOnline  = 1 * time.Hour
 		minGeneral = 5 * time.Minute
 		maxGeneral = 24 * time.Hour
+		minStatus  = 10 * time.Second
+		maxStatus  = 1 * time.Hour
 	)
 
-	switch {
-	case cfg.OnlinePollInterval <= 0:
-		cfg.OnlinePollInterval = 1 * time.Minute
-	case cfg.OnlinePollInterval < minOnline:
-		cfg.OnlinePollInterval = minOnline
-	case cfg.OnlinePollInterval > maxOnline:
-		cfg.OnlinePollInterval = maxOnline
-	}
-
-	switch {
-	case cfg.GeneralPollInterval <= 0:
-		cfg.GeneralPollInterval = 1 * time.Hour
-	case cfg.GeneralPollInterval < minGeneral:
-		cfg.GeneralPollInterval = minGeneral
-	case cfg.GeneralPollInterval > maxGeneral:
-		cfg.GeneralPollInterval = maxGeneral
-	}
+	cfg.OnlinePollInterval = clampInterval(cfg.OnlinePollInterval, 1*time.Minute, minOnline, maxOnline)
+	cfg.GeneralPollInterval = clampInterval(cfg.GeneralPollInterval, 1*time.Hour, minGeneral, maxGeneral)
+	cfg.StatusPollInterval = clampInterval(cfg.StatusPollInterval, 1*time.Minute, minStatus, maxStatus)
 
 	if cfg.PeakWindows == nil {
 		cfg.PeakWindows = defaultPeakWindows

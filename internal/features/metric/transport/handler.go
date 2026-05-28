@@ -13,6 +13,7 @@ import (
 
 type reader interface {
 	Online(ctx context.Context) domain.OnlineSnapshot
+	ServerStatus(ctx context.Context) domain.ServerStatusSnapshot
 	Peaks(ctx context.Context) ([]domain.PeakRow, error)
 	General(ctx context.Context) (domain.GeneralSnapshot, error)
 }
@@ -28,6 +29,7 @@ func NewHandler(svc reader, logger *slog.Logger) *Handler {
 
 func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
 	reg.Wrap(mux, "Metric.API", "GET /api/v1/metrics/online", http.HandlerFunc(h.online))
+	reg.Wrap(mux, "Metric.API", "GET /api/v1/metrics/status", http.HandlerFunc(h.status))
 	reg.Wrap(mux, "Metric.API", "GET /api/v1/metrics/peaks", http.HandlerFunc(h.peaks))
 	reg.Wrap(mux, "Metric.API", "GET /api/v1/metrics/general", http.HandlerFunc(h.general))
 }
@@ -36,6 +38,13 @@ func (h *Handler) online(w http.ResponseWriter, r *http.Request) {
 	snap := h.svc.Online(r.Context())
 	if err := httpx.WriteJSON(w, http.StatusOK, snap); err != nil {
 		h.logger.Warn("metric: online encode failed", "err", err)
+	}
+}
+
+func (h *Handler) status(w http.ResponseWriter, r *http.Request) {
+	snap := h.svc.ServerStatus(r.Context())
+	if err := httpx.WriteJSON(w, http.StatusOK, snap); err != nil {
+		h.logger.Warn("metric: status encode failed", "err", err)
 	}
 }
 
