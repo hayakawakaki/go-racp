@@ -4,8 +4,6 @@
 ThemePages:
   Index:
     Roles: ["Public"]
-  Rates:
-    Roles: ["Public"]
   ServerInfo:
     Roles: ["Public"]
   Download:

@@ -16,13 +16,25 @@ import (
 
 var themeNameRe = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 
+type RatesConfig struct {
+	ExpRate         int `yaml:"ExpRate"`
+	JobRate         int `yaml:"JobRate"`
+	DropRateCommon  int `yaml:"DropRateCommon"`
+	DropRateHeal    int `yaml:"DropRateHeal"`
+	DropRateUsable  int `yaml:"DropRateUsable"`
+	DropRateEquip   int `yaml:"DropRateEquip"`
+	DropRateCard    int `yaml:"DropRateCard"`
+	DropRateCardMVP int `yaml:"DropRateCardMVP"`
+}
+
 // GeneralConfig holds UI/branding settings shared across every page.
 type GeneralConfig struct {
 	location   *time.Location
-	ServerName string `yaml:"ServerName"`
-	Timezone   string `yaml:"Timezone"`
-	Theme      string `yaml:"Theme"`
-	Gepard     bool   `yaml:"Gepard"`
+	ServerName string      `yaml:"ServerName"`
+	Timezone   string      `yaml:"Timezone"`
+	Theme      string      `yaml:"Theme"`
+	Rates      RatesConfig `yaml:"Rates"`
+	Gepard     bool        `yaml:"Gepard"`
 }
 
 func (g GeneralConfig) Location() *time.Location {
@@ -160,8 +172,22 @@ type AppConfig struct {
 // appConfigDefaults apply default config in case of missing config file
 func appConfigDefaults() *AppConfig {
 	return &AppConfig{
-		General: GeneralConfig{ServerName: "Go Control Panel", Timezone: "UTC", Theme: "default"},
-		Mailer:  MailerConfig{FromAddress: "noreply@gocp.com"},
+		General: GeneralConfig{
+			ServerName: "Go Control Panel",
+			Timezone:   "UTC",
+			Theme:      "default",
+			Rates: RatesConfig{
+				ExpRate:         100,
+				JobRate:         100,
+				DropRateCommon:  100,
+				DropRateHeal:    100,
+				DropRateUsable:  100,
+				DropRateEquip:   100,
+				DropRateCard:    100,
+				DropRateCardMVP: 100,
+			},
+		},
+		Mailer: MailerConfig{FromAddress: "noreply@gocp.com"},
 		TTL: TTLConfig{
 			Session:       24 * time.Hour,
 			Verification:  30 * time.Minute,
@@ -299,6 +325,7 @@ func validateAppConfig(cfg *AppConfig) {
 	validateMetricsConfig(&cfg.Metrics)
 	validateTrustedProxyCIDRs(cfg.Security.TrustedProxyCIDRs)
 	validateTheme(&cfg.General)
+	validateRatesConfig(&cfg.General.Rates)
 }
 
 func validateTheme(cfg *GeneralConfig) {
@@ -357,6 +384,23 @@ func validateMetricsConfig(cfg *MetricsConfig) {
 		}
 	}
 	cfg.PeakWindows = filtered
+}
+
+func validateRatesConfig(cfg *RatesConfig) {
+	for _, rate := range []*int{
+		&cfg.ExpRate,
+		&cfg.JobRate,
+		&cfg.DropRateCommon,
+		&cfg.DropRateHeal,
+		&cfg.DropRateUsable,
+		&cfg.DropRateEquip,
+		&cfg.DropRateCard,
+		&cfg.DropRateCardMVP,
+	} {
+		if *rate <= 0 {
+			*rate = 100
+		}
+	}
 }
 
 func validateVendorConfig(cfg *VendorConfig) {

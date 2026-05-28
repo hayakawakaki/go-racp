@@ -4,6 +4,15 @@ App:
   Timezone: "UTC"
   Theme: "default"
   Gepard: false
+  Rates:
+    ExpRate: 100
+    JobRate: 100
+    DropRateCommon: 100
+    DropRateHeal: 100
+    DropRateUsable: 100
+    DropRateEquip: 100
+    DropRateCard: 100
+    DropRateCardMVP: 100
 
 # Mail Stuffs
 Mailer:

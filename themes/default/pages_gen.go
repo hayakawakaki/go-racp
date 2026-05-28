@@ -45,11 +45,6 @@ func MountRoutes(reg *routes.Registry, mux *http.ServeMux, layout httpx.Layout) 
 			http.Error(w, "render error", http.StatusInternalServerError)
 		}
 	}))
-	reg.Wrap(mux, "ThemePages.Rates", "/rates", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if err := pages.Rates(themepage.BuildCtx(r, layout)).Render(r.Context(), w); err != nil {
-			http.Error(w, "render error", http.StatusInternalServerError)
-		}
-	}))
 	reg.Wrap(mux, "ThemePages.ServerInfo", "/server-info", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := themepage.RenderMarkdownPageFrom(w, r, layout, "Server Information", "pages/server-info.md", precomputedHTMLServerInfo); err != nil {
 			http.Error(w, "render error", http.StatusInternalServerError)

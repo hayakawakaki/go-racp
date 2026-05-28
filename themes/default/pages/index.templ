@@ -3,6 +3,7 @@ package pages
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/metric"
 	"github.com/hayakawakaki/go-racp/internal/platform/themepage"
 	"github.com/hayakawakaki/go-racp/internal/platform/ui"
+	"github.com/hayakawakaki/go-racp/server/config"
 	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
 )
 
@@ -101,6 +103,10 @@ func formatThousands(n int) string {
 	return b.String()
 }
 
+func formatMultiplier(rate int) string {
+	return "x" + strconv.FormatFloat(float64(rate)/100, 'g', -1, 64)
+}
+
 func serverTimeNow(loc *time.Location) string {
 	return time.Now().In(loc).Format("15:04")
 }
@@ -182,12 +188,41 @@ templ homeStatus(page themepage.Ctx, stats homeStats) {
 			@components.StatCell(components.StatCellProps{Label: "Vendors", Value: statValue(stats.Ready, stats.Vendors), Delay: "120ms"})
 			@components.StatCell(components.StatCellProps{Label: "Peak", Value: statValue(stats.Ready, stats.Peak), Delay: "160ms"})
 		</div>
-		@components.StatCell(components.StatCellProps{Label: "Rates", Value: "5x / 5x / 3x", Sub: "base · job · drop", Delay: "200ms"})
+		@homeRates(page.Layout.Rates)
 		<div class="grid grid-cols-2 gap-4 lg:gap-5">
 			@components.StatCell(components.StatCellProps{Label: "Accounts", Value: statValue(stats.Ready, stats.Accounts), Delay: "240ms"})
 			@components.StatCell(components.StatCellProps{Label: "Characters", Value: statValue(stats.Ready, stats.Characters), Delay: "280ms"})
 		</div>
 	</div>
+}
+
+templ rateTile(label, value string) {
+	<div class="flex flex-col justify-center gap-2 rounded-md border border-border bg-surface px-3 py-3">
+		<span class="text-[10px] font-semibold uppercase tracking-wider text-font-muted">{ label }</span>
+		<span class="text-base font-medium tabular-nums text-font leading-none">{ value }</span>
+	</div>
+}
+
+templ homeRates(rates config.RatesConfig) {
+	@components.BentoCard(components.BentoCardProps{
+		Delay:   "200ms",
+		Padding: "px-4 py-3.5 lg:px-5 lg:py-4",
+		Class:   "gap-2",
+	}) {
+		@components.BentoLabel("text-[10px]") {
+			Rates
+		}
+		<div class="grid grid-cols-4 gap-2">
+			@rateTile("EXP", formatMultiplier(rates.ExpRate))
+			@rateTile("Job", formatMultiplier(rates.JobRate))
+			@rateTile("Common Drop", formatMultiplier(rates.DropRateCommon))
+			@rateTile("Healing Drop", formatMultiplier(rates.DropRateHeal))
+			@rateTile("Usable Drop", formatMultiplier(rates.DropRateUsable))
+			@rateTile("Equip Drop", formatMultiplier(rates.DropRateEquip))
+			@rateTile("Card Drop", formatMultiplier(rates.DropRateCard))
+			@rateTile("MVP Card", formatMultiplier(rates.DropRateCardMVP))
+		</div>
+	}
 }
 
 templ homeServers(stats homeStats) {

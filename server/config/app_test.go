@@ -232,6 +232,36 @@ func TestValidateVendorConfig_Clamps(t *testing.T) {
 	}
 }
 
+func TestValidateRatesConfig_ClampsNonPositiveToDefault(t *testing.T) {
+	t.Parallel()
+
+	cfg := RatesConfig{
+		ExpRate:         0,
+		JobRate:         -50,
+		DropRateCommon:  200,
+		DropRateHeal:    100,
+		DropRateUsable:  0,
+		DropRateEquip:   1,
+		DropRateCard:    -1,
+		DropRateCardMVP: 500,
+	}
+	validateRatesConfig(&cfg)
+
+	want := RatesConfig{
+		ExpRate:         100,
+		JobRate:         100,
+		DropRateCommon:  200,
+		DropRateHeal:    100,
+		DropRateUsable:  100,
+		DropRateEquip:   1,
+		DropRateCard:    100,
+		DropRateCardMVP: 500,
+	}
+	if cfg != want {
+		t.Errorf("validateRatesConfig = %+v, want %+v", cfg, want)
+	}
+}
+
 func TestValidateTheme_AcceptsValidNames(t *testing.T) {
 	t.Parallel()
 

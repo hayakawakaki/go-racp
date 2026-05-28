@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -619,7 +620,7 @@ func TestHandler_CurrentItemLookup_NilWhenFnUnset(t *testing.T) {
 func TestResolveDrops_NilLookupKeepsAegis(t *testing.T) {
 	t.Parallel()
 
-	rows := resolveDrops([]domain.MobDrop{{ItemAegis: "Red_Potion", Rate: 1000}}, nil)
+	rows := resolveDrops([]domain.MobDrop{{ItemAegis: "Red_Potion", Rate: 1000}}, nil, false, config.RatesConfig{})
 	if len(rows) != 1 {
 		t.Fatalf("len(rows) = %d, want 1", len(rows))
 	}
@@ -634,7 +635,7 @@ func TestResolveDrops_LookupHitFillsItemFields(t *testing.T) {
 	lookup := &fakeItemLookup{byAegis: map[string]*itemdomain.Item{
 		"Red_Potion": {ID: 501, AegisName: "Red_Potion", ClientName: "Red Potion", Image: "red_potion", Slots: 0},
 	}}
-	rows := resolveDrops([]domain.MobDrop{{ItemAegis: "Red_Potion", Rate: 1000}}, lookup)
+	rows := resolveDrops([]domain.MobDrop{{ItemAegis: "Red_Potion", Rate: 1000}}, lookup, false, config.RatesConfig{})
 	if len(rows) != 1 {
 		t.Fatalf("len(rows) = %d, want 1", len(rows))
 	}
@@ -647,7 +648,7 @@ func TestResolveDrops_LookupMissPreservesAegis(t *testing.T) {
 	t.Parallel()
 
 	lookup := &fakeItemLookup{byAegis: map[string]*itemdomain.Item{}}
-	rows := resolveDrops([]domain.MobDrop{{ItemAegis: "Unknown_Item", Rate: 5}}, lookup)
+	rows := resolveDrops([]domain.MobDrop{{ItemAegis: "Unknown_Item", Rate: 5}}, lookup, false, config.RatesConfig{})
 	if len(rows) != 1 {
 		t.Fatalf("len(rows) = %d, want 1", len(rows))
 	}
@@ -659,7 +660,7 @@ func TestResolveDrops_LookupMissPreservesAegis(t *testing.T) {
 func TestResolveDrops_EmptyInputReturnsNil(t *testing.T) {
 	t.Parallel()
 
-	if got := resolveDrops(nil, nil); got != nil {
+	if got := resolveDrops(nil, nil, false, config.RatesConfig{}); got != nil {
 		t.Errorf("resolveDrops(nil, nil) = %v, want nil", got)
 	}
 }
@@ -667,7 +668,7 @@ func TestResolveDrops_EmptyInputReturnsNil(t *testing.T) {
 func TestBuildExp_ZeroSourcesReturnsNil(t *testing.T) {
 	t.Parallel()
 
-	if got := buildExp(&domain.Mob{}); got != nil {
+	if got := buildExp(&domain.Mob{}, config.RatesConfig{}); got != nil {
 		t.Errorf("buildExp = %v, want nil for zero exp", got)
 	}
 }
@@ -675,7 +676,7 @@ func TestBuildExp_ZeroSourcesReturnsNil(t *testing.T) {
 func TestBuildExp_IncludesMvpExpWhenSet(t *testing.T) {
 	t.Parallel()
 
-	rows := buildExp(&domain.Mob{BaseExp: 100, JobExp: 50, MvpExp: 25})
+	rows := buildExp(&domain.Mob{BaseExp: 100, JobExp: 50, MvpExp: 25}, config.RatesConfig{})
 	if len(rows) != 3 {
 		t.Fatalf("rows len = %d, want 3 (base + job + mvp)", len(rows))
 	}
@@ -687,7 +688,7 @@ func TestBuildExp_IncludesMvpExpWhenSet(t *testing.T) {
 func TestBuildExp_OmitsMvpRowWhenAbsent(t *testing.T) {
 	t.Parallel()
 
-	rows := buildExp(&domain.Mob{BaseExp: 100, JobExp: 50})
+	rows := buildExp(&domain.Mob{BaseExp: 100, JobExp: 50}, config.RatesConfig{})
 	if len(rows) != 2 {
 		t.Fatalf("rows len = %d, want 2", len(rows))
 	}
@@ -719,5 +720,209 @@ func TestDropRow_DisplayName(t *testing.T) {
 				t.Errorf("DisplayName() = %q, want %q", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestScaleRate(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		value      int
+		multiplier int
+		want       int
+	}{
+		{name: "identity x1", value: 1000, multiplier: 100, want: 1000},
+		{name: "double", value: 1000, multiplier: 200, want: 2000},
+		{name: "half", value: 1000, multiplier: 50, want: 500},
+		{name: "truncates toward zero", value: 15, multiplier: 110, want: 16},
+		{name: "zero value", value: 0, multiplier: 200, want: 0},
+		{name: "zero multiplier", value: 1000, multiplier: 0, want: 0},
+		{name: "negative value", value: -5, multiplier: 200, want: 0},
+		{name: "overflow saturates", value: math.MaxInt, multiplier: 200, want: math.MaxInt / 100},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := scaleRate(tt.value, tt.multiplier); got != tt.want {
+				t.Errorf("scaleRate(%d, %d) = %d, want %d", tt.value, tt.multiplier, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCategoryRate(t *testing.T) {
+	t.Parallel()
+
+	rates := config.RatesConfig{
+		DropRateCommon:  1,
+		DropRateHeal:    2,
+		DropRateUsable:  3,
+		DropRateEquip:   4,
+		DropRateCard:    5,
+		DropRateCardMVP: 6,
+	}
+	tests := []struct {
+		name     string
+		itemType itemdomain.ItemType
+		isMVP    bool
+		want     int
+	}{
+		{name: "healing", itemType: itemdomain.ItemTypeHealing, want: 2},
+		{name: "usable", itemType: itemdomain.ItemTypeUsable, want: 3},
+		{name: "delayconsume maps to usable", itemType: itemdomain.ItemTypeDelayConsume, want: 3},
+		{name: "cash maps to usable", itemType: itemdomain.ItemTypeCash, want: 3},
+		{name: "weapon maps to equip", itemType: itemdomain.ItemTypeWeapon, want: 4},
+		{name: "armor maps to equip", itemType: itemdomain.ItemTypeArmor, want: 4},
+		{name: "shadowgear maps to equip", itemType: itemdomain.ItemTypeShadowGear, want: 4},
+		{name: "card normal", itemType: itemdomain.ItemTypeCard, isMVP: false, want: 5},
+		{name: "card mvp", itemType: itemdomain.ItemTypeCard, isMVP: true, want: 6},
+		{name: "etc maps to common", itemType: itemdomain.ItemTypeEtc, want: 1},
+		{name: "ammo maps to common", itemType: itemdomain.ItemTypeAmmo, want: 1},
+		{name: "unknown maps to common", itemType: itemdomain.ItemTypeUnknown, want: 1},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := categoryRate(tt.itemType, tt.isMVP, rates); got != tt.want {
+				t.Errorf("categoryRate(%v, mvp=%v) = %d, want %d", tt.itemType, tt.isMVP, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestResolveDrops_AppliesCategoryMultiplier(t *testing.T) {
+	t.Parallel()
+
+	lookup := &fakeItemLookup{byAegis: map[string]*itemdomain.Item{
+		"Red_Potion":  {ID: 501, ClientName: "Red Potion", Type: itemdomain.ItemTypeHealing},
+		"Poring_Card": {ID: 4001, ClientName: "Poring Card", Type: itemdomain.ItemTypeCard},
+	}}
+	rates := config.RatesConfig{DropRateHeal: 200, DropRateCard: 500, DropRateCommon: 100}
+	drops := []domain.MobDrop{
+		{ItemAegis: "Red_Potion", Rate: 100},
+		{ItemAegis: "Poring_Card", Rate: 50},
+		{ItemAegis: "Unknown_Item", Rate: 30},
+	}
+
+	rows := resolveDrops(drops, lookup, false, rates)
+
+	if rows[0].Rate != 200 {
+		t.Errorf("heal drop rate = %d, want 200 (100 * x2)", rows[0].Rate)
+	}
+	if rows[1].Rate != 250 {
+		t.Errorf("card drop rate = %d, want 250 (50 * x5)", rows[1].Rate)
+	}
+	if rows[2].Rate != 30 {
+		t.Errorf("unknown drop rate = %d, want 30 (common x1 fallback)", rows[2].Rate)
+	}
+}
+
+func TestResolveDrops_CapsAt100Percent(t *testing.T) {
+	t.Parallel()
+
+	lookup := &fakeItemLookup{byAegis: map[string]*itemdomain.Item{
+		"Jellopy": {ID: 909, ClientName: "Jellopy", Type: itemdomain.ItemTypeEtc},
+	}}
+	rates := config.RatesConfig{DropRateCommon: 1000}
+
+	rows := resolveDrops([]domain.MobDrop{{ItemAegis: "Jellopy", Rate: 5000}}, lookup, false, rates)
+
+	if rows[0].Rate != 10000 {
+		t.Errorf("rate = %d, want 10000 (50%% * x10 capped at 100%%)", rows[0].Rate)
+	}
+}
+
+func TestResolveDrops_MvpCardUsesMvpRate(t *testing.T) {
+	t.Parallel()
+
+	lookup := &fakeItemLookup{byAegis: map[string]*itemdomain.Item{
+		"Baphomet_Card": {ID: 4147, ClientName: "Baphomet Card", Type: itemdomain.ItemTypeCard},
+	}}
+	rates := config.RatesConfig{DropRateCard: 100, DropRateCardMVP: 300}
+	drop := []domain.MobDrop{{ItemAegis: "Baphomet_Card", Rate: 10}}
+
+	normal := resolveDrops(drop, lookup, false, rates)
+	mvp := resolveDrops(drop, lookup, true, rates)
+
+	if normal[0].Rate != 10 {
+		t.Errorf("normal card rate = %d, want 10 (x1)", normal[0].Rate)
+	}
+	if mvp[0].Rate != 30 {
+		t.Errorf("mvp card rate = %d, want 30 (x3)", mvp[0].Rate)
+	}
+}
+
+func TestBuildExp_AppliesMultipliers(t *testing.T) {
+	t.Parallel()
+
+	rates := config.RatesConfig{ExpRate: 200, JobRate: 300}
+	rows := buildExp(&domain.Mob{BaseExp: 100, JobExp: 50, MvpExp: 25}, rates)
+
+	if len(rows) != 3 {
+		t.Fatalf("rows = %d, want 3", len(rows))
+	}
+	if rows[0].Value != "200" {
+		t.Errorf("Base Exp = %q, want 200 (100 * x2)", rows[0].Value)
+	}
+	if rows[1].Value != "150" {
+		t.Errorf("Job Exp = %q, want 150 (50 * x3)", rows[1].Value)
+	}
+	if rows[2].Value != "50" {
+		t.Errorf("MVP Exp = %q, want 50 (25 * x2 via ExpRate)", rows[2].Value)
+	}
+}
+
+func TestHandler_APIDetail_AppliesRates(t *testing.T) {
+	t.Parallel()
+
+	svc := newFakeMobService()
+	svc.mobsByID[1002] = &domain.Mob{
+		ID:        1002,
+		AegisName: "PORING",
+		Name:      "Poring",
+		Race:      domain.RacePlant,
+		Element:   domain.ElementWater,
+		Size:      domain.SizeSmall,
+		BaseExp:   100,
+		JobExp:    50,
+		Drops:     []domain.MobDrop{{ItemAegis: "Poring_Card", Rate: 100}},
+	}
+	lookup := &fakeItemLookup{byAegis: map[string]*itemdomain.Item{
+		"Poring_Card": {ID: 4001, AegisName: "Poring_Card", ClientName: "Poring Card", Type: itemdomain.ItemTypeCard},
+	}}
+	h := NewHandler(svc, HandlerConfig{
+		Logger:       discardLogger(),
+		ItemLookupFn: func() ItemLookup { return lookup },
+		General: config.GeneralConfig{
+			ServerName: "Test",
+			Timezone:   "UTC",
+			Rates:      config.RatesConfig{ExpRate: 200, JobRate: 300, DropRateCard: 500},
+		},
+		Theme: stubTheme{},
+	})
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/api/mobs/1002", http.NoBody)
+	req.SetPathValue("id", "1002")
+	h.apiDetail(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rr.Code)
+	}
+	var got app.MobDTO
+	if err := json.Unmarshal(rr.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.BaseExp != 200 {
+		t.Errorf("base_exp = %d, want 200 (100 * x2)", got.BaseExp)
+	}
+	if got.JobExp != 150 {
+		t.Errorf("job_exp = %d, want 150 (50 * x3)", got.JobExp)
+	}
+	if len(got.Drops) != 1 || got.Drops[0].Rate != 500 {
+		t.Errorf("drops = %+v, want one drop at rate 500 (100 * x5)", got.Drops)
 	}
 }

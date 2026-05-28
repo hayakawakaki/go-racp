@@ -5,9 +5,11 @@ import (
 	"net/http"
 	"strconv"
 
+	itemdomain "github.com/hayakawakaki/go-racp/internal/features/item/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/mob/app"
 	"github.com/hayakawakaki/go-racp/internal/features/mob/domain"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	"github.com/hayakawakaki/go-racp/server/config"
 )
 
 type apiError struct {
@@ -34,5 +36,27 @@ func (h *Handler) apiDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = httpx.WriteJSON(w, http.StatusOK, app.ToDTO(mob))
+	dto := app.ToDTO(mob)
+	applyRates(&dto, h.currentItemLookup(), h.general.Rates)
+	_ = httpx.WriteJSON(w, http.StatusOK, dto)
+}
+
+func applyRates(dto *app.MobDTO, lookup ItemLookup, rates config.RatesConfig) {
+	dto.BaseExp = scaleRate(dto.BaseExp, rates.ExpRate)
+	dto.JobExp = scaleRate(dto.JobExp, rates.JobRate)
+	dto.MvpExp = scaleRate(dto.MvpExp, rates.ExpRate)
+	scaleDropRates(dto.Drops, lookup, false, rates)
+	scaleDropRates(dto.MvpDrops, lookup, true, rates)
+}
+
+func scaleDropRates(drops []app.DropDTO, lookup ItemLookup, isMVP bool, rates config.RatesConfig) {
+	for index := range drops {
+		itemType := itemdomain.ItemTypeUnknown
+		if lookup != nil {
+			if item := lookup.LookupByAegis(drops[index].ItemAegis); item != nil {
+				itemType = item.Type
+			}
+		}
+		drops[index].Rate = min(scaleRate(drops[index].Rate, categoryRate(itemType, isMVP, rates)), 10000)
+	}
 }
