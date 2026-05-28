@@ -4,7 +4,7 @@ RUN adduser -D -u 10001 app
 
 # Tailwind CSS standalone CLI (musl variant + C++ stdlib for Alpine)
 ARG TW_VERSION=v4.2.4
-RUN apk add --no-cache libstdc++ libgcc \
+RUN apk add --no-cache libstdc++ libgcc postgresql-client \
     && case "$(uname -m)" in \
          x86_64)  TW_ARCH="x64-musl"   ;; \
          aarch64) TW_ARCH="arm64-musl" ;; \
