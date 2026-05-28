@@ -4,46 +4,83 @@ import (
 	accountselfstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/self/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/security"
+	"github.com/hayakawakaki/go-racp/internal/platform/ui"
+	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
 )
 
 templ AccountChangeEmailModal(state accountselfstate.ChangeEmailState) {
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-		<div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-			<div class="flex justify-between items-center mb-4">
-				<h2 class="text-xl font-semibold text-gray-900">Change email</h2>
-				<button onclick="document.getElementById('modal').innerHTML=''" type="button" aria-label="Close" class="text-gray-400 hover:text-gray-600">&times;</button>
-			</div>
+	@ui.Modal(ui.ModalProps{Open: true}) {
+		@ui.ModalContent(ui.ModalContentProps{Size: ui.ModalSizeMD}) {
+			@ui.ModalHeader() {
+				@ui.ModalTitle() {
+					Change email
+				}
+				@ui.ModalDescription() {
+					We'll send a confirmation link to your new address.
+				}
+			}
 			@AccountChangeEmailForm(state)
-		</div>
-	</div>
+		}
+	}
 }
 
 templ AccountChangeEmailForm(state accountselfstate.ChangeEmailState) {
 	<form hx-post="/account/email" hx-swap="outerHTML" method="post" action="/account/email" class="space-y-4">
 		@security.HiddenField()
-		<div>
-			<label for="current_password" class="block text-sm font-medium text-gray-700 mb-1">Current password</label>
-			<input type="password" id="current_password" name="current_password" required autocomplete="current-password" class="w-full rounded border border-gray-300 px-3 py-2"/>
-			if state.Errors["current_password"] != "" {
-				<p class="text-sm text-red-600 mt-1">{ state.Errors["current_password"] }</p>
-			}
-		</div>
-		<div>
-			<label for="new_email" class="block text-sm font-medium text-gray-700 mb-1">New email</label>
-			<input type="email" id="new_email" name="new_email" value={ state.NewEmail } required autocomplete="email" class="w-full rounded border border-gray-300 px-3 py-2"/>
-			if state.Errors["new_email"] != "" {
-				<p class="text-sm text-red-600 mt-1">{ state.Errors["new_email"] }</p>
-			}
-		</div>
-		<button type="submit" class="w-full rounded bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 transition">Send confirmation link</button>
+		@ui.Field(ui.FieldProps{Label: "Current password", For: "current_password", Error: state.Errors["current_password"], Required: true}) {
+			@ui.Input(ui.InputProps{
+				ID:           "current_password",
+				Name:         "current_password",
+				Type:         ui.InputTypePassword,
+				AutoComplete: "current-password",
+				Size:         ui.InputSizeMD,
+				Rounded:      ui.InputRoundedMD,
+				Color:        ui.InputColorIndigo,
+				Class:        "w-full",
+				Required:     true,
+				Invalid:      state.Errors["current_password"] != "",
+			})
+		}
+		@ui.Field(ui.FieldProps{Label: "New email", For: "new_email", Error: state.Errors["new_email"], Required: true}) {
+			@ui.Input(ui.InputProps{
+				ID:           "new_email",
+				Name:         "new_email",
+				Type:         ui.InputTypeEmail,
+				Value:        state.NewEmail,
+				AutoComplete: "email",
+				Size:         ui.InputSizeMD,
+				Rounded:      ui.InputRoundedMD,
+				Color:        ui.InputColorIndigo,
+				Class:        "w-full",
+				Required:     true,
+				Invalid:      state.Errors["new_email"] != "",
+			})
+		}
+		@ui.Button(ui.ButtonProps{
+			Variant: ui.ButtonSolid,
+			Color:   ui.ButtonColorIndigo,
+			Size:    ui.ButtonSizeMD,
+			Rounded: ui.ButtonRoundedMD,
+			Type:    ui.ButtonTypeSubmit,
+			Class:   "w-full font-semibold",
+		}) {
+			Send confirmation link
+		}
 	</form>
 }
 
 templ AccountChangeEmailPage(layout httpx.Layout, state accountselfstate.ChangeEmailState) {
 	@httpx.ActiveBase(layout, "Change email") {
-		<div class="w-full max-w-md bg-white rounded-lg shadow-md p-8">
-			<h1 class="text-2xl font-semibold mb-4 text-gray-900">Change email</h1>
-			@AccountChangeEmailForm(state)
+		<div class="mx-auto w-full max-w-md space-y-4">
+			<header class="space-y-2">
+				@components.BentoLabel("text-[11px]") {
+					Account
+				}
+				<h2 class="text-2xl font-light tracking-tight text-font">Change email</h2>
+			</header>
+			@components.BentoCard(components.BentoCardProps{Padding: "p-6 lg:p-8"}) {
+				@AccountChangeEmailForm(state)
+			}
 		</div>
 	}
 }
