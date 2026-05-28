@@ -146,3 +146,28 @@ func TestNewReader_DefaultsNow(t *testing.T) {
 		t.Errorf("now not defaulted")
 	}
 }
+
+func TestReader_ServerStatus_ReturnsPollerSnapshot(t *testing.T) {
+	t.Parallel()
+	want := domain.ServerStatusSnapshot{
+		CheckedAt: time.Date(2026, 5, 20, 12, 0, 0, 0, time.UTC),
+		Login:     true,
+		Map:       true,
+	}
+	status := NewStatusPoller(StatusPollerConfig{})
+	status.snapshot.Store(&want)
+	r := NewReader(ReaderConfig{Status: status})
+
+	if got := r.ServerStatus(context.Background()); got != want {
+		t.Errorf("ServerStatus = %+v, want %+v", got, want)
+	}
+}
+
+func TestReader_ServerStatus_NilPollerReturnsZero(t *testing.T) {
+	t.Parallel()
+	r := NewReader(ReaderConfig{})
+
+	if got := r.ServerStatus(context.Background()); got != (domain.ServerStatusSnapshot{}) {
+		t.Errorf("ServerStatus with nil poller = %+v, want zero value", got)
+	}
+}

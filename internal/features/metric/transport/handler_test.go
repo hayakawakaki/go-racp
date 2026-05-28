@@ -74,6 +74,36 @@ func TestHandler_Online_ReturnsJSONSnapshot(t *testing.T) {
 	}
 }
 
+func TestHandler_Status_ReturnsJSONSnapshot(t *testing.T) {
+	t.Parallel()
+	now := time.Date(2026, 5, 20, 12, 0, 0, 0, time.UTC)
+	svc := &fakeReader{serverStatus: domain.ServerStatusSnapshot{
+		CheckedAt: now, Login: true, Char: false, Map: true, Web: false,
+	}}
+	h := NewHandler(svc, discardLogger())
+
+	rr := httptest.NewRecorder()
+	h.status(rr, httptest.NewRequest(http.MethodGet, "/api/v1/metrics/status", http.NoBody))
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rr.Code)
+	}
+	if got := rr.Header().Get("Content-Type"); got != "application/json; charset=utf-8" {
+		t.Errorf("Content-Type = %q", got)
+	}
+
+	var got domain.ServerStatusSnapshot
+	if err := json.Unmarshal(rr.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if !got.Login || got.Char || !got.Map || got.Web {
+		t.Errorf("body flags = %+v, want login=true char=false map=true web=false", got)
+	}
+	if !got.CheckedAt.Equal(now) {
+		t.Errorf("CheckedAt = %v, want %v", got.CheckedAt, now)
+	}
+}
+
 func TestHandler_Peaks_ReturnsJSONRows(t *testing.T) {
 	t.Parallel()
 	svc := &fakeReader{peaks: []domain.PeakRow{
