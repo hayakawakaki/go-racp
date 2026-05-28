@@ -13,6 +13,9 @@ Navbar:
     - Label: "Download"
       Href: "/download"
       Icon: "download"
+    - Label: "Vendors"
+      Href: "/vendors"
+      Icon: "money-bag"
     - Label: "Database"
       Icon: "db"
       Subitems:
@@ -50,7 +53,7 @@ Downloads:
         Url: "https://example.com/full-self"
   LiteClient:
     Title: "Lite Client"
-    Note: "Lt300MB"
+    Note: "300MB"
     Mirrors:
       - Label: "Google Drive"
         Icon: "gdrive"
