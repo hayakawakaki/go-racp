@@ -1,0 +1,34 @@
+package components
+
+type StatCellProps struct {
+	Label        string
+	Value        string
+	Sub          string
+	Delay        string
+	WrapperClass string
+	Accent       bool
+}
+
+func statValueClasses(accent bool) string {
+	if accent {
+		return "text-3xl lg:text-2xl xl:text-4xl font-light tracking-tight tabular-nums text-emerald-600 dark:text-emerald-400"
+	}
+	return "text-2xl lg:text-xl xl:text-3xl font-light tracking-tight tabular-nums text-font"
+}
+
+templ StatCell(p StatCellProps) {
+	@BentoCard(BentoCardProps{
+		WrapperClass: p.WrapperClass,
+		Delay:        p.Delay,
+		Padding:      "p-4 lg:p-5",
+		Class:        "gap-1.5 justify-between min-h-[6rem] lg:min-h-0",
+	}) {
+		@BentoLabel("text-[10px]") {
+			{ p.Label }
+		}
+		<p class={ statValueClasses(p.Accent) }>{ p.Value }</p>
+		if p.Sub != "" {
+			<p class="text-[11px] text-font-muted">{ p.Sub }</p>
+		}
+	}
+}

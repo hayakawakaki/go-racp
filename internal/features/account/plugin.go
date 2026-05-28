@@ -95,6 +95,12 @@ func buildServices(in *coreinfra.Infra) (*app.Service, *app.SessionService, *inf
 	return svc, sessSvc, userRepo
 }
 
+func BuildModerationService(in *coreinfra.Infra) *modapp.Service {
+	userRepo := infra.NewRepository(in.MainDB)
+
+	return buildModerationService(in, userRepo)
+}
+
 func buildModerationService(in *coreinfra.Infra, userRepo *infra.Repository) *modapp.Service {
 	allowed := map[int]string{0: "Player"}
 	for name, groupID := range in.Config.App.UserRoles {

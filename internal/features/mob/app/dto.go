@@ -4,7 +4,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/features/mob/domain"
 )
 
-const DefaultPerPage = 20
+const DefaultPerPage = 24
 
 type ListQuery struct {
 	Query   string

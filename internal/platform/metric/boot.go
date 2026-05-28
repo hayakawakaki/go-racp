@@ -50,11 +50,14 @@ func Start(ctx context.Context, deps Deps) *Reader {
 	})
 	go general.Run(ctx)
 
-	return app.NewReader(app.ReaderConfig{
+	reader := app.NewReader(app.ReaderConfig{
 		Online:   online,
 		Peaks:    peakRepo,
 		General:  generalRepo,
 		Location: deps.Config.General.Location(),
 		Windows:  windows,
 	})
+	SetLive(reader)
+
+	return reader
 }

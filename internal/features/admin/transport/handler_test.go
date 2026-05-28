@@ -12,13 +12,17 @@ import (
 
 	"github.com/a-h/templ"
 	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
+	modstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation/state"
 	adminstate "github.com/hayakawakaki/go-racp/internal/features/admin/transport/state"
+	guildstate "github.com/hayakawakaki/go-racp/internal/features/guild/transport/state"
 	itemapp "github.com/hayakawakaki/go-racp/internal/features/item/app"
 	mobapp "github.com/hayakawakaki/go-racp/internal/features/mob/app"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
+	accountmoderation "github.com/hayakawakaki/go-racp/themes/default/features/account/transport/moderation"
 	admin "github.com/hayakawakaki/go-racp/themes/default/features/admin/transport"
+	guildtpl "github.com/hayakawakaki/go-racp/themes/default/features/guild/transport"
 	_ "github.com/hayakawakaki/go-racp/themes/default/platform/httpx"
 )
 
@@ -34,6 +38,22 @@ func (stubTheme) DashboardContent(state adminstate.DashboardState) templ.Compone
 
 func (stubTheme) DatabaseContent(state adminstate.DatabaseState) templ.Component {
 	return admin.DatabaseContent(state)
+}
+
+func (stubTheme) UsersListPage(layout httpx.Layout, state modstate.ListState) templ.Component {
+	return accountmoderation.UsersListPage(layout, state)
+}
+
+func (stubTheme) UsersListContent(state modstate.ListState) templ.Component {
+	return accountmoderation.UsersListContent(state)
+}
+
+func (stubTheme) GuildListPage(layout httpx.Layout, state guildstate.ListState) templ.Component {
+	return guildtpl.GuildListPage(layout, state)
+}
+
+func (stubTheme) GuildListContent(state guildstate.ListState) templ.Component {
+	return guildtpl.GuildListContent(state)
 }
 
 type stubItemStatus struct {
@@ -107,7 +127,7 @@ func TestHandler_ShowDashboard_FullPage(t *testing.T) {
 	if !strings.Contains(body, "<title>Test CP / Admin / Dashboard</title>") {
 		t.Errorf("full page must include layout title; body:\n%s", body)
 	}
-	if !strings.Contains(body, `_onlineInterval`) {
+	if !strings.Contains(body, `x-data="adminDashboard"`) {
 		t.Errorf("full page must include dashboard content; body:\n%s", body)
 	}
 	if !strings.Contains(body, `id="admin-shell"`) {
@@ -128,7 +148,7 @@ func TestHandler_ShowDashboard_HTMXFragment(t *testing.T) {
 		t.Errorf("status = %d, want 200", rr.Code)
 	}
 	body := rr.Body.String()
-	if !strings.Contains(body, `_onlineInterval`) {
+	if !strings.Contains(body, `x-data="adminDashboard"`) {
 		t.Errorf("HTMX fragment must include dashboard content; body:\n%s", body)
 	}
 	if strings.Contains(body, "<title>") {

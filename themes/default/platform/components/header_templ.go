@@ -105,7 +105,7 @@ func Header(layout httpx.Layout) templ.Component {
 		templ_7745c5c3_Err = ui.Navbar(ui.NavbarProps{
 			Brand:   headerBrand(layout),
 			Actions: headerActions(layout),
-			Class:   "bg-body border-b border-border bg-grain [&>div]:container [&>div]:mx-auto [&>div]:h-20",
+			Class:   "bg-body dark:bg-body border-b border-border bg-grain [&>div]:container [&>div]:mx-auto [&>div]:h-20 [&_nav]:bg-transparent dark:[&_nav]:bg-transparent [&_nav]:border-0 [&_nav]:shadow-none",
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err

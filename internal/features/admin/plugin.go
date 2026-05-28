@@ -3,7 +3,9 @@ package admin
 import (
 	"net/http"
 
+	"github.com/hayakawakaki/go-racp/internal/features/account"
 	"github.com/hayakawakaki/go-racp/internal/features/admin/transport"
+	"github.com/hayakawakaki/go-racp/internal/features/guild"
 	"github.com/hayakawakaki/go-racp/internal/features/item"
 	"github.com/hayakawakaki/go-racp/internal/features/mob"
 	coreinfra "github.com/hayakawakaki/go-racp/internal/infra"
@@ -26,6 +28,8 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 		ItemStatus: item.BuildService(in),
 		MobStatus:  mob.BuildService(in),
 		Metric:     in.Metric,
+		Users:      account.BuildModerationService(in),
+		Guilds:     guild.BuildService(in),
 		Theme:      theme.Active,
 	})
 	h.RegisterRoutes(reg, mux)

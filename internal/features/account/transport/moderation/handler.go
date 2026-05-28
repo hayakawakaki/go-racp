@@ -14,7 +14,6 @@ import (
 )
 
 type userService interface {
-	List(ctx context.Context, q app.ListQuery) (app.UserPage, error)
 	Get(ctx context.Context, id int) (app.UserDetail, error)
 	Ban(ctx context.Context, cmd app.BanCommand) (app.UserDetail, error)
 	Unban(ctx context.Context, cmd app.UnbanCommand) (app.UserDetail, error)
@@ -23,8 +22,6 @@ type userService interface {
 }
 
 type Renderer interface {
-	UsersListPage(layout httpx.Layout, state state.ListState) templ.Component
-	UsersListContent(state state.ListState) templ.Component
 	UsersDetailPage(layout httpx.Layout, username string, state state.DetailState) templ.Component
 	UsersDetailContent(state state.DetailState) templ.Component
 	UsersNotFoundPage(layout httpx.Layout, id string) templ.Component
@@ -60,7 +57,6 @@ func (h *Handler) layout() httpx.Layout {
 }
 
 func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
-	reg.Wrap(mux, "Users.List", "GET /users", http.HandlerFunc(h.showList))
 	reg.Wrap(mux, "Users.View", "GET /users/{id}", http.HandlerFunc(h.showDetail))
 	reg.Wrap(mux, "Users.Ban", "POST /users/{id}/ban", http.HandlerFunc(h.doBan))
 	reg.Wrap(mux, "Users.Unban", "POST /users/{id}/unban", http.HandlerFunc(h.doUnban))

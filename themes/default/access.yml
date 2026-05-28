@@ -8,3 +8,5 @@ ThemePages:
     Roles: ["Public"]
   ServerInfo:
     Roles: ["Public"]
+  Download:
+    Roles: ["Public"]

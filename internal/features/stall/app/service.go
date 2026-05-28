@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"sort"
 
 	"github.com/hayakawakaki/go-racp/internal/features/stall/domain"
 )
@@ -85,6 +86,7 @@ func filterVendors(snap *domain.Snapshot, q domain.ListQuery) []domain.Vendor {
 			out = append(out, *v)
 		}
 
+		sortByItemPrice(out, q.ItemID, q.Type)
 		return out
 	}
 
@@ -101,4 +103,24 @@ func filterVendors(snap *domain.Snapshot, q domain.ListQuery) []domain.Vendor {
 	}
 
 	return out
+}
+
+func sortByItemPrice(vendors []domain.Vendor, itemID int, t domain.VendorType) {
+	sort.SliceStable(vendors, func(i, j int) bool {
+		pi := vendorItemPrice(vendors[i], itemID)
+		pj := vendorItemPrice(vendors[j], itemID)
+		if t == domain.VendorTypeBuying {
+			return pi > pj
+		}
+		return pi < pj
+	})
+}
+
+func vendorItemPrice(v domain.Vendor, itemID int) int {
+	for _, item := range v.Items {
+		if item.ItemID == itemID {
+			return item.Price
+		}
+	}
+	return 0
 }

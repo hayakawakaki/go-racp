@@ -76,7 +76,7 @@ func Navbar(p NavbarProps) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div :data-open=\"openAttr()\" class=\"absolute top-full inset-x-0 hidden flex-col gap-1 data-[open=true]:flex z-30 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-3 shadow-sm lg:static lg:top-auto lg:inset-auto lg:flex lg:flex-row lg:items-center lg:gap-1 lg:bg-transparent lg:border-b-0 lg:p-0 lg:shadow-none\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<nav :data-open=\"openAttr()\" class=\"absolute top-full inset-x-0 hidden flex-col gap-1 data-[open=true]:flex z-30 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-3 shadow-sm lg:static lg:top-auto lg:inset-auto lg:flex lg:flex-row lg:items-center lg:gap-1 lg:bg-transparent lg:border-b-0 lg:p-0 lg:shadow-none\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -84,7 +84,7 @@ func Navbar(p NavbarProps) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div><div class=\"ml-auto flex items-center gap-2\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</nav><div class=\"ml-auto flex items-center gap-2\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

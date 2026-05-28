@@ -1,0 +1,200 @@
+package pages
+
+import (
+	"fmt"
+	"strconv"
+	"strings"
+
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/themecfg"
+	"github.com/hayakawakaki/go-racp/internal/platform/themepage"
+	"github.com/hayakawakaki/go-racp/internal/platform/ui"
+	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
+)
+
+func downloadHeading() string {
+	if h := themecfg.Cfg.Downloads.Heading; h != "" {
+		return h
+	}
+	return "Download the client"
+}
+
+func downloadDescription() string {
+	if d := themecfg.Cfg.Downloads.Description; d != "" {
+		return d
+	}
+	return "Pick a mirror to grab the game. Full client has all assets bundled. Lite client pulls remaining data on first launch."
+}
+
+func clientTitle(section themecfg.FullClient, fallback string) string {
+	if section.Title != "" {
+		return section.Title
+	}
+	return fallback
+}
+
+func mirrorIconKey(icon string) string {
+	switch icon {
+	case "gdrive", "mediafire", "mega", "self":
+		return icon
+	default:
+		return "download"
+	}
+}
+
+func mirrorIconColorClass(icon string) string {
+	switch icon {
+	case "gdrive":
+		return "text-sky-400 dark:text-sky-500"
+	case "mediafire":
+		return "text-amber-400 dark:text-amber-500"
+	case "mega":
+		return "text-rose-400 dark:text-rose-500"
+	case "self":
+		return "text-emerald-400 dark:text-emerald-500"
+	default:
+		return "text-font-muted"
+	}
+}
+
+func mirrorBorderHoverClass(icon string) string {
+	base := "border-border"
+	switch icon {
+	case "gdrive":
+		return base + " hover:bg-sky-50 dark:hover:bg-sky-950/30 hover:border-sky-300 dark:hover:border-sky-700"
+	case "mediafire":
+		return base + " hover:bg-amber-50 dark:hover:bg-amber-950/30 hover:border-amber-300 dark:hover:border-amber-700"
+	case "mega":
+		return base + " hover:bg-rose-50 dark:hover:bg-rose-950/30 hover:border-rose-300 dark:hover:border-rose-700"
+	case "self":
+		return base + " hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:border-emerald-300 dark:hover:border-emerald-700"
+	default:
+		return base + " hover:bg-accent-wash hover:border-accent-on-surface"
+	}
+}
+
+func mirrorLabelHoverClass(icon string) string {
+	base := "text-font"
+	switch icon {
+	case "gdrive":
+		return base + " group-hover:text-sky-700 dark:group-hover:text-sky-400"
+	case "mediafire":
+		return base + " group-hover:text-amber-700 dark:group-hover:text-amber-400"
+	case "mega":
+		return base + " group-hover:text-rose-700 dark:group-hover:text-rose-400"
+	case "self":
+		return base + " group-hover:text-emerald-700 dark:group-hover:text-emerald-400"
+	default:
+		return base + " group-hover:text-accent-on-surface"
+	}
+}
+
+func mirrorArrowColorClass(icon string) string {
+	switch icon {
+	case "gdrive":
+		return "text-sky-600 dark:text-sky-400"
+	case "mediafire":
+		return "text-amber-600 dark:text-amber-400"
+	case "mega":
+		return "text-rose-600 dark:text-rose-400"
+	case "self":
+		return "text-emerald-600 dark:text-emerald-400"
+	default:
+		return "text-accent-on-surface"
+	}
+}
+
+func mirrorDelay(base string, i int) string {
+	baseMs := parseDelayMs(base)
+	return fmt.Sprintf("%dms", baseMs+i*40)
+}
+
+func parseDelayMs(s string) int {
+	trim := strings.TrimSuffix(s, "ms")
+	v, err := strconv.Atoi(trim)
+	if err != nil {
+		return 0
+	}
+	return v
+}
+
+templ Download(page themepage.Ctx) {
+	@httpx.ActiveBase(page.Layout, "Download") {
+		<div class="grid grid-cols-1 gap-4 lg:gap-5 lg:grid-rows-[auto_1fr_1fr] lg:h-[calc(100dvh-12.5rem)]">
+			@downloadHero()
+			@downloadSection(themecfg.Cfg.Downloads.FullClient, "Full Client", "100ms", "200ms")
+			@downloadSection(themecfg.Cfg.Downloads.LiteClient, "Lite Client", "180ms", "240ms")
+		</div>
+	}
+}
+
+templ downloadHero() {
+	@components.BentoCard(components.BentoCardProps{
+		Delay:   "0ms",
+		Padding: "p-6 lg:p-8",
+		Class:   "gap-4",
+	}) {
+		<div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+			<div class="flex-1 space-y-2">
+				<h1 class="text-2xl md:text-3xl xl:text-4xl font-light tracking-tight text-font leading-[1.1]">
+					{ downloadHeading() }
+				</h1>
+				<p class="text-sm text-font-muted max-w-2xl leading-relaxed">
+					{ downloadDescription() }
+				</p>
+			</div>
+			<div class="hidden lg:flex items-center justify-center shrink-0 size-16 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 text-emerald-600 dark:text-emerald-400">
+				@ui.Icon("download", "h-8 w-8")
+			</div>
+		</div>
+	}
+}
+
+templ downloadSection(section themecfg.FullClient, fallbackTitle, sectionDelay, mirrorsBaseDelay string) {
+	@components.BentoCard(components.BentoCardProps{
+		Delay:   sectionDelay,
+		Padding: "p-5 lg:p-6",
+		Class:   "gap-4 min-h-0",
+	}) {
+		<div class="flex items-baseline justify-between gap-3">
+			@components.BentoLabel("text-[11px]") {
+				{ clientTitle(section, fallbackTitle) }
+			}
+			if section.Note != "" {
+				<span class="text-xs text-font-muted">{ section.Note }</span>
+			}
+		</div>
+		<div class="flex-1 min-h-0 grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+			for i, mirror := range section.Mirrors {
+				@downloadMirrorCard(mirror, mirrorDelay(mirrorsBaseDelay, i))
+			}
+		</div>
+	}
+}
+
+templ downloadMirrorCard(mirror themecfg.FullClientMirror, delay string) {
+	<a
+		href={ mirror.Url }
+		target="_blank"
+		rel="noopener noreferrer"
+		class={ "group relative block h-full animate-fade-up overflow-hidden rounded-xl border bg-surface transition-colors " + mirrorBorderHoverClass(mirror.Icon) }
+		style={ "animation-delay: " + delay }
+	>
+		<span class={ "pointer-events-none absolute -right-6 -bottom-6 lg:-right-8 lg:-bottom-8 opacity-[0.18] transition-opacity group-hover:opacity-[0.4] " + mirrorIconColorClass(mirror.Icon) }>
+			@ui.Icon(mirrorIconKey(mirror.Icon), "h-48 w-48 lg:h-56 lg:w-56 xl:h-64 xl:w-64")
+		</span>
+		<div class="relative flex h-full flex-col gap-3 p-4 lg:p-5">
+			<div class="space-y-1">
+				<p class={ "text-base font-semibold transition-colors " + mirrorLabelHoverClass(mirror.Icon) }>{ mirror.Label }</p>
+				if mirror.Region != "" {
+					<p class="text-[10px] font-semibold tracking-[0.16em] uppercase text-font-muted">{ mirror.Region }</p>
+				}
+			</div>
+			<div class="mt-auto flex items-end justify-end">
+				<span class={ "text-xs font-semibold " + mirrorArrowColorClass(mirror.Icon) }>
+					Download
+				</span>
+			</div>
+		</div>
+	</a>
+}

@@ -1,0 +1,69 @@
+package components
+
+type NewsChipProps struct {
+	Label  string
+	Color  string
+	Size   string
+	Active bool
+}
+
+func newsChipClasses(color, size string, active bool) string {
+	var base string
+	switch size {
+	case "lg":
+		base = "px-3 py-1.5 text-xs md:px-4 md:py-2 md:text-sm rounded-md font-semibold tracking-wide"
+	default:
+		base = "px-2 py-0.5 text-[11px] md:px-3 md:py-1.5 md:text-xs rounded-md font-semibold tracking-wide"
+	}
+	if active {
+		switch color {
+		case "sky":
+			return base + " bg-sky-600 text-white"
+		case "amber":
+			return base + " bg-amber-600 text-white"
+		case "rose":
+			return base + " bg-rose-600 text-white"
+		case "emerald":
+			return base + " bg-emerald-600 text-white"
+		default:
+			return base + " bg-accent-brand text-white"
+		}
+	}
+	switch color {
+	case "sky":
+		return base + " text-font-muted border border-border hover:bg-sky-50 dark:hover:bg-sky-950/30 hover:text-sky-700 dark:hover:text-sky-400 hover:border-sky-300 dark:hover:border-sky-700 transition-colors"
+	case "amber":
+		return base + " text-font-muted border border-border hover:bg-amber-50 dark:hover:bg-amber-950/30 hover:text-amber-700 dark:hover:text-amber-400 hover:border-amber-300 dark:hover:border-amber-700 transition-colors"
+	case "rose":
+		return base + " text-font-muted border border-border hover:bg-rose-50 dark:hover:bg-rose-950/30 hover:text-rose-700 dark:hover:text-rose-400 hover:border-rose-300 dark:hover:border-rose-700 transition-colors"
+	case "emerald":
+		return base + " text-font-muted border border-border hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-700 dark:hover:text-emerald-400 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors"
+	default:
+		return base + " text-font-muted border border-border hover:bg-accent-wash hover:text-accent-on-surface hover:border-accent-on-surface transition-colors"
+	}
+}
+
+templ NewsChip(p NewsChipProps) {
+	<button type="button" class={ newsChipClasses(p.Color, p.Size, p.Active) }>
+		{ p.Label }
+	</button>
+}
+
+type NewsRowProps struct {
+	Date  string
+	Title string
+	Href  string
+}
+
+templ NewsRow(p NewsRowProps) {
+	<li class="flex-1 min-h-0">
+		<a href={ p.Href } class="group flex items-center gap-5 h-full py-3 first:pt-0 last:pb-0">
+			<time class="shrink-0 w-16 text-[11px] font-semibold tracking-[0.16em] uppercase text-font-muted tabular-nums">
+				{ p.Date }
+			</time>
+			<span class="flex-1 text-base text-font leading-snug group-hover:text-accent-on-surface transition-colors line-clamp-2">
+				{ p.Title }
+			</span>
+		</a>
+	</li>
+}

@@ -6,130 +6,163 @@ import (
 	itemstate "github.com/hayakawakaki/go-racp/internal/features/item/transport/state"
 	mobdomain "github.com/hayakawakaki/go-racp/internal/features/mob/domain"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/ui"
+	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
 )
 
+templ ItemDetailPage(layout httpx.Layout, state itemstate.DetailState) {
+	@httpx.ActiveBase(layout, state.Item.ClientName) {
+		<div x-data="{ open: false }" class="max-w-5xl mx-auto w-full space-y-4 lg:space-y-6">
+			@itemDetailBreadcrumb(state)
+			@itemDetailHero(state)
+			if len(state.DroppedBy) > 0 {
+				<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
+					<div class="lg:col-span-2">
+						@itemDetailProperties(state)
+					</div>
+					<div class="lg:col-span-1">
+						@droppedBySection(state.DroppedBy)
+					</div>
+				</div>
+			} else {
+				@itemDetailProperties(state)
+			}
+			@itemDescriptionModal(state)
+		</div>
+	}
+}
+
+templ itemDetailBreadcrumb(state itemstate.DetailState) {
+	<nav class="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-font-muted">
+		<a href="/items" class="hover:text-accent-on-surface transition-colors">Items</a>
+		<span aria-hidden="true" class="text-font-muted/50">/</span>
+		<span class="text-font/70">{ state.Item.ClientName }</span>
+	</nav>
+}
+
+templ itemDetailHero(state itemstate.DetailState) {
+	@components.BentoCard(components.BentoCardProps{
+		Delay:   "0ms",
+		Padding: "p-6 lg:p-8",
+		Class:   "gap-5",
+	}) {
+		<div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+			<div class="flex items-center gap-5">
+				<div class="flex items-center justify-center size-16 lg:size-20 rounded-xl bg-surface border border-border shrink-0">
+					@ui.ItemSprite(state.Item.ID, "size-12 lg:size-14")
+				</div>
+				<div class="space-y-2 min-w-0">
+					@components.BentoLabel("text-[10px]") {
+						{ state.Item.Type.Display() }
+					}
+					<h1 class="text-2xl lg:text-3xl xl:text-4xl font-light tracking-tight text-font leading-tight">
+						{ state.Item.ClientName + state.Item.SlotSuffix() }
+					</h1>
+					<p class="text-xs text-font-muted tabular-nums font-mono">
+						#{ fmt.Sprintf("%d", state.Item.ID) } · { state.Item.AegisName }
+					</p>
+				</div>
+			</div>
+			<div class="flex items-center gap-2 shrink-0">
+				@ui.Button(ui.ButtonProps{
+					Variant: ui.ButtonOutline,
+					Size:    ui.ButtonSizeMD,
+					Rounded: ui.ButtonRoundedMD,
+					Href:    fmt.Sprintf("/vendors?item=%d", state.Item.ID),
+				}) {
+					Find vendors
+				}
+				@ui.Button(ui.ButtonProps{
+					Variant: ui.ButtonSolid,
+					Color:   ui.ButtonColorIndigo,
+					Size:    ui.ButtonSizeMD,
+					Rounded: ui.ButtonRoundedMD,
+					Attrs:   templ.Attributes{"@click": "open = true", "type": "button"},
+					Class:   "font-semibold",
+				}) {
+					View description
+				}
+			</div>
+		</div>
+	}
+}
+
+templ itemDetailProperties(state itemstate.DetailState) {
+	@components.BentoCard(components.BentoCardProps{
+		Delay:   "80ms",
+		Padding: "p-6 lg:p-8",
+		Class:   "gap-4",
+	}) {
+		<div class="pb-4 border-b border-border">
+			@components.BentoLabel("text-[11px]") {
+				Properties
+			}
+		</div>
+		<dl class="divide-y divide-border">
+			for _, row := range state.Stats {
+				<div class="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4 py-3 text-sm">
+					<dt class="text-font-muted">{ row.Label }</dt>
+					<dd class="text-right font-mono tabular-nums text-font">{ row.Value }</dd>
+				</div>
+			}
+		</dl>
+	}
+}
+
 templ droppedBySection(entries []mobdomain.DropOf) {
-	<section
-		class="rounded-2xl bg-white ring-1 ring-gray-200 px-8 py-7"
-		x-data={ droppedByAlpineState(len(entries)) }
-	>
-		<header class="flex items-baseline justify-between border-b border-gray-100 pb-4">
-			<h2 class="text-lg font-semibold tracking-tight text-gray-900">Dropped By</h2>
-			<span class="text-xs uppercase tracking-[0.18em] text-gray-400">{ fmt.Sprintf("%d sources", len(entries)) }</span>
-		</header>
-		<ul class="mt-2 divide-y divide-gray-100">
-			for index, drop := range entries {
-				<li x-show={ fmt.Sprintf("Math.floor(%d / perPage) + 1 === page", index) }>
+	@components.BentoCard(components.BentoCardProps{
+		Delay:   "140ms",
+		Padding: "p-6 lg:p-8",
+		Class:   "gap-4 min-h-0",
+	}) {
+		<div class="pb-4 border-b border-border shrink-0">
+			@components.BentoLabel("text-[11px]") {
+				Dropped By
+			}
+		</div>
+		<ul class="max-h-[24rem] overflow-y-auto overflow-x-hidden scrollbar-clean divide-y divide-border pr-1 -mr-1">
+			for _, drop := range entries {
+				<li>
 					<a
 						href={ templ.SafeURL(fmt.Sprintf("/mobs/%d", drop.MobID)) }
-						class="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4 py-3 text-sm transition hover:bg-gray-50"
+						class="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 py-3 text-sm transition-colors hover:bg-accent-wash rounded-md px-2 -mx-2"
 					>
-						<span class="flex items-center gap-2 text-gray-900">
-							{ drop.MobName }
+						<span class="flex items-center gap-2 min-w-0 text-font">
+							<span class="truncate">{ drop.MobName }</span>
 							if drop.IsMVP {
-								<span class="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-amber-800">MVP</span>
+								<span class="shrink-0 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 dark:text-amber-300 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">MVP</span>
 							}
 						</span>
-						<span class="text-right font-mono tabular-nums text-gray-900">{ fmt.Sprintf("%.2f%%", float64(drop.Rate)/100) }</span>
+						<span class="text-right font-mono tabular-nums text-font-muted">{ fmt.Sprintf("%.2f%%", float64(drop.Rate)/100) }</span>
 					</a>
 				</li>
 			}
 		</ul>
-		if len(entries) > droppedByPerPage {
-			<nav aria-label="Dropped by pagination" class="mt-6 flex items-center justify-between border-t border-gray-100 pt-4">
-				<button
-					type="button"
-					@click="page = Math.max(1, page - 1)"
-					:disabled="page === 1"
-					class="rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-900 hover:text-gray-900 disabled:cursor-not-allowed disabled:border-gray-100 disabled:text-gray-300 disabled:hover:border-gray-100 disabled:hover:text-gray-300"
-				>
-					Previous
-				</button>
-				<span class="text-xs uppercase tracking-[0.18em] text-gray-400" x-text="page + ' / ' + totalPages"></span>
-				<button
-					type="button"
-					@click="page = Math.min(totalPages, page + 1)"
-					:disabled="page === totalPages"
-					class="rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-900 hover:text-gray-900 disabled:cursor-not-allowed disabled:border-gray-100 disabled:text-gray-300 disabled:hover:border-gray-100 disabled:hover:text-gray-300"
-				>
-					Next
-				</button>
-			</nav>
-		}
-	</section>
+	}
 }
 
-templ ItemDetailPage(layout httpx.Layout, state itemstate.DetailState) {
-	@httpx.ActiveBase(layout, state.Item.ClientName) {
-		<div x-data="{ open: false }" class="w-full max-w-4xl space-y-6">
-			<nav class="text-xs uppercase tracking-[0.18em] text-gray-400">
-				<a href="/items" class="transition hover:text-gray-700">Items</a>
-				<span class="mx-2 text-gray-300">/</span>
-				<span class="text-gray-500">{ state.Item.ClientName }</span>
-			</nav>
-			<section class="rounded-2xl bg-white ring-1 ring-gray-200 px-8 py-7">
-				<div class="flex items-center justify-between gap-4">
-					<div class="flex items-center gap-3">
-						@spriteBox(state.Item.Image, "size-[25px]")
-						<h1 class="text-3xl font-semibold tracking-tight text-gray-900">{ state.Item.ClientName + state.Item.SlotSuffix() }</h1>
-					</div>
-					<div class="flex items-center gap-2">
-						<a
-							href={ templ.SafeURL(fmt.Sprintf("/vendors?item=%d", state.Item.ID)) }
-							class="rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-900 hover:text-gray-900"
-						>
-							Find vendors
-						</a>
-						<button
-							type="button"
-							@click="open = true"
-							class="rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-900 hover:text-gray-900"
-						>
-							View Description
-						</button>
-					</div>
-				</div>
-			</section>
-			<section class="rounded-2xl bg-white ring-1 ring-gray-200 px-8 py-7">
-				<header class="flex items-baseline justify-between border-b border-gray-100 pb-4">
-					<h2 class="text-lg font-semibold tracking-tight text-gray-900">Properties</h2>
-					<span class="text-xs uppercase tracking-[0.18em] text-gray-400">{ fmt.Sprintf("%d fields", len(state.Stats)) }</span>
-				</header>
-				<dl class="mt-2 divide-y divide-gray-100">
-					for _, row := range state.Stats {
-						<div class="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4 py-3 text-sm">
-							<dt class="text-gray-500">{ row.Label }</dt>
-							<dd class="text-right font-mono tabular-nums text-gray-900">{ row.Value }</dd>
-						</div>
-					}
-				</dl>
-			</section>
-			if len(state.DroppedBy) > 0 {
-				@droppedBySection(state.DroppedBy)
-			}
-			<div
-				x-show="open"
-				x-cloak
-				@keydown.escape.window="open = false"
-				@click.self="open = false"
-				class="fixed inset-0 z-50 overflow-y-auto bg-black/40 p-4"
-			>
-				<div class="flex min-h-full items-center justify-center" @click.self="open = false">
-					<div class="relative my-4">
-						<button
-							type="button"
-							aria-label="Close"
-							@click="open = false"
-							class="absolute -right-2 -top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-500 shadow-sm transition hover:text-gray-900"
-						>
-							<svg class="h-3 w-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-								<path d="M4 4 L12 12 M12 4 L4 12"></path>
-							</svg>
-						</button>
-						@itemCard(state.Item, state.DescriptionLines)
-					</div>
-				</div>
+templ itemDescriptionModal(state itemstate.DetailState) {
+	<div
+		x-show="open"
+		x-cloak
+		@keydown.escape.window="open = false"
+		@click.self="open = false"
+		class="fixed inset-0 z-50 overflow-y-auto bg-black/40 backdrop-blur-sm p-4"
+	>
+		<div class="flex min-h-full items-center justify-center" @click.self="open = false">
+			<div class="relative my-4">
+				<button
+					type="button"
+					aria-label="Close"
+					@click="open = false"
+					class="absolute -right-2 -top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-bento text-font shadow-md transition hover:text-accent-on-surface"
+				>
+					<svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+						<path d="M4 4 L12 12 M12 4 L4 12"></path>
+					</svg>
+				</button>
+				@itemCard(state.Item, state.DescriptionLines)
 			</div>
 		</div>
-	}
+	</div>
 }

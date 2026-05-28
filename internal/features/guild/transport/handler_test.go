@@ -29,35 +29,16 @@ func (stubTheme) GuildDetailContent(state guildstate.DetailState) templ.Componen
 	return guildtpl.GuildDetailContent(state)
 }
 
-func (stubTheme) GuildListPage(layout httpx.Layout, state guildstate.ListState) templ.Component {
-	return guildtpl.GuildListPage(layout, state)
-}
-
-func (stubTheme) GuildListContent(state guildstate.ListState) templ.Component {
-	return guildtpl.GuildListContent(state)
-}
-
 type fakeService struct {
-	listErr     error
 	getErr      error
 	emblemErr   error
 	emblemMime  string
 	emblemData  []byte
-	listQuery   app.ListQuery
 	getResult   app.GuildDetail
-	listResult  app.GuildPage
 	getID       int
 	emblemID    int
-	listCalls   int
 	getCalls    int
 	emblemCalls int
-}
-
-func (f *fakeService) List(_ context.Context, q app.ListQuery) (app.GuildPage, error) {
-	f.listCalls++
-	f.listQuery = q
-
-	return f.listResult, f.listErr
 }
 
 func (f *fakeService) Get(_ context.Context, id int) (app.GuildDetail, error) {
@@ -89,68 +70,6 @@ func newRequest(t *testing.T, method, target string, pathValues, headers map[str
 	}
 
 	return r
-}
-
-func TestHandler_ShowList_HappyPath(t *testing.T) {
-	t.Parallel()
-	svc := &fakeService{listResult: app.GuildPage{
-		Guilds:     []domain.Guild{{ID: 1, Name: "kaki", MasterName: "kaki", MasterCharID: 150000, GuildLevel: 5, MaxMember: 16}},
-		Total:      1,
-		Page:       1,
-		PerPage:    20,
-		TotalPages: 1,
-	}}
-	h := newTestHandler(svc)
-
-	r := newRequest(t, http.MethodGet, "/guilds?page=2&q=kaki", nil, nil)
-	w := httptest.NewRecorder()
-	h.showList(w, r)
-
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want 200", w.Code)
-	}
-	if got := w.Header().Get("Content-Type"); !strings.HasPrefix(got, "text/html") {
-		t.Errorf("Content-Type = %q, want text/html", got)
-	}
-	if svc.listQuery.Page != 2 || svc.listQuery.Query != "kaki" || svc.listQuery.PerPage != 20 {
-		t.Errorf("listQuery = %+v, want page=2 q=kaki perpage=20", svc.listQuery)
-	}
-	body := w.Body.String()
-	if !strings.Contains(body, "kaki") {
-		t.Errorf("body missing guild name; got: %s", body)
-	}
-}
-
-func TestHandler_ShowList_HTMXReturnsFragment(t *testing.T) {
-	t.Parallel()
-	svc := &fakeService{listResult: app.GuildPage{Page: 1, PerPage: 20, TotalPages: 1}}
-	h := newTestHandler(svc)
-
-	r := newRequest(t, http.MethodGet, "/guilds", nil, map[string]string{"HX-Request": "true"})
-	w := httptest.NewRecorder()
-	h.showList(w, r)
-
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want 200", w.Code)
-	}
-	body := w.Body.String()
-	if strings.Contains(body, "<html") || strings.Contains(body, "<!DOCTYPE") {
-		t.Errorf("HTMX response should be a fragment, got full page: %s", body[:min(len(body), 200)])
-	}
-}
-
-func TestHandler_ShowList_ServiceErrorReturns500(t *testing.T) {
-	t.Parallel()
-	svc := &fakeService{listErr: errors.New("boom")}
-	h := newTestHandler(svc)
-
-	r := newRequest(t, http.MethodGet, "/guilds", nil, nil)
-	w := httptest.NewRecorder()
-	h.showList(w, r)
-
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("status = %d, want 500", w.Code)
-	}
 }
 
 func TestHandler_ShowDetail_HappyPath(t *testing.T) {

@@ -15,7 +15,7 @@ templ GuildDetailPage(layout httpx.Layout, guildName string, state guildstate.De
 templ GuildDetailContent(state guildstate.DetailState) {
 	<div class="space-y-6">
 		<div>
-			<a href="/guilds" hx-get="/guilds" hx-target="#admin-content" hx-push-url="true" class="text-sm text-blue-600 hover:underline">&larr; Back to guilds</a>
+			<a href="/admin/guilds" hx-get="/admin/guilds" hx-target="#admin-content" hx-push-url="true" class="text-sm text-blue-600 hover:underline">&larr; Back to guilds</a>
 		</div>
 		<header class="flex items-center gap-4">
 			<img src={ fmt.Sprintf("/guilds/%d/emblem", state.Detail.Guild.ID) } alt="Guild emblem" width="24" height="24" class="ring-1 ring-gray-200 rounded-sm bg-gray-50"/>

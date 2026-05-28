@@ -3,21 +3,38 @@ package transport
 import (
 	"fmt"
 	"net/url"
+	"strconv"
 
 	"github.com/hayakawakaki/go-racp/internal/features/stall/domain"
+	stallstate "github.com/hayakawakaki/go-racp/internal/features/stall/transport/state"
 )
 
-func pageURL(baseURL string, page int, typeName string, itemID int) string {
-	values := url.Values{}
-	values.Set("page", fmt.Sprintf("%d", page))
-	if typeName != "" {
-		values.Set("type", typeName)
-	}
-	if itemID > 0 {
-		values.Set("item", fmt.Sprintf("%d", itemID))
-	}
+func vendorsTotal(state stallstate.ListState) int {
+	return state.BuyingPage.Total + state.SellingPage.Total
+}
 
-	return baseURL + "?" + values.Encode()
+func buyingHrefPattern(state stallstate.ListState) string {
+	return vendorsHrefPattern(state, "buying_page", "__PAGE__", "selling_page", state.SellingPage.Page)
+}
+
+func sellingHrefPattern(state stallstate.ListState) string {
+	return vendorsHrefPattern(state, "selling_page", "__PAGE__", "buying_page", state.BuyingPage.Page)
+}
+
+func vendorsHrefPattern(state stallstate.ListState, primaryKey, primaryValue, otherKey string, otherPage int) string {
+	values := url.Values{}
+	values.Set(primaryKey, primaryValue)
+	if otherPage > 1 {
+		values.Set(otherKey, strconv.Itoa(otherPage))
+	}
+	if state.ItemID > 0 {
+		values.Set("item", strconv.Itoa(state.ItemID))
+	}
+	base := state.BaseURL
+	if base == "" {
+		base = "/vendors"
+	}
+	return base + "?" + values.Encode()
 }
 
 func itemIDValue(id int) string {
@@ -44,12 +61,13 @@ func typeLabel(t domain.VendorType) string {
 }
 
 func typeBadgeClass(t domain.VendorType) string {
+	base := "inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold tracking-wide"
 	switch t {
 	case domain.VendorTypeSelling:
-		return "inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700"
+		return base + " bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"
 	case domain.VendorTypeBuying:
-		return "inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700"
+		return base + " bg-sky-100 text-sky-800 dark:bg-sky-950/40 dark:text-sky-300"
 	}
 
-	return "inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700"
+	return base + " bg-accent-wash text-accent-on-surface"
 }

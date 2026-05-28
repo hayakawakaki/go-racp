@@ -40,21 +40,30 @@ func (stubTheme) StallVendingBox(state stallstate.StallState) templ.Component {
 }
 
 type fakeService struct {
-	listErr    error
-	getErr     error
-	listResult domain.Page
-	getResult  domain.Vendor
-	listQuery  domain.ListQuery
-	lastGetKey domain.VendorKey
-	listCalls  int
-	getCalls   int
+	listErr     error
+	getErr      error
+	listQueries []domain.ListQuery
+	listResult  domain.Page
+	getResult   domain.Vendor
+	lastGetKey  domain.VendorKey
+	listCalls   int
+	getCalls    int
 }
 
 func (f *fakeService) List(_ context.Context, q domain.ListQuery) (domain.Page, error) {
 	f.listCalls++
-	f.listQuery = q
+	f.listQueries = append(f.listQueries, q)
 
 	return f.listResult, f.listErr
+}
+
+func (f *fakeService) queryByType(t domain.VendorType) (domain.ListQuery, bool) {
+	for _, q := range f.listQueries {
+		if q.Type == t {
+			return q, true
+		}
+	}
+	return domain.ListQuery{}, false
 }
 
 func (f *fakeService) Get(_ context.Context, key domain.VendorKey) (domain.Vendor, error) {
@@ -89,25 +98,33 @@ func TestHandler_ShowList_HappyPath(t *testing.T) {
 	t.Parallel()
 	svc := &fakeService{listResult: domain.Page{
 		Vendors: []domain.Vendor{{ID: 1, Type: domain.VendorTypeSelling, StallName: "stall-1", SellerName: "testuser"}},
-		Total:   1, Page: 1, PerPage: 20, TotalPages: 1,
+		Total:   1, Page: 1, PerPage: 8, TotalPages: 1,
 	}}
 	h := newTestHandler(svc, &fakeItemLookup{})
 
-	r := httptest.NewRequest(http.MethodGet, "/vendors?type=selling&item=501&page=2", http.NoBody)
+	r := httptest.NewRequest(http.MethodGet, "/vendors?buying_page=3&selling_page=2&item=501", http.NoBody)
 	w := httptest.NewRecorder()
 	h.showList(w, r)
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200", w.Code)
 	}
-	if svc.listQuery.Type != domain.VendorTypeSelling {
-		t.Errorf("Type = %v, want selling", svc.listQuery.Type)
+	if svc.listCalls != 2 {
+		t.Fatalf("listCalls = %d, want 2 (buying + selling)", svc.listCalls)
 	}
-	if svc.listQuery.ItemID != 501 {
-		t.Errorf("ItemID = %d, want 501", svc.listQuery.ItemID)
+	buying, ok := svc.queryByType(domain.VendorTypeBuying)
+	if !ok {
+		t.Fatalf("no buying query recorded; queries = %+v", svc.listQueries)
 	}
-	if svc.listQuery.Page != 2 {
-		t.Errorf("Page = %d, want 2", svc.listQuery.Page)
+	if buying.ItemID != 501 || buying.Page != 3 {
+		t.Errorf("buying query = %+v, want ItemID=501 Page=3", buying)
+	}
+	selling, ok := svc.queryByType(domain.VendorTypeSelling)
+	if !ok {
+		t.Fatalf("no selling query recorded; queries = %+v", svc.listQueries)
+	}
+	if selling.ItemID != 501 || selling.Page != 2 {
+		t.Errorf("selling query = %+v, want ItemID=501 Page=2", selling)
 	}
 	if !strings.Contains(w.Body.String(), "stall-1") {
 		t.Errorf("body missing stall name; got: %s", w.Body.String())
@@ -162,12 +179,12 @@ func TestHandler_ShowList_SnapshotNotReadyPreservesFiltersInRefreshURL(t *testin
 	svc := &fakeService{listErr: domain.ErrSnapshotNotReady}
 	h := newTestHandler(svc, &fakeItemLookup{})
 
-	r := httptest.NewRequest(http.MethodGet, "/vendors?type=selling&item=501&page=2", http.NoBody)
+	r := httptest.NewRequest(http.MethodGet, "/vendors?buying_page=3&selling_page=2&item=501", http.NoBody)
 	w := httptest.NewRecorder()
 	h.showList(w, r)
 
 	body := w.Body.String()
-	if !strings.Contains(body, "type=selling") || !strings.Contains(body, "item=501") || !strings.Contains(body, "page=2") {
+	if !strings.Contains(body, "buying_page=3") || !strings.Contains(body, "selling_page=2") || !strings.Contains(body, "item=501") {
 		t.Errorf("loading body should embed current query in refresh URL; got: %s", body)
 	}
 }

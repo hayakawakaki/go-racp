@@ -4,17 +4,64 @@ import (
 	accountselfstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/self/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/security"
+	"github.com/hayakawakaki/go-racp/internal/platform/ui"
+	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
 )
 
 templ AccountLoginPage(layout httpx.Layout, state accountselfstate.LoginFormState) {
 	@httpx.ActiveBase(layout, "Sign in") {
-		<div class="w-full max-w-md bg-white rounded-lg shadow-md p-8">
-			<h1 class="text-2xl font-semibold mb-6 text-center text-gray-900">Sign in</h1>
-			if state.Notice != "" {
-				<p class="text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded px-3 py-2 mb-4">{ state.Notice }</p>
-			}
-			@AccountLoginForm(state)
+		<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 max-w-5xl mx-auto w-full">
+			@accountLoginWelcome(layout)
+			@accountLoginCard(state)
 		</div>
+	}
+}
+
+templ accountLoginWelcome(layout httpx.Layout) {
+	@components.BentoCard(components.BentoCardProps{
+		Delay:        "0ms",
+		Padding:      "p-8 lg:p-10",
+		Class:        "gap-6 min-h-[20rem] lg:min-h-[28rem]",
+		WrapperClass: "order-2 lg:order-1",
+	}) {
+		<div class="flex-1 space-y-3">
+			@components.BentoLabel("text-[11px]") {
+				Welcome back
+			}
+			<h2 class="font-light tracking-tight text-font text-3xl md:text-4xl xl:text-5xl leading-[1.05]">
+				{ layout.ServerName }
+			</h2>
+			<p class="text-sm xl:text-base text-font-muted max-w-md leading-relaxed">
+				Sign in to manage your account, check your characters, and keep up with patches and events.
+			</p>
+		</div>
+		<div class="space-y-2 pt-4 border-t border-border">
+			<p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-font-muted">New here?</p>
+			<a href="/register" class="inline-flex items-center gap-1.5 text-sm font-semibold text-accent-on-surface hover:underline underline-offset-4">
+				Create an account
+				<span aria-hidden="true">→</span>
+			</a>
+		</div>
+	}
+}
+
+templ accountLoginCard(state accountselfstate.LoginFormState) {
+	@components.BentoCard(components.BentoCardProps{
+		Delay:        "80ms",
+		Padding:      "p-8 lg:p-10",
+		Class:        "gap-6",
+		WrapperClass: "order-1 lg:order-2",
+	}) {
+		<div class="space-y-2">
+			@components.BentoLabel("text-[11px]") {
+				Sign in
+			}
+			<h1 class="text-2xl font-light tracking-tight text-font">Access your account</h1>
+		</div>
+		if state.Notice != "" {
+			<p class="text-sm text-sky-700 bg-sky-50 dark:bg-sky-950/30 dark:text-sky-300 border border-sky-200 dark:border-sky-800 rounded-md px-3 py-2">{ state.Notice }</p>
+		}
+		@AccountLoginForm(state)
 	}
 }
 
@@ -30,40 +77,50 @@ templ AccountLoginForm(state accountselfstate.LoginFormState) {
 	>
 		@security.HiddenField()
 		if state.Error != "" {
-			<p class="text-sm text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2">{ state.Error }</p>
+			<p class="text-sm text-red-700 bg-red-50 dark:bg-red-950/30 dark:text-red-300 border border-red-200 dark:border-red-800 rounded-md px-3 py-2">{ state.Error }</p>
 		}
-		<label class="block">
-			<span class="block text-sm font-medium text-gray-700 mb-1">Username</span>
-			<input
-				type="text"
-				name="username"
-				value={ state.Username }
-				autocomplete="username"
-				maxlength="23"
-				required
-				autofocus
-				class="block w-full rounded border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-			/>
-		</label>
-		<label class="block">
-			<span class="block text-sm font-medium text-gray-700 mb-1">Password</span>
-			<input
-				type="password"
-				name="password"
-				autocomplete="current-password"
-				required
-				class="block w-full rounded border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-			/>
-		</label>
-		<button
-			type="submit"
-			class="w-full rounded bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 transition"
-		>
+		@ui.Field(ui.FieldProps{Label: "Username", For: "login-username", Required: true}) {
+			@ui.Input(ui.InputProps{
+				ID:           "login-username",
+				Name:         "username",
+				Type:         ui.InputTypeText,
+				Value:        state.Username,
+				AutoComplete: "username",
+				MaxLength:    23,
+				Required:     true,
+				Rounded:      ui.InputRoundedMD,
+				Color:        ui.InputColorIndigo,
+				Attrs:        templ.Attributes{"autofocus": "autofocus"},
+			})
+		}
+		@ui.Field(ui.FieldProps{Label: "Password", For: "login-password", Required: true}) {
+			@ui.Input(ui.InputProps{
+				ID:           "login-password",
+				Name:         "password",
+				Type:         ui.InputTypePassword,
+				AutoComplete: "current-password",
+				Required:     true,
+				Rounded:      ui.InputRoundedMD,
+				Color:        ui.InputColorIndigo,
+			})
+		}
+		@ui.Button(ui.ButtonProps{
+			Variant: ui.ButtonSolid,
+			Color:   ui.ButtonColorIndigo,
+			Size:    ui.ButtonSizeLG,
+			Rounded: ui.ButtonRoundedMD,
+			Type:    ui.ButtonTypeSubmit,
+			Class:   "w-full justify-center font-semibold",
+		}) {
 			Sign in
-		</button>
-		<p class="text-sm text-center text-gray-600">
-			Don't have an account?
-			<a href="/register" class="text-blue-600 hover:underline">Register</a>
-		</p>
+		}
+		<div class="flex items-center justify-between gap-3 pt-2 text-sm">
+			<a href="/forgot-password" class="text-font-muted hover:text-accent-on-surface transition-colors">
+				Forgot password?
+			</a>
+			<a href="/register" class="text-accent-on-surface hover:underline underline-offset-4 lg:hidden">
+				Register
+			</a>
+		</div>
 	</form>
 }

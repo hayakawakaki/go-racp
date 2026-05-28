@@ -3,9 +3,11 @@ package transport
 import (
 	"fmt"
 
-	admintransport "github.com/hayakawakaki/go-racp/themes/default/features/admin/transport"
 	guildstate "github.com/hayakawakaki/go-racp/internal/features/guild/transport/state"
+	admintransport "github.com/hayakawakaki/go-racp/themes/default/features/admin/transport"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/ui"
+	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
 )
 
 templ GuildListPage(layout httpx.Layout, state guildstate.ListState) {
@@ -13,90 +15,148 @@ templ GuildListPage(layout httpx.Layout, state guildstate.ListState) {
 }
 
 templ GuildListContent(state guildstate.ListState) {
-	<div class="space-y-4">
-		<header class="flex items-center justify-between gap-4">
-			<h1 class="text-2xl font-semibold text-gray-900">Guilds</h1>
-			<form class="flex gap-2" hx-get={ state.BaseURL } hx-target="#admin-content" hx-push-url="true">
-				<input
-					type="text"
-					name="q"
-					value={ state.Query }
-					placeholder="Search guild name"
-					class="rounded-md border border-gray-300 px-3 py-1.5 text-sm w-72"
-				/>
-				<button type="submit" class="rounded-md bg-gray-900 px-3 py-1.5 text-sm text-white">Search</button>
+	<div class="space-y-4 lg:space-y-6">
+		<header class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+			<div class="space-y-2">
+				@components.BentoLabel("text-[11px]") {
+					Management
+				}
+				<h1 class="text-3xl xl:text-4xl font-light tracking-tight text-font">Guilds</h1>
+				if state.Page.Total > 0 {
+					<p class="text-sm text-font-muted tabular-nums">
+						{ fmt.Sprintf("%d", state.Page.Total) }
+						if state.Page.Total == 1 {
+							guild
+						} else {
+							guilds
+						}
+						if state.Query != "" {
+							matching your search
+						}
+					</p>
+				}
+			</div>
+			<form
+				hx-get={ state.BaseURL }
+				hx-target="#admin-content"
+				hx-push-url="true"
+				action={ state.BaseURL }
+				method="get"
+				class="flex flex-wrap items-center gap-2 lg:flex-nowrap"
+			>
+				<label for="guilds-query" class="sr-only">Search guild name</label>
+				@ui.Input(ui.InputProps{
+					ID:          "guilds-query",
+					Name:        "q",
+					Type:        ui.InputTypeText,
+					Value:       state.Query,
+					Placeholder: "Guild name",
+					Size:        ui.InputSizeMD,
+					Rounded:     ui.InputRoundedMD,
+					Color:       ui.InputColorIndigo,
+					Class:       "w-56",
+					LeftIcon:    ui.Icon("search", "h-4 w-4"),
+				})
+				@ui.Button(ui.ButtonProps{
+					Variant: ui.ButtonSolid,
+					Color:   ui.ButtonColorIndigo,
+					Size:    ui.ButtonSizeMD,
+					Rounded: ui.ButtonRoundedMD,
+					Type:    ui.ButtonTypeSubmit,
+					Class:   "font-semibold",
+				}) {
+					Search
+				}
 			</form>
 		</header>
-		<div class="overflow-hidden rounded-2xl ring-1 ring-gray-200 bg-white">
-			<table class="min-w-full text-sm">
-				<thead class="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
-					<tr>
-						<th class="px-4 py-2">ID</th>
-						<th class="px-4 py-2">Name</th>
-						<th class="px-4 py-2">Master</th>
-						<th class="px-4 py-2">Level</th>
-						<th class="px-4 py-2">Max members</th>
-					</tr>
-				</thead>
-				<tbody>
+		@guildListResults(state)
+	</div>
+}
+
+templ guildListResults(state guildstate.ListState) {
+	if state.Page.Total == 0 {
+		@components.BentoCard(components.BentoCardProps{
+			Delay:   "80ms",
+			Padding: "p-10 lg:p-16",
+			Class:   "items-center justify-center text-center gap-2",
+		}) {
+			<p class="text-base font-semibold text-font">No guilds match your search</p>
+			<p class="text-sm text-font-muted">Try a different guild name.</p>
+		}
+	} else {
+		@components.BentoCard(components.BentoCardProps{
+			Delay:   "80ms",
+			Padding: "p-0",
+			Class:   "overflow-hidden",
+		}) {
+			@ui.Table(ui.TableProps{Hover: true, Class: "text-font"}) {
+				@ui.TableHeader() {
+					@ui.TableRow(ui.TableRowProps{}) {
+						@ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}) {
+							ID
+						}
+						@ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}) {
+							Name
+						}
+						@ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}) {
+							Master
+						}
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
+							Level
+						}
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
+							Max members
+						}
+					}
+				}
+				@ui.TableBody() {
 					for _, g := range state.Page.Guilds {
-						<tr class="border-t border-gray-100">
-							<td class="px-4 py-2 font-mono">{ fmt.Sprintf("%d", g.ID) }</td>
-							<td class="px-4 py-2">
+						@ui.TableRow(ui.TableRowProps{}) {
+							@ui.TableCell(ui.TableCellProps{Class: "font-mono tabular-nums text-font-muted"}) {
+								{ fmt.Sprintf("%d", g.ID) }
+							}
+							@ui.TableCell(ui.TableCellProps{Class: "font-medium"}) {
 								<a
 									href={ templ.SafeURL(fmt.Sprintf("/guilds/%d", g.ID)) }
 									hx-get={ fmt.Sprintf("/guilds/%d", g.ID) }
 									hx-target="#admin-content"
 									hx-push-url="true"
-									class="text-blue-600 hover:underline"
+									class="text-accent-on-surface hover:underline"
 								>
 									{ g.Name }
 								</a>
-							</td>
-							<td class="px-4 py-2">
+							}
+							@ui.TableCell(ui.TableCellProps{Class: "text-font-muted"}) {
 								<a
 									href={ templ.SafeURL(fmt.Sprintf("/characters/%d", g.MasterCharID)) }
-									class="text-blue-600 hover:underline"
+									class="text-accent-on-surface hover:underline"
 								>
 									{ g.MasterName }
 								</a>
-							</td>
-							<td class="px-4 py-2">{ fmt.Sprintf("%d", g.GuildLevel) }</td>
-							<td class="px-4 py-2">{ fmt.Sprintf("%d", g.MaxMember) }</td>
-						</tr>
+							}
+							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
+								{ fmt.Sprintf("%d", g.GuildLevel) }
+							}
+							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
+								{ fmt.Sprintf("%d", g.MaxMember) }
+							}
+						}
 					}
-					if len(state.Page.Guilds) == 0 {
-						<tr><td colspan="5" class="px-4 py-6 text-center text-gray-500">No guilds.</td></tr>
-					}
-				</tbody>
-			</table>
-		</div>
-		@pagination(state)
-	</div>
+				}
+			}
+		}
+		@guildPagination(state)
+	}
 }
 
-templ pagination(state guildstate.ListState) {
-	<nav class="flex justify-between text-sm">
-		<span class="text-gray-500">{ fmt.Sprintf("Page %d of %d - %d total", state.Page.Page, max(state.Page.TotalPages, 1), state.Page.Total) }</span>
-		<div class="flex gap-2">
-			if state.Page.Page > 1 {
-				<a
-					class="rounded border px-2 py-1"
-					href={ templ.SafeURL(pageURL(state.BaseURL, state.Page.Page-1, state.Query)) }
-					hx-get={ pageURL(state.BaseURL, state.Page.Page-1, state.Query) }
-					hx-target="#admin-content"
-					hx-push-url="true"
-				>Prev</a>
-			}
-			if state.Page.Page < state.Page.TotalPages {
-				<a
-					class="rounded border px-2 py-1"
-					href={ templ.SafeURL(pageURL(state.BaseURL, state.Page.Page+1, state.Query)) }
-					hx-get={ pageURL(state.BaseURL, state.Page.Page+1, state.Query) }
-					hx-target="#admin-content"
-					hx-push-url="true"
-				>Next</a>
-			}
-		</div>
-	</nav>
+templ guildPagination(state guildstate.ListState) {
+	<div class="flex justify-end" hx-boost="true" hx-target="#admin-content" hx-push-url="true">
+		@ui.Pagination(ui.PaginationProps{
+			Page:        state.Page.Page,
+			TotalPages:  state.Page.TotalPages,
+			Size:        ui.PaginationSizeMD,
+			Color:       ui.PaginationColorIndigo,
+			HrefPattern: pageHrefPattern(state),
+		})
+	</div>
 }

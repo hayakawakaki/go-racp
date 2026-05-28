@@ -49,32 +49,23 @@ func BuildPeakTable(peaks []domain.PeakRow) PeakTable {
 	windowOrder := []domain.Window{
 		domain.WindowDaily, domain.WindowWeekly, domain.WindowMonthly, domain.WindowAllTime,
 	}
-	byWindow := map[domain.Window]map[domain.MetricName]int{}
-	for _, p := range peaks {
-		bucket, ok := byWindow[p.Window]
-		if !ok {
-			bucket = map[domain.MetricName]int{}
-			byWindow[p.Window] = bucket
-		}
-		bucket[p.Metric] = p.Value
-	}
+	set := domain.NewPeakSet(peaks)
 
 	table := PeakTable{}
 	for _, w := range windowOrder {
-		bucket, has := byWindow[w]
-		if !has {
+		if !set.HasWindow(w) {
 			continue
 		}
-		_, hasUnique := bucket[domain.MetricOnlineUnique]
+		hasUnique := set.HasMetric(w, domain.MetricOnlineUnique)
 		if hasUnique {
 			table.HasUnique = true
 		}
 		table.Rows = append(table.Rows, PeakTableRow{
 			Window:    windowLabel(w),
-			Total:     bucket[domain.MetricOnlineTotal],
-			NonVendor: bucket[domain.MetricOnlineNonVendor],
-			Vendor:    bucket[domain.MetricOnlineVendor],
-			Unique:    bucket[domain.MetricOnlineUnique],
+			Total:     set.Value(w, domain.MetricOnlineTotal),
+			NonVendor: set.Value(w, domain.MetricOnlineNonVendor),
+			Vendor:    set.Value(w, domain.MetricOnlineVendor),
+			Unique:    set.Value(w, domain.MetricOnlineUnique),
 			HasUnique: hasUnique,
 		})
 	}

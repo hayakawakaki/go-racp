@@ -66,7 +66,7 @@ func GuildDetailContent(state guildstate.DetailState) templ.Component {
 			templ_7745c5c3_Var2 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"space-y-6\"><div><a href=\"/guilds\" hx-get=\"/guilds\" hx-target=\"#admin-content\" hx-push-url=\"true\" class=\"text-sm text-blue-600 hover:underline\">&larr; Back to guilds</a></div><header class=\"flex items-center gap-4\"><img src=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"space-y-6\"><div><a href=\"/admin/guilds\" hx-get=\"/admin/guilds\" hx-target=\"#admin-content\" hx-push-url=\"true\" class=\"text-sm text-blue-600 hover:underline\">&larr; Back to guilds</a></div><header class=\"flex items-center gap-4\"><img src=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -5,27 +5,47 @@ import (
 
 	newsstate "github.com/hayakawakaki/go-racp/internal/features/news/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/ui"
+	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
 )
 
 templ NewsDetailPage(layout httpx.Layout, state newsstate.NewsDetailState) {
 	@httpx.ActiveBase(layout, state.Item.Title) {
-		<article class="w-full max-w-3xl self-start p-6">
-			<div class="mb-4 flex items-center justify-between gap-3">
-				<a href="/news" class="text-sm text-blue-600 hover:underline">&larr; News</a>
+		<div class="max-w-4xl mx-auto w-full space-y-4 lg:space-y-6">
+			<div class="flex items-center justify-between gap-3">
+				<a href="/news" class="inline-flex items-center gap-1 text-sm text-font-muted hover:text-accent-on-surface transition-colors">
+					<span aria-hidden="true">←</span>
+					Back to news
+				</a>
 				if state.CanManage {
-					<a href={ templ.URL(fmt.Sprintf("/news/%d/edit", state.Item.ID)) } class="rounded bg-gray-200 hover:bg-gray-300 text-gray-900 text-sm font-medium px-3 py-1.5 transition">Edit</a>
+					@ui.Button(ui.ButtonProps{
+						Variant: ui.ButtonOutline,
+						Size:    ui.ButtonSizeSM,
+						Rounded: ui.ButtonRoundedMD,
+						Href:    fmt.Sprintf("/news/%d/edit", state.Item.ID),
+					}) {
+						Edit
+					}
 				}
 			</div>
-			<header class="mb-6">
-				<div class="flex items-center gap-3 mb-2">
-					@categoryChip(state.Item.CategoryDisplay)
-					@postedAt(state.Item.CreatedAt)
-				</div>
-				<h1 class="text-3xl font-semibold text-gray-900">{ state.Item.Title }</h1>
-			</header>
-			<div class="prose prose-zinc max-w-none">
-				@templ.Raw(string(state.BodyHTML))
-			</div>
-		</article>
+			@components.BentoCard(components.BentoCardProps{
+				Delay:   "0ms",
+				Padding: "p-8 lg:p-12",
+				Class:   "gap-6",
+			}) {
+				<header class="space-y-4 pb-6 border-b border-border">
+					<div class="flex items-center gap-3">
+						@categoryChip(state.Item.Category, state.Item.CategoryDisplay)
+						@postedAt(state.Item.CreatedAt)
+					</div>
+					<h1 class="text-3xl lg:text-4xl xl:text-5xl font-light tracking-tight text-font leading-[1.1]">
+						{ state.Item.Title }
+					</h1>
+				</header>
+				<article class="prose prose-zinc dark:prose-invert max-w-none">
+					@templ.Raw(string(state.BodyHTML))
+				</article>
+			}
+		</div>
 	}
 }

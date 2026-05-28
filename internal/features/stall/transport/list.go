@@ -9,46 +9,63 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
-func (h *Handler) showList(w http.ResponseWriter, r *http.Request) {
-	typeName := r.URL.Query().Get("type")
-	parsedType := domain.VendorTypeUnknown
-	if typeName != "" && typeName != "all" {
-		if value, ok := domain.VendorTypeFromString(typeName); ok {
-			parsedType = value
-		} else {
-			typeName = ""
-		}
-	}
-	if typeName == "all" {
-		typeName = ""
-	}
-	itemID := httpx.ParsePositiveInt(r.URL.Query().Get("item"), 0)
+const vendorsPerPage = 8
 
-	page, err := h.svc.List(r.Context(), domain.ListQuery{
-		Type:    parsedType,
+func (h *Handler) showList(w http.ResponseWriter, r *http.Request) {
+	itemID := httpx.ParsePositiveInt(r.URL.Query().Get("item"), 0)
+	buyingPage := httpx.ParsePositiveInt(r.URL.Query().Get("buying_page"), 1)
+	sellingPage := httpx.ParsePositiveInt(r.URL.Query().Get("selling_page"), 1)
+
+	buying, err := h.svc.List(r.Context(), domain.ListQuery{
+		Type:    domain.VendorTypeBuying,
 		ItemID:  itemID,
-		Page:    httpx.ParsePositiveInt(r.URL.Query().Get("page"), 1),
-		PerPage: 20,
+		Page:    buyingPage,
+		PerPage: vendorsPerPage,
 	})
 	if errors.Is(err, domain.ErrSnapshotNotReady) {
-		refreshURL := r.URL.RequestURI()
-		if httpx.IsHTMX(r) {
-			httpx.RenderHTML(w, r, h.logger, h.theme.StallLoadingContent(refreshURL))
-			return
-		}
-		httpx.RenderHTML(w, r, h.logger, h.theme.StallLoadingPage(h.layout(), refreshURL))
+		h.renderLoading(w, r)
 		return
 	}
 	if err != nil {
-		h.logger.Error("stall: list", "err", err)
+		h.logger.Error("stall: list buying", "err", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	s := state.ListState{Page: page, Type: typeName, ItemID: itemID, BaseURL: "/vendors"}
+	selling, err := h.svc.List(r.Context(), domain.ListQuery{
+		Type:    domain.VendorTypeSelling,
+		ItemID:  itemID,
+		Page:    sellingPage,
+		PerPage: vendorsPerPage,
+	})
+	if errors.Is(err, domain.ErrSnapshotNotReady) {
+		h.renderLoading(w, r)
+		return
+	}
+	if err != nil {
+		h.logger.Error("stall: list selling", "err", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	s := state.ListState{
+		BuyingPage:  buying,
+		SellingPage: selling,
+		ItemID:      itemID,
+		BaseURL:     "/vendors",
+	}
 	if httpx.IsHTMX(r) {
 		httpx.RenderHTML(w, r, h.logger, h.theme.StallListContent(s))
 		return
 	}
 	httpx.RenderHTML(w, r, h.logger, h.theme.StallListPage(h.layout(), s))
+}
+
+func (h *Handler) renderLoading(w http.ResponseWriter, r *http.Request) {
+	refreshURL := r.URL.RequestURI()
+	if httpx.IsHTMX(r) {
+		httpx.RenderHTML(w, r, h.logger, h.theme.StallLoadingContent(refreshURL))
+		return
+	}
+	httpx.RenderHTML(w, r, h.logger, h.theme.StallLoadingPage(h.layout(), refreshURL))
 }

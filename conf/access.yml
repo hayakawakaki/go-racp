@@ -102,8 +102,6 @@ Mob:
     Roles: ["Public"]
 
 Users:
-  List:
-    Roles: ["Admin"]
   View:
     Roles: ["Admin"]
   Ban:

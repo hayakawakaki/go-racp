@@ -5,10 +5,10 @@ import (
 )
 
 type ListState struct {
-	Type    string
-	BaseURL string
-	Page    domain.Page
-	ItemID  int
+	BaseURL     string
+	BuyingPage  domain.Page
+	SellingPage domain.Page
+	ItemID      int
 }
 
 type StallItemRow struct {

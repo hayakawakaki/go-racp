@@ -2,6 +2,7 @@ package httpx
 
 import (
 	"github.com/hayakawakaki/go-racp/internal/platform/security"
+	"github.com/hayakawakaki/go-racp/internal/platform/ui"
 	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
 
 	platformhttpx "github.com/hayakawakaki/go-racp/internal/platform/httpx"
@@ -19,6 +20,7 @@ templ Base(layout platformhttpx.Layout, title string) {
 			<link rel="preload" href="/themes/default/static/fonts/plus-jakarta-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin="anonymous"/>
 			<script src="/themes/default/static/vendor/htmx-2.0.9.min.js" defer></script>
 			<script src="/themes/default/static/js/components.js" defer></script>
+			<script src="/themes/default/static/js/app.js" defer></script>
 			<script src="/themes/default/static/vendor/alpine-3.15.12.min.js" defer></script>
 		</head>
 		<body
@@ -26,9 +28,10 @@ templ Base(layout platformhttpx.Layout, title string) {
 			hx-headers={ security.HxHeadersValue(ctx) }
 		>
 			@components.Header(layout)
-			<main class="container mx-auto bg-surface bg-grain border border-border rounded-md mt-6 px-6 py-8">
+			<main class="container mx-auto bg-surface bg-grain border border-border rounded-md my-6 px-6 py-8">
 				{ children... }
 			</main>
+			@ui.ToastContainer(ui.ToastContainerProps{})
 		</body>
 	</html>
 }

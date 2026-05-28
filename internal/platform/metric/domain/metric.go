@@ -37,6 +37,44 @@ type PeakRow struct {
 	Value      int        `json:"value"`
 }
 
+type PeakSet struct {
+	byWindow map[Window]map[MetricName]int
+}
+
+func NewPeakSet(rows []PeakRow) PeakSet {
+	byWindow := make(map[Window]map[MetricName]int, len(rows))
+	for _, row := range rows {
+		bucket, ok := byWindow[row.Window]
+		if !ok {
+			bucket = make(map[MetricName]int)
+			byWindow[row.Window] = bucket
+		}
+		bucket[row.Metric] = row.Value
+	}
+	return PeakSet{byWindow: byWindow}
+}
+
+func (s PeakSet) Value(w Window, m MetricName) int {
+	if bucket, ok := s.byWindow[w]; ok {
+		return bucket[m]
+	}
+	return 0
+}
+
+func (s PeakSet) HasWindow(w Window) bool {
+	_, ok := s.byWindow[w]
+	return ok
+}
+
+func (s PeakSet) HasMetric(w Window, m MetricName) bool {
+	bucket, ok := s.byWindow[w]
+	if !ok {
+		return false
+	}
+	_, ok = bucket[m]
+	return ok
+}
+
 type GeneralSnapshot struct {
 	CapturedAt      time.Time `json:"captured_at"`
 	TotalAccounts   int       `json:"total_accounts"`
