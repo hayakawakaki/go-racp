@@ -169,27 +169,6 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
-    Alpine.data('serverClock', () => ({
-        now: '',
-        init() {
-            const tz = this.$el.dataset.tz || 'UTC';
-            const fmt = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false });
-            const update = () => { this.now = fmt.format(new Date()); };
-            update();
-            setInterval(update, 60000);
-        },
-    }));
-
-    Alpine.magic('copy', (el) => (text, holdMs) => {
-        if (!navigator.clipboard) return;
-        navigator.clipboard.writeText(text).then(() => {
-            el.dispatchEvent(new CustomEvent('copied', { bubbles: false }));
-            setTimeout(() => {
-                el.dispatchEvent(new CustomEvent('copy-reset', { bubbles: false }));
-            }, Number(holdMs) || 1500);
-        }).catch(() => {});
-    });
-
     Alpine.magic('toast', () => {
         return (type, message, duration, size) => {
             window.dispatchEvent(new CustomEvent('toast', {

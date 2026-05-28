@@ -8,84 +8,46 @@ import (
 )
 
 templ DashboardContent(state adminstate.DashboardState) {
-	<div class="space-y-4 lg:space-y-6" x-data={ dashboardAlpineState(state) }>
+	<div
+		class="space-y-4 lg:space-y-6"
+		x-data="adminDashboard"
+		data-seed={ dashboardSeed(state) }
+		data-online-ms={ strconv.Itoa(dashboardOnlineRefreshMillis) }
+		data-general-ms={ strconv.Itoa(dashboardGeneralRefreshMillis) }
+	>
 		<header class="space-y-2">
 			@components.BentoLabel("text-[11px]") {
 				Operations
 			}
 			<h1 class="text-3xl xl:text-4xl font-light tracking-tight text-font">Dashboard</h1>
 		</header>
-		<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
-			@dashboardOnlineCard()
-			@dashboardTotalsCard()
+		<div class="grid grid-cols-2 sm:grid-cols-3 gap-3 lg:gap-4">
+			@dashboardStat("Online", "online.total", true, "60ms")
+			@dashboardStat("Accounts", "general.total_accounts", false, "100ms")
+			@dashboardStat("Characters", "general.total_characters", false, "140ms")
 		</div>
 		@dashboardPeaksCard(state)
 	</div>
 }
 
-templ dashboardOnlineCard() {
-	@components.BentoCard(components.BentoCardProps{
-		Delay:   "60ms",
-		Padding: "p-6 lg:p-7",
-		Class:   "gap-4",
-	}) {
-		<div class="flex items-baseline justify-between gap-3 pb-3 border-b border-border">
-			@components.BentoLabel("text-[11px]") {
-				Online now
-			}
-			<span class="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-emerald-600 dark:text-emerald-400">
-				<span class="size-1.5 rounded-full bg-emerald-500 animate-pulse" aria-hidden="true"></span>
-				Live
-			</span>
-		</div>
-		<dl class="grid grid-cols-2 gap-3 text-sm">
-			<div class="space-y-1">
-				<dt class="text-[10px] font-semibold tracking-[0.18em] uppercase text-font-muted">Total</dt>
-				<dd class="text-2xl font-light tabular-nums text-emerald-600 dark:text-emerald-400" x-text="online.total"></dd>
-			</div>
-			<div class="space-y-1">
-				<dt class="text-[10px] font-semibold tracking-[0.18em] uppercase text-font-muted">Vendors</dt>
-				<dd class="text-2xl font-light tabular-nums text-font" x-text="online.vendor"></dd>
-			</div>
-			<div class="space-y-1">
-				<dt class="text-[10px] font-semibold tracking-[0.18em] uppercase text-font-muted">Non-vendor</dt>
-				<dd class="text-2xl font-light tabular-nums text-font" x-text="online.non_vendor"></dd>
-			</div>
-			<template x-if="online.has_unique">
-				<div class="space-y-1">
-					<dt class="text-[10px] font-semibold tracking-[0.18em] uppercase text-font-muted">Unique</dt>
-					<dd class="text-2xl font-light tabular-nums text-font" x-text="online.unique"></dd>
-				</div>
-			</template>
-		</dl>
+func dashboardStatValueClass(accent bool) string {
+	base := "text-2xl xl:text-3xl font-light tracking-tight tabular-nums"
+	if accent {
+		return base + " text-emerald-600 dark:text-emerald-400"
 	}
+	return base + " text-font"
 }
 
-templ dashboardTotalsCard() {
+templ dashboardStat(label, binding string, accent bool, delay string) {
 	@components.BentoCard(components.BentoCardProps{
-		Delay:   "120ms",
-		Padding: "p-6 lg:p-7",
-		Class:   "gap-4",
+		Delay:   delay,
+		Padding: "p-4 lg:p-5",
+		Class:   "gap-1.5 justify-between min-h-[6rem]",
 	}) {
-		<div class="flex items-baseline justify-between gap-3 pb-3 border-b border-border">
-			@components.BentoLabel("text-[11px]") {
-				Server totals
-			}
-		</div>
-		<dl class="grid grid-cols-3 gap-3 text-sm">
-			<div class="space-y-1">
-				<dt class="text-[10px] font-semibold tracking-[0.18em] uppercase text-font-muted">Accounts</dt>
-				<dd class="text-2xl font-light tabular-nums text-font" x-text="general.total_accounts"></dd>
-			</div>
-			<div class="space-y-1">
-				<dt class="text-[10px] font-semibold tracking-[0.18em] uppercase text-font-muted">Characters</dt>
-				<dd class="text-2xl font-light tabular-nums text-font" x-text="general.total_characters"></dd>
-			</div>
-			<div class="space-y-1">
-				<dt class="text-[10px] font-semibold tracking-[0.18em] uppercase text-font-muted">Guilds</dt>
-				<dd class="text-2xl font-light tabular-nums text-font" x-text="general.total_guilds"></dd>
-			</div>
-		</dl>
+		@components.BentoLabel("text-[10px]") {
+			{ label }
+		}
+		<p class={ dashboardStatValueClass(accent) } x-text={ binding }>—</p>
 	}
 }
 
