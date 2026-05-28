@@ -22,6 +22,10 @@ type homeStats struct {
 	Peak       int
 	Accounts   int
 	Characters int
+	LoginUp    bool
+	CharUp     bool
+	MapUp      bool
+	WebUp      bool
 	Ready      bool
 }
 
@@ -35,6 +39,12 @@ func loadHomeStats(ctx context.Context) homeStats {
 	online := reader.Online(ctx)
 	s.Online = online.Total
 	s.Vendors = online.Vendor
+
+	status := reader.ServerStatus(ctx)
+	s.LoginUp = status.Login
+	s.CharUp = status.Char
+	s.MapUp = status.Map
+	s.WebUp = status.Web
 
 	if general, err := reader.General(ctx); err == nil {
 		s.Accounts = general.TotalAccounts
@@ -164,7 +174,7 @@ templ homeHero(page themepage.Ctx) {
 templ homeStatus(page themepage.Ctx, stats homeStats) {
 	<div class="order-2 lg:flex-[3] lg:min-h-0 grid grid-cols-1 lg:grid-rows-[auto_1fr_1fr_1fr] gap-4 lg:gap-5">
 		<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-5">
-			@homeServers()
+			@homeServers(stats)
 			@homeTime(page)
 		</div>
 		<div class="grid grid-cols-3 gap-4 lg:gap-5">
@@ -180,7 +190,7 @@ templ homeStatus(page themepage.Ctx, stats homeStats) {
 	</div>
 }
 
-templ homeServers() {
+templ homeServers(stats homeStats) {
 	@components.BentoCard(components.BentoCardProps{
 		Delay:   "40ms",
 		Padding: "px-4 py-3 lg:px-5 lg:py-3.5",
@@ -190,10 +200,10 @@ templ homeServers() {
 			Servers
 		}
 		<div class="flex flex-wrap items-center gap-x-3 gap-y-1">
-			@components.ServerIndicator(components.ServerIndicatorProps{Label: "Map", Up: true})
-			@components.ServerIndicator(components.ServerIndicatorProps{Label: "Char", Up: true})
-			@components.ServerIndicator(components.ServerIndicatorProps{Label: "Login", Up: true})
-			@components.ServerIndicator(components.ServerIndicatorProps{Label: "Web", Up: true})
+			@components.ServerIndicator(components.ServerIndicatorProps{Label: "Map", Up: stats.MapUp})
+			@components.ServerIndicator(components.ServerIndicatorProps{Label: "Char", Up: stats.CharUp})
+			@components.ServerIndicator(components.ServerIndicatorProps{Label: "Login", Up: stats.LoginUp})
+			@components.ServerIndicator(components.ServerIndicatorProps{Label: "Web", Up: stats.WebUp})
 		</div>
 	}
 }

@@ -100,6 +100,7 @@ func Start() error {
 		Pool:   cpPool,
 		Logger: logger,
 		Config: cfg.App,
+		Env:    cfg.Env,
 	})
 
 	accessCfg := config.ProcessAccessConfig(theme.ActiveAccessYAML)

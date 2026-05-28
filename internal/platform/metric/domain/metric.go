@@ -81,3 +81,11 @@ type GeneralSnapshot struct {
 	TotalCharacters int       `json:"total_characters"`
 	TotalGuilds     int       `json:"total_guilds"`
 }
+
+type ServerStatusSnapshot struct {
+	CheckedAt time.Time `json:"checked_at"`
+	Login     bool      `json:"login"`
+	Char      bool      `json:"char"`
+	Map       bool      `json:"map"`
+	Web       bool      `json:"web"`
+}
