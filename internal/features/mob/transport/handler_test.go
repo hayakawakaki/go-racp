@@ -101,8 +101,9 @@ func (s *fakeMobService) Reload(_ context.Context) error {
 func (s *fakeMobService) Status() app.ServiceStatus { return s.statusResp }
 
 type fakeItemLookup struct {
-	byAegis map[string]*itemdomain.Item
-	gotArgs []string
+	byAegis   map[string]*itemdomain.Item
+	gotArgs   []string
+	notLoaded bool
 }
 
 func (l *fakeItemLookup) LookupByAegis(aegis string) *itemdomain.Item {
@@ -110,6 +111,8 @@ func (l *fakeItemLookup) LookupByAegis(aegis string) *itemdomain.Item {
 
 	return l.byAegis[aegis]
 }
+
+func (l *fakeItemLookup) Loaded() bool { return !l.notLoaded }
 
 func discardLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(io.Discard, nil))
@@ -390,7 +393,7 @@ func TestHandler_ShowDetail_DropsUseItemLookupWhenAvailable(t *testing.T) {
 	}
 }
 
-func TestHandler_ShowDetail_DropsRenderWithoutLookup(t *testing.T) {
+func TestHandler_ShowDetail_ItemDBNotLoadedOmitsDrops(t *testing.T) {
 	t.Parallel()
 
 	svc := newFakeMobService()
@@ -403,7 +406,8 @@ func TestHandler_ShowDetail_DropsRenderWithoutLookup(t *testing.T) {
 		Size:      domain.SizeSmall,
 		Drops:     []domain.MobDrop{{ItemAegis: "Red_Potion", Rate: 1000}},
 	}
-	h := newTestHandler(svc)
+	lookup := &fakeItemLookup{notLoaded: true}
+	h := newTestHandlerWithLookup(svc, lookup)
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/mobs/1002", http.NoBody)
@@ -413,9 +417,8 @@ func TestHandler_ShowDetail_DropsRenderWithoutLookup(t *testing.T) {
 	if rr.Code != http.StatusOK {
 		t.Errorf("status = %d, want 200", rr.Code)
 	}
-	body := rr.Body.String()
-	if !strings.Contains(body, "Red_Potion") {
-		t.Errorf("body missing aegis fallback when lookup absent:\n%s", body)
+	if body := rr.Body.String(); strings.Contains(body, "Red_Potion") {
+		t.Errorf("drops rendered when item DB not loaded:\n%s", body)
 	}
 }
 

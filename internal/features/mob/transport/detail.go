@@ -35,13 +35,20 @@ func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {
 
 	lookup := h.currentItemLookup()
 	rates := h.general.Rates
+	var drops, mvpDrops []state.DropRow
+	if lookup != nil && lookup.Loaded() {
+		drops = resolveDrops(mob.Drops, lookup, false, rates)
+		mvpDrops = resolveDrops(mob.MvpDrops, lookup, true, rates)
+	}
+
 	s := state.DetailState{
 		Mob:      mob,
 		Stats:    buildStats(mob),
 		Exp:      buildExp(mob, rates),
-		Drops:    resolveDrops(mob.Drops, lookup, false, rates),
-		MvpDrops: resolveDrops(mob.MvpDrops, lookup, true, rates),
+		Drops:    drops,
+		MvpDrops: mvpDrops,
 	}
+
 	httpx.RenderHTML(w, r, h.logger, h.theme.MobDetailPage(h.layout(), s))
 }
 
@@ -91,6 +98,7 @@ func resolveDrops(drops []domain.MobDrop, lookup ItemLookup, isMVP bool, rates c
 				itemType = item.Type
 			}
 		}
+
 		row.Rate = min(scaleRate(drop.Rate, categoryRate(itemType, isMVP, rates)), 10000)
 		out = append(out, row)
 	}

@@ -74,8 +74,9 @@ func (f *fakeService) Get(_ context.Context, key domain.VendorKey) (domain.Vendo
 }
 
 type fakeItemLookup struct {
-	items map[int]*itemdomain.Item
-	err   error
+	items     map[int]*itemdomain.Item
+	err       error
+	notLoaded bool
 }
 
 func (f *fakeItemLookup) Get(_ context.Context, id int) (*itemdomain.Item, error) {
@@ -89,6 +90,8 @@ func (f *fakeItemLookup) Get(_ context.Context, id int) (*itemdomain.Item, error
 
 	return item, nil
 }
+
+func (f *fakeItemLookup) Loaded() bool { return !f.notLoaded }
 
 func newTestHandler(svc *fakeService, lookup *fakeItemLookup) *Handler {
 	return NewHandler(svc, HandlerConfig{ItemLookup: lookup, Theme: stubTheme{}})

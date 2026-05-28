@@ -16,6 +16,16 @@ func (h *Handler) showList(w http.ResponseWriter, r *http.Request) {
 	buyingPage := httpx.ParsePositiveInt(r.URL.Query().Get("buying_page"), 1)
 	sellingPage := httpx.ParsePositiveInt(r.URL.Query().Get("selling_page"), 1)
 
+	if h.itemLookup == nil || !h.itemLookup.Loaded() {
+		h.renderList(w, r, state.ListState{
+			BuyingPage:  domain.Page{Page: buyingPage, PerPage: vendorsPerPage},
+			SellingPage: domain.Page{Page: sellingPage, PerPage: vendorsPerPage},
+			ItemID:      itemID,
+			BaseURL:     "/vendors",
+		})
+		return
+	}
+
 	buying, err := h.svc.List(r.Context(), domain.ListQuery{
 		Type:    domain.VendorTypeBuying,
 		ItemID:  itemID,
@@ -48,12 +58,15 @@ func (h *Handler) showList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s := state.ListState{
+	h.renderList(w, r, state.ListState{
 		BuyingPage:  buying,
 		SellingPage: selling,
 		ItemID:      itemID,
 		BaseURL:     "/vendors",
-	}
+	})
+}
+
+func (h *Handler) renderList(w http.ResponseWriter, r *http.Request, s state.ListState) {
 	if httpx.IsHTMX(r) {
 		httpx.RenderHTML(w, r, h.logger, h.theme.StallListContent(s))
 		return

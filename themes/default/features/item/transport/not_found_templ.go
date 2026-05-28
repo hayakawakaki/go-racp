@@ -249,7 +249,7 @@ func ItemEmptyDatabasePage(layout httpx.Layout) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, " <h1 class=\"text-2xl lg:text-3xl font-light tracking-tight text-font\">No items loaded</h1><p class=\"text-sm text-font-muted leading-relaxed\">No item database is configured, or none of the configured files could be read.</p><dl class=\"divide-y divide-border border-y border-border text-sm\"><div class=\"grid grid-cols-[10rem_minmax(0,1fr)] gap-x-4 py-3\"><dt class=\"text-font-muted\">Config keys</dt><dd class=\"font-mono text-font\">ItemDB.YAML, ItemDB.Lua</dd></div><div class=\"grid grid-cols-[10rem_minmax(0,1fr)] gap-x-4 py-3\"><dt class=\"text-font-muted\">Then trigger</dt><dd class=\"font-mono text-font\">POST /admin/items/reload</dd></div></dl>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, " <h1 class=\"text-2xl lg:text-3xl font-light tracking-tight text-font\">No items loaded</h1><p class=\"text-sm text-font-muted leading-relaxed\">No item database is configured, or none of the configured files could be read.</p>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

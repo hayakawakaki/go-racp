@@ -24,6 +24,7 @@ type mobService interface {
 
 type ItemLookup interface {
 	LookupByAegis(aegis string) *itemdomain.Item
+	Loaded() bool
 }
 
 type Renderer interface {

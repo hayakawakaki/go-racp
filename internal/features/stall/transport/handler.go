@@ -21,6 +21,7 @@ type vendorService interface {
 
 type itemLookup interface {
 	Get(ctx context.Context, id int) (*itemdomain.Item, error)
+	Loaded() bool
 }
 
 type Renderer interface {

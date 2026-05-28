@@ -68,8 +68,16 @@ func (s *Service) LookupByAegis(aegis string) *domain.Item {
 	return snap.ByName[aegis]
 }
 
+func (s *Service) Loaded() bool {
+	return s.Snapshot().SourceCount > 0
+}
+
 func (s *Service) List(_ context.Context, query ListQuery) (ItemPage, error) {
 	snap := s.Snapshot()
+	if snap.SourceCount == 0 {
+		return ItemPage{}, domain.ErrEmptySnapshot
+	}
+
 	if query.PerPage <= 0 {
 		query.PerPage = DefaultPerPage
 	}

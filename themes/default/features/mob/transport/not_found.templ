@@ -74,16 +74,6 @@ templ MobEmptyDatabasePage(layout httpx.Layout) {
 				<p class="text-sm text-font-muted leading-relaxed">
 					No monster database is configured, or none of the configured files could be read.
 				</p>
-				<dl class="divide-y divide-border border-y border-border text-sm">
-					<div class="grid grid-cols-[10rem_minmax(0,1fr)] gap-x-4 py-3">
-						<dt class="text-font-muted">Config keys</dt>
-						<dd class="font-mono text-font">MobDB.YAML</dd>
-					</div>
-					<div class="grid grid-cols-[10rem_minmax(0,1fr)] gap-x-4 py-3">
-						<dt class="text-font-muted">Then trigger</dt>
-						<dd class="font-mono text-font">POST /admin/mobs/reload</dd>
-					</div>
-				</dl>
 			}
 		</div>
 	}

@@ -51,6 +51,10 @@ func (s *Service) Get(_ context.Context, id int) (*domain.Mob, error) {
 
 func (s *Service) List(_ context.Context, query ListQuery) (MobPage, error) {
 	snap := s.Snapshot()
+	if snap.SourceCount == 0 {
+		return MobPage{}, domain.ErrEmptySnapshot
+	}
+
 	if query.PerPage <= 0 {
 		query.PerPage = DefaultPerPage
 	}
