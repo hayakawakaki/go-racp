@@ -14,7 +14,6 @@ import (
 )
 
 type guildService interface {
-	List(ctx context.Context, q app.ListQuery) (app.GuildPage, error)
 	Get(ctx context.Context, id int) (app.GuildDetail, error)
 	GetEmblem(ctx context.Context, id int) ([]byte, string, error)
 }
@@ -22,8 +21,6 @@ type guildService interface {
 type Renderer interface {
 	GuildDetailPage(layout httpx.Layout, guildName string, state state.DetailState) templ.Component
 	GuildDetailContent(state state.DetailState) templ.Component
-	GuildListPage(layout httpx.Layout, state state.ListState) templ.Component
-	GuildListContent(state state.ListState) templ.Component
 }
 
 //nolint:govet // GeneralConfig trailing bool forces alignment cost
@@ -60,7 +57,6 @@ func (h *Handler) layout() httpx.Layout {
 }
 
 func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
-	reg.Wrap(mux, "Guild.View", "GET /guilds", http.HandlerFunc(h.showList))
 	reg.Wrap(mux, "Guild.View", "GET /guilds/{id}", http.HandlerFunc(h.showDetail))
 	reg.Wrap(mux, "Guild.View", "GET /guilds/{id}/emblem", http.HandlerFunc(h.showEmblem))
 }

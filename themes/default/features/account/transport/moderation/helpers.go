@@ -1,10 +1,21 @@
 package moderation
 
 import (
-	"fmt"
 	"net/url"
+
+	accountmoderationstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation/state"
 )
 
-func pageURL(baseURL string, page int, query string) string {
-	return fmt.Sprintf("%s?page=%d&q=%s", baseURL, page, url.QueryEscape(query))
+func pageHrefPattern(state accountmoderationstate.ListState) string {
+	values := url.Values{}
+	values.Set("page", "__PAGE__")
+	if state.Query != "" {
+		values.Set("q", state.Query)
+	}
+	base := state.BaseURL
+	if base == "" {
+		base = "/admin/users"
+	}
+
+	return base + "?" + values.Encode()
 }

@@ -8,7 +8,6 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/a-h/templ"
 	app "github.com/hayakawakaki/go-racp/internal/features/account/app/moderation"
@@ -16,7 +15,6 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
 	accountmoderationstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
-	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
 	accountmoderation "github.com/hayakawakaki/go-racp/themes/default/features/account/transport/moderation"
 	_ "github.com/hayakawakaki/go-racp/themes/default/platform/httpx"
@@ -27,7 +25,6 @@ func middlewareCtxWithActor(ctx context.Context, userID int) context.Context {
 }
 
 type stubService struct {
-	listFn  func(context.Context, app.ListQuery) (app.UserPage, error)
 	getFn   func(context.Context, int) (app.UserDetail, error)
 	banFn   func(context.Context, app.BanCommand) (app.UserDetail, error)
 	unbanFn func(context.Context, app.UnbanCommand) (app.UserDetail, error)
@@ -35,12 +32,6 @@ type stubService struct {
 	allowed map[int]string
 }
 
-func (s *stubService) List(ctx context.Context, q app.ListQuery) (app.UserPage, error) {
-	if s.listFn != nil {
-		return s.listFn(ctx, q)
-	}
-	return app.UserPage{}, nil
-}
 func (s *stubService) Get(ctx context.Context, id int) (app.UserDetail, error) {
 	if s.getFn != nil {
 		return s.getFn(ctx, id)
@@ -72,28 +63,8 @@ func (s *stubService) AllowedRoles() map[int]string {
 	return s.allowed
 }
 
-type stubSession struct{}
-
-func (s *stubSession) Validate(_ context.Context, _ string) (*accdomain.Session, error) {
-	return nil, accdomain.ErrSessionNotFound
-}
-func (s *stubSession) Destroy(_ context.Context, _ string) error { return nil }
-func (s *stubSession) TTL() time.Duration                        { return time.Hour }
-
-type stubUsers struct{}
-
-func (s *stubUsers) GetByID(_ context.Context, id int) (*accdomain.User, error) {
-	return &accdomain.User{ID: id}, nil
-}
-
 type stubTheme struct{}
 
-func (stubTheme) UsersListPage(layout httpx.Layout, state accountmoderationstate.ListState) templ.Component {
-	return accountmoderation.UsersListPage(layout, state)
-}
-func (stubTheme) UsersListContent(state accountmoderationstate.ListState) templ.Component {
-	return accountmoderation.UsersListContent(state)
-}
 func (stubTheme) UsersDetailPage(layout httpx.Layout, username string, state accountmoderationstate.DetailState) templ.Component {
 	return accountmoderation.UsersDetailPage(layout, username, state)
 }
@@ -105,133 +76,6 @@ func (stubTheme) UsersNotFoundPage(layout httpx.Layout, id string) templ.Compone
 }
 func (stubTheme) UsersActionError(message string) templ.Component {
 	return accountmoderation.UsersActionError(message)
-}
-
-func newTestHandler() *Handler {
-	return NewHandler(&stubService{}, HandlerConfig{
-		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
-		General: config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
-		Theme:   stubTheme{},
-	})
-}
-
-func TestHandler_RegisterRoutes_GatesListBehindAdmin(t *testing.T) {
-	t.Parallel()
-	h := newTestHandler()
-	cfg := config.AccessConfig{
-		"Users": config.ActionRoles{
-			"List":    config.Entry{Roles: config.RoleList{"Admin"}},
-			"View":    config.Entry{Roles: config.RoleList{"Admin"}},
-			"Ban":     config.Entry{Roles: config.RoleList{"Moderator", "Enforcer"}, Requires: []string{"Unrestricted"}},
-			"Unban":   config.Entry{Roles: config.RoleList{"Moderator", "Enforcer"}, Requires: []string{"Unrestricted"}},
-			"SetRole": config.Entry{Roles: config.RoleList{"Admin"}},
-		},
-	}
-	reg := routes.NewRegistry(
-		cfg,
-		nil,
-		accdomain.NewRoleResolver(config.RolesConfig{"Moderator": 20, "Enforcer": 10}),
-		&stubSession{},
-		&stubUsers{},
-		slog.New(slog.NewTextHandler(io.Discard, nil)),
-		false, true, httpx.Layout{},
-	)
-	mux := http.NewServeMux()
-	h.RegisterRoutes(reg, mux)
-
-	rr := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/users", http.NoBody)
-	mux.ServeHTTP(rr, req)
-	if rr.Code != http.StatusNotFound {
-		t.Errorf("anonymous on /users must 404; got %d body=%s", rr.Code, rr.Body.String())
-	}
-}
-
-func TestHandler_ShowList_RendersUsernames(t *testing.T) {
-	t.Parallel()
-	svc := &stubService{
-		listFn: func(_ context.Context, _ app.ListQuery) (app.UserPage, error) {
-			return app.UserPage{
-				Users: []accdomain.User{
-					{ID: 7, Username: "kaki", Email: "kaki@example.com"},
-					{ID: 8, Username: "crazyarashi", Email: "crazy@example.com"},
-				},
-				Total: 2, Page: 1, PerPage: 20, TotalPages: 1,
-			}, nil
-		},
-	}
-	h := NewHandler(svc, HandlerConfig{
-		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
-		General: config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
-		Theme:   stubTheme{},
-	})
-
-	rr := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/users", http.NoBody)
-	h.showList(rr, req)
-
-	if rr.Code != http.StatusOK {
-		t.Fatalf("status = %d", rr.Code)
-	}
-	body := rr.Body.String()
-	if !strings.Contains(body, "kaki") || !strings.Contains(body, "crazyarashi") {
-		t.Errorf("body missing usernames:\n%s", body)
-	}
-	if !strings.Contains(body, `id="admin-shell"`) {
-		t.Errorf("non-HTMX call should include admin shell")
-	}
-}
-
-func TestHandler_ShowList_ExcludesActor(t *testing.T) {
-	t.Parallel()
-	var seen app.ListQuery
-	svc := &stubService{
-		listFn: func(_ context.Context, q app.ListQuery) (app.UserPage, error) {
-			seen = q
-			return app.UserPage{}, nil
-		},
-	}
-	h := NewHandler(svc, HandlerConfig{
-		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
-		General: config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
-		Theme:   stubTheme{},
-	})
-
-	rr := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/users", http.NoBody)
-	req = req.WithContext(middlewareCtxWithActor(req.Context(), 42))
-	h.showList(rr, req)
-
-	if seen.ExcludeID != 42 {
-		t.Errorf("ExcludeID = %d, want 42", seen.ExcludeID)
-	}
-}
-
-func TestHandler_ShowList_HTMXFragment(t *testing.T) {
-	t.Parallel()
-	svc := &stubService{
-		listFn: func(_ context.Context, _ app.ListQuery) (app.UserPage, error) {
-			return app.UserPage{Users: []accdomain.User{{ID: 7, Username: "kaki"}}, Total: 1, Page: 1, PerPage: 20, TotalPages: 1}, nil
-		},
-	}
-	h := NewHandler(svc, HandlerConfig{
-		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
-		General: config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
-		Theme:   stubTheme{},
-	})
-
-	rr := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/users", http.NoBody)
-	req.Header.Set("HX-Request", "true")
-	h.showList(rr, req)
-
-	body := rr.Body.String()
-	if strings.Contains(body, `id="admin-shell"`) {
-		t.Errorf("HTMX call must not include layout chrome")
-	}
-	if !strings.Contains(body, "kaki") {
-		t.Errorf("fragment missing username")
-	}
 }
 
 func TestHandler_ShowDetail_RendersUsernameAndChars(t *testing.T) {

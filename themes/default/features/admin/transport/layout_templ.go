@@ -22,8 +22,8 @@ type adminNavLink struct {
 
 var adminNavLinks = []adminNavLink{
 	{Label: "Dashboard", Href: "/admin", IconKey: "home"},
-	{Label: "Users", Href: "/users", IconKey: "plus"},
-	{Label: "Guilds", Href: "/guilds", IconKey: "check"},
+	{Label: "Users", Href: "/admin/users", IconKey: "plus"},
+	{Label: "Guilds", Href: "/admin/guilds", IconKey: "check"},
 	{Label: "Database", Href: "/admin/database", IconKey: "db"},
 }
 

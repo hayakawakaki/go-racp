@@ -56,7 +56,7 @@ func UsersNotFoundPage(layout httpx.Layout, id string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</span>.</p><div class=\"mt-6\"><a href=\"/users\" class=\"inline-block rounded-full border border-gray-300 px-5 py-2 text-sm font-medium text-gray-700\">Back to users</a></div></section></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</span>.</p><div class=\"mt-6\"><a href=\"/admin/users\" class=\"inline-block rounded-full border border-gray-300 px-5 py-2 text-sm font-medium text-gray-700\">Back to users</a></div></section></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

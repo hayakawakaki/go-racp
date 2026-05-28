@@ -5,19 +5,30 @@ import (
 
 	accapp "github.com/hayakawakaki/go-racp/internal/features/account/app/self"
 	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
+	"github.com/hayakawakaki/go-racp/internal/platform/ui"
 )
 
 templ tierBadge(user *accdomain.User, now time.Time) {
 	switch accapp.ClassifyTier(user.State, user.UnbanTime, now) {
 		case accapp.TierActive:
-			<span class="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-emerald-200">Active</span>
+			@ui.Badge(ui.BadgeProps{Variant: ui.BadgeSubtle, Color: ui.BadgeColorGreen, Size: ui.BadgeSizeSM}) {
+				Active
+			}
 		case accapp.TierUnverified:
-			<span class="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800 ring-1 ring-amber-200">Unverified</span>
+			@ui.Badge(ui.BadgeProps{Variant: ui.BadgeSubtle, Color: ui.BadgeColorYellow, Size: ui.BadgeSizeSM}) {
+				Unverified
+			}
 		case accapp.TierTempBanned:
-			<span class="inline-flex items-center rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-800 ring-1 ring-orange-200">Temporary Ban</span>
+			@ui.Badge(ui.BadgeProps{Variant: ui.BadgeSubtle, Color: ui.BadgeColorOrange, Size: ui.BadgeSizeSM}) {
+				Temporary Ban
+			}
 		case accapp.TierPermaBanned:
-			<span class="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-800 ring-1 ring-red-200">Permanent Ban</span>
+			@ui.Badge(ui.BadgeProps{Variant: ui.BadgeSubtle, Color: ui.BadgeColorRed, Size: ui.BadgeSizeSM}) {
+				Permanent Ban
+			}
 		default:
-			<span class="inline-flex items-center rounded-full bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-700 ring-1 ring-gray-200">Unknown</span>
+			@ui.Badge(ui.BadgeProps{Variant: ui.BadgeSubtle, Color: ui.BadgeColorZinc, Size: ui.BadgeSizeSM}) {
+				Unknown
+			}
 	}
 }
