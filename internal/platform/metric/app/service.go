@@ -75,3 +75,11 @@ func (r *Reader) General(ctx context.Context) (domain.GeneralSnapshot, error) {
 	}
 	return snap, nil
 }
+
+func (r *Reader) AllTimePeakOnline(ctx context.Context) (int, error) {
+	rows, err := r.Peaks(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return domain.NewPeakSet(rows).Value(domain.WindowAllTime, domain.MetricOnlineTotal), nil
+}

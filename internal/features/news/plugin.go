@@ -25,6 +25,7 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 	categories := buildCategoryResolver(in.Config.App.NewsCategories)
 	repo := infra.NewRepository(in.DB)
 	service := app.NewService(repo, categories, in.Logger)
+	app.SetLive(service)
 	renderer := infra.NewRenderer(in.Logger)
 	userRepo := accinfra.NewRepository(in.MainDB)
 

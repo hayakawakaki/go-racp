@@ -9,14 +9,95 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
+	"context"
+	"fmt"
 	"strings"
 	"time"
 
+	newsapp "github.com/hayakawakaki/go-racp/internal/features/news/app"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/metric"
 	"github.com/hayakawakaki/go-racp/internal/platform/themepage"
 	"github.com/hayakawakaki/go-racp/internal/platform/ui"
 	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
 )
+
+const homeNewsLimit = 3
+
+type homeStats struct {
+	Online     int
+	Vendors    int
+	Peak       int
+	Accounts   int
+	Characters int
+	Ready      bool
+}
+
+func loadHomeStats(ctx context.Context) homeStats {
+	reader := metric.Live()
+	if reader == nil {
+		return homeStats{}
+	}
+
+	s := homeStats{Ready: true}
+	online := reader.Online(ctx)
+	s.Online = online.Total
+	s.Vendors = online.Vendor
+
+	if general, err := reader.General(ctx); err == nil {
+		s.Accounts = general.TotalAccounts
+		s.Characters = general.TotalCharacters
+	}
+	if peak, err := reader.AllTimePeakOnline(ctx); err == nil {
+		s.Peak = peak
+	}
+
+	return s
+}
+
+func loadHomeNews(ctx context.Context) []newsapp.NewsItem {
+	service := newsapp.Live()
+	if service == nil {
+		return nil
+	}
+	items, err := service.List(ctx)
+	if err != nil {
+		return nil
+	}
+	if len(items) > homeNewsLimit {
+		items = items[:homeNewsLimit]
+	}
+	return items
+}
+
+func statValue(ready bool, n int) string {
+	if !ready {
+		return "—"
+	}
+	return formatThousands(n)
+}
+
+func formatThousands(n int) string {
+	if n < 0 {
+		return "—"
+	}
+	in := fmt.Sprintf("%d", n)
+	if len(in) <= 3 {
+		return in
+	}
+	var b strings.Builder
+	start := len(in) % 3
+	if start > 0 {
+		b.WriteString(in[:start])
+	}
+	for i := start; i < len(in); i += 3 {
+		if b.Len() > 0 {
+			b.WriteByte(',')
+		}
+		b.WriteString(in[i : i+3])
+	}
+	return b.String()
+}
 
 func serverTimeNow(loc *time.Location) string {
 	return time.Now().In(loc).Format("15:04")
@@ -74,7 +155,7 @@ func Index(page themepage.Ctx) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = homeNews().Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = homeNews(loadHomeNews(page.Req.Context())).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -82,7 +163,7 @@ func Index(page themepage.Ctx) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = homeStatus(page).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = homeStatus(page, loadHomeStats(page.Req.Context())).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -144,7 +225,7 @@ func homeHero(page themepage.Ctx) templ.Component {
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(page.Layout.ServerName)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/pages/index.templ`, Line: 52, Col: 28}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/pages/index.templ`, Line: 133, Col: 28}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
@@ -167,10 +248,6 @@ func homeHero(page themepage.Ctx) templ.Component {
 				}
 				ctx = templ.InitializeContext(ctx)
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "Register")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = ui.Icon("arrow-right", "h-4 w-4 ml-1").Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -200,10 +277,6 @@ func homeHero(page themepage.Ctx) templ.Component {
 				}
 				ctx = templ.InitializeContext(ctx)
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "Download")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = ui.Icon("arrow-right", "h-4 w-4 ml-1").Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -239,7 +312,7 @@ func homeHero(page themepage.Ctx) templ.Component {
 	})
 }
 
-func homeStatus(page themepage.Ctx) templ.Component {
+func homeStatus(page themepage.Ctx, stats homeStats) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -276,15 +349,15 @@ func homeStatus(page themepage.Ctx) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = components.StatCell(components.StatCellProps{Label: "Online", Value: "1,284", Delay: "80ms", Accent: true}).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = components.StatCell(components.StatCellProps{Label: "Online", Value: statValue(stats.Ready, stats.Online), Delay: "80ms", Accent: true}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = components.StatCell(components.StatCellProps{Label: "Vendors", Value: "312", Delay: "120ms"}).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = components.StatCell(components.StatCellProps{Label: "Vendors", Value: statValue(stats.Ready, stats.Vendors), Delay: "120ms"}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = components.StatCell(components.StatCellProps{Label: "Peak", Value: "1,847", Delay: "160ms"}).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = components.StatCell(components.StatCellProps{Label: "Peak", Value: statValue(stats.Ready, stats.Peak), Delay: "160ms"}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -300,11 +373,11 @@ func homeStatus(page themepage.Ctx) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = components.StatCell(components.StatCellProps{Label: "Accounts", Value: "18,002", Delay: "240ms"}).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = components.StatCell(components.StatCellProps{Label: "Accounts", Value: statValue(stats.Ready, stats.Accounts), Delay: "240ms"}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = components.StatCell(components.StatCellProps{Label: "Characters", Value: "12,401", Delay: "280ms"}).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = components.StatCell(components.StatCellProps{Label: "Characters", Value: statValue(stats.Ready, stats.Characters), Delay: "280ms"}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -471,7 +544,7 @@ func homeTime(page themepage.Ctx) templ.Component {
 			var templ_7745c5c3_Var15 string
 			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(serverTimeNow(page.Layout.Location()))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/pages/index.templ`, Line: 136, Col: 61}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/pages/index.templ`, Line: 215, Col: 61}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 			if templ_7745c5c3_Err != nil {
@@ -484,7 +557,7 @@ func homeTime(page themepage.Ctx) templ.Component {
 			var templ_7745c5c3_Var16 string
 			templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(serverTZShort(page.Layout.Location()))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/pages/index.templ`, Line: 137, Col: 109}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/pages/index.templ`, Line: 216, Col: 109}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 			if templ_7745c5c3_Err != nil {
@@ -512,7 +585,7 @@ func homeTime(page themepage.Ctx) templ.Component {
 	})
 }
 
-func homeNews() templ.Component {
+func homeNews(items []newsapp.NewsItem) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -571,45 +644,34 @@ func homeNews() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<div class=\"flex flex-wrap items-center gap-1.5\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<a href=\"/news\" class=\"text-sm text-accent-on-surface hover:underline underline-offset-4 whitespace-nowrap\">View all</a></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.NewsChip(components.NewsChipProps{Label: "All", Active: true}).Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = components.NewsChip(components.NewsChipProps{Label: "Announcement", Color: "sky"}).Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = components.NewsChip(components.NewsChipProps{Label: "Patch Notes", Color: "amber"}).Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = components.NewsChip(components.NewsChipProps{Label: "Event", Color: "rose"}).Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</div></div><ul class=\"flex-1 flex flex-col divide-y divide-border min-h-0\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = components.NewsRow(components.NewsRowProps{Date: "APR 14", Title: "Patch 1.4: balance pass on Lord Knight, Wizard, Priest", Href: "/news/patch-1-4"}).Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = components.NewsRow(components.NewsRowProps{Date: "APR 02", Title: "Anniversary event: double EXP weekend + new headgear", Href: "/news/anniversary-2026"}).Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = components.NewsRow(components.NewsRowProps{Date: "MAR 28", Title: "WoE schedule update: castles rotate Saturday", Href: "/news/woe-schedule-march"}).Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</ul>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
+			if len(items) == 0 {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<div class=\"flex-1 min-h-0 flex items-center justify-center text-sm text-font-muted\">No news yet.</div>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			} else {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "<ul class=\"flex-1 flex flex-col divide-y divide-border min-h-0\">")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				for _, item := range items {
+					templ_7745c5c3_Err = components.NewsRow(components.NewsRowProps{
+						Date:  item.CreatedAt.UTC().Format("JAN 02"),
+						Title: item.Title,
+						Href:  fmt.Sprintf("/news/%d", item.ID),
+					}).Render(ctx, templ_7745c5c3_Buffer)
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "</ul>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
 			}
 			return nil
 		})
@@ -671,7 +733,7 @@ func homeQuickLinks() templ.Component {
 					}()
 				}
 				ctx = templ.InitializeContext(ctx)
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "Quick links")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "Quick links")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -681,7 +743,7 @@ func homeQuickLinks() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, " <div class=\"flex items-stretch gap-2\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, " <div class=\"flex items-stretch gap-2\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -701,7 +763,7 @@ func homeQuickLinks() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
