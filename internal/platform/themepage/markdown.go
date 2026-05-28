@@ -50,7 +50,7 @@ func RenderMarkdownPage(w http.ResponseWriter, r *http.Request, layout httpx.Lay
 		return err
 	}
 
-	wrapped := `<article class="prose max-w-3xl mx-auto p-8">` + string(html) + `</article>`
+	wrapped := `<article class="prose prose-zinc dark:prose-invert max-w-3xl mx-auto p-8">` + string(html) + `</article>`
 	child := templ.Raw(wrapped)
 	ctx := templ.WithChildren(r.Context(), child)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -74,7 +74,7 @@ func RenderMarkdownPageFrom(w http.ResponseWriter, r *http.Request, layout httpx
 		return RenderMarkdownPage(w, r, layout, title, src)
 	}
 
-	wrapped := `<article class="prose max-w-3xl mx-auto p-8">` + string(prerendered) + `</article>`
+	wrapped := `<article class="prose prose-zinc dark:prose-invert max-w-3xl mx-auto p-8">` + string(prerendered) + `</article>`
 	child := templ.Raw(wrapped)
 	ctx := templ.WithChildren(r.Context(), child)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
