@@ -12,7 +12,7 @@ import (
 )
 
 type PortProbe interface {
-	Probe(ctx context.Context, address string) bool
+	Probe(ctx context.Context, address string) (bool, error)
 }
 
 type StatusPollerConfig struct {
@@ -52,32 +52,40 @@ func (p *StatusPoller) Run(ctx context.Context) {
 }
 
 func (p *StatusPoller) RefreshOnce(ctx context.Context) {
-	var login, char, mapServer, web bool
-
-	probes := []struct {
-		result  *bool
+	results := []struct {
+		err     error
+		name    string
 		address string
+		up      bool
 	}{
-		{&login, p.cfg.LoginAddress},
-		{&char, p.cfg.CharAddress},
-		{&mapServer, p.cfg.MapAddress},
-		{&web, p.cfg.WebAddress},
+		{name: "login", address: p.cfg.LoginAddress},
+		{name: "char", address: p.cfg.CharAddress},
+		{name: "map", address: p.cfg.MapAddress},
+		{name: "web", address: p.cfg.WebAddress},
 	}
 
 	var waitGroup sync.WaitGroup
-	for _, probe := range probes {
+	for index := range results {
 		waitGroup.Go(func() {
-			*probe.result = p.cfg.Probe.Probe(ctx, probe.address)
+			results[index].up, results[index].err = p.cfg.Probe.Probe(ctx, results[index].address)
 		})
 	}
 	waitGroup.Wait()
 
+	if ctx.Err() == nil {
+		for _, result := range results {
+			if result.err != nil {
+				p.cfg.Logger.Warn("metric: server probe failed", "service", result.name, "address", result.address, "err", result.err)
+			}
+		}
+	}
+
 	snap := domain.ServerStatusSnapshot{
 		CheckedAt: p.cfg.Now(),
-		Login:     login,
-		Char:      char,
-		Map:       mapServer,
-		Web:       web,
+		Login:     results[0].up,
+		Char:      results[1].up,
+		Map:       results[2].up,
+		Web:       results[3].up,
 	}
 
 	p.snapshot.Store(&snap)
