@@ -40,6 +40,24 @@ func (f *fakePortProbe) probedAddresses() []string {
 	return out
 }
 
+func (f *fakePortProbe) set(address string, outcome probeOutcome) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.results[address] = outcome
+}
+
+func newStatusPollerForLog(probe PortProbe, logger *slog.Logger) *StatusPoller {
+	return NewStatusPoller(StatusPollerConfig{
+		Probe:        probe,
+		Logger:       logger,
+		Now:          fixedNow(time.Now()),
+		LoginAddress: "login-addr",
+		CharAddress:  "char-addr",
+		MapAddress:   "map-addr",
+		WebAddress:   "web-addr",
+	})
+}
+
 func captureLogger() (*slog.Logger, *bytes.Buffer) {
 	buffer := &bytes.Buffer{}
 	return slog.New(slog.NewTextHandler(buffer, nil)), buffer
@@ -95,9 +113,8 @@ func TestStatusPoller_RefreshOnce_MapsProbeResultsToServices(t *testing.T) {
 	}
 }
 
-func TestStatusPoller_RefreshOnce_LogsFailedProbesOnly(t *testing.T) {
+func TestStatusPoller_RefreshOnce_LogsDownServiceOnFirstPoll(t *testing.T) {
 	t.Parallel()
-	now := time.Date(2026, 5, 20, 12, 0, 0, 0, time.UTC)
 	probe := &fakePortProbe{results: map[string]probeOutcome{
 		"login-addr": {up: true},
 		"char-addr":  {err: errors.New("connection refused")},
@@ -105,55 +122,98 @@ func TestStatusPoller_RefreshOnce_LogsFailedProbesOnly(t *testing.T) {
 		"web-addr":   {up: true},
 	}}
 	logger, buffer := captureLogger()
-	p := NewStatusPoller(StatusPollerConfig{
-		Probe:        probe,
-		Logger:       logger,
-		Now:          fixedNow(now),
-		LoginAddress: "login-addr",
-		CharAddress:  "char-addr",
-		MapAddress:   "map-addr",
-		WebAddress:   "web-addr",
-	})
+	p := newStatusPollerForLog(probe, logger)
 
 	p.RefreshOnce(context.Background())
 
 	out := buffer.String()
-	if !strings.Contains(out, "metric: server probe failed") {
-		t.Errorf("missing probe-failure log, got: %q", out)
-	}
-	if !strings.Contains(out, "char-addr") {
-		t.Errorf("log missing failed address, got: %q", out)
+	if !strings.Contains(out, "metric: server down") || !strings.Contains(out, "char-addr") {
+		t.Errorf("missing down log for char, got: %q", out)
 	}
 	if strings.Contains(out, "login-addr") {
-		t.Errorf("logged a successful probe address: %q", out)
+		t.Errorf("logged a healthy service on first poll: %q", out)
+	}
+}
+
+func TestStatusPoller_RefreshOnce_DoesNotRepeatDownLog(t *testing.T) {
+	t.Parallel()
+	probe := &fakePortProbe{results: map[string]probeOutcome{
+		"login-addr": {up: true},
+		"char-addr":  {err: errors.New("refused")},
+		"map-addr":   {up: true},
+		"web-addr":   {up: true},
+	}}
+	logger, buffer := captureLogger()
+	p := newStatusPollerForLog(probe, logger)
+
+	p.RefreshOnce(context.Background())
+	p.RefreshOnce(context.Background())
+
+	if count := strings.Count(buffer.String(), "metric: server down"); count != 1 {
+		t.Errorf("server down logged %d times, want 1 (once per state change)", count)
+	}
+}
+
+func TestStatusPoller_RefreshOnce_LogsRecoveryOnce(t *testing.T) {
+	t.Parallel()
+	probe := &fakePortProbe{results: map[string]probeOutcome{
+		"login-addr": {up: true},
+		"char-addr":  {err: errors.New("refused")},
+		"map-addr":   {up: true},
+		"web-addr":   {up: true},
+	}}
+	logger, buffer := captureLogger()
+	p := newStatusPollerForLog(probe, logger)
+
+	p.RefreshOnce(context.Background())
+	probe.set("char-addr", probeOutcome{up: true})
+	p.RefreshOnce(context.Background())
+
+	out := buffer.String()
+	if count := strings.Count(out, "metric: server recovered"); count != 1 {
+		t.Errorf("recovery logged %d times, want 1", count)
+	}
+	if !strings.Contains(out, "char-addr") {
+		t.Errorf("recovery log missing char-addr: %q", out)
+	}
+}
+
+func TestStatusPoller_RefreshOnce_SilentWhenAllUp(t *testing.T) {
+	t.Parallel()
+	probe := &fakePortProbe{results: map[string]probeOutcome{
+		"login-addr": {up: true},
+		"char-addr":  {up: true},
+		"map-addr":   {up: true},
+		"web-addr":   {up: true},
+	}}
+	logger, buffer := captureLogger()
+	p := newStatusPollerForLog(probe, logger)
+
+	p.RefreshOnce(context.Background())
+	p.RefreshOnce(context.Background())
+
+	if buffer.Len() != 0 {
+		t.Errorf("expected no logs when all services up, got: %q", buffer.String())
 	}
 }
 
 func TestStatusPoller_RefreshOnce_SkipsLoggingWhenContextCancelled(t *testing.T) {
 	t.Parallel()
 	probe := &fakePortProbe{results: map[string]probeOutcome{
-		"a": {err: errors.New("refused")},
-		"b": {err: errors.New("refused")},
-		"c": {err: errors.New("refused")},
-		"d": {err: errors.New("refused")},
+		"login-addr": {err: errors.New("refused")},
+		"char-addr":  {err: errors.New("refused")},
+		"map-addr":   {err: errors.New("refused")},
+		"web-addr":   {err: errors.New("refused")},
 	}}
 	logger, buffer := captureLogger()
-	p := NewStatusPoller(StatusPollerConfig{
-		Probe:        probe,
-		Logger:       logger,
-		Now:          fixedNow(time.Now()),
-		LoginAddress: "a",
-		CharAddress:  "b",
-		MapAddress:   "c",
-		WebAddress:   "d",
-	})
+	p := newStatusPollerForLog(probe, logger)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	p.RefreshOnce(ctx)
 
-	if strings.Contains(buffer.String(), "server probe failed") {
-		t.Errorf("logged probe failures despite cancelled context: %q", buffer.String())
+	if buffer.Len() != 0 {
+		t.Errorf("logged despite cancelled context: %q", buffer.String())
 	}
 }
 

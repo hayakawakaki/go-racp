@@ -52,16 +52,26 @@ func (p *StatusPoller) Run(ctx context.Context) {
 }
 
 func (p *StatusPoller) RefreshOnce(ctx context.Context) {
+	previous := p.snapshot.Load()
+	firstRun := previous == nil
+
 	results := []struct {
 		err     error
 		name    string
 		address string
 		up      bool
+		wasUp   bool
 	}{
 		{name: "login", address: p.cfg.LoginAddress},
 		{name: "char", address: p.cfg.CharAddress},
 		{name: "map", address: p.cfg.MapAddress},
 		{name: "web", address: p.cfg.WebAddress},
+	}
+	if !firstRun {
+		results[0].wasUp = previous.Login
+		results[1].wasUp = previous.Char
+		results[2].wasUp = previous.Map
+		results[3].wasUp = previous.Web
 	}
 
 	var waitGroup sync.WaitGroup
@@ -74,9 +84,7 @@ func (p *StatusPoller) RefreshOnce(ctx context.Context) {
 
 	if ctx.Err() == nil {
 		for _, result := range results {
-			if result.err != nil {
-				p.cfg.Logger.Warn("metric: server probe failed", "service", result.name, "address", result.address, "err", result.err)
-			}
+			p.logTransition(firstRun, result.wasUp, result.up, result.name, result.address, result.err)
 		}
 	}
 
@@ -89,4 +97,13 @@ func (p *StatusPoller) RefreshOnce(ctx context.Context) {
 	}
 
 	p.snapshot.Store(&snap)
+}
+
+func (p *StatusPoller) logTransition(firstRun, wasUp, up bool, name, address string, probeErr error) {
+	switch {
+	case !up && (firstRun || wasUp):
+		p.cfg.Logger.Warn("metric: server down", "service", name, "address", address, "err", probeErr)
+	case up && !firstRun && !wasUp:
+		p.cfg.Logger.Info("metric: server recovered", "service", name, "address", address)
+	}
 }
