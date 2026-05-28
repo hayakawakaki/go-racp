@@ -2,8 +2,9 @@
 Vendor:
   PollInterval: "30s"
 
-# Metrics polling (online clamped to [10s, 1h]; general clamped to [5m, 24h])
+# Metrics polling (online and status clamped to [10s, 1h] and general clamped to [5m, 24h])
 Metrics:
   OnlinePollInterval: "1m"
   GeneralPollInterval: "1h"
+  StatusPollInterval: "1m"
   PeakWindows: ["daily", "weekly", "monthly", "all_time"]
