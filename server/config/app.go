@@ -73,6 +73,10 @@ type CooldownConfig struct {
 	CharacterLocationReset time.Duration `yaml:"CharacterLocationReset"`
 }
 
+// CurrencyConfig tunes the deposit and withdraw bridge.
+// Cooldown is a single shared window. Any deposit or withdraw locks both directions for that long.
+// MaxZenyPerTx and MaxCashpointPerTx cap a single transaction.
+// Cooldown is clamped to [1m, 72h] and the poll intervals to [30s, 15m].
 type CurrencyConfig struct {
 	Cooldown              time.Duration `yaml:"Cooldown"`
 	DepositPollInterval   time.Duration `yaml:"DepositPollInterval"`
@@ -217,8 +221,8 @@ func appConfigDefaults() *AppConfig {
 			Cooldown:              5 * time.Minute,
 			MaxZenyPerTx:          2_000_000_000,
 			MaxCashpointPerTx:     1_000_000,
-			DepositPollInterval:   10 * time.Second,
-			WithdrawDrainInterval: 10 * time.Second,
+			DepositPollInterval:   30 * time.Second,
+			WithdrawDrainInterval: 30 * time.Second,
 		},
 		Retention: RetentionConfig{
 			LoginAttempts: 30 * 24 * time.Hour,
@@ -307,9 +311,6 @@ func validateAppConfig(cfg *AppConfig) {
 		"Cooldown.TicketOpen":             cfg.Cooldown.TicketOpen,
 		"Cooldown.CharacterLookReset":     cfg.Cooldown.CharacterLookReset,
 		"Cooldown.CharacterLocationReset": cfg.Cooldown.CharacterLocationReset,
-		"Currency.Cooldown":               cfg.Currency.Cooldown,
-		"Currency.DepositPollInterval":    cfg.Currency.DepositPollInterval,
-		"Currency.WithdrawDrainInterval":  cfg.Currency.WithdrawDrainInterval,
 		"Retention.LoginAttempts":         cfg.Retention.LoginAttempts,
 		"Retention.SweepInterval":         cfg.Retention.SweepInterval,
 	}
@@ -349,6 +350,17 @@ func validateAppConfig(cfg *AppConfig) {
 }
 
 func validateCurrencyConfig(cfg *CurrencyConfig) {
+	const (
+		minCooldown = 1 * time.Minute
+		maxCooldown = 72 * time.Hour
+		minPoll     = 30 * time.Second
+		maxPoll     = 15 * time.Minute
+	)
+
+	cfg.Cooldown = clampInterval(cfg.Cooldown, 5*time.Minute, minCooldown, maxCooldown)
+	cfg.DepositPollInterval = clampInterval(cfg.DepositPollInterval, 30*time.Second, minPoll, maxPoll)
+	cfg.WithdrawDrainInterval = clampInterval(cfg.WithdrawDrainInterval, 30*time.Second, minPoll, maxPoll)
+
 	if cfg.MaxZenyPerTx <= 0 {
 		panic(fmt.Errorf("Currency.MaxZenyPerTx must be > 0"))
 	}
