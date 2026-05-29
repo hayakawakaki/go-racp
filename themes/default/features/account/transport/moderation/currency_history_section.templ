@@ -8,6 +8,7 @@ import (
 	accountmoderationstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/ui"
 	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
+	"github.com/hayakawakaki/go-racp/themes/default/platform/helpers"
 )
 
 func detailDepositsHref(state accountmoderationstate.DetailState) string {
@@ -98,10 +99,10 @@ templ depositsHistorySection(state accountmoderationstate.DetailState) {
 					for _, d := range state.Deposits.Rows {
 						@ui.TableRow(ui.TableRowProps{}) {
 							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
-								{ components.FormatAmount(d.Zeny) }
+								{ helpers.FormatAmount(d.Zeny) }
 							}
 							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
-								{ components.FormatAmount(int64(d.Cashpoint)) }
+								{ helpers.FormatAmount(int64(d.Cashpoint)) }
 							}
 							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "text-font-muted tabular-nums"}) {
 								{ detailTime(d.ProcessedAt, state.Location) }
@@ -161,10 +162,10 @@ templ withdrawsHistorySection(state accountmoderationstate.DetailState) {
 					for _, wd := range state.Withdraws.Rows {
 						@ui.TableRow(ui.TableRowProps{}) {
 							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
-								{ components.FormatAmount(wd.Zeny) }
+								{ helpers.FormatAmount(wd.Zeny) }
 							}
 							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
-								{ components.FormatAmount(int64(wd.Cashpoint)) }
+								{ helpers.FormatAmount(int64(wd.Cashpoint)) }
 							}
 							@ui.TableCell(ui.TableCellProps{Class: "text-font-muted"}) {
 								{ detailStatusLabel(wd.Status) }

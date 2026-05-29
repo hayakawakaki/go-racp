@@ -9,6 +9,7 @@ import (
 	adminstate "github.com/hayakawakaki/go-racp/internal/features/admin/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/ui"
 	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
+	"github.com/hayakawakaki/go-racp/themes/default/platform/helpers"
 )
 
 func economyDepositsHrefPattern(state adminstate.EconomyState) string {
@@ -55,16 +56,18 @@ func economySentTime(t *time.Time, loc *time.Location) string {
 
 templ EconomyContent(state adminstate.EconomyState) {
 	<div class="space-y-4 lg:space-y-6">
-		<header class="space-y-2">
-			@components.BentoLabel("text-[11px]") {
-				Operations
-			}
-			<h1 class="text-3xl xl:text-4xl font-light tracking-tight text-font">Economy</h1>
+		<header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+			<div class="space-y-2">
+				@components.BentoLabel("text-[11px]") {
+					Operations
+				}
+				<h1 class="text-3xl xl:text-4xl font-light tracking-tight text-font">Economy</h1>
+			</div>
+			<div class="flex gap-6 sm:gap-8">
+				@economyTotalStat("Total Zeny", state.Totals.Zeny)
+				@economyTotalStat("Total Cashpoint", state.Totals.Cashpoint)
+			</div>
 		</header>
-		<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
-			@economyTotalCard("Total Zeny", state.Totals.Zeny, "0ms")
-			@economyTotalCard("Total Cashpoint", state.Totals.Cashpoint, "60ms")
-		</div>
 		<div class="flex flex-col lg:flex-row gap-4 lg:gap-6">
 			@economyDepositsCard(state)
 			@economyWithdrawsCard(state)
@@ -72,17 +75,13 @@ templ EconomyContent(state adminstate.EconomyState) {
 	</div>
 }
 
-templ economyTotalCard(label string, value int64, delay string) {
-	@components.BentoCard(components.BentoCardProps{
-		Delay:   delay,
-		Padding: "p-4 lg:p-5",
-		Class:   "gap-1.5 justify-between min-h-[6rem]",
-	}) {
+templ economyTotalStat(label string, value int64) {
+	<div class="text-left sm:text-right">
 		@components.BentoLabel("text-[10px]") {
 			{ label }
 		}
-		<p class="text-2xl xl:text-3xl font-light tracking-tight tabular-nums text-font">{ components.FormatAmount(value) }</p>
-	}
+		<p class="text-lg xl:text-xl font-light tracking-tight tabular-nums text-font">{ helpers.FormatAmount(value) }</p>
+	</div>
 }
 
 templ economyDepositsCard(state adminstate.EconomyState) {
@@ -139,10 +138,10 @@ templ economyDepositsCard(state adminstate.EconomyState) {
 								{ d.Email }
 							}
 							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
-								{ components.FormatAmount(d.Zeny) }
+								{ helpers.FormatAmount(d.Zeny) }
 							}
 							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
-								{ components.FormatAmount(int64(d.Cashpoint)) }
+								{ helpers.FormatAmount(int64(d.Cashpoint)) }
 							}
 							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "text-font-muted tabular-nums"}) {
 								{ economyTime(d.ProcessedAt, state.Location) }
@@ -215,10 +214,10 @@ templ economyWithdrawsCard(state adminstate.EconomyState) {
 								{ wd.Email }
 							}
 							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
-								{ components.FormatAmount(wd.Zeny) }
+								{ helpers.FormatAmount(wd.Zeny) }
 							}
 							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
-								{ components.FormatAmount(int64(wd.Cashpoint)) }
+								{ helpers.FormatAmount(int64(wd.Cashpoint)) }
 							}
 							@ui.TableCell(ui.TableCellProps{Class: "text-font-muted"}) {
 								{ economyStatusLabel(wd.Status) }
