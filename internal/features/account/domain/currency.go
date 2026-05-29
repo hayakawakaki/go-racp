@@ -109,8 +109,8 @@ type WithdrawRequest struct {
 
 type CurrencyRepository interface {
 	Balance(ctx context.Context, accountID int) (Balance, error)
-	CreditDeposit(ctx context.Context, depositID int64, accountID int, zeny int64, cashpoint int, withdrawLockUntil, now time.Time) (bool, error)
-	RequestWithdraw(ctx context.Context, accountID int, zeny int64, cashpoint int, depositLockUntil, now time.Time) (int64, error)
+	CreditDeposit(ctx context.Context, depositID int64, accountID int, zeny int64, cashpoint int, lockUntil, now time.Time) (bool, error)
+	RequestWithdraw(ctx context.Context, accountID int, zeny int64, cashpoint int, lockUntil, now time.Time) (int64, error)
 	PendingWithdraws(ctx context.Context, limit int) ([]WithdrawRequest, error)
 	MarkWithdrawSent(ctx context.Context, id int64, now time.Time) error
 	RecentWithdraws(ctx context.Context, accountID, limit int) ([]WithdrawRequest, error)

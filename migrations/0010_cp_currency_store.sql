@@ -1,10 +1,9 @@
 -- +goose Up
 CREATE TABLE cp_currency (
-    account_id            INTEGER     NOT NULL,
-    zeny                  BIGINT      NOT NULL DEFAULT 0,
-    cashpoint             INTEGER     NOT NULL DEFAULT 0,
-    withdraw_locked_until TIMESTAMPTZ,
-    deposit_locked_until  TIMESTAMPTZ,
+    account_id   INTEGER     NOT NULL,
+    zeny         BIGINT      NOT NULL DEFAULT 0,
+    cashpoint    INTEGER     NOT NULL DEFAULT 0,
+    locked_until TIMESTAMPTZ,
     PRIMARY KEY (account_id),
     CONSTRAINT cp_currency_zeny_nonneg CHECK (zeny >= 0),
     CONSTRAINT cp_currency_cashpoint_nonneg CHECK (cashpoint >= 0)
