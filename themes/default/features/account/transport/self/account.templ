@@ -119,11 +119,19 @@ templ accountWalletCard(state accountselfstate.AccountState) {
 		<div class="flex flex-wrap gap-8">
 			<div class="space-y-1">
 				<div class="text-xs text-font-muted">Cashpoint</div>
-				<div class="text-2xl font-light tabular-nums text-font">{ fmt.Sprintf("%d", state.Balance.Cashpoint) }</div>
+				if state.BalanceFailed {
+					<div class="text-2xl font-light text-font-muted">Unavailable</div>
+				} else {
+					<div class="text-2xl font-light tabular-nums text-font">{ fmt.Sprintf("%d", state.Balance.Cashpoint) }</div>
+				}
 			</div>
 			<div class="space-y-1">
 				<div class="text-xs text-font-muted">Zeny</div>
-				<div class="text-2xl font-light tabular-nums text-font">{ fmt.Sprintf("%d", state.Balance.Zeny) }</div>
+				if state.BalanceFailed {
+					<div class="text-2xl font-light text-font-muted">Unavailable</div>
+				} else {
+					<div class="text-2xl font-light tabular-nums text-font">{ fmt.Sprintf("%d", state.Balance.Zeny) }</div>
+				}
 			</div>
 		</div>
 		<form method="post" action="/account/withdraw" class="flex flex-wrap items-end gap-3 pt-4 border-t border-border">
@@ -162,7 +170,9 @@ templ accountWalletCard(state accountselfstate.AccountState) {
 				Withdraw
 			}
 		</form>
-		if len(state.RecentWithdraws) > 0 {
+		if state.WithdrawsFailed {
+			@components.DataUnavailable("pt-4 border-t border-border")
+		} else if len(state.RecentWithdraws) > 0 {
 			<div class="pt-4 border-t border-border space-y-2">
 				@components.BentoLabel("text-[11px]") {
 					Recent withdrawals

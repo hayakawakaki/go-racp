@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	currency "github.com/hayakawakaki/go-racp/internal/features/account/app/currency"
 	app "github.com/hayakawakaki/go-racp/internal/features/account/app/self"
 )
 
@@ -61,6 +62,35 @@ func TestShowAccount_ServiceError_500(t *testing.T) {
 
 	if rr.Code != http.StatusInternalServerError {
 		t.Errorf("status = %d, want 500", rr.Code)
+	}
+}
+
+func TestHandler_ShowAccount_WalletReadFailure(t *testing.T) {
+	t.Parallel()
+
+	h := newTestHandler(&stubAccountService{}, &stubSessionService{}, nil)
+	h.currency = &stubCurrencyService{
+		balanceFn: func(context.Context, int) (currency.BalanceDTO, error) {
+			return currency.BalanceDTO{}, errors.New("balance db down")
+		},
+		recentFn: func(context.Context, int, int) ([]currency.WithdrawDTO, error) {
+			return nil, errors.New("recent db down")
+		},
+	}
+
+	rr := httptest.NewRecorder()
+	req := reqWithSession(http.MethodGet, "/account", 1, http.NoBody)
+	h.showAccount(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rr.Code)
+	}
+	body := rr.Body.String()
+	if !strings.Contains(body, "Unavailable") {
+		t.Errorf("failed balance read must surface an unavailable marker, not 0:\n%s", body)
+	}
+	if !strings.Contains(body, "Unable to load this right now.") {
+		t.Errorf("failed recent-withdraws read must surface the unavailable snippet:\n%s", body)
 	}
 }
 

@@ -13,6 +13,8 @@ type AccountState struct {
 	Characters      []charapp.CharacterDTO
 	RecentWithdraws []currency.WithdrawDTO
 	Balance         currency.BalanceDTO
+	BalanceFailed   bool
+	WithdrawsFailed bool
 }
 
 type ChangeEmailState struct {

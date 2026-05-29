@@ -20,6 +20,7 @@ import (
 	itemapp "github.com/hayakawakaki/go-racp/internal/features/item/app"
 	mobapp "github.com/hayakawakaki/go-racp/internal/features/mob/app"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	metricdomain "github.com/hayakawakaki/go-racp/internal/platform/metric/domain"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 	"github.com/hayakawakaki/go-racp/server/config"
 	accountmoderation "github.com/hayakawakaki/go-racp/themes/default/features/account/transport/moderation"
@@ -87,6 +88,25 @@ func (s *stubEconomyReader) WithdrawHistory(ctx context.Context, page, perPage i
 		return s.withdrawsFn(ctx, page, perPage)
 	}
 	return currency.WithdrawHistoryPage{}, nil
+}
+
+type stubMetric struct {
+	peaksFn func(context.Context) ([]metricdomain.PeakRow, error)
+}
+
+func (s *stubMetric) Online(context.Context) metricdomain.OnlineSnapshot {
+	return metricdomain.OnlineSnapshot{}
+}
+
+func (s *stubMetric) Peaks(ctx context.Context) ([]metricdomain.PeakRow, error) {
+	if s.peaksFn != nil {
+		return s.peaksFn(ctx)
+	}
+	return nil, nil
+}
+
+func (s *stubMetric) General(context.Context) (metricdomain.GeneralSnapshot, error) {
+	return metricdomain.GeneralSnapshot{}, nil
 }
 
 type stubEmailResolver struct {
@@ -373,5 +393,41 @@ func TestHandler_ShowEconomy_PartialReadFailure(t *testing.T) {
 	body := rr.Body.String()
 	if !strings.Contains(body, "kaki@example.invalid") || !strings.Contains(body, "crazyarashi@example.invalid") {
 		t.Errorf("a failed totals read must not blank the deposit/withdraw tables:\n%s", body)
+	}
+	if !strings.Contains(body, "Unavailable") {
+		t.Errorf("a failed totals read must surface an unavailable marker, not 0:\n%s", body)
+	}
+	if strings.Contains(body, "Unable to load this right now.") {
+		t.Errorf("deposit/withdraw tables succeeded and must not show the table unavailable snippet:\n%s", body)
+	}
+}
+
+func TestHandler_ShowDashboard_PeaksReadFailure(t *testing.T) {
+	t.Parallel()
+
+	h := NewHandler(HandlerConfig{
+		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
+		General: config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
+		Theme:   stubTheme{},
+		Metric: &stubMetric{
+			peaksFn: func(context.Context) ([]metricdomain.PeakRow, error) {
+				return nil, errors.New("peaks db down")
+			},
+		},
+	})
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/admin", http.NoBody)
+	h.showDashboard(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rr.Code)
+	}
+	body := rr.Body.String()
+	if !strings.Contains(body, "Unable to load this right now.") {
+		t.Errorf("failed peaks read must surface the unavailable snippet:\n%s", body)
+	}
+	if strings.Contains(body, "No peaks recorded yet.") {
+		t.Errorf("failed peaks read must not look like genuinely empty:\n%s", body)
 	}
 }

@@ -24,12 +24,14 @@ type RoleOption struct {
 
 //nolint:govet // grouped for readability
 type DetailState struct {
-	Now          time.Time
-	Location     *time.Location
-	Detail       app.UserDetail
-	AllowedRoles []RoleOption
-	Deposits     currency.DepositPage
-	Withdraws    currency.WithdrawHistoryPage
+	Now             time.Time
+	Location        *time.Location
+	Detail          app.UserDetail
+	AllowedRoles    []RoleOption
+	Deposits        currency.DepositPage
+	Withdraws       currency.WithdrawHistoryPage
+	DepositsFailed  bool
+	WithdrawsFailed bool
 }
 
 func BuildRoleOptions(allowed map[int]string) []RoleOption {
