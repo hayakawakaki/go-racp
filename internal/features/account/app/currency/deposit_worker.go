@@ -10,12 +10,10 @@ import (
 )
 
 type DepositWorkerConfig struct {
-	Logger       *slog.Logger
-	Interval     time.Duration
-	Cooldown     time.Duration
-	MaxZeny      int64
-	MaxCashpoint int
-	Batch        int
+	Logger   *slog.Logger
+	Interval time.Duration
+	Cooldown time.Duration
+	Batch    int
 }
 
 type DepositWorker struct {
@@ -48,7 +46,7 @@ func (w *DepositWorker) drainOnce(ctx context.Context) {
 	}
 
 	for _, depositRow := range rows {
-		if !w.valid(depositRow) {
+		if !validDepositRow(depositRow) {
 			w.cfg.Logger.Error("currency: invalid deposit row, deleting", "id", depositRow.ID, "account_id", depositRow.AccountID, "zeny", depositRow.Zeny, "points", depositRow.Points)
 			w.deleteDeposit(ctx, depositRow.ID)
 			continue
@@ -83,15 +81,12 @@ func (w *DepositWorker) deleteDeposit(ctx context.Context, id int64) {
 	}
 }
 
-func (w *DepositWorker) valid(depositRow domain.DepositRow) bool {
+func validDepositRow(depositRow domain.DepositRow) bool {
 	if depositRow.Zeny < 0 || depositRow.Points < 0 {
 		return false
 	}
-	if depositRow.Zeny == 0 && depositRow.Points == 0 {
-		return false
-	}
 
-	return depositRow.Zeny <= w.cfg.MaxZeny && depositRow.Points <= w.cfg.MaxCashpoint
+	return depositRow.Zeny > 0 || depositRow.Points > 0
 }
 
 func runLoop(ctx context.Context, interval time.Duration, tick func(context.Context)) {

@@ -36,11 +36,9 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 	currencySvc := newCurrencyService(currencyRepo, in.Config.App.Currency)
 
 	depositWorker := currencyapp.NewDepositWorker(currencyRepo, infra.NewDepositQueue(in.MainDB), currencyapp.DepositWorkerConfig{
-		Logger:       in.Logger,
-		Interval:     in.Config.App.Currency.DepositPollInterval,
-		Cooldown:     in.Config.App.Currency.Cooldown,
-		MaxZeny:      in.Config.App.Currency.MaxZenyPerTx,
-		MaxCashpoint: in.Config.App.Currency.MaxCashpointPerTx,
+		Logger:   in.Logger,
+		Interval: in.Config.App.Currency.DepositPollInterval,
+		Cooldown: in.Config.App.Currency.Cooldown,
 	})
 	go depositWorker.Run(in.ShutdownCtx)
 
