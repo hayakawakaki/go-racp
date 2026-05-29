@@ -25,6 +25,7 @@ var adminNavLinks = []adminNavLink{
 	{Label: "Users", Href: "/admin/users", IconKey: "plus"},
 	{Label: "Guilds", Href: "/admin/guilds", IconKey: "check"},
 	{Label: "Database", Href: "/admin/database", IconKey: "db"},
+	{Label: "Economy", Href: "/admin/economy", IconKey: "db"},
 }
 
 func AdminLayout(layout httpx.Layout, pageTitle string, content templ.Component) templ.Component {
@@ -217,7 +218,7 @@ func adminNavItem(link adminNavLink, pageTitle string) templ.Component {
 			var templ_7745c5c3_Var8 string
 			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(link.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/layout.templ`, Line: 65, Col: 14}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/layout.templ`, Line: 66, Col: 14}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 			if templ_7745c5c3_Err != nil {

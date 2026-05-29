@@ -1,6 +1,9 @@
 package state
 
 import (
+	"time"
+
+	currency "github.com/hayakawakaki/go-racp/internal/features/account/app/currency"
 	itemapp "github.com/hayakawakaki/go-racp/internal/features/item/app"
 	mobapp "github.com/hayakawakaki/go-racp/internal/features/mob/app"
 	"github.com/hayakawakaki/go-racp/internal/platform/metric/domain"
@@ -15,6 +18,14 @@ type DashboardState struct {
 	PeakTable PeakTable              `json:"-"`
 	General   domain.GeneralSnapshot `json:"general"`
 	Online    domain.OnlineSnapshot  `json:"online"`
+}
+
+//nolint:govet // grouped for readability over a few bytes of padding
+type EconomyState struct {
+	Location  *time.Location
+	Totals    currency.TotalsDTO
+	Deposits  currency.DepositPage
+	Withdraws currency.WithdrawHistoryPage
 }
 
 type PeakTable struct {

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/a-h/templ"
+	currency "github.com/hayakawakaki/go-racp/internal/features/account/app/currency"
 	modapp "github.com/hayakawakaki/go-racp/internal/features/account/app/moderation"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
 	modstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation/state"
@@ -21,6 +22,8 @@ import (
 	"github.com/hayakawakaki/go-racp/server/config"
 	"golang.org/x/sync/errgroup"
 )
+
+const economyPerPage = 15
 
 type itemStatusProvider interface {
 	Status() itemapp.ServiceStatus
@@ -44,6 +47,12 @@ type guildLister interface {
 	List(ctx context.Context, query guildapp.ListQuery) (guildapp.GuildPage, error)
 }
 
+type economyReader interface {
+	Totals(ctx context.Context) (currency.TotalsDTO, error)
+	DepositHistory(ctx context.Context, page, perPage int) (currency.DepositPage, error)
+	WithdrawHistory(ctx context.Context, page, perPage int) (currency.WithdrawHistoryPage, error)
+}
+
 type Renderer interface {
 	AdminLayout(layout httpx.Layout, pageTitle string, content templ.Component) templ.Component
 	DashboardContent(state state.DashboardState) templ.Component
@@ -52,6 +61,7 @@ type Renderer interface {
 	UsersListContent(state modstate.ListState) templ.Component
 	GuildListPage(layout httpx.Layout, state guildstate.ListState) templ.Component
 	GuildListContent(state guildstate.ListState) templ.Component
+	EconomyContent(state state.EconomyState) templ.Component
 }
 
 //nolint:govet // GeneralConfig trailing bool forces alignment cost
@@ -62,6 +72,7 @@ type HandlerConfig struct {
 	Metric     metricReader
 	Users      userLister
 	Guilds     guildLister
+	Economy    economyReader
 	Theme      Renderer
 	Logger     *slog.Logger
 }
@@ -74,6 +85,7 @@ type Handler struct {
 	metric     metricReader
 	users      userLister
 	guilds     guildLister
+	economy    economyReader
 	theme      Renderer
 	logger     *slog.Logger
 }
@@ -86,6 +98,7 @@ func NewHandler(cfg HandlerConfig) *Handler {
 		metric:     cfg.Metric,
 		users:      cfg.Users,
 		guilds:     cfg.Guilds,
+		economy:    cfg.Economy,
 		general:    cfg.General,
 		theme:      cfg.Theme,
 	}
@@ -100,6 +113,7 @@ func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
 	reg.Wrap(mux, "Admin.Users", "GET /admin/users", http.HandlerFunc(h.showUsers))
 	reg.Wrap(mux, "Admin.Guilds", "GET /admin/guilds", http.HandlerFunc(h.showGuilds))
 	reg.Wrap(mux, "Admin.Database", "GET /admin/database", http.HandlerFunc(h.showDatabase))
+	reg.Wrap(mux, "Admin.Economy", "GET /admin/economy", http.HandlerFunc(h.showEconomy))
 }
 
 func (h *Handler) showUsers(w http.ResponseWriter, r *http.Request) {
@@ -190,6 +204,47 @@ func (h *Handler) dashboardState(ctx context.Context) state.DashboardState {
 
 	s.General = general
 	s.PeakTable = state.BuildPeakTable(peaks)
+	return s
+}
+
+func (h *Handler) showEconomy(w http.ResponseWriter, r *http.Request) {
+	dpage := httpx.ParsePositiveInt(r.URL.Query().Get("dpage"), 1)
+	wpage := httpx.ParsePositiveInt(r.URL.Query().Get("wpage"), 1)
+	s := h.economyState(r.Context(), dpage, wpage)
+	if httpx.IsHTMX(r) {
+		httpx.RenderHTML(w, r, h.logger, h.theme.EconomyContent(s))
+		return
+	}
+	httpx.RenderHTML(w, r, h.logger, h.theme.AdminLayout(h.layout(), "Economy", h.theme.EconomyContent(s)))
+}
+
+func (h *Handler) economyState(ctx context.Context, dpage, wpage int) state.EconomyState {
+	s := state.EconomyState{Location: h.general.Location()}
+	if h.economy == nil {
+		return s
+	}
+
+	totals, err := h.economy.Totals(ctx)
+	if err != nil {
+		h.logger.Warn("admin: economy totals read failed", "err", err)
+	} else {
+		s.Totals = totals
+	}
+
+	deposits, err := h.economy.DepositHistory(ctx, dpage, economyPerPage)
+	if err != nil {
+		h.logger.Warn("admin: economy deposits read failed", "err", err)
+	} else {
+		s.Deposits = deposits
+	}
+
+	withdraws, err := h.economy.WithdrawHistory(ctx, wpage, economyPerPage)
+	if err != nil {
+		h.logger.Warn("admin: economy withdraws read failed", "err", err)
+	} else {
+		s.Withdraws = withdraws
+	}
+
 	return s
 }
 

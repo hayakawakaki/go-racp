@@ -21,6 +21,9 @@ type fakeCurrencyRepo struct {
 	markSentFn        func(ctx context.Context, id int64, now time.Time) error
 	markPendingFn     func(ctx context.Context, id int64) error
 	recentFn          func(ctx context.Context, accountID, limit int) ([]domain.WithdrawRequest, error)
+	totalsFn          func(ctx context.Context) (domain.CurrencyTotals, error)
+	listDepositsFn    func(ctx context.Context, limit, offset int) ([]domain.DepositRecord, int, error)
+	listWithdrawsFn   func(ctx context.Context, limit, offset int) ([]domain.WithdrawRecord, int, error)
 }
 
 var _ domain.CurrencyRepository = (*fakeCurrencyRepo)(nil)
@@ -79,6 +82,30 @@ func (f *fakeCurrencyRepo) RecentWithdraws(ctx context.Context, accountID, limit
 	}
 
 	return nil, nil
+}
+
+func (f *fakeCurrencyRepo) Totals(ctx context.Context) (domain.CurrencyTotals, error) {
+	if f.totalsFn != nil {
+		return f.totalsFn(ctx)
+	}
+
+	return domain.CurrencyTotals{}, nil
+}
+
+func (f *fakeCurrencyRepo) ListDeposits(ctx context.Context, limit, offset int) ([]domain.DepositRecord, int, error) {
+	if f.listDepositsFn != nil {
+		return f.listDepositsFn(ctx, limit, offset)
+	}
+
+	return nil, 0, nil
+}
+
+func (f *fakeCurrencyRepo) ListWithdraws(ctx context.Context, limit, offset int) ([]domain.WithdrawRecord, int, error) {
+	if f.listWithdrawsFn != nil {
+		return f.listWithdrawsFn(ctx, limit, offset)
+	}
+
+	return nil, 0, nil
 }
 
 type fakeDepositQueue struct {

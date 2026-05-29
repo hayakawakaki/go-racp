@@ -35,6 +35,72 @@ func seedBalance(t *testing.T, pool *pgxpool.Pool, accountID int, zeny int64, ca
 	}
 }
 
+func TestCurrencyRepository_Totals(t *testing.T) {
+	repo, pool := setupCurrencyRepo(t)
+	ctx := context.Background()
+	seedBalance(t, pool, 1, 5000, 250, nil)
+	seedBalance(t, pool, 2, 3000, 100, nil)
+
+	totals, err := repo.Totals(ctx)
+	if err != nil {
+		t.Fatalf("Totals: %v", err)
+	}
+	if totals.Zeny != 8000 || totals.Cashpoint != 350 {
+		t.Errorf("Totals = %+v, want {Zeny:8000 Cashpoint:350}", totals)
+	}
+}
+
+func TestCurrencyRepository_ListDeposits(t *testing.T) {
+	repo, _ := setupCurrencyRepo(t)
+	ctx := context.Background()
+	now := time.Now().UTC().Truncate(time.Second)
+	for index := 1; index <= 3; index++ {
+		if _, err := repo.CreditDeposit(ctx, int64(index), index, int64(index*100), index, now, now); err != nil {
+			t.Fatalf("CreditDeposit %d: %v", index, err)
+		}
+	}
+
+	rows, total, err := repo.ListDeposits(ctx, 2, 0)
+	if err != nil {
+		t.Fatalf("ListDeposits: %v", err)
+	}
+	if total != 3 {
+		t.Errorf("total = %d, want 3", total)
+	}
+	if len(rows) != 2 {
+		t.Fatalf("rows = %d, want 2 (limit)", len(rows))
+	}
+	if rows[0].DepositID != 3 {
+		t.Errorf("first deposit id = %d, want 3 (newest first)", rows[0].DepositID)
+	}
+}
+
+func TestCurrencyRepository_ListWithdraws(t *testing.T) {
+	repo, pool := setupCurrencyRepo(t)
+	ctx := context.Background()
+	now := time.Now().UTC().Truncate(time.Second)
+	seedBalance(t, pool, 1, 100000, 0, nil)
+	for index := 0; index < 3; index++ {
+		if _, err := repo.RequestWithdraw(ctx, 1, 100, 0, now, now); err != nil {
+			t.Fatalf("RequestWithdraw: %v", err)
+		}
+	}
+
+	rows, total, err := repo.ListWithdraws(ctx, 2, 0)
+	if err != nil {
+		t.Fatalf("ListWithdraws: %v", err)
+	}
+	if total != 3 {
+		t.Errorf("total = %d, want 3", total)
+	}
+	if len(rows) != 2 || rows[0].ID < rows[1].ID {
+		t.Errorf("rows not newest-first: %+v", rows)
+	}
+	if rows[0].Status != 1 {
+		t.Errorf("status = %d, want 1 (pending)", rows[0].Status)
+	}
+}
+
 func TestCurrencyRepository_Balance_NoRowIsZero(t *testing.T) {
 	repo, _ := setupCurrencyRepo(t)
 
