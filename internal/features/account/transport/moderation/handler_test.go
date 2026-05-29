@@ -2,6 +2,7 @@ package moderation
 
 import (
 	"context"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -164,6 +165,45 @@ func TestHandler_ShowDetail_RendersCurrencyHistory(t *testing.T) {
 	body := rr.Body.String()
 	if !strings.Contains(body, "Deposit history") || !strings.Contains(body, "Withdrawal history") {
 		t.Errorf("body missing history sections:\n%s", body)
+	}
+}
+
+func TestHandler_ShowDetail_DepositHistoryReadFailure(t *testing.T) {
+	t.Parallel()
+
+	svc := &stubService{
+		getFn: func(_ context.Context, _ int) (app.UserDetail, error) {
+			return app.UserDetail{
+				User: &accdomain.User{ID: 7, Username: "kaki", Email: "k@example.com"},
+			}, nil
+		},
+	}
+	history := &stubCurrencyHistory{
+		depositsFn: func(context.Context, int, int, int) (currency.DepositPage, error) {
+			return currency.DepositPage{}, errors.New("deposit db down")
+		},
+	}
+	h := NewHandler(svc, HandlerConfig{
+		Logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
+		General:  config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
+		Currency: history,
+		Theme:    stubTheme{},
+	})
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/users/7", http.NoBody)
+	req.SetPathValue("id", "7")
+	h.showDetail(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rr.Code)
+	}
+	body := rr.Body.String()
+	if !strings.Contains(body, "Unable to load this right now.") {
+		t.Errorf("failed deposit-history read must surface the unavailable snippet:\n%s", body)
+	}
+	if strings.Contains(body, "No deposits yet.") {
+		t.Errorf("failed deposit-history read must not look like genuinely empty:\n%s", body)
 	}
 }
 

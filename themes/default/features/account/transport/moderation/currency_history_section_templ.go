@@ -106,7 +106,12 @@ func depositsHistorySection(state accountmoderationstate.DetailState) templ.Comp
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if len(state.Deposits.Rows) == 0 {
+			if state.DepositsFailed {
+				templ_7745c5c3_Err = components.DataUnavailable("p-6").Render(ctx, templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			} else if len(state.Deposits.Rows) == 0 {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<p class=\"p-6 text-sm text-font-muted\">No deposits yet.</p>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -278,7 +283,7 @@ func depositsHistorySection(state accountmoderationstate.DetailState) templ.Comp
 									var templ_7745c5c3_Var13 string
 									templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(helpers.FormatAmount(d.Zeny))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/account/transport/moderation/currency_history_section.templ`, Line: 66, Col: 38}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/account/transport/moderation/currency_history_section.templ`, Line: 68, Col: 38}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 									if templ_7745c5c3_Err != nil {
@@ -309,7 +314,7 @@ func depositsHistorySection(state accountmoderationstate.DetailState) templ.Comp
 									var templ_7745c5c3_Var15 string
 									templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(helpers.FormatAmount(int64(d.Cashpoint)))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/account/transport/moderation/currency_history_section.templ`, Line: 69, Col: 50}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/account/transport/moderation/currency_history_section.templ`, Line: 71, Col: 50}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 									if templ_7745c5c3_Err != nil {
@@ -340,7 +345,7 @@ func depositsHistorySection(state accountmoderationstate.DetailState) templ.Comp
 									var templ_7745c5c3_Var17 string
 									templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(helpers.FormatTime(d.ProcessedAt, state.Location))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/account/transport/moderation/currency_history_section.templ`, Line: 72, Col: 59}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/account/transport/moderation/currency_history_section.templ`, Line: 74, Col: 59}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 									if templ_7745c5c3_Err != nil {
@@ -461,7 +466,12 @@ func withdrawsHistorySection(state accountmoderationstate.DetailState) templ.Com
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if len(state.Withdraws.Rows) == 0 {
+			if state.WithdrawsFailed {
+				templ_7745c5c3_Err = components.DataUnavailable("p-6").Render(ctx, templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			} else if len(state.Withdraws.Rows) == 0 {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<p class=\"p-6 text-sm text-font-muted\">No withdrawals yet.</p>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -685,7 +695,7 @@ func withdrawsHistorySection(state accountmoderationstate.DetailState) templ.Com
 									var templ_7745c5c3_Var32 string
 									templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinStringErrs(helpers.FormatAmount(wd.Zeny))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/account/transport/moderation/currency_history_section.templ`, Line: 129, Col: 39}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/account/transport/moderation/currency_history_section.templ`, Line: 133, Col: 39}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var32))
 									if templ_7745c5c3_Err != nil {
@@ -716,7 +726,7 @@ func withdrawsHistorySection(state accountmoderationstate.DetailState) templ.Com
 									var templ_7745c5c3_Var34 string
 									templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(helpers.FormatAmount(int64(wd.Cashpoint)))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/account/transport/moderation/currency_history_section.templ`, Line: 132, Col: 51}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/account/transport/moderation/currency_history_section.templ`, Line: 136, Col: 51}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
 									if templ_7745c5c3_Err != nil {
@@ -747,7 +757,7 @@ func withdrawsHistorySection(state accountmoderationstate.DetailState) templ.Com
 									var templ_7745c5c3_Var36 string
 									templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(helpers.WithdrawStatusLabel(wd.Status))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/account/transport/moderation/currency_history_section.templ`, Line: 135, Col: 48}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/account/transport/moderation/currency_history_section.templ`, Line: 139, Col: 48}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 									if templ_7745c5c3_Err != nil {
@@ -778,7 +788,7 @@ func withdrawsHistorySection(state accountmoderationstate.DetailState) templ.Com
 									var templ_7745c5c3_Var38 string
 									templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(helpers.FormatTime(wd.CreatedAt, state.Location))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/account/transport/moderation/currency_history_section.templ`, Line: 138, Col: 58}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/account/transport/moderation/currency_history_section.templ`, Line: 142, Col: 58}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 									if templ_7745c5c3_Err != nil {
@@ -809,7 +819,7 @@ func withdrawsHistorySection(state accountmoderationstate.DetailState) templ.Com
 									var templ_7745c5c3_Var40 string
 									templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.JoinStringErrs(helpers.FormatSentTime(wd.SentAt, state.Location))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/account/transport/moderation/currency_history_section.templ`, Line: 141, Col: 59}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/account/transport/moderation/currency_history_section.templ`, Line: 145, Col: 59}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var40))
 									if templ_7745c5c3_Err != nil {

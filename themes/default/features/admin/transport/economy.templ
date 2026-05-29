@@ -33,8 +33,8 @@ templ EconomyContent(state adminstate.EconomyState) {
 				<h1 class="text-3xl xl:text-4xl font-light tracking-tight text-font">Economy</h1>
 			</div>
 			<div class="flex gap-6 sm:gap-8">
-				@economyTotalStat("Total Zeny", state.Totals.Zeny)
-				@economyTotalStat("Total Cashpoint", state.Totals.Cashpoint)
+				@economyTotalStat("Total Zeny", state.Totals.Zeny, state.TotalsFailed)
+				@economyTotalStat("Total Cashpoint", state.Totals.Cashpoint, state.TotalsFailed)
 			</div>
 		</header>
 		<div class="flex flex-col lg:flex-row gap-4 lg:gap-6">
@@ -44,12 +44,16 @@ templ EconomyContent(state adminstate.EconomyState) {
 	</div>
 }
 
-templ economyTotalStat(label string, value int64) {
+templ economyTotalStat(label string, value int64, failed bool) {
 	<div class="text-left sm:text-right">
 		@components.BentoLabel("text-[10px]") {
 			{ label }
 		}
-		<p class="text-lg xl:text-xl font-light tracking-tight tabular-nums text-font">{ helpers.FormatAmount(value) }</p>
+		if failed {
+			<p class="text-lg xl:text-xl font-light tracking-tight text-font-muted">Unavailable</p>
+		} else {
+			<p class="text-lg xl:text-xl font-light tracking-tight tabular-nums text-font">{ helpers.FormatAmount(value) }</p>
+		}
 	</div>
 }
 
@@ -75,7 +79,9 @@ templ economyDepositsCard(state adminstate.EconomyState) {
 				})
 			}
 		</div>
-		if len(state.Deposits.Rows) == 0 {
+		if state.DepositsFailed {
+			@components.DataUnavailable("p-6")
+		} else if len(state.Deposits.Rows) == 0 {
 			<p class="p-6 text-sm text-font-muted">No deposits recorded yet.</p>
 		} else {
 			@ui.Table(ui.TableProps{Hover: true, Class: "text-font"}) {
@@ -146,7 +152,9 @@ templ economyWithdrawsCard(state adminstate.EconomyState) {
 				})
 			}
 		</div>
-		if len(state.Withdraws.Rows) == 0 {
+		if state.WithdrawsFailed {
+			@components.DataUnavailable("p-6")
+		} else if len(state.Withdraws.Rows) == 0 {
 			<p class="p-6 text-sm text-font-muted">No withdrawals recorded yet.</p>
 		} else {
 			@ui.Table(ui.TableProps{Hover: true, Class: "text-font"}) {

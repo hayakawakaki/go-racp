@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 
-	currency "github.com/hayakawakaki/go-racp/internal/features/account/app/currency"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
 	selfstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/self/state"
 	charapp "github.com/hayakawakaki/go-racp/internal/features/character/app"
@@ -59,9 +58,8 @@ func (h *Handler) showAccount(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	balance, recentWithdraws := h.accountWallet(r.Context(), sess.UserID)
-
-	state := selfstate.AccountState{Account: account, Characters: chars, Balance: balance, RecentWithdraws: recentWithdraws}
+	state := selfstate.AccountState{Account: account, Characters: chars}
+	h.populateWallet(r.Context(), sess.UserID, &state)
 	noticeParam := r.URL.Query().Get("notice")
 	if notice, ok := accountNoticeText[noticeParam]; ok {
 		state.Notice = notice
@@ -77,22 +75,24 @@ func (h *Handler) showAccount(w http.ResponseWriter, r *http.Request) {
 	httpx.RenderHTML(w, r, h.logger, h.theme.AccountPage(h.layout(), state))
 }
 
-func (h *Handler) accountWallet(ctx context.Context, userID int) (currency.BalanceDTO, []currency.WithdrawDTO) {
+func (h *Handler) populateWallet(ctx context.Context, userID int, state *selfstate.AccountState) {
 	if h.currency == nil {
-		return currency.BalanceDTO{}, nil
+		return
 	}
 
 	balance, err := h.currency.Balance(ctx, userID)
 	if err != nil {
 		h.logger.Error("account balance", "err", err)
-		balance = currency.BalanceDTO{}
+		state.BalanceFailed = true
+	} else {
+		state.Balance = balance
 	}
 
 	recentWithdraws, err := h.currency.RecentWithdraws(ctx, userID, 5)
 	if err != nil {
 		h.logger.Error("account recent withdraws", "err", err)
-		recentWithdraws = nil
+		state.WithdrawsFailed = true
+	} else {
+		state.RecentWithdraws = recentWithdraws
 	}
-
-	return balance, recentWithdraws
 }

@@ -44,6 +44,7 @@ func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {
 		deposits, depositErr := h.currency.DepositHistoryByAccount(r.Context(), detail.User.ID, dpage, detailHistoryPerPage)
 		if depositErr != nil {
 			h.logger.Warn("users: deposit history failed", "id", id, "err", depositErr)
+			s.DepositsFailed = true
 		} else {
 			s.Deposits = deposits
 		}
@@ -51,6 +52,7 @@ func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {
 		withdraws, withdrawErr := h.currency.WithdrawHistoryByAccount(r.Context(), detail.User.ID, wpage, detailHistoryPerPage)
 		if withdrawErr != nil {
 			h.logger.Warn("users: withdraw history failed", "id", id, "err", withdrawErr)
+			s.WithdrawsFailed = true
 		} else {
 			s.Withdraws = withdraws
 		}

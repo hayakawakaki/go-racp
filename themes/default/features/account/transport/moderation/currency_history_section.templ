@@ -42,7 +42,9 @@ templ depositsHistorySection(state accountmoderationstate.DetailState) {
 				})
 			}
 		</div>
-		if len(state.Deposits.Rows) == 0 {
+		if state.DepositsFailed {
+			@components.DataUnavailable("p-6")
+		} else if len(state.Deposits.Rows) == 0 {
 			<p class="p-6 text-sm text-font-muted">No deposits yet.</p>
 		} else {
 			@ui.Table(ui.TableProps{Hover: true, Class: "text-font"}) {
@@ -99,7 +101,9 @@ templ withdrawsHistorySection(state accountmoderationstate.DetailState) {
 				})
 			}
 		</div>
-		if len(state.Withdraws.Rows) == 0 {
+		if state.WithdrawsFailed {
+			@components.DataUnavailable("p-6")
+		} else if len(state.Withdraws.Rows) == 0 {
 			<p class="p-6 text-sm text-font-muted">No withdrawals yet.</p>
 		} else {
 			@ui.Table(ui.TableProps{Hover: true, Class: "text-font"}) {

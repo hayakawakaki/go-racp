@@ -236,7 +236,7 @@ func dashboardStat(label, binding string, accent bool, delay string) templ.Compo
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\">—</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\">-</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -317,7 +317,12 @@ func dashboardPeaksCard(state adminstate.DashboardState) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if len(state.PeakTable.Rows) == 0 {
+			if state.PeaksFailed {
+				templ_7745c5c3_Err = components.DataUnavailable().Render(ctx, templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			} else if len(state.PeakTable.Rows) == 0 {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<p class=\"text-sm text-font-muted\">No peaks recorded yet.</p>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -345,7 +350,7 @@ func dashboardPeaksCard(state adminstate.DashboardState) templ.Component {
 					var templ_7745c5c3_Var16 string
 					templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(row.Window)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/dashboard.templ`, Line: 84, Col: 52}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/dashboard.templ`, Line: 86, Col: 52}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 					if templ_7745c5c3_Err != nil {
@@ -358,7 +363,7 @@ func dashboardPeaksCard(state adminstate.DashboardState) templ.Component {
 					var templ_7745c5c3_Var17 string
 					templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(row.Total))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/dashboard.templ`, Line: 85, Col: 100}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/dashboard.templ`, Line: 87, Col: 100}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 					if templ_7745c5c3_Err != nil {
@@ -371,7 +376,7 @@ func dashboardPeaksCard(state adminstate.DashboardState) templ.Component {
 					var templ_7745c5c3_Var18 string
 					templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(row.NonVendor))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/dashboard.templ`, Line: 86, Col: 104}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/dashboard.templ`, Line: 88, Col: 104}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 					if templ_7745c5c3_Err != nil {
@@ -384,7 +389,7 @@ func dashboardPeaksCard(state adminstate.DashboardState) templ.Component {
 					var templ_7745c5c3_Var19 string
 					templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(row.Vendor))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/dashboard.templ`, Line: 87, Col: 101}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/dashboard.templ`, Line: 89, Col: 101}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 					if templ_7745c5c3_Err != nil {
@@ -403,7 +408,7 @@ func dashboardPeaksCard(state adminstate.DashboardState) templ.Component {
 							var templ_7745c5c3_Var20 string
 							templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(row.Unique))
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/dashboard.templ`, Line: 90, Col: 103}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/dashboard.templ`, Line: 92, Col: 103}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 							if templ_7745c5c3_Err != nil {
@@ -414,7 +419,7 @@ func dashboardPeaksCard(state adminstate.DashboardState) templ.Component {
 								return templ_7745c5c3_Err
 							}
 						} else {
-							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<td class=\"py-2 pr-4 text-center text-font-muted/50\">—</td>")
+							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<td class=\"py-2 pr-4 text-center text-font-muted/50\">-</td>")
 							if templ_7745c5c3_Err != nil {
 								return templ_7745c5c3_Err
 							}

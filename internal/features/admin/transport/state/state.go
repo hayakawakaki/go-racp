@@ -15,17 +15,21 @@ type DatabaseState struct {
 }
 
 type DashboardState struct {
-	PeakTable PeakTable              `json:"-"`
-	General   domain.GeneralSnapshot `json:"general"`
-	Online    domain.OnlineSnapshot  `json:"online"`
+	PeakTable   PeakTable              `json:"-"`
+	General     domain.GeneralSnapshot `json:"general"`
+	Online      domain.OnlineSnapshot  `json:"online"`
+	PeaksFailed bool                   `json:"-"`
 }
 
 //nolint:govet // grouped for readability over a few bytes of padding
 type EconomyState struct {
-	Location  *time.Location
-	Totals    currency.TotalsDTO
-	Deposits  currency.DepositPage
-	Withdraws currency.WithdrawHistoryPage
+	Location        *time.Location
+	Totals          currency.TotalsDTO
+	Deposits        currency.DepositPage
+	Withdraws       currency.WithdrawHistoryPage
+	TotalsFailed    bool
+	DepositsFailed  bool
+	WithdrawsFailed bool
 }
 
 type PeakTable struct {

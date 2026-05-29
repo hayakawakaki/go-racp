@@ -202,6 +202,7 @@ func (h *Handler) dashboardState(ctx context.Context) state.DashboardState {
 		rows, err := h.metric.Peaks(gctx)
 		if err != nil {
 			h.logger.Warn("admin: peaks read failed", "err", err)
+			s.PeaksFailed = true
 			return nil
 		}
 		peaks = rows
@@ -236,6 +237,7 @@ func (h *Handler) economyState(ctx context.Context, dpage, wpage int) state.Econ
 		totals, err := h.economy.Totals(gctx)
 		if err != nil {
 			h.logger.Warn("admin: economy totals read failed", "err", err)
+			s.TotalsFailed = true
 			return nil
 		}
 		s.Totals = totals
@@ -245,6 +247,7 @@ func (h *Handler) economyState(ctx context.Context, dpage, wpage int) state.Econ
 		deposits, err := h.economy.DepositHistory(gctx, dpage, economyPerPage)
 		if err != nil {
 			h.logger.Warn("admin: economy deposits read failed", "err", err)
+			s.DepositsFailed = true
 			return nil
 		}
 		s.Deposits = deposits
@@ -254,6 +257,7 @@ func (h *Handler) economyState(ctx context.Context, dpage, wpage int) state.Econ
 		withdraws, err := h.economy.WithdrawHistory(gctx, wpage, economyPerPage)
 		if err != nil {
 			h.logger.Warn("admin: economy withdraws read failed", "err", err)
+			s.WithdrawsFailed = true
 			return nil
 		}
 		s.Withdraws = withdraws

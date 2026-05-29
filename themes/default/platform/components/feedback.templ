@@ -1,0 +1,7 @@
+package components
+
+import "github.com/hayakawakaki/go-racp/internal/platform/ui"
+
+templ DataUnavailable(class ...string) {
+	<p class={ ui.MergeWithDefault("text-sm text-font-muted", class) }>Unable to load this right now.</p>
+}
