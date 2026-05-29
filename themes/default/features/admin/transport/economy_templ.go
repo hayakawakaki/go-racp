@@ -10,9 +10,7 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"fmt"
-	"net/url"
 	"strconv"
-	"time"
 
 	adminstate "github.com/hayakawakaki/go-racp/internal/features/admin/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/ui"
@@ -20,46 +18,17 @@ import (
 	"github.com/hayakawakaki/go-racp/themes/default/platform/helpers"
 )
 
+var economyHistoryLinkAttrs = templ.Attributes{
+	"hx-target":   "#admin-content",
+	"hx-push-url": "true",
+}
+
 func economyDepositsHrefPattern(state adminstate.EconomyState) string {
-	return economyHrefPattern("dpage", "__PAGE__", "wpage", state.Withdraws.Page)
+	return helpers.HistoryHref("/admin/economy", "dpage", "__PAGE__", "wpage", state.Withdraws.Page)
 }
 
 func economyWithdrawsHrefPattern(state adminstate.EconomyState) string {
-	return economyHrefPattern("wpage", "__PAGE__", "dpage", state.Deposits.Page)
-}
-
-func economyHrefPattern(primaryKey, primaryValue, otherKey string, otherPage int) string {
-	values := url.Values{}
-	values.Set(primaryKey, primaryValue)
-	if otherPage > 1 {
-		values.Set(otherKey, strconv.Itoa(otherPage))
-	}
-
-	return "/admin/economy?" + values.Encode()
-}
-
-func economyStatusLabel(status int) string {
-	if status == 2 {
-		return "Sent"
-	}
-
-	return "Pending"
-}
-
-func economyTime(t time.Time, loc *time.Location) string {
-	if loc == nil {
-		loc = time.UTC
-	}
-
-	return t.In(loc).Format("2006-01-02 15:04")
-}
-
-func economySentTime(t *time.Time, loc *time.Location) string {
-	if t == nil {
-		return "not sent"
-	}
-
-	return economyTime(*t, loc)
+	return helpers.HistoryHref("/admin/economy", "wpage", "__PAGE__", "dpage", state.Deposits.Page)
 }
 
 func EconomyContent(state adminstate.EconomyState) templ.Component {
@@ -181,7 +150,7 @@ func economyTotalStat(label string, value int64) templ.Component {
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/economy.templ`, Line: 81, Col: 10}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/economy.templ`, Line: 50, Col: 10}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
@@ -200,7 +169,7 @@ func economyTotalStat(label string, value int64) templ.Component {
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(helpers.FormatAmount(value))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/economy.templ`, Line: 83, Col: 110}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/economy.templ`, Line: 52, Col: 110}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
@@ -280,6 +249,7 @@ func economyDepositsCard(state adminstate.EconomyState) templ.Component {
 					Size:        ui.PaginationSizeSM,
 					Color:       ui.PaginationColorIndigo,
 					HrefPattern: economyDepositsHrefPattern(state),
+					LinkAttrs:   economyHistoryLinkAttrs,
 				}).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -539,7 +509,7 @@ func economyDepositsCard(state adminstate.EconomyState) templ.Component {
 									var templ_7745c5c3_Var22 string
 									templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(d.Email)
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/economy.templ`, Line: 138, Col: 17}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/economy.templ`, Line: 108, Col: 17}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 									if templ_7745c5c3_Err != nil {
@@ -570,7 +540,7 @@ func economyDepositsCard(state adminstate.EconomyState) templ.Component {
 									var templ_7745c5c3_Var24 string
 									templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(helpers.FormatAmount(d.Zeny))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/economy.templ`, Line: 141, Col: 38}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/economy.templ`, Line: 111, Col: 38}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 									if templ_7745c5c3_Err != nil {
@@ -601,7 +571,7 @@ func economyDepositsCard(state adminstate.EconomyState) templ.Component {
 									var templ_7745c5c3_Var26 string
 									templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(helpers.FormatAmount(int64(d.Cashpoint)))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/economy.templ`, Line: 144, Col: 50}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/economy.templ`, Line: 114, Col: 50}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 									if templ_7745c5c3_Err != nil {
@@ -630,9 +600,9 @@ func economyDepositsCard(state adminstate.EconomyState) templ.Component {
 									}
 									ctx = templ.InitializeContext(ctx)
 									var templ_7745c5c3_Var28 string
-									templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(economyTime(d.ProcessedAt, state.Location))
+									templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(helpers.FormatTime(d.ProcessedAt, state.Location))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/economy.templ`, Line: 147, Col: 52}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/economy.templ`, Line: 117, Col: 59}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 									if templ_7745c5c3_Err != nil {
@@ -745,6 +715,7 @@ func economyWithdrawsCard(state adminstate.EconomyState) templ.Component {
 					Size:        ui.PaginationSizeSM,
 					Color:       ui.PaginationColorIndigo,
 					HrefPattern: economyWithdrawsHrefPattern(state),
+					LinkAttrs:   economyHistoryLinkAttrs,
 				}).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -1056,7 +1027,7 @@ func economyWithdrawsCard(state adminstate.EconomyState) templ.Component {
 									var templ_7745c5c3_Var46 string
 									templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinStringErrs(wd.Email)
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/economy.templ`, Line: 214, Col: 18}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/economy.templ`, Line: 185, Col: 18}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var46))
 									if templ_7745c5c3_Err != nil {
@@ -1087,7 +1058,7 @@ func economyWithdrawsCard(state adminstate.EconomyState) templ.Component {
 									var templ_7745c5c3_Var48 string
 									templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.JoinStringErrs(helpers.FormatAmount(wd.Zeny))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/economy.templ`, Line: 217, Col: 39}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/economy.templ`, Line: 188, Col: 39}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var48))
 									if templ_7745c5c3_Err != nil {
@@ -1118,7 +1089,7 @@ func economyWithdrawsCard(state adminstate.EconomyState) templ.Component {
 									var templ_7745c5c3_Var50 string
 									templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.JoinStringErrs(helpers.FormatAmount(int64(wd.Cashpoint)))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/economy.templ`, Line: 220, Col: 51}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/economy.templ`, Line: 191, Col: 51}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var50))
 									if templ_7745c5c3_Err != nil {
@@ -1147,9 +1118,9 @@ func economyWithdrawsCard(state adminstate.EconomyState) templ.Component {
 									}
 									ctx = templ.InitializeContext(ctx)
 									var templ_7745c5c3_Var52 string
-									templ_7745c5c3_Var52, templ_7745c5c3_Err = templ.JoinStringErrs(economyStatusLabel(wd.Status))
+									templ_7745c5c3_Var52, templ_7745c5c3_Err = templ.JoinStringErrs(helpers.WithdrawStatusLabel(wd.Status))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/economy.templ`, Line: 223, Col: 39}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/economy.templ`, Line: 194, Col: 48}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var52))
 									if templ_7745c5c3_Err != nil {
@@ -1178,9 +1149,9 @@ func economyWithdrawsCard(state adminstate.EconomyState) templ.Component {
 									}
 									ctx = templ.InitializeContext(ctx)
 									var templ_7745c5c3_Var54 string
-									templ_7745c5c3_Var54, templ_7745c5c3_Err = templ.JoinStringErrs(economyTime(wd.CreatedAt, state.Location))
+									templ_7745c5c3_Var54, templ_7745c5c3_Err = templ.JoinStringErrs(helpers.FormatTime(wd.CreatedAt, state.Location))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/economy.templ`, Line: 226, Col: 51}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/economy.templ`, Line: 197, Col: 58}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var54))
 									if templ_7745c5c3_Err != nil {
@@ -1209,9 +1180,9 @@ func economyWithdrawsCard(state adminstate.EconomyState) templ.Component {
 									}
 									ctx = templ.InitializeContext(ctx)
 									var templ_7745c5c3_Var56 string
-									templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.JoinStringErrs(economySentTime(wd.SentAt, state.Location))
+									templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.JoinStringErrs(helpers.FormatSentTime(wd.SentAt, state.Location))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/economy.templ`, Line: 229, Col: 52}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/economy.templ`, Line: 200, Col: 59}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var56))
 									if templ_7745c5c3_Err != nil {
@@ -1286,7 +1257,7 @@ func economyAccountLink(accountID int) templ.Component {
 		var templ_7745c5c3_Var58 templ.SafeURL
 		templ_7745c5c3_Var58, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(fmt.Sprintf("/users/%d", accountID)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/economy.templ`, Line: 241, Col: 59}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/economy.templ`, Line: 212, Col: 59}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var58))
 		if templ_7745c5c3_Err != nil {
@@ -1299,7 +1270,7 @@ func economyAccountLink(accountID int) templ.Component {
 		var templ_7745c5c3_Var59 string
 		templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/users/%d", accountID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/economy.templ`, Line: 242, Col: 46}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/economy.templ`, Line: 213, Col: 46}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var59))
 		if templ_7745c5c3_Err != nil {
@@ -1312,7 +1283,7 @@ func economyAccountLink(accountID int) templ.Component {
 		var templ_7745c5c3_Var60 string
 		templ_7745c5c3_Var60, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(accountID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/economy.templ`, Line: 247, Col: 27}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/economy.templ`, Line: 218, Col: 27}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var60))
 		if templ_7745c5c3_Err != nil {

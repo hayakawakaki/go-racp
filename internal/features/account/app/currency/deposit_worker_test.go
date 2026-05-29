@@ -48,8 +48,6 @@ func TestDepositWorker_DrainOnce_DeletesByOutcome(t *testing.T) {
 		{name: "credited is removed", credited: true, wantDeleted: true},
 		{name: "already processed is removed", credited: false, wantDeleted: true},
 		{name: "cooldown locked is kept", creditErr: domain.ErrDepositLocked, wantDeleted: false},
-		{name: "overflow is removed", creditErr: domain.ErrAmountOverflow, wantDeleted: true},
-		{name: "invalid amount is removed", creditErr: domain.ErrInvalidAmount, wantDeleted: true},
 		{name: "transient error is kept", creditErr: errors.New("db down"), wantDeleted: false},
 	}
 	for _, tt := range tests {

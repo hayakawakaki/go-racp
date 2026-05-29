@@ -231,26 +231,35 @@ func (h *Handler) economyState(ctx context.Context, dpage, wpage int) state.Econ
 		return s
 	}
 
-	totals, err := h.economy.Totals(ctx)
-	if err != nil {
-		h.logger.Warn("admin: economy totals read failed", "err", err)
-	} else {
+	g, gctx := errgroup.WithContext(ctx)
+	g.Go(func() error {
+		totals, err := h.economy.Totals(gctx)
+		if err != nil {
+			h.logger.Warn("admin: economy totals read failed", "err", err)
+			return nil
+		}
 		s.Totals = totals
-	}
-
-	deposits, err := h.economy.DepositHistory(ctx, dpage, economyPerPage)
-	if err != nil {
-		h.logger.Warn("admin: economy deposits read failed", "err", err)
-	} else {
+		return nil
+	})
+	g.Go(func() error {
+		deposits, err := h.economy.DepositHistory(gctx, dpage, economyPerPage)
+		if err != nil {
+			h.logger.Warn("admin: economy deposits read failed", "err", err)
+			return nil
+		}
 		s.Deposits = deposits
-	}
-
-	withdraws, err := h.economy.WithdrawHistory(ctx, wpage, economyPerPage)
-	if err != nil {
-		h.logger.Warn("admin: economy withdraws read failed", "err", err)
-	} else {
+		return nil
+	})
+	g.Go(func() error {
+		withdraws, err := h.economy.WithdrawHistory(gctx, wpage, economyPerPage)
+		if err != nil {
+			h.logger.Warn("admin: economy withdraws read failed", "err", err)
+			return nil
+		}
 		s.Withdraws = withdraws
-	}
+		return nil
+	})
+	_ = g.Wait()
 
 	h.resolveEconomyEmails(ctx, s.Deposits.Rows, s.Withdraws.Rows)
 

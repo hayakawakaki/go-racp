@@ -1,9 +1,7 @@
 package moderation
 
 import (
-	"net/url"
 	"strconv"
-	"time"
 
 	accountmoderationstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/ui"
@@ -12,45 +10,11 @@ import (
 )
 
 func detailDepositsHref(state accountmoderationstate.DetailState) string {
-	return detailHistoryHref(state.Detail.User.ID, "dpage", "__PAGE__", "wpage", state.Withdraws.Page)
+	return helpers.HistoryHref("/users/"+strconv.Itoa(state.Detail.User.ID), "dpage", "__PAGE__", "wpage", state.Withdraws.Page)
 }
 
 func detailWithdrawsHref(state accountmoderationstate.DetailState) string {
-	return detailHistoryHref(state.Detail.User.ID, "wpage", "__PAGE__", "dpage", state.Deposits.Page)
-}
-
-func detailHistoryHref(accountID int, primaryKey, primaryValue, otherKey string, otherPage int) string {
-	values := url.Values{}
-	values.Set(primaryKey, primaryValue)
-	if otherPage > 1 {
-		values.Set(otherKey, strconv.Itoa(otherPage))
-	}
-
-	return "/users/" + strconv.Itoa(accountID) + "?" + values.Encode()
-}
-
-func detailStatusLabel(status int) string {
-	if status == 2 {
-		return "Sent"
-	}
-
-	return "Pending"
-}
-
-func detailTime(t time.Time, loc *time.Location) string {
-	if loc == nil {
-		loc = time.UTC
-	}
-
-	return t.In(loc).Format("2006-01-02 15:04")
-}
-
-func detailSentTime(t *time.Time, loc *time.Location) string {
-	if t == nil {
-		return "not sent"
-	}
-
-	return detailTime(*t, loc)
+	return helpers.HistoryHref("/users/"+strconv.Itoa(state.Detail.User.ID), "wpage", "__PAGE__", "dpage", state.Deposits.Page)
 }
 
 var detailHistoryLinkAttrs = templ.Attributes{
@@ -105,7 +69,7 @@ templ depositsHistorySection(state accountmoderationstate.DetailState) {
 								{ helpers.FormatAmount(int64(d.Cashpoint)) }
 							}
 							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "text-font-muted tabular-nums"}) {
-								{ detailTime(d.ProcessedAt, state.Location) }
+								{ helpers.FormatTime(d.ProcessedAt, state.Location) }
 							}
 						}
 					}
@@ -168,13 +132,13 @@ templ withdrawsHistorySection(state accountmoderationstate.DetailState) {
 								{ helpers.FormatAmount(int64(wd.Cashpoint)) }
 							}
 							@ui.TableCell(ui.TableCellProps{Class: "text-font-muted"}) {
-								{ detailStatusLabel(wd.Status) }
+								{ helpers.WithdrawStatusLabel(wd.Status) }
 							}
 							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "text-font-muted tabular-nums"}) {
-								{ detailTime(wd.CreatedAt, state.Location) }
+								{ helpers.FormatTime(wd.CreatedAt, state.Location) }
 							}
 							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "text-font-muted tabular-nums"}) {
-								{ detailSentTime(wd.SentAt, state.Location) }
+								{ helpers.FormatSentTime(wd.SentAt, state.Location) }
 							}
 						}
 					}

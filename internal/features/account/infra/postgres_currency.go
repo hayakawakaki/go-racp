@@ -87,10 +87,8 @@ func (r *CurrencyRepository) CreditDeposit(ctx context.Context, depositID int64,
 		return false, nil
 	}
 
-	newZeny, newCashpoint, err := domain.AddBalance(currentZeny, zeny, currentCashpoint, cashpoint)
-	if err != nil {
-		return false, fmt.Errorf("infra.CurrencyRepository.CreditDeposit balance: %w", err)
-	}
+	newZeny := domain.AddZenyCapped(currentZeny, zeny)
+	newCashpoint := domain.AddCashpointCapped(currentCashpoint, cashpoint)
 
 	if _, err = tx.Exec(ctx,
 		`UPDATE cp_currency SET zeny = $1, cashpoint = $2, locked_until = $3 WHERE account_id = $4`,

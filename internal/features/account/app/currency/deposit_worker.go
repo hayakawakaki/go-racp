@@ -66,9 +66,6 @@ func (w *DepositWorker) applyDeposit(ctx context.Context, depositRow domain.Depo
 		return true
 	case errors.Is(err, domain.ErrDepositLocked):
 		return false
-	case errors.Is(err, domain.ErrAmountOverflow), errors.Is(err, domain.ErrInvalidAmount):
-		w.cfg.Logger.Error("currency: undeliverable deposit, deleting", "id", depositRow.ID, "account_id", depositRow.AccountID, "zeny", depositRow.Zeny, "points", depositRow.Points, "err", err)
-		return true
 	default:
 		w.cfg.Logger.Error("currency: credit deposit", "id", depositRow.ID, "err", err)
 		return false

@@ -2,9 +2,7 @@ package transport
 
 import (
 	"fmt"
-	"net/url"
 	"strconv"
-	"time"
 
 	adminstate "github.com/hayakawakaki/go-racp/internal/features/admin/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/ui"
@@ -12,46 +10,17 @@ import (
 	"github.com/hayakawakaki/go-racp/themes/default/platform/helpers"
 )
 
+var economyHistoryLinkAttrs = templ.Attributes{
+	"hx-target":   "#admin-content",
+	"hx-push-url": "true",
+}
+
 func economyDepositsHrefPattern(state adminstate.EconomyState) string {
-	return economyHrefPattern("dpage", "__PAGE__", "wpage", state.Withdraws.Page)
+	return helpers.HistoryHref("/admin/economy", "dpage", "__PAGE__", "wpage", state.Withdraws.Page)
 }
 
 func economyWithdrawsHrefPattern(state adminstate.EconomyState) string {
-	return economyHrefPattern("wpage", "__PAGE__", "dpage", state.Deposits.Page)
-}
-
-func economyHrefPattern(primaryKey, primaryValue, otherKey string, otherPage int) string {
-	values := url.Values{}
-	values.Set(primaryKey, primaryValue)
-	if otherPage > 1 {
-		values.Set(otherKey, strconv.Itoa(otherPage))
-	}
-
-	return "/admin/economy?" + values.Encode()
-}
-
-func economyStatusLabel(status int) string {
-	if status == 2 {
-		return "Sent"
-	}
-
-	return "Pending"
-}
-
-func economyTime(t time.Time, loc *time.Location) string {
-	if loc == nil {
-		loc = time.UTC
-	}
-
-	return t.In(loc).Format("2006-01-02 15:04")
-}
-
-func economySentTime(t *time.Time, loc *time.Location) string {
-	if t == nil {
-		return "not sent"
-	}
-
-	return economyTime(*t, loc)
+	return helpers.HistoryHref("/admin/economy", "wpage", "__PAGE__", "dpage", state.Deposits.Page)
 }
 
 templ EconomyContent(state adminstate.EconomyState) {
@@ -102,6 +71,7 @@ templ economyDepositsCard(state adminstate.EconomyState) {
 					Size:        ui.PaginationSizeSM,
 					Color:       ui.PaginationColorIndigo,
 					HrefPattern: economyDepositsHrefPattern(state),
+					LinkAttrs:   economyHistoryLinkAttrs,
 				})
 			}
 		</div>
@@ -144,7 +114,7 @@ templ economyDepositsCard(state adminstate.EconomyState) {
 								{ helpers.FormatAmount(int64(d.Cashpoint)) }
 							}
 							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "text-font-muted tabular-nums"}) {
-								{ economyTime(d.ProcessedAt, state.Location) }
+								{ helpers.FormatTime(d.ProcessedAt, state.Location) }
 							}
 						}
 					}
@@ -172,6 +142,7 @@ templ economyWithdrawsCard(state adminstate.EconomyState) {
 					Size:        ui.PaginationSizeSM,
 					Color:       ui.PaginationColorIndigo,
 					HrefPattern: economyWithdrawsHrefPattern(state),
+					LinkAttrs:   economyHistoryLinkAttrs,
 				})
 			}
 		</div>
@@ -220,13 +191,13 @@ templ economyWithdrawsCard(state adminstate.EconomyState) {
 								{ helpers.FormatAmount(int64(wd.Cashpoint)) }
 							}
 							@ui.TableCell(ui.TableCellProps{Class: "text-font-muted"}) {
-								{ economyStatusLabel(wd.Status) }
+								{ helpers.WithdrawStatusLabel(wd.Status) }
 							}
 							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "text-font-muted tabular-nums"}) {
-								{ economyTime(wd.CreatedAt, state.Location) }
+								{ helpers.FormatTime(wd.CreatedAt, state.Location) }
 							}
 							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "text-font-muted tabular-nums"}) {
-								{ economySentTime(wd.SentAt, state.Location) }
+								{ helpers.FormatSentTime(wd.SentAt, state.Location) }
 							}
 						}
 					}

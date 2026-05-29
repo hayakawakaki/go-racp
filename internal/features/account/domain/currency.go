@@ -43,6 +43,28 @@ func AddCashpoint(current, delta int) (int, error) {
 	return current + delta, nil
 }
 
+func AddZenyCapped(current, delta int64) int64 {
+	if delta <= 0 {
+		return current
+	}
+	if current > math.MaxInt64-delta {
+		return math.MaxInt64
+	}
+
+	return current + delta
+}
+
+func AddCashpointCapped(current, delta int) int {
+	if delta <= 0 {
+		return current
+	}
+	if current > math.MaxInt32-delta {
+		return math.MaxInt32
+	}
+
+	return current + delta
+}
+
 func SubZeny(current, delta int64) (int64, error) {
 	if delta < 0 {
 		return 0, ErrInvalidAmount

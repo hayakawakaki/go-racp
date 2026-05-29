@@ -80,6 +80,60 @@ func TestAddCashpoint(t *testing.T) {
 	}
 }
 
+func TestAddZenyCapped(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		current int64
+		delta   int64
+		want    int64
+	}{
+		{name: "adds", current: 100, delta: 50, want: 150},
+		{name: "zero delta", current: 100, delta: 0, want: 100},
+		{name: "negative delta is no-op", current: 100, delta: -1, want: 100},
+		{name: "max boundary", current: math.MaxInt64 - 1, delta: 1, want: math.MaxInt64},
+		{name: "overflow saturates", current: math.MaxInt64, delta: 1, want: math.MaxInt64},
+		{name: "large overflow saturates", current: math.MaxInt64 - 10, delta: 1000, want: math.MaxInt64},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := AddZenyCapped(tt.current, tt.delta); got != tt.want {
+				t.Errorf("AddZenyCapped(%d, %d) = %d, want %d", tt.current, tt.delta, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestAddCashpointCapped(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		current int
+		delta   int
+		want    int
+	}{
+		{name: "adds", current: 100, delta: 50, want: 150},
+		{name: "zero delta", current: 100, delta: 0, want: 100},
+		{name: "negative delta is no-op", current: 100, delta: -1, want: 100},
+		{name: "max boundary", current: math.MaxInt32 - 1, delta: 1, want: math.MaxInt32},
+		{name: "overflow saturates", current: math.MaxInt32, delta: 1, want: math.MaxInt32},
+		{name: "large overflow saturates", current: math.MaxInt32 - 10, delta: 1000, want: math.MaxInt32},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := AddCashpointCapped(tt.current, tt.delta); got != tt.want {
+				t.Errorf("AddCashpointCapped(%d, %d) = %d, want %d", tt.current, tt.delta, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestSubZeny(t *testing.T) {
 	t.Parallel()
 
