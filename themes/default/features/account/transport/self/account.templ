@@ -6,6 +6,7 @@ import (
 	accountselfstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/self/state"
 	charapp "github.com/hayakawakaki/go-racp/internal/features/character/app"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/security"
 	"github.com/hayakawakaki/go-racp/internal/platform/ui"
 	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
 )
@@ -39,6 +40,7 @@ templ AccountPage(layout httpx.Layout, state accountselfstate.AccountState) {
 			}
 			@accountIdentityCard(state)
 			<div id="modal"></div>
+			@accountWalletCard(state)
 			@accountCharactersCard(state)
 		</div>
 	}
@@ -100,6 +102,78 @@ templ accountIdentityCard(state accountselfstate.AccountState) {
 				}
 			</div>
 		</div>
+	}
+}
+
+templ accountWalletCard(state accountselfstate.AccountState) {
+	@components.BentoCard(components.BentoCardProps{
+		Delay:   "40ms",
+		Padding: "p-6 lg:p-8",
+		Class:   "gap-4",
+	}) {
+		<div class="pb-3 border-b border-border">
+			@components.BentoLabel("text-[11px]") {
+				Wallet
+			}
+		</div>
+		<div class="flex flex-wrap gap-8">
+			<div class="space-y-1">
+				<div class="text-xs text-font-muted">Cashpoint</div>
+				<div class="text-2xl font-light tabular-nums text-font">{ fmt.Sprintf("%d", state.Balance.Cashpoint) }</div>
+			</div>
+			<div class="space-y-1">
+				<div class="text-xs text-font-muted">Zeny</div>
+				<div class="text-2xl font-light tabular-nums text-font">{ fmt.Sprintf("%d", state.Balance.Zeny) }</div>
+			</div>
+		</div>
+		<form method="post" action="/account/withdraw" class="flex flex-wrap items-end gap-3 pt-4 border-t border-border">
+			@security.HiddenField()
+			@ui.Field(ui.FieldProps{Label: "Withdraw cashpoint", For: "cashpoint"}) {
+				@ui.Input(ui.InputProps{
+					ID:      "cashpoint",
+					Name:    "cashpoint",
+					Type:    ui.InputTypeNumber,
+					Value:   "0",
+					Min:     "0",
+					Size:    ui.InputSizeMD,
+					Rounded: ui.InputRoundedMD,
+					Color:   ui.InputColorIndigo,
+				})
+			}
+			@ui.Field(ui.FieldProps{Label: "Withdraw zeny", For: "zeny"}) {
+				@ui.Input(ui.InputProps{
+					ID:      "zeny",
+					Name:    "zeny",
+					Type:    ui.InputTypeNumber,
+					Value:   "0",
+					Min:     "0",
+					Size:    ui.InputSizeMD,
+					Rounded: ui.InputRoundedMD,
+					Color:   ui.InputColorIndigo,
+				})
+			}
+			@ui.Button(ui.ButtonProps{
+				Variant: ui.ButtonSolid,
+				Color:   ui.ButtonColorIndigo,
+				Size:    ui.ButtonSizeMD,
+				Rounded: ui.ButtonRoundedMD,
+				Type:    ui.ButtonTypeSubmit,
+			}) {
+				Withdraw
+			}
+		</form>
+		if len(state.RecentWithdraws) > 0 {
+			<div class="pt-4 border-t border-border space-y-2">
+				@components.BentoLabel("text-[11px]") {
+					Recent withdrawals
+				}
+				<ul class="divide-y divide-border">
+					for _, wd := range state.RecentWithdraws {
+						<li class="py-2 text-sm text-font-muted tabular-nums">{ fmt.Sprintf("#%d  cashpoint %d  zeny %d", wd.ID, wd.Cashpoint, wd.Zeny) }</li>
+					}
+				</ul>
+			</div>
+		}
 	}
 }
 

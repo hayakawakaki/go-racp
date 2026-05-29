@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	currencyapp "github.com/hayakawakaki/go-racp/internal/features/account/app/currency"
 	modapp "github.com/hayakawakaki/go-racp/internal/features/account/app/moderation"
 	app "github.com/hayakawakaki/go-racp/internal/features/account/app/self"
 	"github.com/hayakawakaki/go-racp/internal/features/account/infra"
@@ -30,6 +31,24 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 
 	charSvc := character.BuildService(in)
 
+	currencySvc := BuildCurrencyService(in)
+
+	currencyRepo := infra.NewCurrencyRepository(in.DB)
+	depositWorker := currencyapp.NewDepositWorker(currencyRepo, infra.NewDepositQueue(in.MainDB), currencyapp.DepositWorkerConfig{
+		Logger:       in.Logger,
+		Interval:     in.Config.App.Currency.DepositPollInterval,
+		Cooldown:     in.Config.App.Currency.Cooldown,
+		MaxZeny:      in.Config.App.Currency.MaxZenyPerTx,
+		MaxCashpoint: in.Config.App.Currency.MaxCashpointPerTx,
+	})
+	go depositWorker.Run(in.ShutdownCtx)
+
+	withdrawWorker := currencyapp.NewWithdrawWorker(currencyRepo, infra.NewWithdrawQueue(in.MainDB), currencyapp.WithdrawWorkerConfig{
+		Logger:   in.Logger,
+		Interval: in.Config.App.Currency.WithdrawDrainInterval,
+	})
+	go withdrawWorker.Run(in.ShutdownCtx)
+
 	trustedProxies, err := security.ParseTrustedProxies(in.Config.App.Security.TrustedProxyCIDRs)
 	if err != nil {
 		panic(fmt.Errorf("account/plugin: %w", err))
@@ -39,6 +58,7 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 		Logger:               in.Logger,
 		Users:                userRepo,
 		Characters:           charSvc,
+		Currency:             currencySvc,
 		Theme:                theme.Active,
 		Secure:               secure,
 		General:              in.Config.App.General,
@@ -93,6 +113,15 @@ func buildServices(in *coreinfra.Infra) (*app.Service, *app.SessionService, *inf
 	)
 
 	return svc, sessSvc, userRepo
+}
+
+func BuildCurrencyService(in *coreinfra.Infra) *currencyapp.Service {
+	repo := infra.NewCurrencyRepository(in.DB)
+
+	return currencyapp.NewService(repo,
+		currencyapp.WithCooldown(in.Config.App.Currency.Cooldown),
+		currencyapp.WithLimits(in.Config.App.Currency.MaxZenyPerTx, in.Config.App.Currency.MaxCashpointPerTx),
+	)
 }
 
 func BuildModerationService(in *coreinfra.Infra) *modapp.Service {

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/a-h/templ"
+	currency "github.com/hayakawakaki/go-racp/internal/features/account/app/currency"
 	app "github.com/hayakawakaki/go-racp/internal/features/account/app/self"
 	"github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
@@ -25,6 +26,7 @@ const (
 	maxRegisterFormBytes = 4 << 10
 	maxLoginFormBytes    = 2 << 10
 	maxAccountFormBytes  = 4 << 10
+	maxWithdrawFormBytes = 1 << 10
 
 	genericErrorMessage = "Something went wrong. Please try again."
 	invalidFormDataMsg  = "Invalid form data."
@@ -69,6 +71,12 @@ type characterLister interface {
 	List(ctx context.Context, accountID int) ([]charapp.CharacterDTO, error)
 }
 
+type currencyService interface {
+	Balance(ctx context.Context, accountID int) (currency.BalanceDTO, error)
+	RequestWithdraw(ctx context.Context, accountID int, zeny int64, cashpoint int) error
+	RecentWithdraws(ctx context.Context, accountID, limit int) ([]currency.WithdrawDTO, error)
+}
+
 type Renderer interface {
 	AccountPage(layout httpx.Layout, state selfstate.AccountState) templ.Component
 	AccountChangeEmailModal(state selfstate.ChangeEmailState) templ.Component
@@ -97,6 +105,7 @@ type HandlerConfig struct {
 	Logger               *slog.Logger
 	Users                userLookup
 	Characters           characterLister
+	Currency             currencyService
 	Theme                Renderer
 	TrustedProxies       []*net.IPNet
 	General              config.GeneralConfig
@@ -110,6 +119,7 @@ type Handler struct {
 	sessSvc              sessionService
 	users                userLookup
 	characters           characterLister
+	currency             currencyService
 	theme                Renderer
 	logger               *slog.Logger
 	trustedProxies       []*net.IPNet
@@ -129,6 +139,7 @@ func NewHandler(svc accountService, sessSvc sessionService, cfg HandlerConfig) *
 		sessSvc:              sessSvc,
 		users:                cfg.Users,
 		characters:           cfg.Characters,
+		currency:             cfg.Currency,
 		theme:                cfg.Theme,
 		logger:               logger,
 		trustedProxies:       cfg.TrustedProxies,
@@ -164,6 +175,7 @@ func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
 	reg.Wrap(mux, "Account.ChangePassword", "POST /account/password", http.HandlerFunc(h.doChangePassword))
 	reg.Wrap(mux, "Account.ChangeEmail", "GET /account/email", http.HandlerFunc(h.showChangeEmail))
 	reg.Wrap(mux, "Account.ChangeEmail", "POST /account/email", http.HandlerFunc(h.doChangeEmail))
+	reg.Wrap(mux, "Account.Withdraw", "POST /account/withdraw", http.HandlerFunc(h.doWithdraw))
 }
 
 func (h *Handler) birthdateBounds() (minDate, maxDate string) {

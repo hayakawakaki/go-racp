@@ -73,6 +73,14 @@ type CooldownConfig struct {
 	CharacterLocationReset time.Duration `yaml:"CharacterLocationReset"`
 }
 
+type CurrencyConfig struct {
+	Cooldown              time.Duration `yaml:"Cooldown"`
+	DepositPollInterval   time.Duration `yaml:"DepositPollInterval"`
+	WithdrawDrainInterval time.Duration `yaml:"WithdrawDrainInterval"`
+	MaxZenyPerTx          int64         `yaml:"MaxZenyPerTx"`
+	MaxCashpointPerTx     int           `yaml:"MaxCashpointPerTx"`
+}
+
 type RetentionConfig struct {
 	LoginAttempts time.Duration `yaml:"LoginAttempts"`
 	SweepInterval time.Duration `yaml:"SweepInterval"`
@@ -159,6 +167,7 @@ type AppConfig struct {
 	ItemDB           ItemDBConfig           `yaml:"ItemDB"`
 	MobDB            MobDBConfig            `yaml:"MobDB"`
 	Cooldown         CooldownConfig         `yaml:"Cooldown"`
+	Currency         CurrencyConfig         `yaml:"Currency"`
 	Retention        RetentionConfig        `yaml:"Retention"`
 	TTL              TTLConfig              `yaml:"TTL"`
 	Tickets          TicketsConfig          `yaml:"Tickets"`
@@ -203,6 +212,13 @@ func appConfigDefaults() *AppConfig {
 			TicketOpen:             5 * time.Minute,
 			CharacterLookReset:     24 * time.Hour,
 			CharacterLocationReset: 1 * time.Hour,
+		},
+		Currency: CurrencyConfig{
+			Cooldown:              5 * time.Minute,
+			MaxZenyPerTx:          2_000_000_000,
+			MaxCashpointPerTx:     1_000_000,
+			DepositPollInterval:   10 * time.Second,
+			WithdrawDrainInterval: 10 * time.Second,
 		},
 		Retention: RetentionConfig{
 			LoginAttempts: 30 * 24 * time.Hour,
@@ -291,6 +307,9 @@ func validateAppConfig(cfg *AppConfig) {
 		"Cooldown.TicketOpen":             cfg.Cooldown.TicketOpen,
 		"Cooldown.CharacterLookReset":     cfg.Cooldown.CharacterLookReset,
 		"Cooldown.CharacterLocationReset": cfg.Cooldown.CharacterLocationReset,
+		"Currency.Cooldown":               cfg.Currency.Cooldown,
+		"Currency.DepositPollInterval":    cfg.Currency.DepositPollInterval,
+		"Currency.WithdrawDrainInterval":  cfg.Currency.WithdrawDrainInterval,
 		"Retention.LoginAttempts":         cfg.Retention.LoginAttempts,
 		"Retention.SweepInterval":         cfg.Retention.SweepInterval,
 	}
@@ -326,6 +345,16 @@ func validateAppConfig(cfg *AppConfig) {
 	validateTrustedProxyCIDRs(cfg.Security.TrustedProxyCIDRs)
 	validateTheme(&cfg.General)
 	validateRatesConfig(&cfg.General.Rates)
+	validateCurrencyConfig(&cfg.Currency)
+}
+
+func validateCurrencyConfig(cfg *CurrencyConfig) {
+	if cfg.MaxZenyPerTx <= 0 {
+		panic(fmt.Errorf("Currency.MaxZenyPerTx must be > 0"))
+	}
+	if cfg.MaxCashpointPerTx <= 0 {
+		panic(fmt.Errorf("Currency.MaxCashpointPerTx must be > 0"))
+	}
 }
 
 func validateTheme(cfg *GeneralConfig) {
