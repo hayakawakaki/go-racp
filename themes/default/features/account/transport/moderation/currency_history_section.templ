@@ -1,35 +1,34 @@
-package transport
+package moderation
 
 import (
-	"fmt"
 	"net/url"
 	"strconv"
 	"time"
 
-	adminstate "github.com/hayakawakaki/go-racp/internal/features/admin/transport/state"
+	accountmoderationstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/ui"
 	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
 )
 
-func economyDepositsHrefPattern(state adminstate.EconomyState) string {
-	return economyHrefPattern("dpage", "__PAGE__", "wpage", state.Withdraws.Page)
+func detailDepositsHref(state accountmoderationstate.DetailState) string {
+	return detailHistoryHref(state.Detail.User.ID, "dpage", "__PAGE__", "wpage", state.Withdraws.Page)
 }
 
-func economyWithdrawsHrefPattern(state adminstate.EconomyState) string {
-	return economyHrefPattern("wpage", "__PAGE__", "dpage", state.Deposits.Page)
+func detailWithdrawsHref(state accountmoderationstate.DetailState) string {
+	return detailHistoryHref(state.Detail.User.ID, "wpage", "__PAGE__", "dpage", state.Deposits.Page)
 }
 
-func economyHrefPattern(primaryKey, primaryValue, otherKey string, otherPage int) string {
+func detailHistoryHref(accountID int, primaryKey, primaryValue, otherKey string, otherPage int) string {
 	values := url.Values{}
 	values.Set(primaryKey, primaryValue)
 	if otherPage > 1 {
 		values.Set(otherKey, strconv.Itoa(otherPage))
 	}
 
-	return "/admin/economy?" + values.Encode()
+	return "/users/" + strconv.Itoa(accountID) + "?" + values.Encode()
 }
 
-func economyStatusLabel(status int) string {
+func detailStatusLabel(status int) string {
 	if status == 2 {
 		return "Sent"
 	}
@@ -37,7 +36,7 @@ func economyStatusLabel(status int) string {
 	return "Pending"
 }
 
-func economyTime(t time.Time, loc *time.Location) string {
+func detailTime(t time.Time, loc *time.Location) string {
 	if loc == nil {
 		loc = time.UTC
 	}
@@ -45,56 +44,27 @@ func economyTime(t time.Time, loc *time.Location) string {
 	return t.In(loc).Format("2006-01-02 15:04")
 }
 
-func economySentTime(t *time.Time, loc *time.Location) string {
+func detailSentTime(t *time.Time, loc *time.Location) string {
 	if t == nil {
 		return "not sent"
 	}
 
-	return economyTime(*t, loc)
+	return detailTime(*t, loc)
 }
 
-templ EconomyContent(state adminstate.EconomyState) {
-	<div class="space-y-4 lg:space-y-6">
-		<header class="space-y-2">
-			@components.BentoLabel("text-[11px]") {
-				Operations
-			}
-			<h1 class="text-3xl xl:text-4xl font-light tracking-tight text-font">Economy</h1>
-		</header>
-		<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
-			@economyTotalCard("Total Zeny", state.Totals.Zeny, "0ms")
-			@economyTotalCard("Total Cashpoint", state.Totals.Cashpoint, "60ms")
-		</div>
-		<div class="flex flex-col lg:flex-row gap-4 lg:gap-6">
-			@economyDepositsCard(state)
-			@economyWithdrawsCard(state)
-		</div>
-	</div>
+var detailHistoryLinkAttrs = templ.Attributes{
+	"hx-target":   "#admin-content",
+	"hx-push-url": "true",
 }
 
-templ economyTotalCard(label string, value int64, delay string) {
+templ depositsHistorySection(state accountmoderationstate.DetailState) {
 	@components.BentoCard(components.BentoCardProps{
-		Delay:   delay,
-		Padding: "p-4 lg:p-5",
-		Class:   "gap-1.5 justify-between min-h-[6rem]",
-	}) {
-		@components.BentoLabel("text-[10px]") {
-			{ label }
-		}
-		<p class="text-2xl xl:text-3xl font-light tracking-tight tabular-nums text-font">{ components.FormatAmount(value) }</p>
-	}
-}
-
-templ economyDepositsCard(state adminstate.EconomyState) {
-	@components.BentoCard(components.BentoCardProps{
-		Delay:        "120ms",
-		Padding:      "p-0",
-		Class:        "overflow-hidden",
-		WrapperClass: "lg:flex-1 lg:min-w-0",
+		Padding: "p-0",
+		Class:   "overflow-hidden",
 	}) {
 		<div class="flex items-center justify-between gap-3 p-4 lg:p-5 border-b border-border">
 			@components.BentoLabel("text-[11px]") {
-				Deposits
+				Deposit history
 			}
 			if state.Deposits.TotalPages > 1 {
 				@ui.Pagination(ui.PaginationProps{
@@ -102,22 +72,17 @@ templ economyDepositsCard(state adminstate.EconomyState) {
 					TotalPages:  state.Deposits.TotalPages,
 					Size:        ui.PaginationSizeSM,
 					Color:       ui.PaginationColorIndigo,
-					HrefPattern: economyDepositsHrefPattern(state),
+					HrefPattern: detailDepositsHref(state),
+					LinkAttrs:   detailHistoryLinkAttrs,
 				})
 			}
 		</div>
 		if len(state.Deposits.Rows) == 0 {
-			<p class="p-6 text-sm text-font-muted">No deposits recorded yet.</p>
+			<p class="p-6 text-sm text-font-muted">No deposits yet.</p>
 		} else {
 			@ui.Table(ui.TableProps{Hover: true, Class: "text-font"}) {
 				@ui.TableHeader() {
 					@ui.TableRow(ui.TableRowProps{}) {
-						@ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}) {
-							Account
-						}
-						@ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}) {
-							Email
-						}
 						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
 							Zeny
 						}
@@ -132,12 +97,6 @@ templ economyDepositsCard(state adminstate.EconomyState) {
 				@ui.TableBody() {
 					for _, d := range state.Deposits.Rows {
 						@ui.TableRow(ui.TableRowProps{}) {
-							@ui.TableCell(ui.TableCellProps{Class: "font-mono tabular-nums"}) {
-								@economyAccountLink(d.AccountID)
-							}
-							@ui.TableCell(ui.TableCellProps{Class: "text-font-muted"}) {
-								{ d.Email }
-							}
 							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
 								{ components.FormatAmount(d.Zeny) }
 							}
@@ -145,7 +104,7 @@ templ economyDepositsCard(state adminstate.EconomyState) {
 								{ components.FormatAmount(int64(d.Cashpoint)) }
 							}
 							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "text-font-muted tabular-nums"}) {
-								{ economyTime(d.ProcessedAt, state.Location) }
+								{ detailTime(d.ProcessedAt, state.Location) }
 							}
 						}
 					}
@@ -155,16 +114,14 @@ templ economyDepositsCard(state adminstate.EconomyState) {
 	}
 }
 
-templ economyWithdrawsCard(state adminstate.EconomyState) {
+templ withdrawsHistorySection(state accountmoderationstate.DetailState) {
 	@components.BentoCard(components.BentoCardProps{
-		Delay:        "180ms",
-		Padding:      "p-0",
-		Class:        "overflow-hidden",
-		WrapperClass: "lg:flex-1 lg:min-w-0",
+		Padding: "p-0",
+		Class:   "overflow-hidden",
 	}) {
 		<div class="flex items-center justify-between gap-3 p-4 lg:p-5 border-b border-border">
 			@components.BentoLabel("text-[11px]") {
-				Withdrawals
+				Withdrawal history
 			}
 			if state.Withdraws.TotalPages > 1 {
 				@ui.Pagination(ui.PaginationProps{
@@ -172,22 +129,17 @@ templ economyWithdrawsCard(state adminstate.EconomyState) {
 					TotalPages:  state.Withdraws.TotalPages,
 					Size:        ui.PaginationSizeSM,
 					Color:       ui.PaginationColorIndigo,
-					HrefPattern: economyWithdrawsHrefPattern(state),
+					HrefPattern: detailWithdrawsHref(state),
+					LinkAttrs:   detailHistoryLinkAttrs,
 				})
 			}
 		</div>
 		if len(state.Withdraws.Rows) == 0 {
-			<p class="p-6 text-sm text-font-muted">No withdrawals recorded yet.</p>
+			<p class="p-6 text-sm text-font-muted">No withdrawals yet.</p>
 		} else {
 			@ui.Table(ui.TableProps{Hover: true, Class: "text-font"}) {
 				@ui.TableHeader() {
 					@ui.TableRow(ui.TableRowProps{}) {
-						@ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}) {
-							Account
-						}
-						@ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}) {
-							Email
-						}
 						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
 							Zeny
 						}
@@ -208,12 +160,6 @@ templ economyWithdrawsCard(state adminstate.EconomyState) {
 				@ui.TableBody() {
 					for _, wd := range state.Withdraws.Rows {
 						@ui.TableRow(ui.TableRowProps{}) {
-							@ui.TableCell(ui.TableCellProps{Class: "font-mono tabular-nums"}) {
-								@economyAccountLink(wd.AccountID)
-							}
-							@ui.TableCell(ui.TableCellProps{Class: "text-font-muted"}) {
-								{ wd.Email }
-							}
 							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
 								{ components.FormatAmount(wd.Zeny) }
 							}
@@ -221,13 +167,13 @@ templ economyWithdrawsCard(state adminstate.EconomyState) {
 								{ components.FormatAmount(int64(wd.Cashpoint)) }
 							}
 							@ui.TableCell(ui.TableCellProps{Class: "text-font-muted"}) {
-								{ economyStatusLabel(wd.Status) }
+								{ detailStatusLabel(wd.Status) }
 							}
 							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "text-font-muted tabular-nums"}) {
-								{ economyTime(wd.CreatedAt, state.Location) }
+								{ detailTime(wd.CreatedAt, state.Location) }
 							}
 							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "text-font-muted tabular-nums"}) {
-								{ economySentTime(wd.SentAt, state.Location) }
+								{ detailSentTime(wd.SentAt, state.Location) }
 							}
 						}
 					}
@@ -235,16 +181,4 @@ templ economyWithdrawsCard(state adminstate.EconomyState) {
 			}
 		}
 	}
-}
-
-templ economyAccountLink(accountID int) {
-	<a
-		href={ templ.SafeURL(fmt.Sprintf("/users/%d", accountID)) }
-		hx-get={ fmt.Sprintf("/users/%d", accountID) }
-		hx-target="#admin-content"
-		hx-push-url="true"
-		class="text-accent-on-surface hover:underline"
-	>
-		{ strconv.Itoa(accountID) }
-	</a>
 }

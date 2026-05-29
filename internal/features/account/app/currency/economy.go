@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"time"
+
+	"github.com/hayakawakaki/go-racp/internal/features/account/domain"
 )
 
 type TotalsDTO struct {
@@ -13,6 +15,7 @@ type TotalsDTO struct {
 
 type DepositDTO struct {
 	ProcessedAt time.Time
+	Email       string
 	DepositID   int64
 	AccountID   int
 	Zeny        int64
@@ -22,6 +25,7 @@ type DepositDTO struct {
 type AdminWithdrawDTO struct {
 	CreatedAt time.Time
 	SentAt    *time.Time
+	Email     string
 	ID        int64
 	AccountID int
 	Zeny      int64
@@ -63,19 +67,8 @@ func (s *Service) DepositHistory(ctx context.Context, page, perPage int) (Deposi
 		return DepositPage{}, fmt.Errorf("currency.Service.DepositHistory: %w", err)
 	}
 
-	rows := make([]DepositDTO, 0, len(records))
-	for _, record := range records {
-		rows = append(rows, DepositDTO{
-			DepositID:   record.DepositID,
-			AccountID:   record.AccountID,
-			Zeny:        record.Zeny,
-			Cashpoint:   record.Cashpoint,
-			ProcessedAt: record.ProcessedAt,
-		})
-	}
-
 	return DepositPage{
-		Rows:       rows,
+		Rows:       toDepositDTOs(records),
 		Total:      total,
 		Page:       page,
 		PerPage:    perPage,
@@ -92,6 +85,55 @@ func (s *Service) WithdrawHistory(ctx context.Context, page, perPage int) (Withd
 		return WithdrawHistoryPage{}, fmt.Errorf("currency.Service.WithdrawHistory: %w", err)
 	}
 
+	return WithdrawHistoryPage{
+		Rows:       toWithdrawDTOs(records),
+		Total:      total,
+		Page:       page,
+		PerPage:    perPage,
+		TotalPages: pageCount(total, perPage),
+	}, nil
+}
+
+func (s *Service) DepositHistoryByAccount(ctx context.Context, accountID, page, perPage int) (DepositPage, error) {
+	page = normalizePage(page)
+	offset := (page - 1) * perPage
+
+	records, total, err := s.repo.ListDepositsByAccount(ctx, accountID, perPage, offset)
+	if err != nil {
+		return DepositPage{}, fmt.Errorf("currency.Service.DepositHistoryByAccount: %w", err)
+	}
+
+	return DepositPage{Rows: toDepositDTOs(records), Total: total, Page: page, PerPage: perPage, TotalPages: pageCount(total, perPage)}, nil
+}
+
+func (s *Service) WithdrawHistoryByAccount(ctx context.Context, accountID, page, perPage int) (WithdrawHistoryPage, error) {
+	page = normalizePage(page)
+	offset := (page - 1) * perPage
+
+	records, total, err := s.repo.ListWithdrawsByAccount(ctx, accountID, perPage, offset)
+	if err != nil {
+		return WithdrawHistoryPage{}, fmt.Errorf("currency.Service.WithdrawHistoryByAccount: %w", err)
+	}
+
+	return WithdrawHistoryPage{Rows: toWithdrawDTOs(records), Total: total, Page: page, PerPage: perPage, TotalPages: pageCount(total, perPage)}, nil
+}
+
+func toDepositDTOs(records []domain.DepositRecord) []DepositDTO {
+	rows := make([]DepositDTO, 0, len(records))
+	for _, record := range records {
+		rows = append(rows, DepositDTO{
+			DepositID:   record.DepositID,
+			AccountID:   record.AccountID,
+			Zeny:        record.Zeny,
+			Cashpoint:   record.Cashpoint,
+			ProcessedAt: record.ProcessedAt,
+		})
+	}
+
+	return rows
+}
+
+func toWithdrawDTOs(records []domain.WithdrawRecord) []AdminWithdrawDTO {
 	rows := make([]AdminWithdrawDTO, 0, len(records))
 	for _, record := range records {
 		rows = append(rows, AdminWithdrawDTO{
@@ -105,13 +147,7 @@ func (s *Service) WithdrawHistory(ctx context.Context, page, perPage int) (Withd
 		})
 	}
 
-	return WithdrawHistoryPage{
-		Rows:       rows,
-		Total:      total,
-		Page:       page,
-		PerPage:    perPage,
-		TotalPages: pageCount(total, perPage),
-	}, nil
+	return rows
 }
 
 func normalizePage(page int) int {

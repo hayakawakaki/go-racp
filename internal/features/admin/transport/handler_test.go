@@ -88,6 +88,17 @@ func (s *stubEconomyReader) WithdrawHistory(ctx context.Context, page, perPage i
 	return currency.WithdrawHistoryPage{}, nil
 }
 
+type stubEmailResolver struct {
+	emailsFn func(context.Context, []int) (map[int]string, error)
+}
+
+func (s *stubEmailResolver) EmailsByIDs(ctx context.Context, ids []int) (map[int]string, error) {
+	if s.emailsFn != nil {
+		return s.emailsFn(ctx, ids)
+	}
+	return map[int]string{}, nil
+}
+
 type stubItemStatus struct {
 	status itemapp.ServiceStatus
 }
@@ -272,5 +283,48 @@ func TestHandler_ShowEconomy(t *testing.T) {
 	}
 	if gotDepositPage != 2 {
 		t.Errorf("deposit page = %d, want 2", gotDepositPage)
+	}
+}
+
+func TestHandler_ShowEconomy_ResolvesEmails(t *testing.T) {
+	t.Parallel()
+
+	economy := &stubEconomyReader{
+		depositsFn: func(_ context.Context, page, _ int) (currency.DepositPage, error) {
+			return currency.DepositPage{
+				Rows: []currency.DepositDTO{{DepositID: 1, AccountID: 7, Zeny: 100}},
+				Page: page,
+			}, nil
+		},
+		withdrawsFn: func(_ context.Context, page, _ int) (currency.WithdrawHistoryPage, error) {
+			return currency.WithdrawHistoryPage{
+				Rows: []currency.AdminWithdrawDTO{{ID: 1, AccountID: 9, Zeny: 50}},
+				Page: page,
+			}, nil
+		},
+	}
+	emails := &stubEmailResolver{
+		emailsFn: func(_ context.Context, _ []int) (map[int]string, error) {
+			return map[int]string{7: "a@example.com", 9: "b@example.com"}, nil
+		},
+	}
+	h := NewHandler(HandlerConfig{
+		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
+		General: config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
+		Theme:   stubTheme{},
+		Economy: economy,
+		Emails:  emails,
+	})
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/admin/economy", http.NoBody)
+	h.showEconomy(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rr.Code)
+	}
+	body := rr.Body.String()
+	if !strings.Contains(body, "a@example.com") || !strings.Contains(body, "b@example.com") {
+		t.Errorf("body missing resolved emails:\n%s", body)
 	}
 }

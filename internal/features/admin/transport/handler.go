@@ -53,6 +53,10 @@ type economyReader interface {
 	WithdrawHistory(ctx context.Context, page, perPage int) (currency.WithdrawHistoryPage, error)
 }
 
+type emailResolver interface {
+	EmailsByIDs(ctx context.Context, ids []int) (map[int]string, error)
+}
+
 type Renderer interface {
 	AdminLayout(layout httpx.Layout, pageTitle string, content templ.Component) templ.Component
 	DashboardContent(state state.DashboardState) templ.Component
@@ -73,6 +77,7 @@ type HandlerConfig struct {
 	Users      userLister
 	Guilds     guildLister
 	Economy    economyReader
+	Emails     emailResolver
 	Theme      Renderer
 	Logger     *slog.Logger
 }
@@ -86,6 +91,7 @@ type Handler struct {
 	users      userLister
 	guilds     guildLister
 	economy    economyReader
+	emails     emailResolver
 	theme      Renderer
 	logger     *slog.Logger
 }
@@ -99,6 +105,7 @@ func NewHandler(cfg HandlerConfig) *Handler {
 		users:      cfg.Users,
 		guilds:     cfg.Guilds,
 		economy:    cfg.Economy,
+		emails:     cfg.Emails,
 		general:    cfg.General,
 		theme:      cfg.Theme,
 	}
@@ -245,7 +252,39 @@ func (h *Handler) economyState(ctx context.Context, dpage, wpage int) state.Econ
 		s.Withdraws = withdraws
 	}
 
+	h.resolveEconomyEmails(ctx, s.Deposits.Rows, s.Withdraws.Rows)
+
 	return s
+}
+
+func (h *Handler) resolveEconomyEmails(ctx context.Context, deposits []currency.DepositDTO, withdraws []currency.AdminWithdrawDTO) {
+	if h.emails == nil {
+		return
+	}
+
+	ids := make([]int, 0, len(deposits)+len(withdraws))
+	for _, row := range deposits {
+		ids = append(ids, row.AccountID)
+	}
+	for _, row := range withdraws {
+		ids = append(ids, row.AccountID)
+	}
+	if len(ids) == 0 {
+		return
+	}
+
+	emails, err := h.emails.EmailsByIDs(ctx, ids)
+	if err != nil {
+		h.logger.Warn("admin: economy email lookup failed", "err", err)
+		return
+	}
+
+	for index := range deposits {
+		deposits[index].Email = emails[deposits[index].AccountID]
+	}
+	for index := range withdraws {
+		withdraws[index].Email = emails[withdraws[index].AccountID]
+	}
 }
 
 func (h *Handler) showDatabase(w http.ResponseWriter, r *http.Request) {

@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/a-h/templ"
+	currency "github.com/hayakawakaki/go-racp/internal/features/account/app/currency"
 	app "github.com/hayakawakaki/go-racp/internal/features/account/app/moderation"
 	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
@@ -63,6 +64,25 @@ func (s *stubService) AllowedRoles() map[int]string {
 	return s.allowed
 }
 
+type stubCurrencyHistory struct {
+	depositsFn  func(context.Context, int, int, int) (currency.DepositPage, error)
+	withdrawsFn func(context.Context, int, int, int) (currency.WithdrawHistoryPage, error)
+}
+
+func (s *stubCurrencyHistory) DepositHistoryByAccount(ctx context.Context, accountID, page, perPage int) (currency.DepositPage, error) {
+	if s.depositsFn != nil {
+		return s.depositsFn(ctx, accountID, page, perPage)
+	}
+	return currency.DepositPage{}, nil
+}
+
+func (s *stubCurrencyHistory) WithdrawHistoryByAccount(ctx context.Context, accountID, page, perPage int) (currency.WithdrawHistoryPage, error) {
+	if s.withdrawsFn != nil {
+		return s.withdrawsFn(ctx, accountID, page, perPage)
+	}
+	return currency.WithdrawHistoryPage{}, nil
+}
+
 type stubTheme struct{}
 
 func (stubTheme) UsersDetailPage(layout httpx.Layout, username string, state accountmoderationstate.DetailState) templ.Component {
@@ -103,6 +123,47 @@ func TestHandler_ShowDetail_RendersUsernameAndChars(t *testing.T) {
 	body := rr.Body.String()
 	if !strings.Contains(body, "kaki") || !strings.Contains(body, "Aurora") {
 		t.Errorf("body missing fields:\n%s", body)
+	}
+}
+
+func TestHandler_ShowDetail_RendersCurrencyHistory(t *testing.T) {
+	t.Parallel()
+
+	gotDepositPage := 0
+	svc := &stubService{
+		getFn: func(_ context.Context, _ int) (app.UserDetail, error) {
+			return app.UserDetail{
+				User: &accdomain.User{ID: 7, Username: "kaki", Email: "k@example.com"},
+			}, nil
+		},
+	}
+	history := &stubCurrencyHistory{
+		depositsFn: func(_ context.Context, accountID, page, _ int) (currency.DepositPage, error) {
+			gotDepositPage = page
+			if accountID != 7 {
+				t.Errorf("deposit account = %d, want 7", accountID)
+			}
+			return currency.DepositPage{Page: page, PerPage: 15}, nil
+		},
+	}
+	h := NewHandler(svc, HandlerConfig{
+		Logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
+		General:  config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
+		Currency: history,
+		Theme:    stubTheme{},
+	})
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/users/7?dpage=2", http.NoBody)
+	req.SetPathValue("id", "7")
+	h.showDetail(rr, req)
+
+	if gotDepositPage != 2 {
+		t.Errorf("deposit page = %d, want 2", gotDepositPage)
+	}
+	body := rr.Body.String()
+	if !strings.Contains(body, "Deposit history") || !strings.Contains(body, "Withdrawal history") {
+		t.Errorf("body missing history sections:\n%s", body)
 	}
 }
 

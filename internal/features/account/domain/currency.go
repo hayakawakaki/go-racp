@@ -141,6 +141,8 @@ type CurrencyRepository interface {
 	Totals(ctx context.Context) (CurrencyTotals, error)
 	ListDeposits(ctx context.Context, limit, offset int) ([]DepositRecord, int, error)
 	ListWithdraws(ctx context.Context, limit, offset int) ([]WithdrawRecord, int, error)
+	ListDepositsByAccount(ctx context.Context, accountID, limit, offset int) ([]DepositRecord, int, error)
+	ListWithdrawsByAccount(ctx context.Context, accountID, limit, offset int) ([]WithdrawRecord, int, error)
 }
 
 type DepositQueue interface {

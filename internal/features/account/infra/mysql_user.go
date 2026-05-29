@@ -367,6 +367,44 @@ func (r *Repository) UpdateGroup(ctx context.Context, id, groupID int) error {
 	return nil
 }
 
+func (r *Repository) EmailsByIDs(ctx context.Context, ids []int) (map[int]string, error) {
+	out := make(map[int]string, len(ids))
+	if len(ids) == 0 {
+		return out, nil
+	}
+
+	placeholders := make([]string, len(ids))
+	args := make([]any, len(ids))
+	for index, id := range ids {
+		placeholders[index] = "?"
+		args[index] = id
+	}
+
+	query := "SELECT account_id, email FROM login WHERE account_id IN (" + strings.Join(placeholders, ",") + ")" //nolint:gosec // placeholders are constant "?"
+
+	rows, err := r.Client.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("infra.Repository.EmailsByIDs: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	for rows.Next() {
+		var (
+			accountID int
+			email     string
+		)
+		if err := rows.Scan(&accountID, &email); err != nil {
+			return nil, fmt.Errorf("infra.Repository.EmailsByIDs scan: %w", err)
+		}
+		out[accountID] = email
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("infra.Repository.EmailsByIDs rows: %w", err)
+	}
+
+	return out, nil
+}
+
 func unbanTimeFromSeconds(secs uint32) time.Time {
 	if secs == 0 {
 		return time.Time{}

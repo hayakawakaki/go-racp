@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/a-h/templ"
+	currency "github.com/hayakawakaki/go-racp/internal/features/account/app/currency"
 	app "github.com/hayakawakaki/go-racp/internal/features/account/app/moderation"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
@@ -13,12 +14,19 @@ import (
 	"github.com/hayakawakaki/go-racp/server/config"
 )
 
+const detailHistoryPerPage = 15
+
 type userService interface {
 	Get(ctx context.Context, id int) (app.UserDetail, error)
 	Ban(ctx context.Context, cmd app.BanCommand) (app.UserDetail, error)
 	Unban(ctx context.Context, cmd app.UnbanCommand) (app.UserDetail, error)
 	SetRole(ctx context.Context, cmd app.SetRoleCommand) (app.UserDetail, error)
 	AllowedRoles() map[int]string
+}
+
+type currencyHistory interface {
+	DepositHistoryByAccount(ctx context.Context, accountID, page, perPage int) (currency.DepositPage, error)
+	WithdrawHistoryByAccount(ctx context.Context, accountID, page, perPage int) (currency.WithdrawHistoryPage, error)
 }
 
 type Renderer interface {
@@ -30,17 +38,19 @@ type Renderer interface {
 
 //nolint:govet // GeneralConfig trailing bool forces alignment cost
 type HandlerConfig struct {
-	General config.GeneralConfig
-	Theme   Renderer
-	Logger  *slog.Logger
+	General  config.GeneralConfig
+	Currency currencyHistory
+	Theme    Renderer
+	Logger   *slog.Logger
 }
 
 //nolint:govet // GeneralConfig trailing bool forces alignment cost
 type Handler struct {
-	general config.GeneralConfig
-	svc     userService
-	theme   Renderer
-	logger  *slog.Logger
+	general  config.GeneralConfig
+	svc      userService
+	currency currencyHistory
+	theme    Renderer
+	logger   *slog.Logger
 }
 
 func NewHandler(svc userService, cfg HandlerConfig) *Handler {
@@ -49,7 +59,7 @@ func NewHandler(svc userService, cfg HandlerConfig) *Handler {
 		logger = slog.Default()
 	}
 
-	return &Handler{svc: svc, logger: logger, general: cfg.General, theme: cfg.Theme}
+	return &Handler{svc: svc, logger: logger, general: cfg.General, currency: cfg.Currency, theme: cfg.Theme}
 }
 
 func (h *Handler) layout() httpx.Layout {

@@ -70,9 +70,10 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 
 	modSvc := buildModerationService(in, userRepo)
 	modH := modtransport.NewHandler(modSvc, modtransport.HandlerConfig{
-		Logger:  in.Logger,
-		General: in.Config.App.General,
-		Theme:   theme.Active,
+		Logger:   in.Logger,
+		General:  in.Config.App.General,
+		Currency: currencySvc,
+		Theme:    theme.Active,
 	})
 	modH.RegisterRoutes(reg, mux)
 }
@@ -114,6 +115,10 @@ func buildServices(in *coreinfra.Infra) (*app.Service, *app.SessionService, *inf
 	)
 
 	return svc, sessSvc, userRepo
+}
+
+func BuildUserDirectory(in *coreinfra.Infra) *infra.Repository {
+	return infra.NewRepository(in.MainDB)
 }
 
 func BuildCurrencyService(in *coreinfra.Infra) *currencyapp.Service {

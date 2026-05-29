@@ -214,21 +214,13 @@ func (r *CurrencyRepository) ListDeposits(ctx context.Context, limit, offset int
 	if err != nil {
 		return nil, 0, fmt.Errorf("infra.CurrencyRepository.ListDeposits: %w", err)
 	}
-	defer rows.Close()
 
-	out := []domain.DepositRecord{}
-	for rows.Next() {
-		var record domain.DepositRecord
-		if err := rows.Scan(&record.DepositID, &record.AccountID, &record.Zeny, &record.Cashpoint, &record.ProcessedAt); err != nil {
-			return nil, 0, fmt.Errorf("infra.CurrencyRepository.ListDeposits scan: %w", err)
-		}
-		out = append(out, record)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, 0, fmt.Errorf("infra.CurrencyRepository.ListDeposits rows: %w", err)
+	records, err := scanDepositRecords(rows)
+	if err != nil {
+		return nil, 0, err
 	}
 
-	return out, total, nil
+	return records, total, nil
 }
 
 func (r *CurrencyRepository) ListWithdraws(ctx context.Context, limit, offset int) ([]domain.WithdrawRecord, int, error) {
@@ -244,21 +236,93 @@ func (r *CurrencyRepository) ListWithdraws(ctx context.Context, limit, offset in
 	if err != nil {
 		return nil, 0, fmt.Errorf("infra.CurrencyRepository.ListWithdraws: %w", err)
 	}
+
+	records, err := scanWithdrawRecords(rows)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return records, total, nil
+}
+
+func (r *CurrencyRepository) ListDepositsByAccount(ctx context.Context, accountID, limit, offset int) ([]domain.DepositRecord, int, error) {
+	var total int
+	if err := r.Pool.QueryRow(ctx, `SELECT COUNT(*) FROM cp_deposit_processed WHERE account_id = $1`, accountID).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("infra.CurrencyRepository.ListDepositsByAccount count: %w", err)
+	}
+
+	rows, err := r.Pool.Query(ctx,
+		`SELECT deposit_id, account_id, zeny, cashpoint, processed_at FROM cp_deposit_processed WHERE account_id = $1 ORDER BY processed_at DESC, deposit_id DESC LIMIT $2 OFFSET $3`,
+		accountID, limit, offset,
+	)
+	if err != nil {
+		return nil, 0, fmt.Errorf("infra.CurrencyRepository.ListDepositsByAccount: %w", err)
+	}
+
+	records, err := scanDepositRecords(rows)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return records, total, nil
+}
+
+func (r *CurrencyRepository) ListWithdrawsByAccount(ctx context.Context, accountID, limit, offset int) ([]domain.WithdrawRecord, int, error) {
+	var total int
+	if err := r.Pool.QueryRow(ctx, `SELECT COUNT(*) FROM cp_withdraw_requests WHERE account_id = $1`, accountID).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("infra.CurrencyRepository.ListWithdrawsByAccount count: %w", err)
+	}
+
+	rows, err := r.Pool.Query(ctx,
+		`SELECT id, account_id, zeny, cashpoint, status, created_at, sent_at FROM cp_withdraw_requests WHERE account_id = $1 ORDER BY id DESC LIMIT $2 OFFSET $3`,
+		accountID, limit, offset,
+	)
+	if err != nil {
+		return nil, 0, fmt.Errorf("infra.CurrencyRepository.ListWithdrawsByAccount: %w", err)
+	}
+
+	records, err := scanWithdrawRecords(rows)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return records, total, nil
+}
+
+func scanDepositRecords(rows pgx.Rows) ([]domain.DepositRecord, error) {
+	defer rows.Close()
+
+	out := []domain.DepositRecord{}
+	for rows.Next() {
+		var record domain.DepositRecord
+		if err := rows.Scan(&record.DepositID, &record.AccountID, &record.Zeny, &record.Cashpoint, &record.ProcessedAt); err != nil {
+			return nil, fmt.Errorf("infra.scanDepositRecords scan: %w", err)
+		}
+		out = append(out, record)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("infra.scanDepositRecords rows: %w", err)
+	}
+
+	return out, nil
+}
+
+func scanWithdrawRecords(rows pgx.Rows) ([]domain.WithdrawRecord, error) {
 	defer rows.Close()
 
 	out := []domain.WithdrawRecord{}
 	for rows.Next() {
 		var record domain.WithdrawRecord
 		if err := rows.Scan(&record.ID, &record.AccountID, &record.Zeny, &record.Cashpoint, &record.Status, &record.CreatedAt, &record.SentAt); err != nil {
-			return nil, 0, fmt.Errorf("infra.CurrencyRepository.ListWithdraws scan: %w", err)
+			return nil, fmt.Errorf("infra.scanWithdrawRecords scan: %w", err)
 		}
 		out = append(out, record)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, 0, fmt.Errorf("infra.CurrencyRepository.ListWithdraws rows: %w", err)
+		return nil, fmt.Errorf("infra.scanWithdrawRecords rows: %w", err)
 	}
 
-	return out, total, nil
+	return out, nil
 }
 
 func scanWithdrawRequests(rows pgx.Rows) ([]domain.WithdrawRequest, error) {

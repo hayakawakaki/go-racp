@@ -31,6 +31,7 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 		Users:      account.BuildModerationService(in),
 		Guilds:     guild.BuildService(in),
 		Economy:    account.BuildCurrencyService(in),
+		Emails:     account.BuildUserDirectory(in),
 		Theme:      theme.Active,
 	})
 	h.RegisterRoutes(reg, mux)
