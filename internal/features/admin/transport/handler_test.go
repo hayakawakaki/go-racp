@@ -2,6 +2,7 @@ package transport
 
 import (
 	"context"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/a-h/templ"
+	currency "github.com/hayakawakaki/go-racp/internal/features/account/app/currency"
 	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	modstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation/state"
 	adminstate "github.com/hayakawakaki/go-racp/internal/features/admin/transport/state"
@@ -54,6 +56,48 @@ func (stubTheme) GuildListPage(layout httpx.Layout, state guildstate.ListState) 
 
 func (stubTheme) GuildListContent(state guildstate.ListState) templ.Component {
 	return guildtpl.GuildListContent(state)
+}
+
+func (stubTheme) EconomyContent(state adminstate.EconomyState) templ.Component {
+	return admin.EconomyContent(state)
+}
+
+type stubEconomyReader struct {
+	totalsFn    func(context.Context) (currency.TotalsDTO, error)
+	depositsFn  func(context.Context, int, int) (currency.DepositPage, error)
+	withdrawsFn func(context.Context, int, int) (currency.WithdrawHistoryPage, error)
+}
+
+func (s *stubEconomyReader) Totals(ctx context.Context) (currency.TotalsDTO, error) {
+	if s.totalsFn != nil {
+		return s.totalsFn(ctx)
+	}
+	return currency.TotalsDTO{}, nil
+}
+
+func (s *stubEconomyReader) DepositHistory(ctx context.Context, page, perPage int) (currency.DepositPage, error) {
+	if s.depositsFn != nil {
+		return s.depositsFn(ctx, page, perPage)
+	}
+	return currency.DepositPage{}, nil
+}
+
+func (s *stubEconomyReader) WithdrawHistory(ctx context.Context, page, perPage int) (currency.WithdrawHistoryPage, error) {
+	if s.withdrawsFn != nil {
+		return s.withdrawsFn(ctx, page, perPage)
+	}
+	return currency.WithdrawHistoryPage{}, nil
+}
+
+type stubEmailResolver struct {
+	emailsFn func(context.Context, []int) (map[int]string, error)
+}
+
+func (s *stubEmailResolver) EmailsByIDs(ctx context.Context, ids []int) (map[int]string, error) {
+	if s.emailsFn != nil {
+		return s.emailsFn(ctx, ids)
+	}
+	return map[int]string{}, nil
 }
 
 type stubItemStatus struct {
@@ -208,5 +252,126 @@ func TestHandler_RegisterRoutes_RejectsNonGet(t *testing.T) {
 	mux.ServeHTTP(rr, req)
 	if rr.Code != http.StatusMethodNotAllowed {
 		t.Errorf("status = %d, want %d", rr.Code, http.StatusMethodNotAllowed)
+	}
+}
+
+func TestHandler_ShowEconomy(t *testing.T) {
+	t.Parallel()
+
+	gotDepositPage := 0
+	economy := &stubEconomyReader{
+		totalsFn: func(context.Context) (currency.TotalsDTO, error) {
+			return currency.TotalsDTO{Zeny: 100, Cashpoint: 10}, nil
+		},
+		depositsFn: func(_ context.Context, page, _ int) (currency.DepositPage, error) {
+			gotDepositPage = page
+			return currency.DepositPage{Page: page, PerPage: 15}, nil
+		},
+	}
+	h := NewHandler(HandlerConfig{
+		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
+		General: config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
+		Theme:   stubTheme{},
+		Economy: economy,
+	})
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/admin/economy?dpage=2&wpage=1", http.NoBody)
+	h.showEconomy(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rr.Code)
+	}
+	if gotDepositPage != 2 {
+		t.Errorf("deposit page = %d, want 2", gotDepositPage)
+	}
+}
+
+func TestHandler_ShowEconomy_ResolvesEmails(t *testing.T) {
+	t.Parallel()
+
+	economy := &stubEconomyReader{
+		depositsFn: func(_ context.Context, page, _ int) (currency.DepositPage, error) {
+			return currency.DepositPage{
+				Rows: []currency.DepositDTO{{DepositID: 1, AccountID: 7, Zeny: 100}},
+				Page: page,
+			}, nil
+		},
+		withdrawsFn: func(_ context.Context, page, _ int) (currency.WithdrawHistoryPage, error) {
+			return currency.WithdrawHistoryPage{
+				Rows: []currency.AdminWithdrawDTO{{ID: 1, AccountID: 9, Zeny: 50}},
+				Page: page,
+			}, nil
+		},
+	}
+	emails := &stubEmailResolver{
+		emailsFn: func(_ context.Context, _ []int) (map[int]string, error) {
+			return map[int]string{7: "a@example.com", 9: "b@example.com"}, nil
+		},
+	}
+	h := NewHandler(HandlerConfig{
+		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
+		General: config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
+		Theme:   stubTheme{},
+		Economy: economy,
+		Emails:  emails,
+	})
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/admin/economy", http.NoBody)
+	h.showEconomy(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rr.Code)
+	}
+	body := rr.Body.String()
+	if !strings.Contains(body, "a@example.com") || !strings.Contains(body, "b@example.com") {
+		t.Errorf("body missing resolved emails:\n%s", body)
+	}
+}
+
+func TestHandler_ShowEconomy_PartialReadFailure(t *testing.T) {
+	t.Parallel()
+
+	economy := &stubEconomyReader{
+		totalsFn: func(context.Context) (currency.TotalsDTO, error) {
+			return currency.TotalsDTO{}, errors.New("totals db down")
+		},
+		depositsFn: func(_ context.Context, page, _ int) (currency.DepositPage, error) {
+			return currency.DepositPage{
+				Rows: []currency.DepositDTO{{DepositID: 1, AccountID: 7, Zeny: 100}},
+				Page: page,
+			}, nil
+		},
+		withdrawsFn: func(_ context.Context, page, _ int) (currency.WithdrawHistoryPage, error) {
+			return currency.WithdrawHistoryPage{
+				Rows: []currency.AdminWithdrawDTO{{ID: 1, AccountID: 9, Zeny: 50}},
+				Page: page,
+			}, nil
+		},
+	}
+	emails := &stubEmailResolver{
+		emailsFn: func(_ context.Context, _ []int) (map[int]string, error) {
+			return map[int]string{7: "kaki@example.invalid", 9: "crazyarashi@example.invalid"}, nil
+		},
+	}
+	h := NewHandler(HandlerConfig{
+		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
+		General: config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
+		Theme:   stubTheme{},
+		Economy: economy,
+		Emails:  emails,
+	})
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/admin/economy", http.NoBody)
+	h.showEconomy(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rr.Code)
+	}
+	body := rr.Body.String()
+	if !strings.Contains(body, "kaki@example.invalid") || !strings.Contains(body, "crazyarashi@example.invalid") {
+		t.Errorf("a failed totals read must not blank the deposit/withdraw tables:\n%s", body)
 	}
 }

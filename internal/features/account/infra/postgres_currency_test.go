@@ -35,6 +35,138 @@ func seedBalance(t *testing.T, pool *pgxpool.Pool, accountID int, zeny int64, ca
 	}
 }
 
+func TestCurrencyRepository_Totals(t *testing.T) {
+	repo, pool := setupCurrencyRepo(t)
+	ctx := context.Background()
+	seedBalance(t, pool, 1, 5000, 250, nil)
+	seedBalance(t, pool, 2, 3000, 100, nil)
+
+	totals, err := repo.Totals(ctx)
+	if err != nil {
+		t.Fatalf("Totals: %v", err)
+	}
+	if totals.Zeny != 8000 || totals.Cashpoint != 350 {
+		t.Errorf("Totals = %+v, want {Zeny:8000 Cashpoint:350}", totals)
+	}
+}
+
+func TestCurrencyRepository_ListDeposits(t *testing.T) {
+	repo, _ := setupCurrencyRepo(t)
+	ctx := context.Background()
+	now := time.Now().UTC().Truncate(time.Second)
+	for index := 1; index <= 3; index++ {
+		if _, err := repo.CreditDeposit(ctx, int64(index), index, int64(index*100), index, now, now); err != nil {
+			t.Fatalf("CreditDeposit %d: %v", index, err)
+		}
+	}
+
+	rows, total, err := repo.ListDeposits(ctx, 2, 0)
+	if err != nil {
+		t.Fatalf("ListDeposits: %v", err)
+	}
+	if total != 3 {
+		t.Errorf("total = %d, want 3", total)
+	}
+	if len(rows) != 2 {
+		t.Fatalf("rows = %d, want 2 (limit)", len(rows))
+	}
+	if rows[0].DepositID != 3 {
+		t.Errorf("first deposit id = %d, want 3 (newest first)", rows[0].DepositID)
+	}
+}
+
+func TestCurrencyRepository_ListWithdraws(t *testing.T) {
+	repo, pool := setupCurrencyRepo(t)
+	ctx := context.Background()
+	now := time.Now().UTC().Truncate(time.Second)
+	seedBalance(t, pool, 1, 100000, 0, nil)
+	for index := 0; index < 3; index++ {
+		if _, err := repo.RequestWithdraw(ctx, 1, 100, 0, now, now); err != nil {
+			t.Fatalf("RequestWithdraw: %v", err)
+		}
+	}
+
+	rows, total, err := repo.ListWithdraws(ctx, 2, 0)
+	if err != nil {
+		t.Fatalf("ListWithdraws: %v", err)
+	}
+	if total != 3 {
+		t.Errorf("total = %d, want 3", total)
+	}
+	if len(rows) != 2 || rows[0].ID < rows[1].ID {
+		t.Errorf("rows not newest-first: %+v", rows)
+	}
+	if rows[0].Status != 1 {
+		t.Errorf("status = %d, want 1 (pending)", rows[0].Status)
+	}
+}
+
+func TestCurrencyRepository_ListDepositsByAccount(t *testing.T) {
+	repo, _ := setupCurrencyRepo(t)
+	ctx := context.Background()
+	now := time.Now().UTC().Truncate(time.Second)
+	if _, err := repo.CreditDeposit(ctx, 1, 7, 100, 1, now, now); err != nil {
+		t.Fatalf("CreditDeposit 1: %v", err)
+	}
+	if _, err := repo.CreditDeposit(ctx, 2, 7, 200, 2, now.Add(time.Second), now.Add(time.Second)); err != nil {
+		t.Fatalf("CreditDeposit 2: %v", err)
+	}
+	if _, err := repo.CreditDeposit(ctx, 3, 9, 300, 3, now, now); err != nil {
+		t.Fatalf("CreditDeposit 3: %v", err)
+	}
+
+	rows, total, err := repo.ListDepositsByAccount(ctx, 7, 10, 0)
+	if err != nil {
+		t.Fatalf("ListDepositsByAccount: %v", err)
+	}
+	if total != 2 {
+		t.Errorf("total = %d, want 2 (only account 7)", total)
+	}
+	if len(rows) != 2 {
+		t.Fatalf("rows = %d, want 2", len(rows))
+	}
+	if rows[0].DepositID != 2 {
+		t.Errorf("first deposit id = %d, want 2 (newest first)", rows[0].DepositID)
+	}
+	for _, row := range rows {
+		if row.AccountID != 7 {
+			t.Errorf("row account = %d, want only 7", row.AccountID)
+		}
+	}
+}
+
+func TestCurrencyRepository_ListWithdrawsByAccount(t *testing.T) {
+	repo, pool := setupCurrencyRepo(t)
+	ctx := context.Background()
+	now := time.Now().UTC().Truncate(time.Second)
+	seedBalance(t, pool, 7, 100000, 0, nil)
+	seedBalance(t, pool, 9, 100000, 0, nil)
+	for index := 0; index < 2; index++ {
+		if _, err := repo.RequestWithdraw(ctx, 7, 100, 0, now, now); err != nil {
+			t.Fatalf("RequestWithdraw 7: %v", err)
+		}
+	}
+	if _, err := repo.RequestWithdraw(ctx, 9, 500, 0, now, now); err != nil {
+		t.Fatalf("RequestWithdraw 9: %v", err)
+	}
+
+	rows, total, err := repo.ListWithdrawsByAccount(ctx, 7, 10, 0)
+	if err != nil {
+		t.Fatalf("ListWithdrawsByAccount: %v", err)
+	}
+	if total != 2 {
+		t.Errorf("total = %d, want 2 (only account 7)", total)
+	}
+	if len(rows) != 2 || rows[0].ID < rows[1].ID {
+		t.Errorf("rows not newest-first: %+v", rows)
+	}
+	for _, row := range rows {
+		if row.AccountID != 7 {
+			t.Errorf("row account = %d, want only 7", row.AccountID)
+		}
+	}
+}
+
 func TestCurrencyRepository_Balance_NoRowIsZero(t *testing.T) {
 	repo, _ := setupCurrencyRepo(t)
 

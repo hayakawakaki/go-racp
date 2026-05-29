@@ -43,6 +43,28 @@ func AddCashpoint(current, delta int) (int, error) {
 	return current + delta, nil
 }
 
+func AddZenyCapped(current, delta int64) int64 {
+	if delta <= 0 {
+		return current
+	}
+	if current > math.MaxInt64-delta {
+		return math.MaxInt64
+	}
+
+	return current + delta
+}
+
+func AddCashpointCapped(current, delta int) int {
+	if delta <= 0 {
+		return current
+	}
+	if current > math.MaxInt32-delta {
+		return math.MaxInt32
+	}
+
+	return current + delta
+}
+
 func SubZeny(current, delta int64) (int64, error) {
 	if delta < 0 {
 		return 0, ErrInvalidAmount
@@ -107,6 +129,29 @@ type WithdrawRequest struct {
 	Cashpoint int
 }
 
+type CurrencyTotals struct {
+	Zeny      int64
+	Cashpoint int64
+}
+
+type DepositRecord struct {
+	ProcessedAt time.Time
+	DepositID   int64
+	AccountID   int
+	Zeny        int64
+	Cashpoint   int
+}
+
+type WithdrawRecord struct {
+	CreatedAt time.Time
+	SentAt    *time.Time
+	ID        int64
+	AccountID int
+	Zeny      int64
+	Cashpoint int
+	Status    int
+}
+
 type CurrencyRepository interface {
 	Balance(ctx context.Context, accountID int) (Balance, error)
 	CreditDeposit(ctx context.Context, depositID int64, accountID int, zeny int64, cashpoint int, lockUntil, now time.Time) (bool, error)
@@ -115,6 +160,11 @@ type CurrencyRepository interface {
 	MarkWithdrawSent(ctx context.Context, id int64, now time.Time) error
 	MarkWithdrawPending(ctx context.Context, id int64) error
 	RecentWithdraws(ctx context.Context, accountID, limit int) ([]WithdrawRequest, error)
+	Totals(ctx context.Context) (CurrencyTotals, error)
+	ListDeposits(ctx context.Context, limit, offset int) ([]DepositRecord, int, error)
+	ListWithdraws(ctx context.Context, limit, offset int) ([]WithdrawRecord, int, error)
+	ListDepositsByAccount(ctx context.Context, accountID, limit, offset int) ([]DepositRecord, int, error)
+	ListWithdrawsByAccount(ctx context.Context, accountID, limit, offset int) ([]WithdrawRecord, int, error)
 }
 
 type DepositQueue interface {

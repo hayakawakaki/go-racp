@@ -30,10 +30,30 @@ func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	dpage := httpx.ParsePositiveInt(r.URL.Query().Get("dpage"), 1)
+	wpage := httpx.ParsePositiveInt(r.URL.Query().Get("wpage"), 1)
+
 	s := state.DetailState{
 		Detail:       detail,
 		Now:          time.Now(),
+		Location:     h.general.Location(),
 		AllowedRoles: state.BuildRoleOptions(h.svc.AllowedRoles()),
+	}
+
+	if h.currency != nil {
+		deposits, depositErr := h.currency.DepositHistoryByAccount(r.Context(), detail.User.ID, dpage, detailHistoryPerPage)
+		if depositErr != nil {
+			h.logger.Warn("users: deposit history failed", "id", id, "err", depositErr)
+		} else {
+			s.Deposits = deposits
+		}
+
+		withdraws, withdrawErr := h.currency.WithdrawHistoryByAccount(r.Context(), detail.User.ID, wpage, detailHistoryPerPage)
+		if withdrawErr != nil {
+			h.logger.Warn("users: withdraw history failed", "id", id, "err", withdrawErr)
+		} else {
+			s.Withdraws = withdraws
+		}
 	}
 
 	if httpx.IsHTMX(r) {

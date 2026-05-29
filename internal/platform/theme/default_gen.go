@@ -147,6 +147,10 @@ func (DefaultTheme) DatabaseContent(state adminstate.DatabaseState) templ.Compon
 	return admin.DatabaseContent(state)
 }
 
+func (DefaultTheme) EconomyContent(state adminstate.EconomyState) templ.Component {
+	return admin.EconomyContent(state)
+}
+
 func (DefaultTheme) AdminLayout(layout httpx.Layout, pageTitle string, content templ.Component) templ.Component {
 	return admin.AdminLayout(layout, pageTitle, content)
 }

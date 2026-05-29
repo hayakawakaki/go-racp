@@ -5,6 +5,7 @@ import (
 	"slices"
 	"time"
 
+	currency "github.com/hayakawakaki/go-racp/internal/features/account/app/currency"
 	app "github.com/hayakawakaki/go-racp/internal/features/account/app/moderation"
 	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
 )
@@ -21,10 +22,14 @@ type RoleOption struct {
 	GroupID int
 }
 
+//nolint:govet // grouped for readability
 type DetailState struct {
 	Now          time.Time
+	Location     *time.Location
 	Detail       app.UserDetail
 	AllowedRoles []RoleOption
+	Deposits     currency.DepositPage
+	Withdraws    currency.WithdrawHistoryPage
 }
 
 func BuildRoleOptions(allowed map[int]string) []RoleOption {

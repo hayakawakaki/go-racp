@@ -14,13 +14,18 @@ func discardLogger() *slog.Logger {
 }
 
 type fakeCurrencyRepo struct {
-	balanceFn         func(ctx context.Context, accountID int) (domain.Balance, error)
-	creditDepositFn   func(ctx context.Context, depositID int64, accountID int, zeny int64, cashpoint int, lockUntil, now time.Time) (bool, error)
-	requestWithdrawFn func(ctx context.Context, accountID int, zeny int64, cashpoint int, lockUntil, now time.Time) (int64, error)
-	pendingFn         func(ctx context.Context, limit int) ([]domain.WithdrawRequest, error)
-	markSentFn        func(ctx context.Context, id int64, now time.Time) error
-	markPendingFn     func(ctx context.Context, id int64) error
-	recentFn          func(ctx context.Context, accountID, limit int) ([]domain.WithdrawRequest, error)
+	balanceFn                func(ctx context.Context, accountID int) (domain.Balance, error)
+	creditDepositFn          func(ctx context.Context, depositID int64, accountID int, zeny int64, cashpoint int, lockUntil, now time.Time) (bool, error)
+	requestWithdrawFn        func(ctx context.Context, accountID int, zeny int64, cashpoint int, lockUntil, now time.Time) (int64, error)
+	pendingFn                func(ctx context.Context, limit int) ([]domain.WithdrawRequest, error)
+	markSentFn               func(ctx context.Context, id int64, now time.Time) error
+	markPendingFn            func(ctx context.Context, id int64) error
+	recentFn                 func(ctx context.Context, accountID, limit int) ([]domain.WithdrawRequest, error)
+	totalsFn                 func(ctx context.Context) (domain.CurrencyTotals, error)
+	listDepositsFn           func(ctx context.Context, limit, offset int) ([]domain.DepositRecord, int, error)
+	listWithdrawsFn          func(ctx context.Context, limit, offset int) ([]domain.WithdrawRecord, int, error)
+	listDepositsByAccountFn  func(ctx context.Context, accountID, limit, offset int) ([]domain.DepositRecord, int, error)
+	listWithdrawsByAccountFn func(ctx context.Context, accountID, limit, offset int) ([]domain.WithdrawRecord, int, error)
 }
 
 var _ domain.CurrencyRepository = (*fakeCurrencyRepo)(nil)
@@ -79,6 +84,46 @@ func (f *fakeCurrencyRepo) RecentWithdraws(ctx context.Context, accountID, limit
 	}
 
 	return nil, nil
+}
+
+func (f *fakeCurrencyRepo) Totals(ctx context.Context) (domain.CurrencyTotals, error) {
+	if f.totalsFn != nil {
+		return f.totalsFn(ctx)
+	}
+
+	return domain.CurrencyTotals{}, nil
+}
+
+func (f *fakeCurrencyRepo) ListDeposits(ctx context.Context, limit, offset int) ([]domain.DepositRecord, int, error) {
+	if f.listDepositsFn != nil {
+		return f.listDepositsFn(ctx, limit, offset)
+	}
+
+	return nil, 0, nil
+}
+
+func (f *fakeCurrencyRepo) ListWithdraws(ctx context.Context, limit, offset int) ([]domain.WithdrawRecord, int, error) {
+	if f.listWithdrawsFn != nil {
+		return f.listWithdrawsFn(ctx, limit, offset)
+	}
+
+	return nil, 0, nil
+}
+
+func (f *fakeCurrencyRepo) ListDepositsByAccount(ctx context.Context, accountID, limit, offset int) ([]domain.DepositRecord, int, error) {
+	if f.listDepositsByAccountFn != nil {
+		return f.listDepositsByAccountFn(ctx, accountID, limit, offset)
+	}
+
+	return nil, 0, nil
+}
+
+func (f *fakeCurrencyRepo) ListWithdrawsByAccount(ctx context.Context, accountID, limit, offset int) ([]domain.WithdrawRecord, int, error) {
+	if f.listWithdrawsByAccountFn != nil {
+		return f.listWithdrawsByAccountFn(ctx, accountID, limit, offset)
+	}
+
+	return nil, 0, nil
 }
 
 type fakeDepositQueue struct {

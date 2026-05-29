@@ -18,6 +18,10 @@ CREATE TABLE cp_deposit_processed (
     PRIMARY KEY (deposit_id)
 );
 
+CREATE INDEX idx_cp_deposit_processed_recent ON cp_deposit_processed (processed_at DESC, deposit_id DESC);
+
+CREATE INDEX idx_cp_deposit_processed_account ON cp_deposit_processed (account_id, processed_at DESC, deposit_id DESC);
+
 CREATE TABLE cp_withdraw_requests (
     id         BIGSERIAL   NOT NULL,
     account_id INTEGER     NOT NULL,

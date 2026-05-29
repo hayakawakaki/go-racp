@@ -1,0 +1,220 @@
+package transport
+
+import (
+	"fmt"
+	"strconv"
+
+	adminstate "github.com/hayakawakaki/go-racp/internal/features/admin/transport/state"
+	"github.com/hayakawakaki/go-racp/internal/platform/ui"
+	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
+	"github.com/hayakawakaki/go-racp/themes/default/platform/helpers"
+)
+
+var economyHistoryLinkAttrs = templ.Attributes{
+	"hx-target":   "#admin-content",
+	"hx-push-url": "true",
+}
+
+func economyDepositsHrefPattern(state adminstate.EconomyState) string {
+	return helpers.HistoryHref("/admin/economy", "dpage", "__PAGE__", "wpage", state.Withdraws.Page)
+}
+
+func economyWithdrawsHrefPattern(state adminstate.EconomyState) string {
+	return helpers.HistoryHref("/admin/economy", "wpage", "__PAGE__", "dpage", state.Deposits.Page)
+}
+
+templ EconomyContent(state adminstate.EconomyState) {
+	<div class="space-y-4 lg:space-y-6">
+		<header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+			<div class="space-y-2">
+				@components.BentoLabel("text-[11px]") {
+					Operations
+				}
+				<h1 class="text-3xl xl:text-4xl font-light tracking-tight text-font">Economy</h1>
+			</div>
+			<div class="flex gap-6 sm:gap-8">
+				@economyTotalStat("Total Zeny", state.Totals.Zeny)
+				@economyTotalStat("Total Cashpoint", state.Totals.Cashpoint)
+			</div>
+		</header>
+		<div class="flex flex-col lg:flex-row gap-4 lg:gap-6">
+			@economyDepositsCard(state)
+			@economyWithdrawsCard(state)
+		</div>
+	</div>
+}
+
+templ economyTotalStat(label string, value int64) {
+	<div class="text-left sm:text-right">
+		@components.BentoLabel("text-[10px]") {
+			{ label }
+		}
+		<p class="text-lg xl:text-xl font-light tracking-tight tabular-nums text-font">{ helpers.FormatAmount(value) }</p>
+	</div>
+}
+
+templ economyDepositsCard(state adminstate.EconomyState) {
+	@components.BentoCard(components.BentoCardProps{
+		Delay:        "120ms",
+		Padding:      "p-0",
+		Class:        "overflow-hidden",
+		WrapperClass: "lg:flex-1 lg:min-w-0",
+	}) {
+		<div class="flex items-center justify-between gap-3 p-4 lg:p-5 border-b border-border">
+			@components.BentoLabel("text-[11px]") {
+				Deposits
+			}
+			if state.Deposits.TotalPages > 1 {
+				@ui.Pagination(ui.PaginationProps{
+					Page:        state.Deposits.Page,
+					TotalPages:  state.Deposits.TotalPages,
+					Size:        ui.PaginationSizeSM,
+					Color:       ui.PaginationColorIndigo,
+					HrefPattern: economyDepositsHrefPattern(state),
+					LinkAttrs:   economyHistoryLinkAttrs,
+				})
+			}
+		</div>
+		if len(state.Deposits.Rows) == 0 {
+			<p class="p-6 text-sm text-font-muted">No deposits recorded yet.</p>
+		} else {
+			@ui.Table(ui.TableProps{Hover: true, Class: "text-font"}) {
+				@ui.TableHeader() {
+					@ui.TableRow(ui.TableRowProps{}) {
+						@ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}) {
+							Account
+						}
+						@ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}) {
+							Email
+						}
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
+							Zeny
+						}
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
+							Cashpoint
+						}
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
+							Processed
+						}
+					}
+				}
+				@ui.TableBody() {
+					for _, d := range state.Deposits.Rows {
+						@ui.TableRow(ui.TableRowProps{}) {
+							@ui.TableCell(ui.TableCellProps{Class: "font-mono tabular-nums"}) {
+								@economyAccountLink(d.AccountID)
+							}
+							@ui.TableCell(ui.TableCellProps{Class: "text-font-muted"}) {
+								{ d.Email }
+							}
+							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
+								{ helpers.FormatAmount(d.Zeny) }
+							}
+							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
+								{ helpers.FormatAmount(int64(d.Cashpoint)) }
+							}
+							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "text-font-muted tabular-nums"}) {
+								{ helpers.FormatTime(d.ProcessedAt, state.Location) }
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+templ economyWithdrawsCard(state adminstate.EconomyState) {
+	@components.BentoCard(components.BentoCardProps{
+		Delay:        "180ms",
+		Padding:      "p-0",
+		Class:        "overflow-hidden",
+		WrapperClass: "lg:flex-1 lg:min-w-0",
+	}) {
+		<div class="flex items-center justify-between gap-3 p-4 lg:p-5 border-b border-border">
+			@components.BentoLabel("text-[11px]") {
+				Withdrawals
+			}
+			if state.Withdraws.TotalPages > 1 {
+				@ui.Pagination(ui.PaginationProps{
+					Page:        state.Withdraws.Page,
+					TotalPages:  state.Withdraws.TotalPages,
+					Size:        ui.PaginationSizeSM,
+					Color:       ui.PaginationColorIndigo,
+					HrefPattern: economyWithdrawsHrefPattern(state),
+					LinkAttrs:   economyHistoryLinkAttrs,
+				})
+			}
+		</div>
+		if len(state.Withdraws.Rows) == 0 {
+			<p class="p-6 text-sm text-font-muted">No withdrawals recorded yet.</p>
+		} else {
+			@ui.Table(ui.TableProps{Hover: true, Class: "text-font"}) {
+				@ui.TableHeader() {
+					@ui.TableRow(ui.TableRowProps{}) {
+						@ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}) {
+							Account
+						}
+						@ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}) {
+							Email
+						}
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
+							Zeny
+						}
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
+							Cashpoint
+						}
+						@ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}) {
+							Status
+						}
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
+							Requested
+						}
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
+							Sent
+						}
+					}
+				}
+				@ui.TableBody() {
+					for _, wd := range state.Withdraws.Rows {
+						@ui.TableRow(ui.TableRowProps{}) {
+							@ui.TableCell(ui.TableCellProps{Class: "font-mono tabular-nums"}) {
+								@economyAccountLink(wd.AccountID)
+							}
+							@ui.TableCell(ui.TableCellProps{Class: "text-font-muted"}) {
+								{ wd.Email }
+							}
+							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
+								{ helpers.FormatAmount(wd.Zeny) }
+							}
+							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
+								{ helpers.FormatAmount(int64(wd.Cashpoint)) }
+							}
+							@ui.TableCell(ui.TableCellProps{Class: "text-font-muted"}) {
+								{ helpers.WithdrawStatusLabel(wd.Status) }
+							}
+							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "text-font-muted tabular-nums"}) {
+								{ helpers.FormatTime(wd.CreatedAt, state.Location) }
+							}
+							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "text-font-muted tabular-nums"}) {
+								{ helpers.FormatSentTime(wd.SentAt, state.Location) }
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+templ economyAccountLink(accountID int) {
+	<a
+		href={ templ.SafeURL(fmt.Sprintf("/users/%d", accountID)) }
+		hx-get={ fmt.Sprintf("/users/%d", accountID) }
+		hx-target="#admin-content"
+		hx-push-url="true"
+		class="text-accent-on-surface hover:underline"
+	>
+		{ strconv.Itoa(accountID) }
+	</a>
+}

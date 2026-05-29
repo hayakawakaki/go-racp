@@ -14,6 +14,8 @@ templ UsersDetailContent(state accountmoderationstate.DetailState) {
 	<div id="user-detail" class="space-y-6">
 		@accountSection(state)
 		@charactersSection(state)
+		@depositsHistorySection(state)
+		@withdrawsHistorySection(state)
 		@actionsSection(state)
 		@auditSection(state)
 	</div>

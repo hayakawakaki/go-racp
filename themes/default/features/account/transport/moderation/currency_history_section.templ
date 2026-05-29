@@ -1,0 +1,149 @@
+package moderation
+
+import (
+	"strconv"
+
+	accountmoderationstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation/state"
+	"github.com/hayakawakaki/go-racp/internal/platform/ui"
+	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
+	"github.com/hayakawakaki/go-racp/themes/default/platform/helpers"
+)
+
+func detailDepositsHref(state accountmoderationstate.DetailState) string {
+	return helpers.HistoryHref("/users/"+strconv.Itoa(state.Detail.User.ID), "dpage", "__PAGE__", "wpage", state.Withdraws.Page)
+}
+
+func detailWithdrawsHref(state accountmoderationstate.DetailState) string {
+	return helpers.HistoryHref("/users/"+strconv.Itoa(state.Detail.User.ID), "wpage", "__PAGE__", "dpage", state.Deposits.Page)
+}
+
+var detailHistoryLinkAttrs = templ.Attributes{
+	"hx-target":   "#admin-content",
+	"hx-push-url": "true",
+}
+
+templ depositsHistorySection(state accountmoderationstate.DetailState) {
+	@components.BentoCard(components.BentoCardProps{
+		Padding: "p-0",
+		Class:   "overflow-hidden",
+	}) {
+		<div class="flex items-center justify-between gap-3 p-4 lg:p-5 border-b border-border">
+			@components.BentoLabel("text-[11px]") {
+				Deposit history
+			}
+			if state.Deposits.TotalPages > 1 {
+				@ui.Pagination(ui.PaginationProps{
+					Page:        state.Deposits.Page,
+					TotalPages:  state.Deposits.TotalPages,
+					Size:        ui.PaginationSizeSM,
+					Color:       ui.PaginationColorIndigo,
+					HrefPattern: detailDepositsHref(state),
+					LinkAttrs:   detailHistoryLinkAttrs,
+				})
+			}
+		</div>
+		if len(state.Deposits.Rows) == 0 {
+			<p class="p-6 text-sm text-font-muted">No deposits yet.</p>
+		} else {
+			@ui.Table(ui.TableProps{Hover: true, Class: "text-font"}) {
+				@ui.TableHeader() {
+					@ui.TableRow(ui.TableRowProps{}) {
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
+							Zeny
+						}
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
+							Cashpoint
+						}
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
+							Processed
+						}
+					}
+				}
+				@ui.TableBody() {
+					for _, d := range state.Deposits.Rows {
+						@ui.TableRow(ui.TableRowProps{}) {
+							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
+								{ helpers.FormatAmount(d.Zeny) }
+							}
+							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
+								{ helpers.FormatAmount(int64(d.Cashpoint)) }
+							}
+							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "text-font-muted tabular-nums"}) {
+								{ helpers.FormatTime(d.ProcessedAt, state.Location) }
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+templ withdrawsHistorySection(state accountmoderationstate.DetailState) {
+	@components.BentoCard(components.BentoCardProps{
+		Padding: "p-0",
+		Class:   "overflow-hidden",
+	}) {
+		<div class="flex items-center justify-between gap-3 p-4 lg:p-5 border-b border-border">
+			@components.BentoLabel("text-[11px]") {
+				Withdrawal history
+			}
+			if state.Withdraws.TotalPages > 1 {
+				@ui.Pagination(ui.PaginationProps{
+					Page:        state.Withdraws.Page,
+					TotalPages:  state.Withdraws.TotalPages,
+					Size:        ui.PaginationSizeSM,
+					Color:       ui.PaginationColorIndigo,
+					HrefPattern: detailWithdrawsHref(state),
+					LinkAttrs:   detailHistoryLinkAttrs,
+				})
+			}
+		</div>
+		if len(state.Withdraws.Rows) == 0 {
+			<p class="p-6 text-sm text-font-muted">No withdrawals yet.</p>
+		} else {
+			@ui.Table(ui.TableProps{Hover: true, Class: "text-font"}) {
+				@ui.TableHeader() {
+					@ui.TableRow(ui.TableRowProps{}) {
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
+							Zeny
+						}
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
+							Cashpoint
+						}
+						@ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}) {
+							Status
+						}
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
+							Requested
+						}
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
+							Sent
+						}
+					}
+				}
+				@ui.TableBody() {
+					for _, wd := range state.Withdraws.Rows {
+						@ui.TableRow(ui.TableRowProps{}) {
+							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
+								{ helpers.FormatAmount(wd.Zeny) }
+							}
+							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
+								{ helpers.FormatAmount(int64(wd.Cashpoint)) }
+							}
+							@ui.TableCell(ui.TableCellProps{Class: "text-font-muted"}) {
+								{ helpers.WithdrawStatusLabel(wd.Status) }
+							}
+							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "text-font-muted tabular-nums"}) {
+								{ helpers.FormatTime(wd.CreatedAt, state.Location) }
+							}
+							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "text-font-muted tabular-nums"}) {
+								{ helpers.FormatSentTime(wd.SentAt, state.Location) }
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

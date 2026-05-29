@@ -36,11 +36,9 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 	currencySvc := newCurrencyService(currencyRepo, in.Config.App.Currency)
 
 	depositWorker := currencyapp.NewDepositWorker(currencyRepo, infra.NewDepositQueue(in.MainDB), currencyapp.DepositWorkerConfig{
-		Logger:       in.Logger,
-		Interval:     in.Config.App.Currency.DepositPollInterval,
-		Cooldown:     in.Config.App.Currency.Cooldown,
-		MaxZeny:      in.Config.App.Currency.MaxZenyPerTx,
-		MaxCashpoint: in.Config.App.Currency.MaxCashpointPerTx,
+		Logger:   in.Logger,
+		Interval: in.Config.App.Currency.DepositPollInterval,
+		Cooldown: in.Config.App.Currency.Cooldown,
 	})
 	go depositWorker.Run(in.ShutdownCtx)
 
@@ -70,9 +68,10 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 
 	modSvc := buildModerationService(in, userRepo)
 	modH := modtransport.NewHandler(modSvc, modtransport.HandlerConfig{
-		Logger:  in.Logger,
-		General: in.Config.App.General,
-		Theme:   theme.Active,
+		Logger:   in.Logger,
+		General:  in.Config.App.General,
+		Currency: currencySvc,
+		Theme:    theme.Active,
 	})
 	modH.RegisterRoutes(reg, mux)
 }
@@ -114,6 +113,10 @@ func buildServices(in *coreinfra.Infra) (*app.Service, *app.SessionService, *inf
 	)
 
 	return svc, sessSvc, userRepo
+}
+
+func BuildUserDirectory(in *coreinfra.Infra) *infra.Repository {
+	return infra.NewRepository(in.MainDB)
 }
 
 func BuildCurrencyService(in *coreinfra.Infra) *currencyapp.Service {

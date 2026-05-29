@@ -9,14 +9,8 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/features/account/domain"
 )
 
-func TestDepositWorker_Valid(t *testing.T) {
+func TestValidDepositRow(t *testing.T) {
 	t.Parallel()
-
-	worker := NewDepositWorker(&fakeCurrencyRepo{}, &fakeDepositQueue{}, DepositWorkerConfig{
-		MaxZeny:      1000,
-		MaxCashpoint: 100,
-		Logger:       discardLogger(),
-	})
 
 	tests := []struct {
 		name string
@@ -26,19 +20,17 @@ func TestDepositWorker_Valid(t *testing.T) {
 		{name: "both positive", row: domain.DepositRow{Zeny: 10, Points: 5}, want: true},
 		{name: "zeny only", row: domain.DepositRow{Zeny: 10}, want: true},
 		{name: "points only", row: domain.DepositRow{Points: 5}, want: true},
-		{name: "at limit", row: domain.DepositRow{Zeny: 1000, Points: 100}, want: true},
+		{name: "large amounts uncapped", row: domain.DepositRow{Zeny: 5_000_000_000, Points: 5_000_000}, want: true},
 		{name: "both zero", row: domain.DepositRow{}, want: false},
 		{name: "negative zeny", row: domain.DepositRow{Zeny: -1, Points: 5}, want: false},
 		{name: "negative points", row: domain.DepositRow{Zeny: 10, Points: -1}, want: false},
-		{name: "zeny over limit", row: domain.DepositRow{Zeny: 1001, Points: 5}, want: false},
-		{name: "points over limit", row: domain.DepositRow{Zeny: 10, Points: 101}, want: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			if got := worker.valid(tt.row); got != tt.want {
-				t.Errorf("valid(%+v) = %v, want %v", tt.row, got, tt.want)
+			if got := validDepositRow(tt.row); got != tt.want {
+				t.Errorf("validDepositRow(%+v) = %v, want %v", tt.row, got, tt.want)
 			}
 		})
 	}
@@ -56,8 +48,6 @@ func TestDepositWorker_DrainOnce_DeletesByOutcome(t *testing.T) {
 		{name: "credited is removed", credited: true, wantDeleted: true},
 		{name: "already processed is removed", credited: false, wantDeleted: true},
 		{name: "cooldown locked is kept", creditErr: domain.ErrDepositLocked, wantDeleted: false},
-		{name: "overflow is removed", creditErr: domain.ErrAmountOverflow, wantDeleted: true},
-		{name: "invalid amount is removed", creditErr: domain.ErrInvalidAmount, wantDeleted: true},
 		{name: "transient error is kept", creditErr: errors.New("db down"), wantDeleted: false},
 	}
 	for _, tt := range tests {
@@ -79,7 +69,7 @@ func TestDepositWorker_DrainOnce_DeletesByOutcome(t *testing.T) {
 					return nil
 				},
 			}
-			worker := NewDepositWorker(repo, queue, DepositWorkerConfig{MaxZeny: 1000, MaxCashpoint: 100, Logger: discardLogger()})
+			worker := NewDepositWorker(repo, queue, DepositWorkerConfig{Logger: discardLogger()})
 
 			worker.drainOnce(context.Background())
 
@@ -111,7 +101,7 @@ func TestDepositWorker_DrainOnce_InvalidRowSkipsCredit(t *testing.T) {
 			return nil
 		},
 	}
-	worker := NewDepositWorker(repo, queue, DepositWorkerConfig{MaxZeny: 1000, MaxCashpoint: 100, Logger: discardLogger()})
+	worker := NewDepositWorker(repo, queue, DepositWorkerConfig{Logger: discardLogger()})
 
 	worker.drainOnce(context.Background())
 

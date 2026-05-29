@@ -61,6 +61,43 @@ func TestDepositQueue_Delete(t *testing.T) {
 	}
 }
 
+func TestRepository_EmailsByIDs(t *testing.T) {
+	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
+	repo := NewRepository(db)
+	ctx := context.Background()
+
+	suf := randomizeSuffix(t)
+	first := createSeedUser(t, repo, "mail_a_"+suf, "mail_a_"+suf+"@example.invalid")
+	second := createSeedUser(t, repo, "mail_b_"+suf, "mail_b_"+suf+"@example.invalid")
+
+	emails, err := repo.EmailsByIDs(ctx, []int{first.ID, second.ID, -1})
+	if err != nil {
+		t.Fatalf("EmailsByIDs: %v", err)
+	}
+	if emails[first.ID] != first.Email {
+		t.Errorf("email[%d] = %q, want %q", first.ID, emails[first.ID], first.Email)
+	}
+	if emails[second.ID] != second.Email {
+		t.Errorf("email[%d] = %q, want %q", second.ID, emails[second.ID], second.Email)
+	}
+	if _, ok := emails[-1]; ok {
+		t.Errorf("unknown id -1 must be absent from map")
+	}
+}
+
+func TestRepository_EmailsByIDs_Empty(t *testing.T) {
+	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
+	repo := NewRepository(db)
+
+	emails, err := repo.EmailsByIDs(context.Background(), nil)
+	if err != nil {
+		t.Fatalf("EmailsByIDs: %v", err)
+	}
+	if len(emails) != 0 {
+		t.Errorf("emails = %+v, want empty for no ids", emails)
+	}
+}
+
 func TestWithdrawQueue_InsertIsIdempotent(t *testing.T) {
 	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
 	testutil.TruncateMariaDB(t, db, "cp_withdraw")

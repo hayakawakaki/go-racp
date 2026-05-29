@@ -50,6 +50,7 @@ type Theme interface {
 	AccountVerifyResultPage(layout httpx.Layout, state accountselfstate.VerifyResultState) templ.Component
 	DashboardContent(state adminstate.DashboardState) templ.Component
 	DatabaseContent(state adminstate.DatabaseState) templ.Component
+	EconomyContent(state adminstate.EconomyState) templ.Component
 	AdminLayout(layout httpx.Layout, pageTitle string, content templ.Component) templ.Component
 	CharacterDetailPage(layout httpx.Layout, state characterstate.DetailState) templ.Component
 	GuildDetailPage(layout httpx.Layout, guildName string, state guildstate.DetailState) templ.Component

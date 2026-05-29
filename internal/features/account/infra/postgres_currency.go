@@ -87,10 +87,8 @@ func (r *CurrencyRepository) CreditDeposit(ctx context.Context, depositID int64,
 		return false, nil
 	}
 
-	newZeny, newCashpoint, err := domain.AddBalance(currentZeny, zeny, currentCashpoint, cashpoint)
-	if err != nil {
-		return false, fmt.Errorf("infra.CurrencyRepository.CreditDeposit balance: %w", err)
-	}
+	newZeny := domain.AddZenyCapped(currentZeny, zeny)
+	newCashpoint := domain.AddCashpointCapped(currentCashpoint, cashpoint)
 
 	if _, err = tx.Exec(ctx,
 		`UPDATE cp_currency SET zeny = $1, cashpoint = $2, locked_until = $3 WHERE account_id = $4`,
@@ -188,6 +186,141 @@ func (r *CurrencyRepository) RecentWithdraws(ctx context.Context, accountID, lim
 	}
 
 	return scanWithdrawRequests(rows)
+}
+
+func (r *CurrencyRepository) Totals(ctx context.Context) (domain.CurrencyTotals, error) {
+	var totals domain.CurrencyTotals
+	if err := r.Pool.QueryRow(ctx,
+		`SELECT COALESCE(SUM(zeny), 0)::bigint, COALESCE(SUM(cashpoint), 0)::bigint FROM cp_currency`,
+	).Scan(&totals.Zeny, &totals.Cashpoint); err != nil {
+		return domain.CurrencyTotals{}, fmt.Errorf("infra.CurrencyRepository.Totals: %w", err)
+	}
+
+	return totals, nil
+}
+
+func (r *CurrencyRepository) ListDeposits(ctx context.Context, limit, offset int) ([]domain.DepositRecord, int, error) {
+	var total int
+	if err := r.Pool.QueryRow(ctx, `SELECT COUNT(*) FROM cp_deposit_processed`).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("infra.CurrencyRepository.ListDeposits count: %w", err)
+	}
+
+	rows, err := r.Pool.Query(ctx,
+		`SELECT deposit_id, account_id, zeny, cashpoint, processed_at FROM cp_deposit_processed ORDER BY processed_at DESC, deposit_id DESC LIMIT $1 OFFSET $2`,
+		limit, offset,
+	)
+	if err != nil {
+		return nil, 0, fmt.Errorf("infra.CurrencyRepository.ListDeposits: %w", err)
+	}
+
+	records, err := scanDepositRecords(rows)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return records, total, nil
+}
+
+func (r *CurrencyRepository) ListWithdraws(ctx context.Context, limit, offset int) ([]domain.WithdrawRecord, int, error) {
+	var total int
+	if err := r.Pool.QueryRow(ctx, `SELECT COUNT(*) FROM cp_withdraw_requests`).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("infra.CurrencyRepository.ListWithdraws count: %w", err)
+	}
+
+	rows, err := r.Pool.Query(ctx,
+		`SELECT id, account_id, zeny, cashpoint, status, created_at, sent_at FROM cp_withdraw_requests ORDER BY id DESC LIMIT $1 OFFSET $2`,
+		limit, offset,
+	)
+	if err != nil {
+		return nil, 0, fmt.Errorf("infra.CurrencyRepository.ListWithdraws: %w", err)
+	}
+
+	records, err := scanWithdrawRecords(rows)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return records, total, nil
+}
+
+func (r *CurrencyRepository) ListDepositsByAccount(ctx context.Context, accountID, limit, offset int) ([]domain.DepositRecord, int, error) {
+	var total int
+	if err := r.Pool.QueryRow(ctx, `SELECT COUNT(*) FROM cp_deposit_processed WHERE account_id = $1`, accountID).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("infra.CurrencyRepository.ListDepositsByAccount count: %w", err)
+	}
+
+	rows, err := r.Pool.Query(ctx,
+		`SELECT deposit_id, account_id, zeny, cashpoint, processed_at FROM cp_deposit_processed WHERE account_id = $1 ORDER BY processed_at DESC, deposit_id DESC LIMIT $2 OFFSET $3`,
+		accountID, limit, offset,
+	)
+	if err != nil {
+		return nil, 0, fmt.Errorf("infra.CurrencyRepository.ListDepositsByAccount: %w", err)
+	}
+
+	records, err := scanDepositRecords(rows)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return records, total, nil
+}
+
+func (r *CurrencyRepository) ListWithdrawsByAccount(ctx context.Context, accountID, limit, offset int) ([]domain.WithdrawRecord, int, error) {
+	var total int
+	if err := r.Pool.QueryRow(ctx, `SELECT COUNT(*) FROM cp_withdraw_requests WHERE account_id = $1`, accountID).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("infra.CurrencyRepository.ListWithdrawsByAccount count: %w", err)
+	}
+
+	rows, err := r.Pool.Query(ctx,
+		`SELECT id, account_id, zeny, cashpoint, status, created_at, sent_at FROM cp_withdraw_requests WHERE account_id = $1 ORDER BY id DESC LIMIT $2 OFFSET $3`,
+		accountID, limit, offset,
+	)
+	if err != nil {
+		return nil, 0, fmt.Errorf("infra.CurrencyRepository.ListWithdrawsByAccount: %w", err)
+	}
+
+	records, err := scanWithdrawRecords(rows)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return records, total, nil
+}
+
+func scanDepositRecords(rows pgx.Rows) ([]domain.DepositRecord, error) {
+	defer rows.Close()
+
+	out := []domain.DepositRecord{}
+	for rows.Next() {
+		var record domain.DepositRecord
+		if err := rows.Scan(&record.DepositID, &record.AccountID, &record.Zeny, &record.Cashpoint, &record.ProcessedAt); err != nil {
+			return nil, fmt.Errorf("infra.scanDepositRecords scan: %w", err)
+		}
+		out = append(out, record)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("infra.scanDepositRecords rows: %w", err)
+	}
+
+	return out, nil
+}
+
+func scanWithdrawRecords(rows pgx.Rows) ([]domain.WithdrawRecord, error) {
+	defer rows.Close()
+
+	out := []domain.WithdrawRecord{}
+	for rows.Next() {
+		var record domain.WithdrawRecord
+		if err := rows.Scan(&record.ID, &record.AccountID, &record.Zeny, &record.Cashpoint, &record.Status, &record.CreatedAt, &record.SentAt); err != nil {
+			return nil, fmt.Errorf("infra.scanWithdrawRecords scan: %w", err)
+		}
+		out = append(out, record)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("infra.scanWithdrawRecords rows: %w", err)
+	}
+
+	return out, nil
 }
 
 func scanWithdrawRequests(rows pgx.Rows) ([]domain.WithdrawRequest, error) {
