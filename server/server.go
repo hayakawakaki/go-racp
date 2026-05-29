@@ -47,6 +47,14 @@ func Start() error {
 	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
 	logger.Info("theme: active", "name", theme.ActiveName)
 
+	for _, adjustment := range cfg.App.ClampWarnings() {
+		logger.Warn("config: interval clamped to allowed range",
+			"field", adjustment.Field,
+			"given", adjustment.Given,
+			"clamped", adjustment.Clamped,
+		)
+	}
+
 	// Mailer (constructed before any defer-cleanup steps so a failure here can log.Fatal cleanly)
 	mailClient, err := mailer.NewClient(cfg.Env.SMTPHost, cfg.Env.SMTPPort, cfg.Env.Mode != "development")
 	if err != nil {

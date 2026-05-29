@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -180,6 +181,11 @@ type AppConfig struct {
 	Vendor           VendorConfig           `yaml:"Vendor"`
 	Metrics          MetricsConfig          `yaml:"Metrics"`
 	Security         SecurityConfig         `yaml:"Security"`
+	clampWarnings    []ClampAdjustment
+}
+
+func (c AppConfig) ClampWarnings() []ClampAdjustment {
+	return slices.Clone(c.clampWarnings)
 }
 
 // appConfigDefaults apply default config in case of missing config file
@@ -338,18 +344,20 @@ func validateAppConfig(cfg *AppConfig) {
 		panic(fmt.Errorf("DefaultLocation.X and DefaultLocation.Y must be > 0"))
 	}
 
+	var clamps []ClampAdjustment
 	validateRolesConfig(cfg.UserRoles)
 	validateTicketsConfig(cfg.TicketCategories, cfg.TicketLimits, cfg.Tickets, cfg.UserRoles)
 	validateNewsConfig(cfg.NewsCategories)
-	validateVendorConfig(&cfg.Vendor)
-	validateMetricsConfig(&cfg.Metrics)
+	validateVendorConfig(&cfg.Vendor, &clamps)
+	validateMetricsConfig(&cfg.Metrics, &clamps)
 	validateTrustedProxyCIDRs(cfg.Security.TrustedProxyCIDRs)
 	validateTheme(&cfg.General)
 	validateRatesConfig(&cfg.General.Rates)
-	validateCurrencyConfig(&cfg.Currency)
+	validateCurrencyConfig(&cfg.Currency, &clamps)
+	cfg.clampWarnings = clamps
 }
 
-func validateCurrencyConfig(cfg *CurrencyConfig) {
+func validateCurrencyConfig(cfg *CurrencyConfig, adjustments *[]ClampAdjustment) {
 	const (
 		minCooldown = 1 * time.Minute
 		maxCooldown = 72 * time.Hour
@@ -357,9 +365,9 @@ func validateCurrencyConfig(cfg *CurrencyConfig) {
 		maxPoll     = 15 * time.Minute
 	)
 
-	cfg.Cooldown = clampInterval(cfg.Cooldown, 5*time.Minute, minCooldown, maxCooldown)
-	cfg.DepositPollInterval = clampInterval(cfg.DepositPollInterval, 30*time.Second, minPoll, maxPoll)
-	cfg.WithdrawDrainInterval = clampInterval(cfg.WithdrawDrainInterval, 30*time.Second, minPoll, maxPoll)
+	cfg.Cooldown = recordClamp(adjustments, "Currency.Cooldown", cfg.Cooldown, 5*time.Minute, minCooldown, maxCooldown)
+	cfg.DepositPollInterval = recordClamp(adjustments, "Currency.DepositPollInterval", cfg.DepositPollInterval, 30*time.Second, minPoll, maxPoll)
+	cfg.WithdrawDrainInterval = recordClamp(adjustments, "Currency.WithdrawDrainInterval", cfg.WithdrawDrainInterval, 30*time.Second, minPoll, maxPoll)
 
 	if cfg.MaxZenyPerTx <= 0 {
 		panic(fmt.Errorf("Currency.MaxZenyPerTx must be > 0"))
@@ -384,6 +392,20 @@ func validateTrustedProxyCIDRs(cidrs []string) {
 	}
 }
 
+type ClampAdjustment struct {
+	Field   string
+	Given   time.Duration
+	Clamped time.Duration
+}
+
+func recordClamp(adjustments *[]ClampAdjustment, field string, value, fallback, minimum, maximum time.Duration) time.Duration {
+	clamped := clampInterval(value, fallback, minimum, maximum)
+	if value > 0 && clamped != value {
+		*adjustments = append(*adjustments, ClampAdjustment{Field: field, Given: value, Clamped: clamped})
+	}
+	return clamped
+}
+
 func clampInterval(value, fallback, minimum, maximum time.Duration) time.Duration {
 	switch {
 	case value <= 0:
@@ -397,7 +419,7 @@ func clampInterval(value, fallback, minimum, maximum time.Duration) time.Duratio
 	}
 }
 
-func validateMetricsConfig(cfg *MetricsConfig) {
+func validateMetricsConfig(cfg *MetricsConfig, adjustments *[]ClampAdjustment) {
 	const (
 		minOnline  = 10 * time.Second
 		maxOnline  = 1 * time.Hour
@@ -407,9 +429,9 @@ func validateMetricsConfig(cfg *MetricsConfig) {
 		maxStatus  = 1 * time.Hour
 	)
 
-	cfg.OnlinePollInterval = clampInterval(cfg.OnlinePollInterval, 1*time.Minute, minOnline, maxOnline)
-	cfg.GeneralPollInterval = clampInterval(cfg.GeneralPollInterval, 1*time.Hour, minGeneral, maxGeneral)
-	cfg.StatusPollInterval = clampInterval(cfg.StatusPollInterval, 1*time.Minute, minStatus, maxStatus)
+	cfg.OnlinePollInterval = recordClamp(adjustments, "Metrics.OnlinePollInterval", cfg.OnlinePollInterval, 1*time.Minute, minOnline, maxOnline)
+	cfg.GeneralPollInterval = recordClamp(adjustments, "Metrics.GeneralPollInterval", cfg.GeneralPollInterval, 1*time.Hour, minGeneral, maxGeneral)
+	cfg.StatusPollInterval = recordClamp(adjustments, "Metrics.StatusPollInterval", cfg.StatusPollInterval, 1*time.Minute, minStatus, maxStatus)
 
 	if cfg.PeakWindows == nil {
 		cfg.PeakWindows = defaultPeakWindows
@@ -444,22 +466,12 @@ func validateRatesConfig(cfg *RatesConfig) {
 	}
 }
 
-func validateVendorConfig(cfg *VendorConfig) {
+func validateVendorConfig(cfg *VendorConfig, adjustments *[]ClampAdjustment) {
 	const (
 		minInterval = 5 * time.Second
 		maxInterval = 10 * time.Minute
 	)
-	if cfg.PollInterval <= 0 {
-		cfg.PollInterval = 30 * time.Second
-		return
-	}
-	if cfg.PollInterval < minInterval {
-		cfg.PollInterval = minInterval
-		return
-	}
-	if cfg.PollInterval > maxInterval {
-		cfg.PollInterval = maxInterval
-	}
+	cfg.PollInterval = recordClamp(adjustments, "Vendor.PollInterval", cfg.PollInterval, 30*time.Second, minInterval, maxInterval)
 }
 
 func validateNewsConfig(categories NewsCategoriesConfig) {

@@ -224,11 +224,56 @@ func TestValidateVendorConfig_Clamps(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			cfg := VendorConfig{PollInterval: tt.in}
-			validateVendorConfig(&cfg)
+			validateVendorConfig(&cfg, &[]ClampAdjustment{})
 			if cfg.PollInterval != tt.want {
 				t.Errorf("PollInterval = %v, want %v", cfg.PollInterval, tt.want)
 			}
 		})
+	}
+}
+
+func TestLoadAppConfigFromDir_RecordsOutOfRangeClampsOnly(t *testing.T) {
+	t.Parallel()
+
+	files := validConfFiles()
+	files["polling.yml"] = `Vendor:
+  PollInterval: "1s"
+Metrics:
+  OnlinePollInterval: "1m"
+  GeneralPollInterval: "1h"
+  PeakWindows: ["daily", "weekly", "monthly", "all_time"]
+Currency:
+  Cooldown: "100ms"
+  DepositPollInterval: "30s"
+  WithdrawDrainInterval: "30s"
+  MaxZenyPerTx: 1000000
+  MaxCashpointPerTx: 1000
+`
+	dir := writeConfDir(t, files)
+
+	cfg := loadAppConfigFromDir(dir)
+
+	got := map[string]ClampAdjustment{}
+	for _, adjustment := range cfg.ClampWarnings() {
+		got[adjustment.Field] = adjustment
+	}
+
+	if _, ok := got["Vendor.PollInterval"]; !ok {
+		t.Errorf("expected Vendor.PollInterval clamp recorded, got %+v", cfg.ClampWarnings())
+	}
+	if _, ok := got["Currency.Cooldown"]; !ok {
+		t.Errorf("expected Currency.Cooldown clamp recorded, got %+v", cfg.ClampWarnings())
+	}
+	if adj, ok := got["Currency.Cooldown"]; ok {
+		if adj.Given != 100*time.Millisecond || adj.Clamped != 1*time.Minute {
+			t.Errorf("Currency.Cooldown adjustment = %+v, want given=100ms clamped=1m", adj)
+		}
+	}
+	if _, ok := got["Currency.DepositPollInterval"]; ok {
+		t.Errorf("in-range DepositPollInterval must not be recorded: %+v", got)
+	}
+	if _, ok := got["Metrics.OnlinePollInterval"]; ok {
+		t.Errorf("in-range Metrics.OnlinePollInterval must not be recorded: %+v", got)
 	}
 }
 
