@@ -16,6 +16,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 	"github.com/hayakawakaki/go-racp/internal/platform/security"
 	"github.com/hayakawakaki/go-racp/internal/platform/theme"
+	"github.com/hayakawakaki/go-racp/server/config"
 )
 
 func init() {
@@ -31,9 +32,9 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 
 	charSvc := character.BuildService(in)
 
-	currencySvc := BuildCurrencyService(in)
-
 	currencyRepo := infra.NewCurrencyRepository(in.DB)
+	currencySvc := newCurrencyService(currencyRepo, in.Config.App.Currency)
+
 	depositWorker := currencyapp.NewDepositWorker(currencyRepo, infra.NewDepositQueue(in.MainDB), currencyapp.DepositWorkerConfig{
 		Logger:       in.Logger,
 		Interval:     in.Config.App.Currency.DepositPollInterval,
@@ -116,11 +117,13 @@ func buildServices(in *coreinfra.Infra) (*app.Service, *app.SessionService, *inf
 }
 
 func BuildCurrencyService(in *coreinfra.Infra) *currencyapp.Service {
-	repo := infra.NewCurrencyRepository(in.DB)
+	return newCurrencyService(infra.NewCurrencyRepository(in.DB), in.Config.App.Currency)
+}
 
+func newCurrencyService(repo *infra.CurrencyRepository, cfg config.CurrencyConfig) *currencyapp.Service {
 	return currencyapp.NewService(repo,
-		currencyapp.WithCooldown(in.Config.App.Currency.Cooldown),
-		currencyapp.WithLimits(in.Config.App.Currency.MaxZenyPerTx, in.Config.App.Currency.MaxCashpointPerTx),
+		currencyapp.WithCooldown(cfg.Cooldown),
+		currencyapp.WithLimits(cfg.MaxZenyPerTx, cfg.MaxCashpointPerTx),
 	)
 }
 

@@ -32,6 +32,8 @@ CREATE TABLE cp_withdraw_requests (
 
 CREATE INDEX idx_cp_withdraw_requests_pending ON cp_withdraw_requests (id) WHERE status = 1;
 
+CREATE INDEX idx_cp_withdraw_requests_account ON cp_withdraw_requests (account_id, id DESC);
+
 CREATE TABLE cp_store_items (
     id                BIGSERIAL   NOT NULL,
     cashpoint_value   INTEGER     NOT NULL,

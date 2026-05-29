@@ -33,17 +33,7 @@ func NewWithdrawWorker(repo domain.CurrencyRepository, queue domain.WithdrawQueu
 }
 
 func (w *WithdrawWorker) Run(ctx context.Context) {
-	w.drainOnce(ctx)
-	ticker := time.NewTicker(w.cfg.Interval)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			w.drainOnce(ctx)
-		}
-	}
+	runLoop(ctx, w.cfg.Interval, w.drainOnce)
 }
 
 func (w *WithdrawWorker) drainOnce(ctx context.Context) {

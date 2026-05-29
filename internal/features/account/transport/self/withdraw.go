@@ -28,6 +28,11 @@ func (h *Handler) doWithdraw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if h.currency == nil {
+		httpx.Redirect(w, r, "/account")
+		return
+	}
+
 	if err := httpx.ParseForm(w, r, maxWithdrawFormBytes); err != nil {
 		httpx.Redirect(w, r, "/account?notice="+noticeWithdrawInvalid)
 		return

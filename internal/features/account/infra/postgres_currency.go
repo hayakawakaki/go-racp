@@ -154,21 +154,8 @@ func (r *CurrencyRepository) PendingWithdraws(ctx context.Context, limit int) ([
 	if err != nil {
 		return nil, fmt.Errorf("infra.CurrencyRepository.PendingWithdraws: %w", err)
 	}
-	defer rows.Close()
 
-	out := []domain.WithdrawRequest{}
-	for rows.Next() {
-		var withdrawRequest domain.WithdrawRequest
-		if err := rows.Scan(&withdrawRequest.ID, &withdrawRequest.AccountID, &withdrawRequest.Zeny, &withdrawRequest.Cashpoint); err != nil {
-			return nil, fmt.Errorf("infra.CurrencyRepository.PendingWithdraws scan: %w", err)
-		}
-		out = append(out, withdrawRequest)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("infra.CurrencyRepository.PendingWithdraws rows: %w", err)
-	}
-
-	return out, nil
+	return scanWithdrawRequests(rows)
 }
 
 func (r *CurrencyRepository) MarkWithdrawSent(ctx context.Context, id int64, now time.Time) error {
@@ -199,18 +186,23 @@ func (r *CurrencyRepository) RecentWithdraws(ctx context.Context, accountID, lim
 	if err != nil {
 		return nil, fmt.Errorf("infra.CurrencyRepository.RecentWithdraws: %w", err)
 	}
+
+	return scanWithdrawRequests(rows)
+}
+
+func scanWithdrawRequests(rows pgx.Rows) ([]domain.WithdrawRequest, error) {
 	defer rows.Close()
 
 	out := []domain.WithdrawRequest{}
 	for rows.Next() {
 		var withdrawRequest domain.WithdrawRequest
 		if err := rows.Scan(&withdrawRequest.ID, &withdrawRequest.AccountID, &withdrawRequest.Zeny, &withdrawRequest.Cashpoint); err != nil {
-			return nil, fmt.Errorf("infra.CurrencyRepository.RecentWithdraws scan: %w", err)
+			return nil, fmt.Errorf("infra.scanWithdrawRequests scan: %w", err)
 		}
 		out = append(out, withdrawRequest)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("infra.CurrencyRepository.RecentWithdraws rows: %w", err)
+		return nil, fmt.Errorf("infra.scanWithdrawRequests rows: %w", err)
 	}
 
 	return out, nil
