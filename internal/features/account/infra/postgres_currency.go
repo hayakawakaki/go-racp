@@ -181,6 +181,16 @@ func (r *CurrencyRepository) MarkWithdrawSent(ctx context.Context, id int64, now
 	return nil
 }
 
+func (r *CurrencyRepository) MarkWithdrawPending(ctx context.Context, id int64) error {
+	if _, err := r.Pool.Exec(ctx,
+		`UPDATE cp_withdraw_requests SET status = 1, sent_at = NULL WHERE id = $1 AND status = 2`, id,
+	); err != nil {
+		return fmt.Errorf("infra.CurrencyRepository.MarkWithdrawPending: %w", err)
+	}
+
+	return nil
+}
+
 func (r *CurrencyRepository) RecentWithdraws(ctx context.Context, accountID, limit int) ([]domain.WithdrawRequest, error) {
 	rows, err := r.Pool.Query(ctx,
 		`SELECT id, account_id, zeny, cashpoint FROM cp_withdraw_requests WHERE account_id = $1 ORDER BY id DESC LIMIT $2`,

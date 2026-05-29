@@ -54,12 +54,16 @@ func (w *WithdrawWorker) drainOnce(ctx context.Context) {
 	}
 
 	for _, withdrawRequest := range requests {
-		if err := w.queue.Insert(ctx, withdrawRequest.ID, withdrawRequest.AccountID, withdrawRequest.Zeny, withdrawRequest.Cashpoint); err != nil {
-			w.cfg.Logger.Error("currency: insert withdraw", "id", withdrawRequest.ID, "err", err)
-			continue
-		}
 		if err := w.repo.MarkWithdrawSent(ctx, withdrawRequest.ID, w.now()); err != nil {
 			w.cfg.Logger.Error("currency: mark withdraw sent", "id", withdrawRequest.ID, "err", err)
+			continue
+		}
+
+		if err := w.queue.Insert(ctx, withdrawRequest.ID, withdrawRequest.AccountID, withdrawRequest.Zeny, withdrawRequest.Cashpoint); err != nil {
+			w.cfg.Logger.Error("currency: insert withdraw", "id", withdrawRequest.ID, "err", err)
+			if err := w.repo.MarkWithdrawPending(ctx, withdrawRequest.ID); err != nil {
+				w.cfg.Logger.Error("currency: revert withdraw pending", "id", withdrawRequest.ID, "err", err)
+			}
 		}
 	}
 }
