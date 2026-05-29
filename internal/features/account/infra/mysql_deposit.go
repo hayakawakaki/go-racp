@@ -23,21 +23,14 @@ func (r *DepositQueue) Batch(ctx context.Context, limit int) ([]domain.DepositRo
 	if err != nil {
 		return nil, fmt.Errorf("infra.DepositQueue.Batch: %w", err)
 	}
-	defer func() { _ = rows.Close() }()
 
-	out := []domain.DepositRow{}
-	for rows.Next() {
+	return collectRows(rows, func(rows *sql.Rows) (domain.DepositRow, error) {
 		var depositRow domain.DepositRow
 		if err := rows.Scan(&depositRow.ID, &depositRow.AccountID, &depositRow.Zeny, &depositRow.Points); err != nil {
-			return nil, fmt.Errorf("infra.DepositQueue.Batch scan: %w", err)
+			return depositRow, fmt.Errorf("infra.DepositQueue.Batch scan: %w", err)
 		}
-		out = append(out, depositRow)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("infra.DepositQueue.Batch rows: %w", err)
-	}
-
-	return out, nil
+		return depositRow, nil
+	})
 }
 
 func (r *DepositQueue) Delete(ctx context.Context, id int64) error {

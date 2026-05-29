@@ -359,6 +359,61 @@ func TestCurrencyRepository_WithdrawLifecycle(t *testing.T) {
 	}
 }
 
+func TestCurrencyRepository_MarkWithdrawDelivered_AndSentBefore(t *testing.T) {
+	repo, pool := setupCurrencyRepo(t)
+	ctx := context.Background()
+	now := time.Now().UTC().Truncate(time.Second)
+	seedBalance(t, pool, 1, 100000, 0, nil)
+
+	requestID, err := repo.RequestWithdraw(ctx, 1, 1000, 0, now, now)
+	if err != nil {
+		t.Fatalf("RequestWithdraw: %v", err)
+	}
+
+	sentAt := now.Add(-time.Hour)
+	if err := repo.MarkWithdrawSent(ctx, requestID, sentAt); err != nil {
+		t.Fatalf("MarkWithdrawSent: %v", err)
+	}
+
+	stale, err := repo.SentBefore(ctx, now, 10)
+	if err != nil {
+		t.Fatalf("SentBefore: %v", err)
+	}
+	if len(stale) != 1 || stale[0].ID != requestID {
+		t.Fatalf("SentBefore = %+v, want the sent request", stale)
+	}
+	if stale[0].Status != 2 {
+		t.Errorf("stale status = %d, want 2 (sent)", stale[0].Status)
+	}
+
+	deliveredAt := now.Add(-time.Minute)
+	if err := repo.MarkWithdrawDelivered(ctx, requestID, deliveredAt); err != nil {
+		t.Fatalf("MarkWithdrawDelivered: %v", err)
+	}
+
+	rows, _, err := repo.ListWithdraws(ctx, 10, 0)
+	if err != nil {
+		t.Fatalf("ListWithdraws: %v", err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("ListWithdraws = %d rows, want 1", len(rows))
+	}
+	if rows[0].Status != 3 {
+		t.Errorf("status = %d, want 3 (delivered)", rows[0].Status)
+	}
+	if rows[0].DeliveredAt == nil || !rows[0].DeliveredAt.Equal(deliveredAt) {
+		t.Errorf("delivered_at = %v, want %v", rows[0].DeliveredAt, deliveredAt)
+	}
+
+	stale, err = repo.SentBefore(ctx, now, 10)
+	if err != nil {
+		t.Fatalf("SentBefore after delivery: %v", err)
+	}
+	if len(stale) != 0 {
+		t.Errorf("SentBefore after delivery = %+v, want none (status is now 3)", stale)
+	}
+}
+
 func TestCurrencyRepository_RequestWithdraw_ConcurrentNoDoubleSpend(t *testing.T) {
 	repo, pool := setupCurrencyRepo(t)
 	ctx := context.Background()

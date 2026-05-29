@@ -20,6 +20,8 @@ type fakeCurrencyRepo struct {
 	pendingFn                func(ctx context.Context, limit int) ([]domain.WithdrawRequest, error)
 	markSentFn               func(ctx context.Context, id int64, now time.Time) error
 	markPendingFn            func(ctx context.Context, id int64) error
+	markDeliveredFn          func(ctx context.Context, id int64, deliveredAt time.Time) error
+	sentBeforeFn             func(ctx context.Context, before time.Time, limit int) ([]domain.WithdrawRecord, error)
 	recentFn                 func(ctx context.Context, accountID, limit int) ([]domain.WithdrawRequest, error)
 	totalsFn                 func(ctx context.Context) (domain.CurrencyTotals, error)
 	listDepositsFn           func(ctx context.Context, limit, offset int) ([]domain.DepositRecord, int, error)
@@ -76,6 +78,22 @@ func (f *fakeCurrencyRepo) MarkWithdrawPending(ctx context.Context, id int64) er
 	}
 
 	return nil
+}
+
+func (f *fakeCurrencyRepo) MarkWithdrawDelivered(ctx context.Context, id int64, deliveredAt time.Time) error {
+	if f.markDeliveredFn != nil {
+		return f.markDeliveredFn(ctx, id, deliveredAt)
+	}
+
+	return nil
+}
+
+func (f *fakeCurrencyRepo) SentBefore(ctx context.Context, before time.Time, limit int) ([]domain.WithdrawRecord, error) {
+	if f.sentBeforeFn != nil {
+		return f.sentBeforeFn(ctx, before, limit)
+	}
+
+	return nil, nil
 }
 
 func (f *fakeCurrencyRepo) RecentWithdraws(ctx context.Context, accountID, limit int) ([]domain.WithdrawRequest, error) {
@@ -150,7 +168,10 @@ func (f *fakeDepositQueue) Delete(ctx context.Context, id int64) error {
 }
 
 type fakeWithdrawQueue struct {
-	insertFn func(ctx context.Context, id int64, accountID int, zeny int64, points int) error
+	insertFn         func(ctx context.Context, id int64, accountID int, zeny int64, points int) error
+	deliveredFn      func(ctx context.Context, limit int) ([]domain.DeliveredWithdraw, error)
+	resetDeliveredFn func(ctx context.Context, id int64) error
+	deleteFn         func(ctx context.Context, id int64) error
 }
 
 var _ domain.WithdrawQueue = (*fakeWithdrawQueue)(nil)
@@ -158,6 +179,30 @@ var _ domain.WithdrawQueue = (*fakeWithdrawQueue)(nil)
 func (f *fakeWithdrawQueue) Insert(ctx context.Context, id int64, accountID int, zeny int64, points int) error {
 	if f.insertFn != nil {
 		return f.insertFn(ctx, id, accountID, zeny, points)
+	}
+
+	return nil
+}
+
+func (f *fakeWithdrawQueue) Delivered(ctx context.Context, limit int) ([]domain.DeliveredWithdraw, error) {
+	if f.deliveredFn != nil {
+		return f.deliveredFn(ctx, limit)
+	}
+
+	return nil, nil
+}
+
+func (f *fakeWithdrawQueue) ResetDelivered(ctx context.Context, id int64) error {
+	if f.resetDeliveredFn != nil {
+		return f.resetDeliveredFn(ctx, id)
+	}
+
+	return nil
+}
+
+func (f *fakeWithdrawQueue) Delete(ctx context.Context, id int64) error {
+	if f.deleteFn != nil {
+		return f.deleteFn(ctx, id)
 	}
 
 	return nil

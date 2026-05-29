@@ -119,3 +119,66 @@ func TestWithdrawQueue_InsertIsIdempotent(t *testing.T) {
 		t.Errorf("cp_withdraw rows for id 7 = %d, want 1 (duplicate insert must be a no-op)", count)
 	}
 }
+
+func TestWithdrawQueue_DeliveredAndDelete(t *testing.T) {
+	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
+	testutil.TruncateMariaDB(t, db, "cp_withdraw")
+	queue := NewWithdrawQueue(db)
+	ctx := context.Background()
+
+	const epoch int64 = 1700000000
+	if _, err := db.ExecContext(ctx,
+		"INSERT INTO cp_withdraw (id, account_id, zeny, points, delivered_at) VALUES (7, 42, 0, 0, ?), (8, 42, 100, 0, 0)",
+		epoch); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rows, err := queue.Delivered(ctx, 10)
+	if err != nil {
+		t.Fatalf("Delivered: %v", err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("Delivered = %+v, want only the delivered_at > 0 row", rows)
+	}
+	if rows[0].ID != 7 || rows[0].DeliveredAt != epoch || rows[0].Zeny != 0 || rows[0].Points != 0 {
+		t.Errorf("Delivered row = %+v, want {ID:7 DeliveredAt:%d Zeny:0 Points:0}", rows[0], epoch)
+	}
+
+	if err := queue.Delete(ctx, 7); err != nil {
+		t.Fatalf("Delete: %v", err)
+	}
+
+	rows, err = queue.Delivered(ctx, 10)
+	if err != nil {
+		t.Fatalf("Delivered after Delete: %v", err)
+	}
+	if len(rows) != 0 {
+		t.Errorf("Delivered after Delete = %+v, want none", rows)
+	}
+}
+
+func TestWithdrawQueue_ResetDelivered(t *testing.T) {
+	db := testutil.OpenMariaDB(t, "DB_MAIN_URL")
+	testutil.TruncateMariaDB(t, db, "cp_withdraw")
+	queue := NewWithdrawQueue(db)
+	ctx := context.Background()
+
+	const epoch int64 = 1700000000
+	if _, err := db.ExecContext(ctx,
+		"INSERT INTO cp_withdraw (id, account_id, zeny, points, delivered_at) VALUES (7, 42, 0, 0, ?)",
+		epoch); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	if err := queue.ResetDelivered(ctx, 7); err != nil {
+		t.Fatalf("ResetDelivered: %v", err)
+	}
+
+	rows, err := queue.Delivered(ctx, 10)
+	if err != nil {
+		t.Fatalf("Delivered after ResetDelivered: %v", err)
+	}
+	if len(rows) != 0 {
+		t.Errorf("Delivered after ResetDelivered = %+v, want none (delivered_at back to 0)", rows)
+	}
+}

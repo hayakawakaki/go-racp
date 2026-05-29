@@ -7,9 +7,11 @@ CREATE TABLE IF NOT EXISTS cp_deposit (
 );
 
 CREATE TABLE IF NOT EXISTS cp_withdraw (
-    id         BIGINT NOT NULL,
-    account_id INT    NOT NULL,
-    zeny       BIGINT NOT NULL DEFAULT 0,
-    points     INT    NOT NULL DEFAULT 0,
-    PRIMARY KEY (id)
+    id           BIGINT NOT NULL,
+    account_id   INT    NOT NULL,
+    zeny         BIGINT NOT NULL DEFAULT 0,
+    points       INT    NOT NULL DEFAULT 0,
+    delivered_at BIGINT NOT NULL DEFAULT 0,
+    PRIMARY KEY (id),
+    KEY idx_cp_withdraw_delivered (delivered_at)
 );

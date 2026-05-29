@@ -176,6 +176,29 @@ func (r *CurrencyRepository) MarkWithdrawPending(ctx context.Context, id int64) 
 	return nil
 }
 
+func (r *CurrencyRepository) MarkWithdrawDelivered(ctx context.Context, id int64, deliveredAt time.Time) error {
+	if _, err := r.Pool.Exec(ctx,
+		`UPDATE cp_withdraw_requests SET status = 3, delivered_at = $1 WHERE id = $2 AND status = 2`, deliveredAt, id,
+	); err != nil {
+		return fmt.Errorf("infra.CurrencyRepository.MarkWithdrawDelivered: %w", err)
+	}
+
+	return nil
+}
+
+func (r *CurrencyRepository) SentBefore(ctx context.Context, before time.Time, limit int) ([]domain.WithdrawRecord, error) {
+	rows, err := r.Pool.Query(ctx,
+		`SELECT id, account_id, zeny, cashpoint, status, created_at, sent_at, delivered_at
+		 FROM cp_withdraw_requests WHERE status = 2 AND sent_at < $1 ORDER BY sent_at LIMIT $2`,
+		before, limit,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("infra.CurrencyRepository.SentBefore: %w", err)
+	}
+
+	return scanWithdrawRecords(rows)
+}
+
 func (r *CurrencyRepository) RecentWithdraws(ctx context.Context, accountID, limit int) ([]domain.WithdrawRequest, error) {
 	rows, err := r.Pool.Query(ctx,
 		`SELECT id, account_id, zeny, cashpoint FROM cp_withdraw_requests WHERE account_id = $1 ORDER BY id DESC LIMIT $2`,
@@ -228,7 +251,7 @@ func (r *CurrencyRepository) ListWithdraws(ctx context.Context, limit, offset in
 	}
 
 	rows, err := r.Pool.Query(ctx,
-		`SELECT id, account_id, zeny, cashpoint, status, created_at, sent_at FROM cp_withdraw_requests ORDER BY id DESC LIMIT $1 OFFSET $2`,
+		`SELECT id, account_id, zeny, cashpoint, status, created_at, sent_at, delivered_at FROM cp_withdraw_requests ORDER BY id DESC LIMIT $1 OFFSET $2`,
 		limit, offset,
 	)
 	if err != nil {
@@ -272,7 +295,7 @@ func (r *CurrencyRepository) ListWithdrawsByAccount(ctx context.Context, account
 	}
 
 	rows, err := r.Pool.Query(ctx,
-		`SELECT id, account_id, zeny, cashpoint, status, created_at, sent_at FROM cp_withdraw_requests WHERE account_id = $1 ORDER BY id DESC LIMIT $2 OFFSET $3`,
+		`SELECT id, account_id, zeny, cashpoint, status, created_at, sent_at, delivered_at FROM cp_withdraw_requests WHERE account_id = $1 ORDER BY id DESC LIMIT $2 OFFSET $3`,
 		accountID, limit, offset,
 	)
 	if err != nil {
@@ -311,7 +334,7 @@ func scanWithdrawRecords(rows pgx.Rows) ([]domain.WithdrawRecord, error) {
 	out := []domain.WithdrawRecord{}
 	for rows.Next() {
 		var record domain.WithdrawRecord
-		if err := rows.Scan(&record.ID, &record.AccountID, &record.Zeny, &record.Cashpoint, &record.Status, &record.CreatedAt, &record.SentAt); err != nil {
+		if err := rows.Scan(&record.ID, &record.AccountID, &record.Zeny, &record.Cashpoint, &record.Status, &record.CreatedAt, &record.SentAt, &record.DeliveredAt); err != nil {
 			return nil, fmt.Errorf("infra.scanWithdrawRecords scan: %w", err)
 		}
 		out = append(out, record)
