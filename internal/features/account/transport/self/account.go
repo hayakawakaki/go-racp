@@ -1,8 +1,10 @@
 package self
 
 import (
+	"context"
 	"net/http"
 
+	currency "github.com/hayakawakaki/go-racp/internal/features/account/app/currency"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
 	selfstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/self/state"
 	charapp "github.com/hayakawakaki/go-racp/internal/features/character/app"
@@ -23,6 +25,11 @@ var accountNoticeText = map[string]string{
 	noticeEmailChangeCooldown: "We sent a confirmation link recently. Please check your inbox before requesting another.",
 	noticeEmailChangeLocked:   "Email was changed recently. You can change it again after the cooldown expires.",
 	noticeEmailChanged:        "Email updated.",
+
+	noticeWithdrawOK:           "Withdrawal requested. It will be delivered in-game shortly.",
+	noticeWithdrawLocked:       "Withdrawals are on cooldown after a recent deposit. Please wait.",
+	noticeWithdrawInsufficient: "You do not have enough balance for that withdrawal.",
+	noticeWithdrawInvalid:      "Invalid withdrawal amount.",
 }
 
 var characterNoticeText = map[string]string{
@@ -52,7 +59,9 @@ func (h *Handler) showAccount(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	state := selfstate.AccountState{Account: account, Characters: chars}
+	balance, recentWithdraws := h.accountWallet(r.Context(), sess.UserID)
+
+	state := selfstate.AccountState{Account: account, Characters: chars, Balance: balance, RecentWithdraws: recentWithdraws}
 	noticeParam := r.URL.Query().Get("notice")
 	if notice, ok := accountNoticeText[noticeParam]; ok {
 		state.Notice = notice
@@ -66,4 +75,24 @@ func (h *Handler) showAccount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpx.RenderHTML(w, r, h.logger, h.theme.AccountPage(h.layout(), state))
+}
+
+func (h *Handler) accountWallet(ctx context.Context, userID int) (currency.BalanceDTO, []currency.WithdrawDTO) {
+	if h.currency == nil {
+		return currency.BalanceDTO{}, nil
+	}
+
+	balance, err := h.currency.Balance(ctx, userID)
+	if err != nil {
+		h.logger.Error("account balance", "err", err)
+		balance = currency.BalanceDTO{}
+	}
+
+	recentWithdraws, err := h.currency.RecentWithdraws(ctx, userID, 5)
+	if err != nil {
+		h.logger.Error("account recent withdraws", "err", err)
+		recentWithdraws = nil
+	}
+
+	return balance, recentWithdraws
 }

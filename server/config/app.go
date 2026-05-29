@@ -73,6 +73,18 @@ type CooldownConfig struct {
 	CharacterLocationReset time.Duration `yaml:"CharacterLocationReset"`
 }
 
+// CurrencyConfig tunes the deposit and withdraw bridge.
+// Cooldown is a single shared window. Any deposit or withdraw locks both directions for that long.
+// MaxZenyPerTx and MaxCashpointPerTx cap a single transaction.
+// Cooldown is clamped to [1m, 72h] and the poll intervals to [30s, 15m].
+type CurrencyConfig struct {
+	Cooldown              time.Duration `yaml:"Cooldown"`
+	DepositPollInterval   time.Duration `yaml:"DepositPollInterval"`
+	WithdrawDrainInterval time.Duration `yaml:"WithdrawDrainInterval"`
+	MaxZenyPerTx          int64         `yaml:"MaxZenyPerTx"`
+	MaxCashpointPerTx     int           `yaml:"MaxCashpointPerTx"`
+}
+
 type RetentionConfig struct {
 	LoginAttempts time.Duration `yaml:"LoginAttempts"`
 	SweepInterval time.Duration `yaml:"SweepInterval"`
@@ -159,6 +171,7 @@ type AppConfig struct {
 	ItemDB           ItemDBConfig           `yaml:"ItemDB"`
 	MobDB            MobDBConfig            `yaml:"MobDB"`
 	Cooldown         CooldownConfig         `yaml:"Cooldown"`
+	Currency         CurrencyConfig         `yaml:"Currency"`
 	Retention        RetentionConfig        `yaml:"Retention"`
 	TTL              TTLConfig              `yaml:"TTL"`
 	Tickets          TicketsConfig          `yaml:"Tickets"`
@@ -203,6 +216,13 @@ func appConfigDefaults() *AppConfig {
 			TicketOpen:             5 * time.Minute,
 			CharacterLookReset:     24 * time.Hour,
 			CharacterLocationReset: 1 * time.Hour,
+		},
+		Currency: CurrencyConfig{
+			Cooldown:              5 * time.Minute,
+			MaxZenyPerTx:          2_000_000_000,
+			MaxCashpointPerTx:     1_000_000,
+			DepositPollInterval:   30 * time.Second,
+			WithdrawDrainInterval: 30 * time.Second,
 		},
 		Retention: RetentionConfig{
 			LoginAttempts: 30 * 24 * time.Hour,
@@ -326,6 +346,27 @@ func validateAppConfig(cfg *AppConfig) {
 	validateTrustedProxyCIDRs(cfg.Security.TrustedProxyCIDRs)
 	validateTheme(&cfg.General)
 	validateRatesConfig(&cfg.General.Rates)
+	validateCurrencyConfig(&cfg.Currency)
+}
+
+func validateCurrencyConfig(cfg *CurrencyConfig) {
+	const (
+		minCooldown = 1 * time.Minute
+		maxCooldown = 72 * time.Hour
+		minPoll     = 30 * time.Second
+		maxPoll     = 15 * time.Minute
+	)
+
+	cfg.Cooldown = clampInterval(cfg.Cooldown, 5*time.Minute, minCooldown, maxCooldown)
+	cfg.DepositPollInterval = clampInterval(cfg.DepositPollInterval, 30*time.Second, minPoll, maxPoll)
+	cfg.WithdrawDrainInterval = clampInterval(cfg.WithdrawDrainInterval, 30*time.Second, minPoll, maxPoll)
+
+	if cfg.MaxZenyPerTx <= 0 {
+		panic(fmt.Errorf("Currency.MaxZenyPerTx must be > 0"))
+	}
+	if cfg.MaxCashpointPerTx <= 0 {
+		panic(fmt.Errorf("Currency.MaxCashpointPerTx must be > 0"))
+	}
 }
 
 func validateTheme(cfg *GeneralConfig) {

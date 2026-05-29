@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/a-h/templ"
+	currency "github.com/hayakawakaki/go-racp/internal/features/account/app/currency"
 	app "github.com/hayakawakaki/go-racp/internal/features/account/app/self"
 	"github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
@@ -309,6 +310,33 @@ type stubCharacterLister struct {
 func (s *stubCharacterLister) List(ctx context.Context, accountID int) ([]characterapp.CharacterDTO, error) {
 	if s.listFn != nil {
 		return s.listFn(ctx, accountID)
+	}
+	return nil, nil
+}
+
+type stubCurrencyService struct {
+	balanceFn         func(context.Context, int) (currency.BalanceDTO, error)
+	requestWithdrawFn func(context.Context, int, int64, int) error
+	recentFn          func(context.Context, int, int) ([]currency.WithdrawDTO, error)
+}
+
+func (s *stubCurrencyService) Balance(ctx context.Context, accountID int) (currency.BalanceDTO, error) {
+	if s.balanceFn != nil {
+		return s.balanceFn(ctx, accountID)
+	}
+	return currency.BalanceDTO{}, nil
+}
+
+func (s *stubCurrencyService) RequestWithdraw(ctx context.Context, accountID int, zeny int64, cashpoint int) error {
+	if s.requestWithdrawFn != nil {
+		return s.requestWithdrawFn(ctx, accountID, zeny, cashpoint)
+	}
+	return nil
+}
+
+func (s *stubCurrencyService) RecentWithdraws(ctx context.Context, accountID, limit int) ([]currency.WithdrawDTO, error) {
+	if s.recentFn != nil {
+		return s.recentFn(ctx, accountID, limit)
 	}
 	return nil, nil
 }

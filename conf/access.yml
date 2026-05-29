@@ -27,6 +27,12 @@ Account:
   ChangeEmail:
     Roles: ["*"]
     Requires: ["Unrestricted"]
+  Withdraw:
+    Roles: ["*"]
+    Requires: ["Unrestricted"]
+    RateLimit:
+      RatePerMinute: 6
+      Burst: 3
   Login:
     Roles: ["Public"]
     RateLimit:

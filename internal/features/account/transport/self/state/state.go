@@ -1,15 +1,18 @@
 package state
 
 import (
+	currency "github.com/hayakawakaki/go-racp/internal/features/account/app/currency"
 	app "github.com/hayakawakaki/go-racp/internal/features/account/app/self"
 	charapp "github.com/hayakawakaki/go-racp/internal/features/character/app"
 )
 
 type AccountState struct {
-	Account    *app.AccountDTO
-	Notice     string
-	BanBlocked string
-	Characters []charapp.CharacterDTO
+	Account         *app.AccountDTO
+	Notice          string
+	BanBlocked      string
+	Characters      []charapp.CharacterDTO
+	RecentWithdraws []currency.WithdrawDTO
+	Balance         currency.BalanceDTO
 }
 
 type ChangeEmailState struct {

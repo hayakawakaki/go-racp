@@ -1,4 +1,4 @@
-# Vendor polling cadence (clamped to [5s, 10m])
+# Vendor polling (clamped to [5s, 10m])
 Vendor:
   PollInterval: "30s"
 
@@ -8,3 +8,12 @@ Metrics:
   GeneralPollInterval: "1h"
   StatusPollInterval: "1m"
   PeakWindows: ["daily", "weekly", "monthly", "all_time"]
+
+# Currency bridge: deposit-crediting and withdraw-drain workers.
+# Cooldown is shared by both deposit and withdraw (clamped to [1m, 72h]). Poll intervals clamped to [30s, 15m].
+Currency:
+  Cooldown: "1m"
+  MaxZenyPerTx: 2_000_000_000 #2B
+  MaxCashpointPerTx: 1_000_000 #1M
+  DepositPollInterval: "30s"
+  WithdrawDrainInterval: "30s"
