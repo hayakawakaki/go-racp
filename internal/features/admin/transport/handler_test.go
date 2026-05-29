@@ -2,6 +2,7 @@ package transport
 
 import (
 	"context"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -326,5 +327,51 @@ func TestHandler_ShowEconomy_ResolvesEmails(t *testing.T) {
 	body := rr.Body.String()
 	if !strings.Contains(body, "a@example.com") || !strings.Contains(body, "b@example.com") {
 		t.Errorf("body missing resolved emails:\n%s", body)
+	}
+}
+
+func TestHandler_ShowEconomy_PartialReadFailure(t *testing.T) {
+	t.Parallel()
+
+	economy := &stubEconomyReader{
+		totalsFn: func(context.Context) (currency.TotalsDTO, error) {
+			return currency.TotalsDTO{}, errors.New("totals db down")
+		},
+		depositsFn: func(_ context.Context, page, _ int) (currency.DepositPage, error) {
+			return currency.DepositPage{
+				Rows: []currency.DepositDTO{{DepositID: 1, AccountID: 7, Zeny: 100}},
+				Page: page,
+			}, nil
+		},
+		withdrawsFn: func(_ context.Context, page, _ int) (currency.WithdrawHistoryPage, error) {
+			return currency.WithdrawHistoryPage{
+				Rows: []currency.AdminWithdrawDTO{{ID: 1, AccountID: 9, Zeny: 50}},
+				Page: page,
+			}, nil
+		},
+	}
+	emails := &stubEmailResolver{
+		emailsFn: func(_ context.Context, _ []int) (map[int]string, error) {
+			return map[int]string{7: "kaki@example.invalid", 9: "crazyarashi@example.invalid"}, nil
+		},
+	}
+	h := NewHandler(HandlerConfig{
+		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
+		General: config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
+		Theme:   stubTheme{},
+		Economy: economy,
+		Emails:  emails,
+	})
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/admin/economy", http.NoBody)
+	h.showEconomy(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rr.Code)
+	}
+	body := rr.Body.String()
+	if !strings.Contains(body, "kaki@example.invalid") || !strings.Contains(body, "crazyarashi@example.invalid") {
+		t.Errorf("a failed totals read must not blank the deposit/withdraw tables:\n%s", body)
 	}
 }
