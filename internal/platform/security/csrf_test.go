@@ -430,6 +430,68 @@ func TestCSRF_AnonymousCookieReusedAcrossRequests(t *testing.T) {
 	}
 }
 
+func TestCSRF_OpenRoutesBypass(t *testing.T) {
+	t.Parallel()
+
+	matcher, err := NewRouteMatcher([]string{"/webhooks/*"})
+	if err != nil {
+		t.Fatalf("NewRouteMatcher: %v", err)
+	}
+
+	tests := []struct {
+		name       string
+		target     string
+		wantStatus int
+		wantNext   bool
+	}{
+		{
+			name:       "open route bypasses validation",
+			target:     "/webhooks/stripe",
+			wantStatus: http.StatusTeapot,
+			wantNext:   true,
+		},
+		{
+			name:       "non-open path still rejected",
+			target:     "/account/password",
+			wantStatus: http.StatusForbidden,
+			wantNext:   false,
+		},
+		{
+			name:       "traversal into non-open path rejected",
+			target:     "/webhooks/../account/password",
+			wantStatus: http.StatusForbidden,
+			wantNext:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			called := false
+			handler := CSRF(CSRFOptions{
+				Secret:           testCSRFSecret,
+				GetSessionFinger: noSession,
+				OpenRoutes:       matcher,
+			})(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				called = true
+				w.WriteHeader(http.StatusTeapot)
+			}))
+
+			req := httptest.NewRequest(http.MethodPost, tt.target, http.NoBody)
+			rr := httptest.NewRecorder()
+			handler.ServeHTTP(rr, req)
+
+			if called != tt.wantNext {
+				t.Errorf("next called = %v, want %v", called, tt.wantNext)
+			}
+			if rr.Code != tt.wantStatus {
+				t.Errorf("status = %d, want %d", rr.Code, tt.wantStatus)
+			}
+		})
+	}
+}
+
 func noSession(_ context.Context) ([]byte, bool) {
 	return nil, false
 }
