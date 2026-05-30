@@ -68,6 +68,10 @@ func NewService(repo Repository, catalog domain.Catalog, opts ...Option) *Servic
 
 func (s *Service) Packages() []domain.Package { return s.catalog.List() }
 
+func (s *Service) Available() bool { return s.provider != nil }
+
+func (s *Service) SetProvider(provider domain.Provider) { s.provider = provider }
+
 func (s *Service) StartCheckout(ctx context.Context, accountID int, packageKey, successURL, cancelURL string) (string, error) {
 	pkg, ok := s.catalog.Lookup(packageKey)
 	if !ok {

@@ -7,6 +7,7 @@ import (
 	accountmoderationstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation/state"
 	accountselfstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/self/state"
 	adminstate "github.com/hayakawakaki/go-racp/internal/features/admin/transport/state"
+	billingstate "github.com/hayakawakaki/go-racp/internal/features/billing/transport/state"
 	characterstate "github.com/hayakawakaki/go-racp/internal/features/character/transport/state"
 	guildstate "github.com/hayakawakaki/go-racp/internal/features/guild/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/features/item/app"
@@ -52,6 +53,7 @@ type Theme interface {
 	DatabaseContent(state adminstate.DatabaseState) templ.Component
 	EconomyContent(state adminstate.EconomyState) templ.Component
 	AdminLayout(layout httpx.Layout, pageTitle string, content templ.Component) templ.Component
+	StorePage(layout httpx.Layout, state billingstate.StoreState) templ.Component
 	CharacterDetailPage(layout httpx.Layout, state characterstate.DetailState) templ.Component
 	GuildDetailPage(layout httpx.Layout, guildName string, state guildstate.DetailState) templ.Component
 	GuildDetailContent(state guildstate.DetailState) templ.Component
