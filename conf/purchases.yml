@@ -1,0 +1,22 @@
+Purchases:
+  Currency: "USD"
+
+  # Providers, currently just placeholder
+  Providers:
+    Stripe: true
+    Paypal: true
+    Crypto: false
+
+  Packages:
+    - Key: "starter"
+      Name: "500 CP"
+      Price: 5
+      CashPoints: 500
+    - Key: "value"
+      Name: "1000 CP"
+      Price: 10
+      CashPoints: 1000
+    - Key: "premium"
+      Name: "2000 CP"
+      Price: 20
+      CashPoints: 2000
