@@ -54,10 +54,10 @@ func (h *Handler) stripeWebhook(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) dispatchStripeEvent(ctx context.Context, event stripe.Event) error {
 	switch event.Type {
-	case "checkout.session.completed":
+	case "checkout.session.completed", "checkout.session.async_payment_succeeded":
 		return h.handleCheckoutCompleted(ctx, event)
-	case "checkout.session.expired":
-		return h.handleCheckoutExpired(ctx, event)
+	case "checkout.session.expired", "checkout.session.async_payment_failed":
+		return h.handleCheckoutFailed(ctx, event)
 	case "charge.refunded":
 		return h.handleChargeRefunded(ctx, event)
 	case "charge.dispute.created":
@@ -95,7 +95,7 @@ func (h *Handler) handleCheckoutCompleted(ctx context.Context, event stripe.Even
 	)
 }
 
-func (h *Handler) handleCheckoutExpired(ctx context.Context, event stripe.Event) error {
+func (h *Handler) handleCheckoutFailed(ctx context.Context, event stripe.Event) error {
 	var sess stripe.CheckoutSession
 	if err := json.Unmarshal(event.Data.Raw, &sess); err != nil {
 		h.logger.Error("stripe webhook: bad session payload", "event_id", event.ID, "err", err)
@@ -108,7 +108,7 @@ func (h *Handler) handleCheckoutExpired(ctx context.Context, event stripe.Event)
 		return nil
 	}
 
-	return h.ackFulfillment(h.svc.FailPurchase(ctx, purchaseID), "expiry", "session", sess.ID, "purchase_id", purchaseID)
+	return h.ackFulfillment(h.svc.FailPurchase(ctx, purchaseID), "failed", "session", sess.ID, "purchase_id", purchaseID)
 }
 
 func (h *Handler) handleChargeRefunded(ctx context.Context, event stripe.Event) error {
