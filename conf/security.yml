@@ -17,4 +17,5 @@ Security:
   CSPExtraScriptSrc: []
   CSPExtraStyleSrc: []
   CSPExtraImgSrc: ["https://i.imgur.com"]
+  CSPExtraFormAction: []
   TrustedOrigins: []

@@ -137,6 +137,11 @@ func TestHeaders_CSPDirectives(t *testing.T) {
 			want: []string{"img-src 'self' data: https://i.imgur.com"},
 		},
 		{
+			name: "extra form-action source appended",
+			cfg:  config.SecurityConfig{CSPExtraFormAction: []string{"https://checkout.stripe.com"}},
+			want: []string{"form-action 'self' https://checkout.stripe.com"},
+		},
+		{
 			name: "multiple extras combine",
 			cfg: config.SecurityConfig{
 				CSPExtraScriptSrc: []string{"https://a.example", "https://b.example"},
@@ -167,13 +172,15 @@ func TestHeaders_DoesNotMutateConfigSlices(t *testing.T) {
 	t.Parallel()
 
 	cfg := config.SecurityConfig{
-		CSPExtraScriptSrc: []string{"https://a.example"},
-		CSPExtraStyleSrc:  []string{"https://b.example"},
-		CSPExtraImgSrc:    []string{"https://i.imgur.com"},
+		CSPExtraScriptSrc:  []string{"https://a.example"},
+		CSPExtraStyleSrc:   []string{"https://b.example"},
+		CSPExtraImgSrc:     []string{"https://i.imgur.com"},
+		CSPExtraFormAction: []string{"https://checkout.stripe.com"},
 	}
 	scriptBefore := append([]string(nil), cfg.CSPExtraScriptSrc...)
 	styleBefore := append([]string(nil), cfg.CSPExtraStyleSrc...)
 	imgBefore := append([]string(nil), cfg.CSPExtraImgSrc...)
+	formActionBefore := append([]string(nil), cfg.CSPExtraFormAction...)
 
 	_ = runHeaders(t, HeadersOptions{Cfg: cfg, Secure: true})
 
@@ -185,6 +192,9 @@ func TestHeaders_DoesNotMutateConfigSlices(t *testing.T) {
 	}
 	if !equalStrings(cfg.CSPExtraImgSrc, imgBefore) {
 		t.Errorf("CSPExtraImgSrc mutated: got %v, want %v", cfg.CSPExtraImgSrc, imgBefore)
+	}
+	if !equalStrings(cfg.CSPExtraFormAction, formActionBefore) {
+		t.Errorf("CSPExtraFormAction mutated: got %v, want %v", cfg.CSPExtraFormAction, formActionBefore)
 	}
 }
 
