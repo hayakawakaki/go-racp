@@ -33,6 +33,10 @@ type EnvConfig struct {
 	// Security
 	CSRFSecret string `env:"CSRF_SECRET" required:"true"`
 
+	// Payment platforms
+	StripeSecretKey     string `env:"STRIPE_SECRET_KEY" default:""`
+	StripeWebhookSecret string `env:"STRIPE_WEBHOOK_SECRET" default:""`
+
 	// Server Status
 	ServerHost string `env:"SERVER_HOST" default:"127.0.0.1"`
 	LoginPort  int    `env:"LOGIN_PORT" default:"6900"`
