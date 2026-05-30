@@ -2,6 +2,7 @@ package currency
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -159,5 +160,103 @@ func TestService_WithdrawHistoryByAccount_Maps(t *testing.T) {
 	}
 	if page.Rows[1].SentAt != nil {
 		t.Errorf("pending row SentAt = %v, want nil", page.Rows[1].SentAt)
+	}
+}
+
+func TestService_StuckWithdraws_MapsWithThreshold(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, 5, 30, 12, 0, 0, 0, time.UTC)
+	reapAfter := 30 * time.Minute
+
+	var gotBefore time.Time
+	var gotLimit int
+	repo := &fakeCurrencyRepo{
+		sentBeforeFn: func(_ context.Context, before time.Time, limit int) ([]domain.WithdrawRecord, error) {
+			gotBefore = before
+			gotLimit = limit
+			return []domain.WithdrawRecord{
+				{ID: 4, AccountID: 7, Zeny: 500, Cashpoint: 25, Status: 2, CreatedAt: time.Unix(0, 0)},
+			}, nil
+		},
+	}
+	svc := NewService(repo, WithReapAfter(reapAfter), WithNow(func() time.Time { return now }))
+
+	rows, err := svc.StuckWithdraws(context.Background())
+	if err != nil {
+		t.Fatalf("StuckWithdraws: %v", err)
+	}
+	if want := now.Add(-reapAfter); !gotBefore.Equal(want) {
+		t.Errorf("SentBefore threshold = %v, want %v", gotBefore, want)
+	}
+	if gotLimit != stuckWithdrawLimit {
+		t.Errorf("SentBefore limit = %d, want %d", gotLimit, stuckWithdrawLimit)
+	}
+	if len(rows) != 1 || rows[0].ID != 4 || rows[0].AccountID != 7 || rows[0].Status != 2 {
+		t.Errorf("rows = %+v, want one stuck row id 4", rows)
+	}
+}
+
+func TestService_StuckWithdraws_DisabledWhenReapAfterZero(t *testing.T) {
+	t.Parallel()
+
+	called := false
+	repo := &fakeCurrencyRepo{
+		sentBeforeFn: func(context.Context, time.Time, int) ([]domain.WithdrawRecord, error) {
+			called = true
+			return nil, nil
+		},
+	}
+	svc := NewService(repo)
+
+	rows, err := svc.StuckWithdraws(context.Background())
+	if err != nil {
+		t.Fatalf("StuckWithdraws: %v", err)
+	}
+	if rows != nil {
+		t.Errorf("rows = %+v, want nil when ReapAfter is unset", rows)
+	}
+	if called {
+		t.Errorf("SentBefore must not be called when ReapAfter is unset")
+	}
+}
+
+func TestService_StuckWithdraws_WrapsRepoError(t *testing.T) {
+	t.Parallel()
+
+	wantErr := errors.New("sent before db down")
+	repo := &fakeCurrencyRepo{
+		sentBeforeFn: func(context.Context, time.Time, int) ([]domain.WithdrawRecord, error) {
+			return nil, wantErr
+		},
+	}
+	svc := NewService(repo, WithReapAfter(30*time.Minute))
+
+	_, err := svc.StuckWithdraws(context.Background())
+	if !errors.Is(err, wantErr) {
+		t.Fatalf("err = %v, want wantErr in chain", err)
+	}
+}
+
+func TestService_WithdrawHistory_MapsDeliveredAt(t *testing.T) {
+	t.Parallel()
+
+	sentAt := time.Unix(100, 0)
+	deliveredAt := time.Unix(200, 0)
+	repo := &fakeCurrencyRepo{
+		listWithdrawsFn: func(context.Context, int, int) ([]domain.WithdrawRecord, int, error) {
+			return []domain.WithdrawRecord{
+				{ID: 3, AccountID: 1, Zeny: 300, Cashpoint: 30, Status: 3, CreatedAt: time.Unix(0, 0), SentAt: &sentAt, DeliveredAt: &deliveredAt},
+			}, 1, nil
+		},
+	}
+	svc := NewService(repo)
+
+	page, err := svc.WithdrawHistory(context.Background(), 1, 15)
+	if err != nil {
+		t.Fatalf("WithdrawHistory: %v", err)
+	}
+	if len(page.Rows) != 1 || page.Rows[0].DeliveredAt == nil || !page.Rows[0].DeliveredAt.Equal(deliveredAt) {
+		t.Errorf("DeliveredAt = %v, want %v", page.Rows[0].DeliveredAt, deliveredAt)
 	}
 }

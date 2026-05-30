@@ -232,6 +232,76 @@ func TestValidateVendorConfig_Clamps(t *testing.T) {
 	}
 }
 
+func TestValidateCurrencyConfig_ClampsReapAfter(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		in   time.Duration
+		want time.Duration
+	}{
+		{name: "zero defaults to 30m", in: 0, want: 30 * time.Minute},
+		{name: "negative defaults to 30m", in: -1 * time.Minute, want: 30 * time.Minute},
+		{name: "below min clamps to 5m", in: 1 * time.Minute, want: 5 * time.Minute},
+		{name: "exactly min stays", in: 5 * time.Minute, want: 5 * time.Minute},
+		{name: "in range stays", in: 2 * time.Hour, want: 2 * time.Hour},
+		{name: "exactly max stays", in: 24 * time.Hour, want: 24 * time.Hour},
+		{name: "above max clamps to 24h", in: 48 * time.Hour, want: 24 * time.Hour},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			cfg := CurrencyConfig{
+				Cooldown:              5 * time.Minute,
+				DepositPollInterval:   30 * time.Second,
+				WithdrawDrainInterval: 30 * time.Second,
+				ReapAfter:             tt.in,
+				MaxZenyPerTx:          1_000_000,
+				MaxCashpointPerTx:     1000,
+			}
+			validateCurrencyConfig(&cfg, &[]ClampAdjustment{})
+			if cfg.ReapAfter != tt.want {
+				t.Errorf("ReapAfter = %v, want %v", cfg.ReapAfter, tt.want)
+			}
+		})
+	}
+}
+
+func TestValidateCurrencyConfig_PanicsOnNonPositiveMax(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		wantContain string
+		zenyPerTx   int64
+		cashPerTx   int
+	}{
+		{name: "zero zeny", zenyPerTx: 0, cashPerTx: 1000, wantContain: "Currency.MaxZenyPerTx must be > 0"},
+		{name: "negative zeny", zenyPerTx: -1, cashPerTx: 1000, wantContain: "Currency.MaxZenyPerTx must be > 0"},
+		{name: "zero cashpoint", zenyPerTx: 1_000_000, cashPerTx: 0, wantContain: "Currency.MaxCashpointPerTx must be > 0"},
+		{name: "negative cashpoint", zenyPerTx: 1_000_000, cashPerTx: -1, wantContain: "Currency.MaxCashpointPerTx must be > 0"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			cfg := CurrencyConfig{
+				Cooldown:              5 * time.Minute,
+				DepositPollInterval:   30 * time.Second,
+				WithdrawDrainInterval: 30 * time.Second,
+				ReapAfter:             30 * time.Minute,
+				MaxZenyPerTx:          tt.zenyPerTx,
+				MaxCashpointPerTx:     tt.cashPerTx,
+			}
+			msg := mustPanic(t, func() { validateCurrencyConfig(&cfg, &[]ClampAdjustment{}) })
+			if !strings.Contains(msg, tt.wantContain) {
+				t.Errorf("panic message = %q, want substring %q", msg, tt.wantContain)
+			}
+		})
+	}
+}
+
 func TestLoadAppConfigFromDir_RecordsOutOfRangeClampsOnly(t *testing.T) {
 	t.Parallel()
 

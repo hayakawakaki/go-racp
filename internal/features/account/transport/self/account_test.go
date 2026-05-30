@@ -108,6 +108,7 @@ func TestShowAccount_KnownNotice_Rendered(t *testing.T) {
 		{name: "email_change_cooldown", notice: "email_change_cooldown", wantText: "We sent a confirmation link recently", want: true},
 		{name: "email_change_locked", notice: "email_change_locked", wantText: "Email was changed recently", want: true},
 		{name: "email_changed", notice: "email_changed", wantText: "Email updated.", want: true},
+		{name: "withdraw_bridge", notice: "withdraw_bridge", wantText: "currency bridge is temporarily unavailable", want: true},
 		{name: "unknown notice silently ignored", notice: "garbage", wantText: "Password updated.", want: false},
 	}
 	for _, tt := range tests {
