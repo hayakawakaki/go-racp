@@ -268,6 +268,7 @@ func (h *Handler) economyState(ctx context.Context, dpage, wpage int) state.Econ
 		stuck, err := h.economy.StuckWithdraws(gctx)
 		if err != nil {
 			h.logger.Warn("admin: economy stuck withdraws read failed", "err", err)
+			s.StuckFailed = true
 			return nil
 		}
 		s.Stuck = stuck

@@ -31,6 +31,7 @@ type EconomyState struct {
 	TotalsFailed    bool
 	DepositsFailed  bool
 	WithdrawsFailed bool
+	StuckFailed     bool
 }
 
 type PeakTable struct {

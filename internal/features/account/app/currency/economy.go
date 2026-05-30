@@ -23,14 +23,15 @@ type DepositDTO struct {
 }
 
 type AdminWithdrawDTO struct {
-	CreatedAt time.Time
-	SentAt    *time.Time
-	Email     string
-	ID        int64
-	AccountID int
-	Zeny      int64
-	Cashpoint int
-	Status    int
+	CreatedAt   time.Time
+	SentAt      *time.Time
+	DeliveredAt *time.Time
+	Email       string
+	ID          int64
+	AccountID   int
+	Zeny        int64
+	Cashpoint   int
+	Status      int
 }
 
 type DepositPage struct {
@@ -152,13 +153,14 @@ func toWithdrawDTOs(records []domain.WithdrawRecord) []AdminWithdrawDTO {
 	rows := make([]AdminWithdrawDTO, 0, len(records))
 	for _, record := range records {
 		rows = append(rows, AdminWithdrawDTO{
-			ID:        record.ID,
-			AccountID: record.AccountID,
-			Zeny:      record.Zeny,
-			Cashpoint: record.Cashpoint,
-			Status:    record.Status,
-			CreatedAt: record.CreatedAt,
-			SentAt:    record.SentAt,
+			ID:          record.ID,
+			AccountID:   record.AccountID,
+			Zeny:        record.Zeny,
+			Cashpoint:   record.Cashpoint,
+			Status:      record.Status,
+			CreatedAt:   record.CreatedAt,
+			SentAt:      record.SentAt,
+			DeliveredAt: record.DeliveredAt,
 		})
 	}
 

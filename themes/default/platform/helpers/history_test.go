@@ -55,6 +55,30 @@ func TestFormatSentTime(t *testing.T) {
 	}
 }
 
+func TestFormatDeliveredTime(t *testing.T) {
+	t.Parallel()
+
+	delivered := time.Date(2026, 5, 29, 9, 15, 0, 0, time.UTC)
+
+	tests := []struct {
+		in   *time.Time
+		name string
+		want string
+	}{
+		{name: "nil is not delivered", in: nil, want: "not delivered"},
+		{name: "set formats in location", in: &delivered, want: "2026-05-29 09:15"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := FormatDeliveredTime(tt.in, time.UTC); got != tt.want {
+				t.Errorf("FormatDeliveredTime(%v) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestWithdrawStatusLabel(t *testing.T) {
 	t.Parallel()
 

@@ -41,7 +41,7 @@ templ EconomyContent(state adminstate.EconomyState) {
 			@economyDepositsCard(state)
 			@economyWithdrawsCard(state)
 		</div>
-		if len(state.Stuck) > 0 {
+		if state.StuckFailed || len(state.Stuck) > 0 {
 			@economyStuckCard(state)
 		}
 	</div>
@@ -57,37 +57,41 @@ templ economyStuckCard(state adminstate.EconomyState) {
 				Stuck withdrawals
 			}
 		</div>
-		@ui.Table(ui.TableProps{Hover: true, Class: "text-font"}) {
-			@ui.TableHeader() {
-				@ui.TableRow(ui.TableRowProps{}) {
-					@ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}) {
-						Account
-					}
-					@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
-						Zeny
-					}
-					@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
-						Cashpoint
-					}
-					@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
-						Requested
+		if state.StuckFailed {
+			@components.DataUnavailable("p-6")
+		} else {
+			@ui.Table(ui.TableProps{Hover: true, Class: "text-font"}) {
+				@ui.TableHeader() {
+					@ui.TableRow(ui.TableRowProps{}) {
+						@ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}) {
+							Account
+						}
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
+							Zeny
+						}
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
+							Cashpoint
+						}
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
+							Requested
+						}
 					}
 				}
-			}
-			@ui.TableBody() {
-				for _, wd := range state.Stuck {
-					@ui.TableRow(ui.TableRowProps{}) {
-						@ui.TableCell(ui.TableCellProps{Class: "font-mono tabular-nums"}) {
-							@economyAccountLink(wd.AccountID)
-						}
-						@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
-							{ helpers.FormatAmount(wd.Zeny) }
-						}
-						@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
-							{ helpers.FormatAmount(int64(wd.Cashpoint)) }
-						}
-						@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "text-font-muted tabular-nums"}) {
-							{ helpers.FormatTime(wd.CreatedAt, state.Location) }
+				@ui.TableBody() {
+					for _, wd := range state.Stuck {
+						@ui.TableRow(ui.TableRowProps{}) {
+							@ui.TableCell(ui.TableCellProps{Class: "font-mono tabular-nums"}) {
+								@economyAccountLink(wd.AccountID)
+							}
+							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
+								{ helpers.FormatAmount(wd.Zeny) }
+							}
+							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
+								{ helpers.FormatAmount(int64(wd.Cashpoint)) }
+							}
+							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "text-font-muted tabular-nums"}) {
+								{ helpers.FormatTime(wd.CreatedAt, state.Location) }
+							}
 						}
 					}
 				}
@@ -233,6 +237,9 @@ templ economyWithdrawsCard(state adminstate.EconomyState) {
 						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
 							Sent
 						}
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
+							Delivered
+						}
 					}
 				}
 				@ui.TableBody() {
@@ -258,6 +265,9 @@ templ economyWithdrawsCard(state adminstate.EconomyState) {
 							}
 							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "text-font-muted tabular-nums"}) {
 								{ helpers.FormatSentTime(wd.SentAt, state.Location) }
+							}
+							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "text-font-muted tabular-nums"}) {
+								{ helpers.FormatDeliveredTime(wd.DeliveredAt, state.Location) }
 							}
 						}
 					}

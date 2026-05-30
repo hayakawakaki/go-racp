@@ -22,6 +22,14 @@ func FormatSentTime(t *time.Time, loc *time.Location) string {
 	return FormatTime(*t, loc)
 }
 
+func FormatDeliveredTime(t *time.Time, loc *time.Location) string {
+	if t == nil {
+		return "not delivered"
+	}
+
+	return FormatTime(*t, loc)
+}
+
 func WithdrawStatusLabel(status int) string {
 	switch status {
 	case 3:

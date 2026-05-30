@@ -466,3 +466,34 @@ func TestHandler_ShowEconomy_RendersStuckWithdraws(t *testing.T) {
 		t.Errorf("body must include the stuck-withdrawals section:\n%s", rr.Body.String())
 	}
 }
+
+func TestHandler_ShowEconomy_StuckReadFailure(t *testing.T) {
+	t.Parallel()
+
+	economy := &stubEconomyReader{
+		stuckFn: func(context.Context) ([]currency.AdminWithdrawDTO, error) {
+			return nil, errors.New("stuck db down")
+		},
+	}
+	h := NewHandler(HandlerConfig{
+		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
+		General: config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
+		Theme:   stubTheme{},
+		Economy: economy,
+	})
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/admin/economy", http.NoBody)
+	h.showEconomy(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rr.Code)
+	}
+	body := rr.Body.String()
+	if !strings.Contains(body, "Stuck withdrawals") {
+		t.Errorf("a failed stuck read must still render the stuck section header:\n%s", body)
+	}
+	if !strings.Contains(body, "Unable to load this right now.") {
+		t.Errorf("a failed stuck read must surface the unavailable marker, not look healthy:\n%s", body)
+	}
+}
