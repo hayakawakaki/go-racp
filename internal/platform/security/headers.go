@@ -42,6 +42,7 @@ func buildCSP(cfg config.SecurityConfig) string {
 	script := slices.Concat([]string{cspSelf}, cfg.CSPExtraScriptSrc)
 	style := slices.Concat([]string{cspSelf, "'unsafe-inline'"}, cfg.CSPExtraStyleSrc)
 	img := slices.Concat([]string{cspSelf, "data:"}, cfg.CSPExtraImgSrc)
+	formAction := slices.Concat([]string{cspSelf}, cfg.CSPExtraFormAction)
 	parts := []string{
 		"default-src " + cspSelf,
 		"script-src " + strings.Join(script, " "),
@@ -50,7 +51,7 @@ func buildCSP(cfg config.SecurityConfig) string {
 		"font-src " + cspSelf + " data:",
 		"connect-src " + cspSelf,
 		"frame-ancestors 'none'",
-		"form-action " + cspSelf,
+		"form-action " + strings.Join(formAction, " "),
 		"base-uri " + cspSelf,
 		"object-src 'none'",
 		"upgrade-insecure-requests",

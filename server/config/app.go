@@ -171,6 +171,7 @@ type SecurityConfig struct {
 	CSPExtraScriptSrc     []string `yaml:"CSPExtraScriptSrc"`
 	CSPExtraStyleSrc      []string `yaml:"CSPExtraStyleSrc"`
 	CSPExtraImgSrc        []string `yaml:"CSPExtraImgSrc"`
+	CSPExtraFormAction    []string `yaml:"CSPExtraFormAction"`
 	TrustedOrigins        []string `yaml:"TrustedOrigins"`
 	HSTSMaxAge            int      `yaml:"HSTSMaxAge"`
 	HSTSIncludeSubdomains bool     `yaml:"HSTSIncludeSubdomains"`
