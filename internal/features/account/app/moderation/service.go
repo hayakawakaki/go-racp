@@ -218,6 +218,37 @@ func (s *Service) SetRole(ctx context.Context, cmd SetRoleCommand) (UserDetail, 
 	return s.Get(ctx, cmd.TargetUserID)
 }
 
+func (s *Service) BanForChargeback(ctx context.Context, accountID int, reason string) error {
+	target, err := s.users.GetByID(ctx, accountID)
+	if err != nil {
+		return fmt.Errorf("app.Service.BanForChargeback: %w", err)
+	}
+	if target.IsAdmin() {
+		s.logger.Warn("users: chargeback ban skipped for protected account",
+			"target_user_id", accountID,
+			"reason", reason,
+		)
+		return nil
+	}
+
+	beforeState := target.State
+	beforeUnban := unbanSeconds(target.UnbanTime)
+	if err := s.users.UpdateBan(ctx, accountID, accself.StatePermaBanned, 0); err != nil {
+		return fmt.Errorf("app.Service.BanForChargeback: %w", err)
+	}
+
+	s.recordAudit(ctx, accdomain.AuditEntry{
+		ActorUserID:  0,
+		TargetUserID: accountID,
+		Kind:         accdomain.AuditBan,
+		Reason:       reason,
+		BeforeValue:  fmt.Sprintf("%d,%d", beforeState, beforeUnban),
+		AfterValue:   fmt.Sprintf("%d,0", accself.StatePermaBanned),
+	})
+
+	return nil
+}
+
 func (s *Service) recordAudit(ctx context.Context, a accdomain.AuditEntry) {
 	if err := s.audits.Record(ctx, a); err != nil {
 		s.logger.Error("users: audit insert failed",

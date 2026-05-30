@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	accself "github.com/hayakawakaki/go-racp/internal/features/account/app/self"
 	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
 )
 
@@ -404,6 +405,41 @@ func TestService_Ban_PlayerOnlyForNonAdmin(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatalf("mod->player: err = %v, want nil", err)
+	}
+}
+
+func TestService_BanForChargeback_BansPlayer(t *testing.T) {
+	t.Parallel()
+	svc, users, _, audits := newTestService(t)
+	users.users[7] = &accdomain.User{ID: 7, Username: "kaki", GroupID: 0, State: accself.StateActive}
+
+	if err := svc.BanForChargeback(context.Background(), 7, "payment chargeback"); err != nil {
+		t.Fatalf("BanForChargeback: %v", err)
+	}
+	if users.users[7].State != accself.StatePermaBanned {
+		t.Errorf("state = %d, want %d", users.users[7].State, accself.StatePermaBanned)
+	}
+	if len(audits.rows) != 1 {
+		t.Fatalf("audit rows = %d, want 1", len(audits.rows))
+	}
+	if audits.rows[0].ActorUserID != 0 || audits.rows[0].Kind != accdomain.AuditBan {
+		t.Errorf("audit = %+v, want actor 0 and AuditBan", audits.rows[0])
+	}
+}
+
+func TestService_BanForChargeback_SkipsAdmin(t *testing.T) {
+	t.Parallel()
+	svc, users, _, audits := newTestService(t)
+	users.users[7] = &accdomain.User{ID: 7, Username: "kaki", GroupID: 99, State: accself.StateActive}
+
+	if err := svc.BanForChargeback(context.Background(), 7, "payment chargeback"); err != nil {
+		t.Fatalf("BanForChargeback: %v", err)
+	}
+	if users.users[7].State != accself.StateActive {
+		t.Errorf("state = %d, want unchanged %d", users.users[7].State, accself.StateActive)
+	}
+	if len(audits.rows) != 0 {
+		t.Errorf("audit rows = %d, want 0", len(audits.rows))
 	}
 }
 
