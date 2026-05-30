@@ -339,17 +339,6 @@ func TestCurrencyRepository_WithdrawLifecycle(t *testing.T) {
 		t.Errorf("PendingWithdraws after MarkWithdrawSent = %+v, want none", pending)
 	}
 
-	if err := repo.MarkWithdrawPending(ctx, requestID); err != nil {
-		t.Fatalf("MarkWithdrawPending: %v", err)
-	}
-	pending, err = repo.PendingWithdraws(ctx, 10)
-	if err != nil {
-		t.Fatalf("PendingWithdraws: %v", err)
-	}
-	if len(pending) != 1 || pending[0].ID != requestID {
-		t.Errorf("PendingWithdraws after revert = %+v, want the request back as pending", pending)
-	}
-
 	recent, err := repo.RecentWithdraws(ctx, 42, 5)
 	if err != nil {
 		t.Fatalf("RecentWithdraws: %v", err)

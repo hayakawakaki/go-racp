@@ -43,8 +43,9 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 	go depositWorker.Run(in.ShutdownCtx)
 
 	withdrawWorker := currencyapp.NewWithdrawWorker(currencyRepo, infra.NewWithdrawQueue(in.MainDB), currencyapp.WithdrawWorkerConfig{
-		Logger:   in.Logger,
-		Interval: in.Config.App.Currency.WithdrawDrainInterval,
+		Logger:    in.Logger,
+		Interval:  in.Config.App.Currency.WithdrawDrainInterval,
+		ReapAfter: in.Config.App.Currency.ReapAfter,
 	})
 	go withdrawWorker.Run(in.ShutdownCtx)
 

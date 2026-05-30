@@ -166,16 +166,6 @@ func (r *CurrencyRepository) MarkWithdrawSent(ctx context.Context, id int64, now
 	return nil
 }
 
-func (r *CurrencyRepository) MarkWithdrawPending(ctx context.Context, id int64) error {
-	if _, err := r.Pool.Exec(ctx,
-		`UPDATE cp_withdraw_requests SET status = 1, sent_at = NULL WHERE id = $1 AND status = 2`, id,
-	); err != nil {
-		return fmt.Errorf("infra.CurrencyRepository.MarkWithdrawPending: %w", err)
-	}
-
-	return nil
-}
-
 func (r *CurrencyRepository) MarkWithdrawDelivered(ctx context.Context, id int64, deliveredAt time.Time) error {
 	if _, err := r.Pool.Exec(ctx,
 		`UPDATE cp_withdraw_requests SET status = 3, delivered_at = $1 WHERE id = $2 AND status = 2`, deliveredAt, id,
