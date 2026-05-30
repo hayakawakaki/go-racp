@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -562,5 +563,137 @@ func TestHandler_ShowEconomy_StuckReadFailure(t *testing.T) {
 	}
 	if !strings.Contains(body, "Unable to load this right now.") {
 		t.Errorf("a failed stuck read must surface the unavailable marker, not look healthy:\n%s", body)
+	}
+}
+
+func TestParsePurchaseFilter(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name         string
+		query        url.Values
+		wantProvider string
+		wantStatus   int
+		wantAccount  int
+	}{
+		{
+			name:  "empty query yields empty filter",
+			query: url.Values{},
+		},
+		{
+			name:       "valid status is kept",
+			query:      url.Values{"status": {"3"}},
+			wantStatus: 3,
+		},
+		{
+			name:  "out-of-range status is ignored",
+			query: url.Values{"status": {"9"}},
+		},
+		{
+			name:  "zero status is ignored",
+			query: url.Values{"status": {"0"}},
+		},
+		{
+			name:  "non-numeric status is ignored",
+			query: url.Values{"status": {"abc"}},
+		},
+		{
+			name:        "valid account is kept",
+			query:       url.Values{"account": {"42"}},
+			wantAccount: 42,
+		},
+		{
+			name:  "negative account is ignored",
+			query: url.Values{"account": {"-3"}},
+		},
+		{
+			name:         "provider is trimmed",
+			query:        url.Values{"provider": {"  stripe  "}},
+			wantProvider: "stripe",
+		},
+		{
+			name:  "invalid date is ignored",
+			query: url.Values{"from": {"nope"}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			filter, form := parsePurchaseFilter(tt.query, time.UTC)
+
+			if filter.Status != tt.wantStatus {
+				t.Errorf("Status = %d, want %d", filter.Status, tt.wantStatus)
+			}
+			if filter.AccountID != tt.wantAccount {
+				t.Errorf("AccountID = %d, want %d", filter.AccountID, tt.wantAccount)
+			}
+			if filter.Provider != tt.wantProvider {
+				t.Errorf("Provider = %q, want %q", filter.Provider, tt.wantProvider)
+			}
+			if filter.From != nil || filter.To != nil {
+				t.Errorf("From/To = %v/%v, want nil/nil for a dateless query", filter.From, filter.To)
+			}
+			if form.Status != tt.query.Get("status") {
+				t.Errorf("form.Status = %q, want raw %q", form.Status, tt.query.Get("status"))
+			}
+		})
+	}
+}
+
+func TestParsePurchaseFilter_DateRangeUsesLocation(t *testing.T) {
+	t.Parallel()
+
+	tokyo := time.FixedZone("UTC+9", 9*60*60)
+	filter, _ := parsePurchaseFilter(url.Values{"from": {"2026-05-30"}, "to": {"2026-05-31"}}, tokyo)
+
+	wantFrom := time.Date(2026, 5, 30, 0, 0, 0, 0, tokyo)
+	wantTo := time.Date(2026, 6, 1, 0, 0, 0, 0, tokyo)
+
+	if filter.From == nil || !filter.From.Equal(wantFrom) {
+		t.Errorf("From = %v, want %v (midnight in the configured location)", filter.From, wantFrom)
+	}
+	if filter.To == nil || !filter.To.Equal(wantTo) {
+		t.Errorf("To = %v, want %v (next-day midnight, half-open)", filter.To, wantTo)
+	}
+	if filter.From != nil && filter.From.Equal(time.Date(2026, 5, 30, 0, 0, 0, 0, time.UTC)) {
+		t.Errorf("From was parsed as UTC midnight instead of the configured location")
+	}
+}
+
+func TestPurchasesHrefPattern(t *testing.T) {
+	t.Parallel()
+
+	got := purchasesHrefPattern(url.Values{
+		"status":  {"2"},
+		"account": {"42"},
+		"from":    {"2026-05-01"},
+		"dpage":   {"3"},
+		"ppage":   {"5"},
+	})
+
+	const prefix = "/admin/economy?"
+	if !strings.HasPrefix(got, prefix) {
+		t.Fatalf("href = %q, want prefix %q", got, prefix)
+	}
+
+	parsed, err := url.ParseQuery(strings.TrimPrefix(got, prefix))
+	if err != nil {
+		t.Fatalf("ParseQuery(%q): %v", got, err)
+	}
+	if parsed.Get("ppage") != "__PAGE__" {
+		t.Errorf("ppage = %q, want the __PAGE__ placeholder (input ppage must be overwritten)", parsed.Get("ppage"))
+	}
+
+	for _, want := range []struct{ key, value string }{
+		{"status", "2"}, {"account", "42"}, {"from", "2026-05-01"}, {"dpage", "3"},
+	} {
+		if parsed.Get(want.key) != want.value {
+			t.Errorf("%s = %q, want %q", want.key, parsed.Get(want.key), want.value)
+		}
+	}
+	if _, ok := parsed["to"]; ok {
+		t.Errorf("empty filter keys must be omitted, but 'to' is present")
 	}
 }
