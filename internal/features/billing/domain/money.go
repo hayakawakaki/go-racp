@@ -28,15 +28,3 @@ func ToMinorUnits(amount int64, currency string) (int64, error) {
 
 	return amount * factor, nil
 }
-
-func FromMinorUnits(minor int64, currency string) (int64, error) {
-	factor, err := minorFactor(currency)
-	if err != nil {
-		return 0, err
-	}
-	if minor%factor != 0 {
-		return 0, fmt.Errorf("billing: minor amount %d is not a whole %s unit", minor, currency)
-	}
-
-	return minor / factor, nil
-}

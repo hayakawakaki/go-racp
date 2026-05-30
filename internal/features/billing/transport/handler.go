@@ -22,7 +22,7 @@ const (
 )
 
 type billingFulfiller interface {
-	CompletePurchase(ctx context.Context, purchaseID int64, providerPaymentID string, paidAmount int64, paidCurrency string) error
+	CompletePurchase(ctx context.Context, purchaseID int64, providerPaymentID string) error
 	RefundPurchase(ctx context.Context, provider, providerPaymentID string) error
 	DisputePurchase(ctx context.Context, provider, providerPaymentID string) error
 	FailPurchase(ctx context.Context, purchaseID int64) error

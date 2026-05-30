@@ -90,9 +90,6 @@ func TestService_CompletePurchase_CreditsOnMatch(t *testing.T) {
 
 	completed := false
 	repo := &fakeRepo{
-		getByIDFn: func(context.Context, int64) (domain.Purchase, error) {
-			return domain.Purchase{ID: 9, AccountID: 7, Amount: 5, Currency: "USD", CashPoints: 500}, nil
-		},
 		completeFn: func(context.Context, int64, string, time.Time) (bool, int, int, error) {
 			completed = true
 			return true, 7, 500, nil
@@ -100,49 +97,11 @@ func TestService_CompletePurchase_CreditsOnMatch(t *testing.T) {
 	}
 	svc := NewService(repo, testCatalog(), WithLogger(discardLogger()))
 
-	if err := svc.CompletePurchase(context.Background(), 9, "pay_1", 5, "usd"); err != nil {
+	if err := svc.CompletePurchase(context.Background(), 9, "pay_1"); err != nil {
 		t.Fatalf("CompletePurchase: %v", err)
 	}
 	if !completed {
 		t.Errorf("repo.Complete was not called")
-	}
-}
-
-func TestService_CompletePurchase_AmountMismatch(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name         string
-		paidCurrency string
-		paidAmount   int64
-	}{
-		{name: "amount mismatch", paidCurrency: "USD", paidAmount: 4},
-		{name: "currency mismatch", paidCurrency: "EUR", paidAmount: 5},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			called := false
-			repo := &fakeRepo{
-				getByIDFn: func(context.Context, int64) (domain.Purchase, error) {
-					return domain.Purchase{ID: 9, AccountID: 7, Amount: 5, Currency: "USD", CashPoints: 500}, nil
-				},
-				completeFn: func(context.Context, int64, string, time.Time) (bool, int, int, error) {
-					called = true
-					return true, 7, 500, nil
-				},
-			}
-			svc := NewService(repo, testCatalog(), WithLogger(discardLogger()))
-
-			err := svc.CompletePurchase(context.Background(), 9, "pay_1", tt.paidAmount, tt.paidCurrency)
-			if !errors.Is(err, domain.ErrAmountMismatch) {
-				t.Fatalf("err = %v, want ErrAmountMismatch", err)
-			}
-			if called {
-				t.Errorf("repo.Complete must not be called on mismatch")
-			}
-		})
 	}
 }
 

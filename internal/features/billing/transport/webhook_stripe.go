@@ -85,14 +85,8 @@ func (h *Handler) handleCheckoutCompleted(ctx context.Context, event stripe.Even
 		paymentIntentID = sess.PaymentIntent.ID
 	}
 
-	wholeAmount, err := domain.FromMinorUnits(sess.AmountTotal, string(sess.Currency))
-	if err != nil {
-		h.logger.Error("stripe webhook: amount conversion failed", "session", sess.ID, "err", err)
-		return nil
-	}
-
 	return h.ackFulfillment(
-		h.svc.CompletePurchase(ctx, purchaseID, paymentIntentID, wholeAmount, string(sess.Currency)),
+		h.svc.CompletePurchase(ctx, purchaseID, paymentIntentID),
 		"completion", "session", sess.ID, "purchase_id", purchaseID,
 	)
 }
@@ -173,7 +167,6 @@ func purchaseIDFromMetadata(metadata map[string]string) (int64, bool) {
 }
 
 func isTerminalFulfillmentError(err error) bool {
-	return errors.Is(err, domain.ErrAmountMismatch) ||
-		errors.Is(err, domain.ErrPurchaseNotFound) ||
+	return errors.Is(err, domain.ErrPurchaseNotFound) ||
 		errors.Is(err, domain.ErrUnknownPackage)
 }
