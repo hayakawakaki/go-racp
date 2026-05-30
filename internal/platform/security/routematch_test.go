@@ -129,6 +129,16 @@ func TestNewRouteMatcher_Validation(t *testing.T) {
 			routes:  []string{"/*"},
 			wantErr: true,
 		},
+		{
+			name:    "wildcard not at a path boundary",
+			routes:  []string{"/a*"},
+			wantErr: true,
+		},
+		{
+			name:    "interior wildcard at a path boundary",
+			routes:  []string{"/webhooks/*/events"},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {

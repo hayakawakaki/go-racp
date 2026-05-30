@@ -44,7 +44,7 @@ func CSRF(opts CSRFOptions) func(http.Handler) http.Handler {
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if opts.OpenRoutes != nil && opts.OpenRoutes.Matches(r.URL.Path) {
+			if opts.OpenRoutes.Allows(r) {
 				next.ServeHTTP(w, r)
 				return
 			}

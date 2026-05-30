@@ -2,6 +2,7 @@ package security
 
 import (
 	"fmt"
+	"net/http"
 	"path"
 	"regexp"
 	"strings"
@@ -19,17 +20,22 @@ func NewRouteMatcher(routes []string) (*RouteMatcher, error) {
 			return nil, fmt.Errorf("security.NewRouteMatcher: route %q must start with /", route)
 		}
 
-		if !strings.Contains(route, "*") {
+		parts := strings.Split(route, "*")
+		if len(parts) == 1 {
 			m.exact[path.Clean(route)] = struct{}{}
 			continue
 		}
 
-		prefix, _, _ := strings.Cut(route, "*")
-		if prefix == "/" {
+		if parts[0] == "/" {
 			return nil, fmt.Errorf("security.NewRouteMatcher: route %q is too broad", route)
 		}
 
-		parts := strings.Split(route, "*")
+		for i := 1; i < len(parts); i++ {
+			if !strings.HasSuffix(parts[i-1], "/") {
+				return nil, fmt.Errorf("security.NewRouteMatcher: route %q must place * at a path boundary", route)
+			}
+		}
+
 		for i, p := range parts {
 			parts[i] = regexp.QuoteMeta(p)
 		}
@@ -55,4 +61,8 @@ func (m *RouteMatcher) Matches(requestPath string) bool {
 	}
 
 	return false
+}
+
+func (m *RouteMatcher) Allows(r *http.Request) bool {
+	return m != nil && m.Matches(r.URL.Path)
 }
