@@ -2,6 +2,7 @@ package billing
 
 import (
 	"net/http"
+	"sync"
 
 	"github.com/hayakawakaki/go-racp/internal/features/account"
 	app "github.com/hayakawakaki/go-racp/internal/features/billing/app"
@@ -14,13 +15,30 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/theme"
 )
 
-var svcInstance *app.Service
+var (
+	svcOnce     sync.Once
+	svcInstance *app.Service
+)
 
 func init() {
 	plugin.Register(plugin.Plugin{Name: "billing", Mount: mount})
 }
 
-func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
+func BuildService(in *coreinfra.Infra) *app.Service {
+	svcOnce.Do(func() {
+		repo := infra.NewPurchaseRepository(in.DB)
+		banner := infra.NewChargebackBanner(account.BuildModerationService(in))
+		svcInstance = app.NewService(repo, buildCatalog(in),
+			app.WithBanner(banner),
+			app.WithLogger(in.Logger),
+			app.WithLocation(in.Config.App.General.Location()),
+		)
+	})
+
+	return svcInstance
+}
+
+func buildCatalog(in *coreinfra.Infra) domain.Catalog {
 	purchases := in.Config.App.Purchases
 	pkgs := make([]domain.Package, 0, len(purchases.Packages))
 	for _, pkg := range purchases.Packages {
@@ -32,18 +50,18 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 			CashPoints: pkg.CashPoints,
 		})
 	}
-	catalog := domain.NewCatalog(pkgs)
 
-	repo := infra.NewPurchaseRepository(in.DB)
-	banner := infra.NewChargebackBanner(account.BuildModerationService(in))
-	svc := app.NewService(repo, catalog, app.WithBanner(banner), app.WithLogger(in.Logger))
-	svcInstance = svc
+	return domain.NewCatalog(pkgs)
+}
+
+func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
+	svc := BuildService(in)
 
 	h := transport.NewHandler(svc, transport.HandlerConfig{
 		Logger:   in.Logger,
 		Theme:    theme.Active,
 		General:  in.Config.App.General,
-		Currency: purchases.Currency,
+		Currency: in.Config.App.Purchases.Currency,
 		AppURL:   in.Config.Env.AppURL,
 	})
 	h.RegisterRoutes(reg, mux)

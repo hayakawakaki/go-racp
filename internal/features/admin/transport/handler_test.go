@@ -16,6 +16,7 @@ import (
 	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	modstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation/state"
 	adminstate "github.com/hayakawakaki/go-racp/internal/features/admin/transport/state"
+	billingdomain "github.com/hayakawakaki/go-racp/internal/features/billing/domain"
 	guildstate "github.com/hayakawakaki/go-racp/internal/features/guild/transport/state"
 	itemapp "github.com/hayakawakaki/go-racp/internal/features/item/app"
 	mobapp "github.com/hayakawakaki/go-racp/internal/features/mob/app"
@@ -98,6 +99,25 @@ func (s *stubEconomyReader) StuckWithdraws(ctx context.Context) ([]currency.Admi
 	return nil, nil
 }
 
+type stubPurchasesReader struct {
+	historyFn  func(context.Context, billingdomain.PurchaseFilter, int, int) ([]billingdomain.Purchase, int, error)
+	earningsFn func(context.Context) (billingdomain.EarningsSummary, error)
+}
+
+func (s *stubPurchasesReader) AdminHistory(ctx context.Context, filter billingdomain.PurchaseFilter, page, pageSize int) ([]billingdomain.Purchase, int, error) {
+	if s.historyFn != nil {
+		return s.historyFn(ctx, filter, page, pageSize)
+	}
+	return nil, 0, nil
+}
+
+func (s *stubPurchasesReader) Earnings(ctx context.Context) (billingdomain.EarningsSummary, error) {
+	if s.earningsFn != nil {
+		return s.earningsFn(ctx)
+	}
+	return billingdomain.EarningsSummary{}, nil
+}
+
 type stubMetric struct {
 	peaksFn func(context.Context) ([]metricdomain.PeakRow, error)
 }
@@ -177,6 +197,7 @@ func newTestHandler() *Handler {
 		General:    config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
 		ItemStatus: &stubItemStatus{status: itemapp.ServiceStatus{ItemsLoaded: 42, LastReload: "2026-05-18T00:00:00Z"}},
 		MobStatus:  &stubMobStatus{status: mobapp.ServiceStatus{MobsLoaded: 7, LastReload: "2026-05-18T00:00:00Z"}},
+		Purchases:  &stubPurchasesReader{},
 		Theme:      stubTheme{},
 	})
 }

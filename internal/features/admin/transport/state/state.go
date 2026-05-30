@@ -4,6 +4,7 @@ import (
 	"time"
 
 	currency "github.com/hayakawakaki/go-racp/internal/features/account/app/currency"
+	billingdomain "github.com/hayakawakaki/go-racp/internal/features/billing/domain"
 	itemapp "github.com/hayakawakaki/go-racp/internal/features/item/app"
 	mobapp "github.com/hayakawakaki/go-racp/internal/features/mob/app"
 	"github.com/hayakawakaki/go-racp/internal/platform/metric/domain"
@@ -25,13 +26,40 @@ type DashboardState struct {
 type EconomyState struct {
 	Location        *time.Location
 	Totals          currency.TotalsDTO
+	Earnings        billingdomain.EarningsSummary
 	Deposits        currency.DepositPage
 	Withdraws       currency.WithdrawHistoryPage
 	Stuck           []currency.AdminWithdrawDTO
+	Purchases       PurchasePage
 	TotalsFailed    bool
 	DepositsFailed  bool
 	WithdrawsFailed bool
 	StuckFailed     bool
+	EarningsFailed  bool
+	PurchasesFailed bool
+}
+
+type PurchaseFilterForm struct {
+	Status   string
+	Account  string
+	Provider string
+	From     string
+	To       string
+}
+
+type PurchaseRow struct {
+	Email    string
+	Purchase billingdomain.Purchase
+}
+
+//nolint:govet // grouped for readability over a few bytes of padding
+type PurchasePage struct {
+	Rows        []PurchaseRow
+	Form        PurchaseFilterForm
+	HrefPattern string
+	Page        int
+	TotalPages  int
+	Total       int
 }
 
 type PeakTable struct {

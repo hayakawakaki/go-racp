@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	adminstate "github.com/hayakawakaki/go-racp/internal/features/admin/transport/state"
+	billingdomain "github.com/hayakawakaki/go-racp/internal/features/billing/domain"
 	"github.com/hayakawakaki/go-racp/internal/platform/ui"
 	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
 	"github.com/hayakawakaki/go-racp/themes/default/platform/helpers"
@@ -41,10 +42,225 @@ templ EconomyContent(state adminstate.EconomyState) {
 			@economyDepositsCard(state)
 			@economyWithdrawsCard(state)
 		</div>
+		@economyEarningsCard(state)
+		@economyPurchasesCard(state)
 		if state.StuckFailed || len(state.Stuck) > 0 {
 			@economyStuckCard(state)
 		}
 	</div>
+}
+
+templ economyEarningsCard(state adminstate.EconomyState) {
+	@components.BentoCard(components.BentoCardProps{
+		Padding: "p-4 lg:p-5",
+		Class:   "overflow-hidden",
+	}) {
+		<div class="flex items-center justify-between gap-3 pb-4 border-b border-border">
+			@components.BentoLabel("text-[11px]") {
+				Earnings
+			}
+		</div>
+		<div class="grid grid-cols-2 gap-4 pt-4 sm:grid-cols-4 sm:gap-8">
+			@economyEarningStat("Today", state.Earnings.Today, state.EarningsFailed)
+			@economyEarningStat("This week", state.Earnings.Week, state.EarningsFailed)
+			@economyEarningStat("This month", state.Earnings.Month, state.EarningsFailed)
+			@economyEarningStat("All-time", state.Earnings.AllTime, state.EarningsFailed)
+		</div>
+	}
+}
+
+templ economyEarningStat(label string, value int64, failed bool) {
+	<div class="text-left">
+		@components.BentoLabel("text-[10px]") {
+			{ label }
+		}
+		if failed {
+			<p class="text-lg xl:text-xl font-light tracking-tight text-font-muted">Unavailable</p>
+		} else {
+			<p class="text-lg xl:text-xl font-light tracking-tight tabular-nums text-font">{ helpers.FormatAmount(value) }</p>
+		}
+	</div>
+}
+
+templ economyPurchasesCard(state adminstate.EconomyState) {
+	@components.BentoCard(components.BentoCardProps{
+		Padding: "p-0",
+		Class:   "overflow-hidden",
+	}) {
+		<div class="flex items-center justify-between gap-3 p-4 lg:p-5 border-b border-border">
+			@components.BentoLabel("text-[11px]") {
+				Purchases
+			}
+			if state.Purchases.TotalPages > 1 {
+				@ui.Pagination(ui.PaginationProps{
+					Page:        state.Purchases.Page,
+					TotalPages:  state.Purchases.TotalPages,
+					Size:        ui.PaginationSizeSM,
+					Color:       ui.PaginationColorIndigo,
+					HrefPattern: state.Purchases.HrefPattern,
+					LinkAttrs:   economyHistoryLinkAttrs,
+				})
+			}
+		</div>
+		@economyPurchasesFilter(state)
+		if state.PurchasesFailed {
+			@components.DataUnavailable("p-6")
+		} else if len(state.Purchases.Rows) == 0 {
+			<p class="p-6 text-sm text-font-muted">No purchases recorded yet.</p>
+		} else {
+			@ui.Table(ui.TableProps{Hover: true, Class: "text-font"}) {
+				@ui.TableHeader() {
+					@ui.TableRow(ui.TableRowProps{}) {
+						@ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}) {
+							Account
+						}
+						@ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}) {
+							Email
+						}
+						@ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}) {
+							Package
+						}
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
+							Amount
+						}
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
+							Cash points
+						}
+						@ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}) {
+							Status
+						}
+						@ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}) {
+							Provider
+						}
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
+							Date
+						}
+					}
+				}
+				@ui.TableBody() {
+					for _, row := range state.Purchases.Rows {
+						@ui.TableRow(ui.TableRowProps{}) {
+							@ui.TableCell(ui.TableCellProps{Class: "font-mono tabular-nums"}) {
+								@economyAccountLink(row.Purchase.AccountID)
+							}
+							@ui.TableCell(ui.TableCellProps{Class: "text-font-muted"}) {
+								@economyEmail(row.Email)
+							}
+							@ui.TableCell(ui.TableCellProps{Class: "text-font-muted"}) {
+								{ row.Purchase.PackageKey }
+							}
+							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
+								{ helpers.FormatAmount(row.Purchase.Amount) + " " + row.Purchase.Currency }
+							}
+							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
+								{ helpers.FormatAmount(int64(row.Purchase.CashPoints)) }
+							}
+							@ui.TableCell(ui.TableCellProps{Class: "text-font-muted"}) {
+								{ billingdomain.StatusLabel(row.Purchase.Status) }
+							}
+							@ui.TableCell(ui.TableCellProps{Class: "text-font-muted"}) {
+								{ row.Purchase.Provider }
+							}
+							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "text-font-muted tabular-nums"}) {
+								{ helpers.FormatTime(row.Purchase.CreatedAt, state.Location) }
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+templ economyPurchasesFilter(state adminstate.EconomyState) {
+	<form
+		method="get"
+		action="/admin/economy"
+		hx-get="/admin/economy"
+		hx-target="#admin-content"
+		hx-push-url="true"
+		class="flex flex-wrap items-end gap-3 p-4 lg:p-5 border-b border-border"
+	>
+		<input type="hidden" name="dpage" value={ strconv.Itoa(state.Deposits.Page) }/>
+		<input type="hidden" name="wpage" value={ strconv.Itoa(state.Withdraws.Page) }/>
+		<div class="space-y-1">
+			@components.BentoLabel("text-[10px]") {
+				Status
+			}
+			@ui.Select(ui.SelectProps{
+				Name:    "status",
+				Value:   state.Purchases.Form.Status,
+				Size:    ui.SelectSizeSM,
+				Options: economyStatusOptions(),
+			})
+		</div>
+		<div class="space-y-1">
+			@components.BentoLabel("text-[10px]") {
+				Account
+			}
+			@ui.Input(ui.InputProps{
+				Type:        ui.InputTypeNumber,
+				Name:        "account",
+				Value:       state.Purchases.Form.Account,
+				Placeholder: "Account ID",
+				Size:        ui.InputSizeSM,
+			})
+		</div>
+		<div class="space-y-1">
+			@components.BentoLabel("text-[10px]") {
+				Provider
+			}
+			@ui.Input(ui.InputProps{
+				Type:        ui.InputTypeText,
+				Name:        "provider",
+				Value:       state.Purchases.Form.Provider,
+				Placeholder: "Provider",
+				Size:        ui.InputSizeSM,
+			})
+		</div>
+		<div class="space-y-1">
+			@components.BentoLabel("text-[10px]") {
+				From
+			}
+			@ui.Input(ui.InputProps{
+				Type:  ui.InputTypeDate,
+				Name:  "from",
+				Value: state.Purchases.Form.From,
+				Size:  ui.InputSizeSM,
+			})
+		</div>
+		<div class="space-y-1">
+			@components.BentoLabel("text-[10px]") {
+				To
+			}
+			@ui.Input(ui.InputProps{
+				Type:  ui.InputTypeDate,
+				Name:  "to",
+				Value: state.Purchases.Form.To,
+				Size:  ui.InputSizeSM,
+			})
+		</div>
+		@ui.Button(ui.ButtonProps{
+			Type:    ui.ButtonTypeSubmit,
+			Variant: ui.ButtonSolid,
+			Color:   ui.ButtonColorIndigo,
+			Size:    ui.ButtonSizeSM,
+			Rounded: ui.ButtonRoundedMD,
+		}) {
+			Filter
+		}
+	</form>
+}
+
+func economyStatusOptions() []ui.SelectOption {
+	return []ui.SelectOption{
+		{Value: "", Label: "Any"},
+		{Value: strconv.Itoa(billingdomain.StatusPending), Label: "Pending"},
+		{Value: strconv.Itoa(billingdomain.StatusCompleted), Label: "Completed"},
+		{Value: strconv.Itoa(billingdomain.StatusDisputed), Label: "Disputed"},
+		{Value: strconv.Itoa(billingdomain.StatusRefunded), Label: "Refunded"},
+		{Value: strconv.Itoa(billingdomain.StatusFailed), Label: "Failed"},
+	}
 }
 
 templ economyStuckCard(state adminstate.EconomyState) {

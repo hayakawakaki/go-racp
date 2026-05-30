@@ -4,6 +4,9 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/a-h/templ"
@@ -12,6 +15,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
 	modstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation/state"
 	"github.com/hayakawakaki/go-racp/internal/features/admin/transport/state"
+	billingdomain "github.com/hayakawakaki/go-racp/internal/features/billing/domain"
 	guildapp "github.com/hayakawakaki/go-racp/internal/features/guild/app"
 	guildstate "github.com/hayakawakaki/go-racp/internal/features/guild/transport/state"
 	itemapp "github.com/hayakawakaki/go-racp/internal/features/item/app"
@@ -54,6 +58,11 @@ type economyReader interface {
 	StuckWithdraws(ctx context.Context) ([]currency.AdminWithdrawDTO, error)
 }
 
+type purchasesReader interface {
+	AdminHistory(ctx context.Context, filter billingdomain.PurchaseFilter, page, pageSize int) ([]billingdomain.Purchase, int, error)
+	Earnings(ctx context.Context) (billingdomain.EarningsSummary, error)
+}
+
 type emailResolver interface {
 	EmailsByIDs(ctx context.Context, ids []int) (map[int]string, error)
 }
@@ -78,6 +87,7 @@ type HandlerConfig struct {
 	Users      userLister
 	Guilds     guildLister
 	Economy    economyReader
+	Purchases  purchasesReader
 	Emails     emailResolver
 	Theme      Renderer
 	Logger     *slog.Logger
@@ -92,6 +102,7 @@ type Handler struct {
 	users      userLister
 	guilds     guildLister
 	economy    economyReader
+	purchases  purchasesReader
 	emails     emailResolver
 	theme      Renderer
 	logger     *slog.Logger
@@ -106,6 +117,7 @@ func NewHandler(cfg HandlerConfig) *Handler {
 		users:      cfg.Users,
 		guilds:     cfg.Guilds,
 		economy:    cfg.Economy,
+		purchases:  cfg.Purchases,
 		emails:     cfg.Emails,
 		general:    cfg.General,
 		theme:      cfg.Theme,
@@ -216,10 +228,28 @@ func (h *Handler) dashboardState(ctx context.Context) state.DashboardState {
 	return s
 }
 
+//nolint:govet // grouped for readability over a few bytes of padding
+type economyParams struct {
+	filter        billingdomain.PurchaseFilter
+	form          state.PurchaseFilterForm
+	purchasesHref string
+	dpage         int
+	wpage         int
+	ppage         int
+}
+
 func (h *Handler) showEconomy(w http.ResponseWriter, r *http.Request) {
-	dpage := httpx.ParsePositiveInt(r.URL.Query().Get("dpage"), 1)
-	wpage := httpx.ParsePositiveInt(r.URL.Query().Get("wpage"), 1)
-	s := h.economyState(r.Context(), dpage, wpage)
+	q := r.URL.Query()
+	filter, form := parsePurchaseFilter(q)
+	params := economyParams{
+		filter:        filter,
+		form:          form,
+		purchasesHref: purchasesHrefPattern(q),
+		dpage:         httpx.ParsePositiveInt(q.Get("dpage"), 1),
+		wpage:         httpx.ParsePositiveInt(q.Get("wpage"), 1),
+		ppage:         httpx.ParsePositiveInt(q.Get("ppage"), 1),
+	}
+	s := h.economyState(r.Context(), params)
 	if httpx.IsHTMX(r) {
 		httpx.RenderHTML(w, r, h.logger, h.theme.EconomyContent(s))
 		return
@@ -227,13 +257,66 @@ func (h *Handler) showEconomy(w http.ResponseWriter, r *http.Request) {
 	httpx.RenderHTML(w, r, h.logger, h.theme.AdminLayout(h.layout(), "Economy", h.theme.EconomyContent(s)))
 }
 
-func (h *Handler) economyState(ctx context.Context, dpage, wpage int) state.EconomyState {
+func parsePurchaseFilter(q url.Values) (billingdomain.PurchaseFilter, state.PurchaseFilterForm) {
+	form := state.PurchaseFilterForm{
+		Status: q.Get("status"), Account: q.Get("account"), Provider: q.Get("provider"),
+		From: q.Get("from"), To: q.Get("to"),
+	}
+	filter := billingdomain.PurchaseFilter{Provider: strings.TrimSpace(form.Provider)}
+	if v, err := strconv.Atoi(form.Status); err == nil && v > 0 {
+		filter.Status = v
+	}
+	if v, err := strconv.Atoi(form.Account); err == nil && v > 0 {
+		filter.AccountID = v
+	}
+	if t, err := time.Parse("2006-01-02", form.From); err == nil {
+		from := t
+		filter.From = &from
+	}
+	if t, err := time.Parse("2006-01-02", form.To); err == nil {
+		end := t.AddDate(0, 0, 1)
+		filter.To = &end
+	}
+
+	return filter, form
+}
+
+func purchasesHrefPattern(q url.Values) string {
+	v := url.Values{}
+	for _, key := range []string{"status", "account", "provider", "from", "to", "dpage", "wpage"} {
+		if val := q.Get(key); val != "" {
+			v.Set(key, val)
+		}
+	}
+	v.Set("ppage", "__PAGE__")
+
+	return "/admin/economy?" + v.Encode()
+}
+
+func (h *Handler) economyState(ctx context.Context, params economyParams) state.EconomyState {
 	s := state.EconomyState{Location: h.general.Location()}
-	if h.economy == nil {
+	s.Purchases.Form = params.form
+	s.Purchases.HrefPattern = params.purchasesHref
+	if h.economy == nil && h.purchases == nil {
 		return s
 	}
 
+	dpage, wpage := params.dpage, params.wpage
 	g, gctx := errgroup.WithContext(ctx)
+	if h.economy != nil {
+		h.queueEconomyReads(gctx, g, &s, dpage, wpage)
+	}
+	if h.purchases != nil {
+		h.queuePurchaseReads(gctx, g, &s, params)
+	}
+	_ = g.Wait()
+
+	h.resolveEconomyEmails(ctx, s.Deposits.Rows, s.Withdraws.Rows, s.Purchases.Rows)
+
+	return s
+}
+
+func (h *Handler) queueEconomyReads(gctx context.Context, g *errgroup.Group, s *state.EconomyState, dpage, wpage int) {
 	g.Go(func() error {
 		totals, err := h.economy.Totals(gctx)
 		if err != nil {
@@ -274,24 +357,52 @@ func (h *Handler) economyState(ctx context.Context, dpage, wpage int) state.Econ
 		s.Stuck = stuck
 		return nil
 	})
-	_ = g.Wait()
-
-	h.resolveEconomyEmails(ctx, s.Deposits.Rows, s.Withdraws.Rows)
-
-	return s
 }
 
-func (h *Handler) resolveEconomyEmails(ctx context.Context, deposits []currency.DepositDTO, withdraws []currency.AdminWithdrawDTO) {
+func (h *Handler) queuePurchaseReads(gctx context.Context, g *errgroup.Group, s *state.EconomyState, params economyParams) {
+	g.Go(func() error {
+		summary, err := h.purchases.Earnings(gctx)
+		if err != nil {
+			h.logger.Warn("admin: economy earnings read failed", "err", err)
+			s.EarningsFailed = true
+			return nil
+		}
+		s.Earnings = summary
+		return nil
+	})
+	g.Go(func() error {
+		rows, total, err := h.purchases.AdminHistory(gctx, params.filter, params.ppage, economyPerPage)
+		if err != nil {
+			h.logger.Warn("admin: economy purchases read failed", "err", err)
+			s.PurchasesFailed = true
+			return nil
+		}
+		purchaseRows := make([]state.PurchaseRow, 0, len(rows))
+		for _, p := range rows {
+			purchaseRows = append(purchaseRows, state.PurchaseRow{Purchase: p})
+		}
+		s.Purchases.Rows = purchaseRows
+		s.Purchases.Total = total
+		s.Purchases.Page = params.ppage
+		s.Purchases.TotalPages = (total + economyPerPage - 1) / economyPerPage
+		return nil
+	})
+}
+
+func (h *Handler) resolveEconomyEmails(ctx context.Context, deposits []currency.DepositDTO, withdraws []currency.AdminWithdrawDTO, purchases []state.PurchaseRow) {
 	if h.emails == nil {
 		return
 	}
 
-	ids := make([]int, 0, len(deposits)+len(withdraws))
+	ids := make([]int, 0, len(deposits)+len(withdraws)+len(purchases))
 	for _, row := range deposits {
 		ids = append(ids, row.AccountID)
 	}
 	for _, row := range withdraws {
 		ids = append(ids, row.AccountID)
+	}
+	for _, row := range purchases {
+		ids = append(ids, row.Purchase.AccountID)
 	}
 	if len(ids) == 0 {
 		return
@@ -308,6 +419,9 @@ func (h *Handler) resolveEconomyEmails(ctx context.Context, deposits []currency.
 	}
 	for index := range withdraws {
 		withdraws[index].Email = emails[withdraws[index].AccountID]
+	}
+	for index := range purchases {
+		purchases[index].Email = emails[purchases[index].Purchase.AccountID]
 	}
 }
 
