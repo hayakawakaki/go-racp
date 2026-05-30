@@ -57,12 +57,21 @@ func buildCatalog(in *coreinfra.Infra) domain.Catalog {
 func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 	svc := BuildService(in)
 
+	if in.Config.App.Purchases.Providers.Stripe {
+		if in.Config.Env.StripeSecretKey != "" {
+			SetProvider(infra.NewStripeProvider(in.Config.Env.StripeSecretKey))
+		} else {
+			in.Logger.Warn("payment provider stripe enabled but STRIPE_SECRET_KEY is unset")
+		}
+	}
+
 	h := transport.NewHandler(svc, transport.HandlerConfig{
-		Logger:   in.Logger,
-		Theme:    theme.Active,
-		General:  in.Config.App.General,
-		Currency: in.Config.App.Purchases.Currency,
-		AppURL:   in.Config.Env.AppURL,
+		Logger:              in.Logger,
+		Theme:               theme.Active,
+		General:             in.Config.App.General,
+		Currency:            in.Config.App.Purchases.Currency,
+		AppURL:              in.Config.Env.AppURL,
+		StripeWebhookSecret: in.Config.Env.StripeWebhookSecret,
 	})
 	h.RegisterRoutes(reg, mux)
 }
