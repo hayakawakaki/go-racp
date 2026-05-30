@@ -17,6 +17,8 @@ import (
 
 var themeNameRe = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 
+var purchasePackageKeyRe = regexp.MustCompile(`^[a-z0-9_]+$`)
+
 type RatesConfig struct {
 	ExpRate         int `yaml:"ExpRate"`
 	JobRate         int `yaml:"JobRate"`
@@ -85,6 +87,25 @@ type CurrencyConfig struct {
 	ReapAfter             time.Duration `yaml:"ReapAfter"`
 	MaxZenyPerTx          int64         `yaml:"MaxZenyPerTx"`
 	MaxCashpointPerTx     int           `yaml:"MaxCashpointPerTx"`
+}
+
+type PurchasesConfig struct {
+	Currency  string          `yaml:"Currency"`
+	Packages  []PackageConfig `yaml:"Packages"`
+	Providers ProviderFlags   `yaml:"Providers"`
+}
+
+type ProviderFlags struct {
+	Stripe bool `yaml:"Stripe"`
+	Paypal bool `yaml:"Paypal"`
+	Crypto bool `yaml:"Crypto"`
+}
+
+type PackageConfig struct {
+	Key        string `yaml:"Key"`
+	Name       string `yaml:"Name"`
+	Price      int64  `yaml:"Price"`
+	CashPoints int    `yaml:"CashPoints"`
 }
 
 type RetentionConfig struct {
@@ -174,6 +195,7 @@ type AppConfig struct {
 	MobDB            MobDBConfig            `yaml:"MobDB"`
 	Cooldown         CooldownConfig         `yaml:"Cooldown"`
 	Currency         CurrencyConfig         `yaml:"Currency"`
+	Purchases        PurchasesConfig        `yaml:"Purchases"`
 	Retention        RetentionConfig        `yaml:"Retention"`
 	TTL              TTLConfig              `yaml:"TTL"`
 	Tickets          TicketsConfig          `yaml:"Tickets"`
@@ -274,6 +296,7 @@ var appConfigFiles = []string{
 	"news.yml",
 	"datasources.yml",
 	"polling.yml",
+	"purchases.yml",
 }
 
 func ProcessAppConfig() *AppConfig {
@@ -356,7 +379,37 @@ func validateAppConfig(cfg *AppConfig) {
 	validateTheme(&cfg.General)
 	validateRatesConfig(&cfg.General.Rates)
 	validateCurrencyConfig(&cfg.Currency, &clamps)
+	validatePurchasesConfig(&cfg.Purchases)
 	cfg.clampWarnings = clamps
+}
+
+func validatePurchasesConfig(cfg *PurchasesConfig) {
+	if len(cfg.Packages) == 0 {
+		return
+	}
+	if len(cfg.Currency) != 3 {
+		panic(fmt.Errorf("Purchases.Currency must be a 3-letter ISO code, got %q", cfg.Currency))
+	}
+
+	seen := make(map[string]struct{}, len(cfg.Packages))
+	for _, pkg := range cfg.Packages {
+		if !purchasePackageKeyRe.MatchString(pkg.Key) {
+			panic(fmt.Errorf("Purchases.Packages key %q must match %s", pkg.Key, purchasePackageKeyRe))
+		}
+		if _, dup := seen[pkg.Key]; dup {
+			panic(fmt.Errorf("Purchases.Packages key %q is duplicated", pkg.Key))
+		}
+		seen[pkg.Key] = struct{}{}
+		if pkg.Name == "" {
+			panic(fmt.Errorf("Purchases.Packages %q must have a name", pkg.Key))
+		}
+		if pkg.Price <= 0 {
+			panic(fmt.Errorf("Purchases.Packages %q Price must be > 0", pkg.Key))
+		}
+		if pkg.CashPoints <= 0 {
+			panic(fmt.Errorf("Purchases.Packages %q CashPoints must be > 0", pkg.Key))
+		}
+	}
 }
 
 func validateCurrencyConfig(cfg *CurrencyConfig, adjustments *[]ClampAdjustment) {

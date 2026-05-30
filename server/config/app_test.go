@@ -107,6 +107,18 @@ Metrics:
   GeneralPollInterval: "1h"
   PeakWindows: ["daily", "weekly", "monthly", "all_time"]
 `,
+		"purchases.yml": `Purchases:
+  Currency: "USD"
+  Providers:
+    Stripe: false
+    Paypal: false
+    Crypto: false
+  Packages:
+    - Key: "starter"
+      Name: "Starter Pack"
+      Price: 5
+      CashPoints: 500
+`,
 	}
 }
 
@@ -302,6 +314,58 @@ func TestValidateCurrencyConfig_PanicsOnNonPositiveMax(t *testing.T) {
 	}
 }
 
+func TestValidatePurchasesConfig_EmptyIsDisabledNoPanic(t *testing.T) {
+	t.Parallel()
+	cfg := PurchasesConfig{}
+	validatePurchasesConfig(&cfg)
+}
+
+func TestValidatePurchasesConfig_PanicsOnBadPackages(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		wantContain string
+		cfg         PurchasesConfig
+	}{
+		{
+			name:        "bad currency",
+			cfg:         PurchasesConfig{Currency: "US", Packages: []PackageConfig{{Key: "x", Name: "X", Price: 1, CashPoints: 1}}},
+			wantContain: "Purchases.Currency",
+		},
+		{
+			name:        "bad key",
+			cfg:         PurchasesConfig{Currency: "USD", Packages: []PackageConfig{{Key: "Bad Key", Name: "X", Price: 1, CashPoints: 1}}},
+			wantContain: "must match",
+		},
+		{
+			name:        "duplicate key",
+			cfg:         PurchasesConfig{Currency: "USD", Packages: []PackageConfig{{Key: "x", Name: "X", Price: 1, CashPoints: 1}, {Key: "x", Name: "Y", Price: 1, CashPoints: 1}}},
+			wantContain: "duplicated",
+		},
+		{
+			name:        "non-positive price",
+			cfg:         PurchasesConfig{Currency: "USD", Packages: []PackageConfig{{Key: "x", Name: "X", Price: 0, CashPoints: 1}}},
+			wantContain: "Price must be > 0",
+		},
+		{
+			name:        "non-positive points",
+			cfg:         PurchasesConfig{Currency: "USD", Packages: []PackageConfig{{Key: "x", Name: "X", Price: 1, CashPoints: 0}}},
+			wantContain: "CashPoints must be > 0",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			cfg := tt.cfg
+			msg := mustPanic(t, func() { validatePurchasesConfig(&cfg) })
+			if !strings.Contains(msg, tt.wantContain) {
+				t.Errorf("panic = %q, want substring %q", msg, tt.wantContain)
+			}
+		})
+	}
+}
+
 func TestLoadAppConfigFromDir_RecordsOutOfRangeClampsOnly(t *testing.T) {
 	t.Parallel()
 
@@ -486,6 +550,7 @@ func TestLoadAppConfigFromDir_PanicsOnMissingFile(t *testing.T) {
 	names := []string{
 		"app.yml", "auth.yml", "security.yml", "roles.yml",
 		"tickets.yml", "news.yml", "datasources.yml", "polling.yml",
+		"purchases.yml",
 	}
 	for _, missing := range names {
 		t.Run("missing_"+missing, func(t *testing.T) {
@@ -508,7 +573,7 @@ func TestLoadAppConfigFromDir_TolereratesEmptyFiles(t *testing.T) {
 	empty := map[string]string{
 		"app.yml": "", "auth.yml": "", "security.yml": "",
 		"roles.yml": "", "tickets.yml": "", "news.yml": "",
-		"datasources.yml": "", "polling.yml": "",
+		"datasources.yml": "", "polling.yml": "", "purchases.yml": "",
 	}
 	dir := writeConfDir(t, empty)
 
