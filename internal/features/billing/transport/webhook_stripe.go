@@ -145,13 +145,13 @@ func (h *Handler) ackFulfillment(err error, kind string, attrs ...any) error {
 	if err == nil {
 		return nil
 	}
+
 	if isTerminalFulfillmentError(err) {
 		args := make([]any, 0, len(attrs)+4)
 		args = append(args, "kind", kind)
 		args = append(args, attrs...)
 		args = append(args, "err", err)
 		h.logger.Error("stripe webhook: fulfillment rejected, not retrying", args...)
-
 		return nil
 	}
 
