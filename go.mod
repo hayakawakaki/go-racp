@@ -11,6 +11,7 @@ require (
 	github.com/jackc/pgx/v5 v5.9.2
 	github.com/joho/godotenv v1.5.1
 	github.com/microcosm-cc/bluemonday v1.0.27
+	github.com/stripe/stripe-go/v85 v85.2.0
 	github.com/wneessen/go-mail v0.7.2
 	github.com/yuin/goldmark v1.8.2
 	golang.org/x/sync v0.20.0
