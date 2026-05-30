@@ -226,6 +226,33 @@ func TestService_DisputePurchase_BanErrorAbortsBeforeMark(t *testing.T) {
 	}
 }
 
+func TestService_DisputePurchase_SkipsNonCompleted(t *testing.T) {
+	t.Parallel()
+
+	marked := false
+	repo := &fakeRepo{
+		getByPaymentFn: func(context.Context, string, string) (domain.Purchase, error) {
+			return domain.Purchase{ID: 9, AccountID: 7, Status: domain.StatusPending}, nil
+		},
+		markDisputedFn: func(context.Context, int64, time.Time) (bool, error) {
+			marked = true
+			return true, nil
+		},
+	}
+	banner := &fakeBanner{}
+	svc := NewService(repo, testCatalog(), WithBanner(banner), WithLogger(discardLogger()))
+
+	if err := svc.DisputePurchase(context.Background(), "fake", "pay_1"); err != nil {
+		t.Fatalf("DisputePurchase: %v", err)
+	}
+	if banner.bannedCount != 0 {
+		t.Errorf("bannedCount = %d, want 0 for a non-completed purchase", banner.bannedCount)
+	}
+	if marked {
+		t.Errorf("MarkDisputed must not be called for a non-completed purchase")
+	}
+}
+
 func TestService_RefundPurchase_MarksAndNeverBans(t *testing.T) {
 	t.Parallel()
 

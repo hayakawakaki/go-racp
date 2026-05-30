@@ -230,6 +230,9 @@ func (s *Service) BanForChargeback(ctx context.Context, accountID int, reason st
 		)
 		return nil
 	}
+	if target.State == accself.StatePermaBanned {
+		return nil
+	}
 
 	beforeState := target.State
 	beforeUnban := unbanSeconds(target.UnbanTime)

@@ -8,6 +8,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/ui"
 	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
+	"github.com/hayakawakaki/go-racp/themes/default/platform/helpers"
 )
 
 templ PurchaseHistoryPage(layout httpx.Layout, state billingstate.PurchaseHistoryState) {
@@ -68,7 +69,7 @@ templ PurchaseHistoryContent(state billingstate.PurchaseHistoryState) {
 								{ domain.StatusLabel(purchase.Status) }
 							}
 							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "text-font-muted tabular-nums"}) {
-								{ purchase.CreatedAt.Format("2006-01-02 15:04") }
+								{ helpers.FormatTime(purchase.CreatedAt, state.Location) }
 							}
 						}
 					}

@@ -170,6 +170,15 @@ func (s *Service) DisputePurchase(ctx context.Context, provider, providerPayment
 	if purchase.Status == domain.StatusDisputed {
 		return nil
 	}
+	if purchase.Status != domain.StatusCompleted {
+		s.logger.Warn("billing: dispute on non-completed purchase, skipping ban",
+			"purchase_id", purchase.ID,
+			"account_id", purchase.AccountID,
+			"status", purchase.Status,
+			"provider_payment_id", providerPaymentID,
+		)
+		return nil
+	}
 
 	if s.banner != nil {
 		if err := s.banner.BanForChargeback(ctx, purchase.AccountID, "payment chargeback"); err != nil {

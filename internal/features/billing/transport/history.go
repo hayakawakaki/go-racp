@@ -14,7 +14,7 @@ func (h *Handler) showHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	st := state.PurchaseHistoryState{Currency: h.currency}
+	st := state.PurchaseHistoryState{Currency: h.currency, Location: h.general.Location()}
 	if snapshot, ok := middleware.SnapshotFromContext(r.Context()); ok {
 		purchases, err := h.svc.HistoryByAccount(r.Context(), snapshot.UserID, historyPageSize)
 		if err != nil {

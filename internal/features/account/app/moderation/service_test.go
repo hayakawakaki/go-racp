@@ -427,6 +427,19 @@ func TestService_BanForChargeback_BansPlayer(t *testing.T) {
 	}
 }
 
+func TestService_BanForChargeback_IdempotentWhenAlreadyBanned(t *testing.T) {
+	t.Parallel()
+	svc, users, _, audits := newTestService(t)
+	users.users[7] = &accdomain.User{ID: 7, Username: "kaki", GroupID: 0, State: accself.StatePermaBanned}
+
+	if err := svc.BanForChargeback(context.Background(), 7, "payment chargeback"); err != nil {
+		t.Fatalf("BanForChargeback: %v", err)
+	}
+	if len(audits.rows) != 0 {
+		t.Errorf("audit rows = %d, want 0 for an already-banned account", len(audits.rows))
+	}
+}
+
 func TestService_BanForChargeback_SkipsAdmin(t *testing.T) {
 	t.Parallel()
 	svc, users, _, audits := newTestService(t)

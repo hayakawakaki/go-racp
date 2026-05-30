@@ -16,6 +16,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/ui"
 	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
+	"github.com/hayakawakaki/go-racp/themes/default/platform/helpers"
 )
 
 func PurchaseHistoryPage(layout httpx.Layout, state billingstate.PurchaseHistoryState) templ.Component {
@@ -360,7 +361,7 @@ func PurchaseHistoryContent(state billingstate.PurchaseHistoryState) templ.Compo
 									var templ_7745c5c3_Var17 string
 									templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(purchase.PackageKey)
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/billing/transport/history.templ`, Line: 59, Col: 29}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/billing/transport/history.templ`, Line: 60, Col: 29}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 									if templ_7745c5c3_Err != nil {
@@ -391,7 +392,7 @@ func PurchaseHistoryContent(state billingstate.PurchaseHistoryState) templ.Compo
 									var templ_7745c5c3_Var19 string
 									templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d %s", purchase.Amount, state.Currency))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/billing/transport/history.templ`, Line: 62, Col: 63}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/billing/transport/history.templ`, Line: 63, Col: 63}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 									if templ_7745c5c3_Err != nil {
@@ -422,7 +423,7 @@ func PurchaseHistoryContent(state billingstate.PurchaseHistoryState) templ.Compo
 									var templ_7745c5c3_Var21 string
 									templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", purchase.CashPoints))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/billing/transport/history.templ`, Line: 65, Col: 48}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/billing/transport/history.templ`, Line: 66, Col: 48}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 									if templ_7745c5c3_Err != nil {
@@ -453,7 +454,7 @@ func PurchaseHistoryContent(state billingstate.PurchaseHistoryState) templ.Compo
 									var templ_7745c5c3_Var23 string
 									templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(domain.StatusLabel(purchase.Status))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/billing/transport/history.templ`, Line: 68, Col: 45}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/billing/transport/history.templ`, Line: 69, Col: 45}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 									if templ_7745c5c3_Err != nil {
@@ -482,9 +483,9 @@ func PurchaseHistoryContent(state billingstate.PurchaseHistoryState) templ.Compo
 									}
 									ctx = templ.InitializeContext(ctx)
 									var templ_7745c5c3_Var25 string
-									templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(purchase.CreatedAt.Format("2006-01-02 15:04"))
+									templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(helpers.FormatTime(purchase.CreatedAt, state.Location))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/billing/transport/history.templ`, Line: 71, Col: 55}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/billing/transport/history.templ`, Line: 72, Col: 64}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 									if templ_7745c5c3_Err != nil {

@@ -240,7 +240,7 @@ type economyParams struct {
 
 func (h *Handler) showEconomy(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
-	filter, form := parsePurchaseFilter(q)
+	filter, form := parsePurchaseFilter(q, h.general.Location())
 	params := economyParams{
 		filter:        filter,
 		form:          form,
@@ -257,23 +257,23 @@ func (h *Handler) showEconomy(w http.ResponseWriter, r *http.Request) {
 	httpx.RenderHTML(w, r, h.logger, h.theme.AdminLayout(h.layout(), "Economy", h.theme.EconomyContent(s)))
 }
 
-func parsePurchaseFilter(q url.Values) (billingdomain.PurchaseFilter, state.PurchaseFilterForm) {
+func parsePurchaseFilter(q url.Values, loc *time.Location) (billingdomain.PurchaseFilter, state.PurchaseFilterForm) {
 	form := state.PurchaseFilterForm{
 		Status: q.Get("status"), Account: q.Get("account"), Provider: q.Get("provider"),
 		From: q.Get("from"), To: q.Get("to"),
 	}
 	filter := billingdomain.PurchaseFilter{Provider: strings.TrimSpace(form.Provider)}
-	if v, err := strconv.Atoi(form.Status); err == nil && v > 0 {
+	if v, err := strconv.Atoi(form.Status); err == nil && v >= billingdomain.StatusPending && v <= billingdomain.StatusFailed {
 		filter.Status = v
 	}
 	if v, err := strconv.Atoi(form.Account); err == nil && v > 0 {
 		filter.AccountID = v
 	}
-	if t, err := time.Parse("2006-01-02", form.From); err == nil {
+	if t, err := time.ParseInLocation("2006-01-02", form.From, loc); err == nil {
 		from := t
 		filter.From = &from
 	}
-	if t, err := time.Parse("2006-01-02", form.To); err == nil {
+	if t, err := time.ParseInLocation("2006-01-02", form.To, loc); err == nil {
 		end := t.AddDate(0, 0, 1)
 		filter.To = &end
 	}
