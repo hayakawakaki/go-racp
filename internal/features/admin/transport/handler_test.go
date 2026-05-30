@@ -358,6 +358,52 @@ func TestHandler_ShowEconomy_ResolvesEmails(t *testing.T) {
 	}
 }
 
+func TestHandler_ShowEconomy_BlankEmailShowsPlaceholder(t *testing.T) {
+	t.Parallel()
+
+	economy := &stubEconomyReader{
+		depositsFn: func(_ context.Context, page, _ int) (currency.DepositPage, error) {
+			return currency.DepositPage{
+				Rows: []currency.DepositDTO{{DepositID: 1, AccountID: 7, Zeny: 100}},
+				Page: page,
+			}, nil
+		},
+		withdrawsFn: func(_ context.Context, page, _ int) (currency.WithdrawHistoryPage, error) {
+			return currency.WithdrawHistoryPage{
+				Rows: []currency.AdminWithdrawDTO{{ID: 1, AccountID: 9, Zeny: 50}},
+				Page: page,
+			}, nil
+		},
+	}
+	emails := &stubEmailResolver{
+		emailsFn: func(_ context.Context, _ []int) (map[int]string, error) {
+			return map[int]string{7: "kaki@example.com"}, nil
+		},
+	}
+	h := NewHandler(HandlerConfig{
+		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
+		General: config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
+		Theme:   stubTheme{},
+		Economy: economy,
+		Emails:  emails,
+	})
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/admin/economy", http.NoBody)
+	h.showEconomy(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rr.Code)
+	}
+	body := rr.Body.String()
+	if !strings.Contains(body, "kaki@example.com") {
+		t.Errorf("resolved deposit email must still render:\n%s", body)
+	}
+	if !strings.Contains(body, "No email") {
+		t.Errorf("an account with no email on file must render the placeholder:\n%s", body)
+	}
+}
+
 func TestHandler_ShowEconomy_PartialReadFailure(t *testing.T) {
 	t.Parallel()
 

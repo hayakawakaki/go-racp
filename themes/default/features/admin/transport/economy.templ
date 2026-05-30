@@ -167,7 +167,7 @@ templ economyDepositsCard(state adminstate.EconomyState) {
 								@economyAccountLink(d.AccountID)
 							}
 							@ui.TableCell(ui.TableCellProps{Class: "text-font-muted"}) {
-								{ d.Email }
+								@economyEmail(d.Email)
 							}
 							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
 								{ helpers.FormatAmount(d.Zeny) }
@@ -249,7 +249,7 @@ templ economyWithdrawsCard(state adminstate.EconomyState) {
 								@economyAccountLink(wd.AccountID)
 							}
 							@ui.TableCell(ui.TableCellProps{Class: "text-font-muted"}) {
-								{ wd.Email }
+								@economyEmail(wd.Email)
 							}
 							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
 								{ helpers.FormatAmount(wd.Zeny) }
@@ -287,4 +287,12 @@ templ economyAccountLink(accountID int) {
 	>
 		{ strconv.Itoa(accountID) }
 	</a>
+}
+
+templ economyEmail(email string) {
+	if email == "" {
+		<span class="italic opacity-60">No email</span>
+	} else {
+		{ email }
+	}
 }
