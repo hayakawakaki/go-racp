@@ -8,13 +8,17 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/hayakawakaki/go-racp/internal/features/billing/domain"
 	"github.com/stripe/stripe-go/v85"
 	"github.com/stripe/stripe-go/v85/webhook"
 )
 
-const maxWebhookBytes = 1 << 18
+const (
+	maxWebhookBytes    = 1 << 18
+	webhookRetryWindow = 15 * time.Minute
+)
 
 func (h *Handler) stripeWebhook(w http.ResponseWriter, r *http.Request) {
 	if h.stripeWebhookSecret == "" {
@@ -118,7 +122,7 @@ func (h *Handler) handleChargeRefunded(ctx context.Context, event stripe.Event) 
 		return nil
 	}
 
-	return h.ackFulfillment(h.svc.RefundPurchase(ctx, "stripe", charge.PaymentIntent.ID), "refund", "charge", charge.ID)
+	return h.ackPaymentMatch(h.svc.RefundPurchase(ctx, "stripe", charge.PaymentIntent.ID), event, "refund", "charge", charge.ID)
 }
 
 func (h *Handler) handleDisputeCreated(ctx context.Context, event stripe.Event) error {
@@ -132,7 +136,7 @@ func (h *Handler) handleDisputeCreated(ctx context.Context, event stripe.Event) 
 		return nil
 	}
 
-	return h.ackFulfillment(h.svc.DisputePurchase(ctx, "stripe", dispute.PaymentIntent.ID), "dispute", "dispute", dispute.ID)
+	return h.ackPaymentMatch(h.svc.DisputePurchase(ctx, "stripe", dispute.PaymentIntent.ID), event, "dispute", "dispute", dispute.ID)
 }
 
 func (h *Handler) ackFulfillment(err error, kind string, attrs ...any) error {
@@ -141,15 +145,32 @@ func (h *Handler) ackFulfillment(err error, kind string, attrs ...any) error {
 	}
 
 	if isTerminalFulfillmentError(err) {
-		args := make([]any, 0, len(attrs)+4)
-		args = append(args, "kind", kind)
-		args = append(args, attrs...)
-		args = append(args, "err", err)
-		h.logger.Error("stripe webhook: fulfillment rejected, not retrying", args...)
+		h.logger.Error("stripe webhook: fulfillment rejected, not retrying", logArgs(kind, attrs, err)...)
 		return nil
 	}
 
 	return fmt.Errorf("transport.Handler.stripeWebhook: %w", err)
+}
+
+func (h *Handler) ackPaymentMatch(err error, event stripe.Event, kind string, attrs ...any) error {
+	if errors.Is(err, domain.ErrPurchaseNotFound) {
+		if time.Since(time.Unix(event.Created, 0)) < webhookRetryWindow {
+			return fmt.Errorf("transport.Handler.stripeWebhook: %w", err)
+		}
+		h.logger.Error("stripe webhook: purchase unmatched past retry window, giving up", logArgs(kind, attrs, err)...)
+		return nil
+	}
+
+	return h.ackFulfillment(err, kind, attrs...)
+}
+
+func logArgs(kind string, attrs []any, err error) []any {
+	args := make([]any, 0, len(attrs)+4)
+	args = append(args, "kind", kind)
+	args = append(args, attrs...)
+	args = append(args, "err", err)
+
+	return args
 }
 
 func purchaseIDFromMetadata(metadata map[string]string) (int64, bool) {
