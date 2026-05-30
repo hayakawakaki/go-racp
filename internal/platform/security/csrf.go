@@ -28,6 +28,7 @@ type SessionFingerprint func(ctx context.Context) ([]byte, bool)
 
 type CSRFOptions struct {
 	GetSessionFinger SessionFingerprint
+	OpenRoutes       *RouteMatcher
 	Secret           []byte
 	Secure           bool
 }
@@ -43,6 +44,11 @@ func CSRF(opts CSRFOptions) func(http.Handler) http.Handler {
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if opts.OpenRoutes.Allows(r) {
+				next.ServeHTTP(w, r)
+				return
+			}
+
 			expected, err := resolveExpectedToken(r, opts)
 			if err != nil {
 				http.Error(w, "csrf init failed", http.StatusInternalServerError)

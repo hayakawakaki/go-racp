@@ -160,20 +160,25 @@ func Start() error {
 		return session.TokenHash[:], true
 	}
 
-	var handler http.Handler = mux
-	for _, p := range plugin.Middlewares() {
-		handler = p.Middleware(in, handler)
+	handler := applyPluginMiddlewares(mux, in)
+
+	// hardcoded for webhooks for now, will update to config driven when needed
+	openRoutes, err := security.NewRouteMatcher([]string{"/webhooks/*"})
+	if err != nil {
+		return fmt.Errorf("server.Start: %w", err)
 	}
 
 	handler = security.CSRF(security.CSRFOptions{
 		Secret:           csrfSecret,
 		GetSessionFinger: sessionFingerprint,
+		OpenRoutes:       openRoutes,
 		Secure:           secure,
 	})(handler)
 	handler = http.HandlerFunc(withSession(handler.ServeHTTP))
 
 	// Security origin/referer check
 	handler = security.Origin(security.OriginOptions{
+		OpenRoutes:     openRoutes,
 		TrustedOrigins: cfg.App.Security.TrustedOrigins,
 	})(handler)
 
@@ -211,6 +216,14 @@ func decodeCSRFSecret(raw string) []byte {
 	}
 
 	return secret
+}
+
+func applyPluginMiddlewares(handler http.Handler, in *infra.Infra) http.Handler {
+	for _, p := range plugin.Middlewares() {
+		handler = p.Middleware(in, handler)
+	}
+
+	return handler
 }
 
 func buildWorkerJobs(cfg config.RetentionConfig, sessions *accinfra.SessionRepository, loginAttempts *accinfra.LoginAttemptsRepository) []worker.Job {

@@ -8,6 +8,7 @@ import (
 )
 
 type OriginOptions struct {
+	OpenRoutes     *RouteMatcher
 	TrustedOrigins []string
 }
 
@@ -19,6 +20,10 @@ func Origin(opts OriginOptions) func(http.Handler) http.Handler {
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if opts.OpenRoutes.Allows(r) {
+				next.ServeHTTP(w, r)
+				return
+			}
 			if isSafeMethod(r.Method) {
 				next.ServeHTTP(w, r)
 				return
