@@ -51,6 +51,7 @@ type economyReader interface {
 	Totals(ctx context.Context) (currency.TotalsDTO, error)
 	DepositHistory(ctx context.Context, page, perPage int) (currency.DepositPage, error)
 	WithdrawHistory(ctx context.Context, page, perPage int) (currency.WithdrawHistoryPage, error)
+	StuckWithdraws(ctx context.Context) ([]currency.AdminWithdrawDTO, error)
 }
 
 type emailResolver interface {
@@ -261,6 +262,16 @@ func (h *Handler) economyState(ctx context.Context, dpage, wpage int) state.Econ
 			return nil
 		}
 		s.Withdraws = withdraws
+		return nil
+	})
+	g.Go(func() error {
+		stuck, err := h.economy.StuckWithdraws(gctx)
+		if err != nil {
+			h.logger.Warn("admin: economy stuck withdraws read failed", "err", err)
+			s.StuckFailed = true
+			return nil
+		}
+		s.Stuck = stuck
 		return nil
 	})
 	_ = g.Wait()

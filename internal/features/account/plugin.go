@@ -33,7 +33,7 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 	charSvc := character.BuildService(in)
 
 	currencyRepo := infra.NewCurrencyRepository(in.DB)
-	currencySvc := newCurrencyService(currencyRepo, in.Config.App.Currency)
+	currencySvc := newCurrencyService(currencyRepo, in.Config.App.Currency, currencyapp.WithBridge(in.MainDB))
 
 	depositWorker := currencyapp.NewDepositWorker(currencyRepo, infra.NewDepositQueue(in.MainDB), currencyapp.DepositWorkerConfig{
 		Logger:   in.Logger,
@@ -43,8 +43,9 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 	go depositWorker.Run(in.ShutdownCtx)
 
 	withdrawWorker := currencyapp.NewWithdrawWorker(currencyRepo, infra.NewWithdrawQueue(in.MainDB), currencyapp.WithdrawWorkerConfig{
-		Logger:   in.Logger,
-		Interval: in.Config.App.Currency.WithdrawDrainInterval,
+		Logger:    in.Logger,
+		Interval:  in.Config.App.Currency.WithdrawDrainInterval,
+		ReapAfter: in.Config.App.Currency.ReapAfter,
 	})
 	go withdrawWorker.Run(in.ShutdownCtx)
 
@@ -123,11 +124,16 @@ func BuildCurrencyService(in *coreinfra.Infra) *currencyapp.Service {
 	return newCurrencyService(infra.NewCurrencyRepository(in.DB), in.Config.App.Currency)
 }
 
-func newCurrencyService(repo *infra.CurrencyRepository, cfg config.CurrencyConfig) *currencyapp.Service {
-	return currencyapp.NewService(repo,
+func newCurrencyService(repo *infra.CurrencyRepository, cfg config.CurrencyConfig, opts ...currencyapp.Option) *currencyapp.Service {
+	base := make([]currencyapp.Option, 0, 3+len(opts))
+	base = append(base,
 		currencyapp.WithCooldown(cfg.Cooldown),
 		currencyapp.WithLimits(cfg.MaxZenyPerTx, cfg.MaxCashpointPerTx),
+		currencyapp.WithReapAfter(cfg.ReapAfter),
 	)
+	base = append(base, opts...)
+
+	return currencyapp.NewService(repo, base...)
 }
 
 func BuildModerationService(in *coreinfra.Infra) *modapp.Service {

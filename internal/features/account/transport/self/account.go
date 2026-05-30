@@ -29,6 +29,7 @@ var accountNoticeText = map[string]string{
 	noticeWithdrawLocked:       "Withdrawals are on cooldown after a recent deposit. Please wait.",
 	noticeWithdrawInsufficient: "You do not have enough balance for that withdrawal.",
 	noticeWithdrawInvalid:      "Invalid withdrawal amount.",
+	noticeWithdrawBridge:       "The currency bridge is temporarily unavailable. Your balance was not changed, please try again shortly.",
 }
 
 var characterNoticeText = map[string]string{

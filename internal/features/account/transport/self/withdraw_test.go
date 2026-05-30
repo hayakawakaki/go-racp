@@ -93,6 +93,7 @@ func TestHandler_DoWithdraw_Routing(t *testing.T) {
 		{name: "locked", form: map[string]string{"cashpoint": "100"}, repoErr: domain.ErrWithdrawLocked, wantLocation: "/account?notice=withdraw_locked", wantCalled: true},
 		{name: "insufficient", form: map[string]string{"cashpoint": "100"}, repoErr: domain.ErrInsufficientBalance, wantLocation: "/account?notice=withdraw_insufficient", wantCalled: true},
 		{name: "invalid amount", form: map[string]string{"cashpoint": "100"}, repoErr: domain.ErrInvalidAmount, wantLocation: "/account?notice=withdraw_invalid", wantCalled: true},
+		{name: "bridge unavailable", form: map[string]string{"cashpoint": "100"}, repoErr: domain.ErrBridgeUnavailable, wantLocation: "/account?notice=withdraw_bridge", wantCalled: true},
 		{name: "parse error skips service", form: map[string]string{"cashpoint": "abc"}, wantLocation: "/account?notice=withdraw_invalid", wantCalled: false},
 	}
 	for _, tt := range tests {

@@ -13,6 +13,7 @@ var (
 	ErrAmountOverflow      = errors.New("currency: amount overflow")
 	ErrWithdrawLocked      = errors.New("currency: withdraw is on cooldown")
 	ErrDepositLocked       = errors.New("currency: deposit is on cooldown")
+	ErrBridgeUnavailable   = errors.New("currency: bridge unavailable")
 )
 
 type Balance struct {
@@ -129,6 +130,13 @@ type WithdrawRequest struct {
 	Cashpoint int
 }
 
+type DeliveredWithdraw struct {
+	ID          int64
+	DeliveredAt int64
+	Zeny        int64
+	Points      int
+}
+
 type CurrencyTotals struct {
 	Zeny      int64
 	Cashpoint int64
@@ -143,13 +151,14 @@ type DepositRecord struct {
 }
 
 type WithdrawRecord struct {
-	CreatedAt time.Time
-	SentAt    *time.Time
-	ID        int64
-	AccountID int
-	Zeny      int64
-	Cashpoint int
-	Status    int
+	CreatedAt   time.Time
+	SentAt      *time.Time
+	DeliveredAt *time.Time
+	ID          int64
+	AccountID   int
+	Zeny        int64
+	Cashpoint   int
+	Status      int
 }
 
 type CurrencyRepository interface {
@@ -158,7 +167,8 @@ type CurrencyRepository interface {
 	RequestWithdraw(ctx context.Context, accountID int, zeny int64, cashpoint int, lockUntil, now time.Time) (int64, error)
 	PendingWithdraws(ctx context.Context, limit int) ([]WithdrawRequest, error)
 	MarkWithdrawSent(ctx context.Context, id int64, now time.Time) error
-	MarkWithdrawPending(ctx context.Context, id int64) error
+	MarkWithdrawDelivered(ctx context.Context, id int64, deliveredAt time.Time) (bool, error)
+	SentBefore(ctx context.Context, before time.Time, limit int) ([]WithdrawRecord, error)
 	RecentWithdraws(ctx context.Context, accountID, limit int) ([]WithdrawRequest, error)
 	Totals(ctx context.Context) (CurrencyTotals, error)
 	ListDeposits(ctx context.Context, limit, offset int) ([]DepositRecord, int, error)
@@ -174,4 +184,7 @@ type DepositQueue interface {
 
 type WithdrawQueue interface {
 	Insert(ctx context.Context, id int64, accountID int, zeny int64, points int) error
+	Delivered(ctx context.Context, limit int) ([]DeliveredWithdraw, error)
+	ResetDelivered(ctx context.Context, id int64) error
+	Delete(ctx context.Context, id int64) error
 }

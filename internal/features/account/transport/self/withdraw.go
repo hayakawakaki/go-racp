@@ -16,6 +16,7 @@ const (
 	noticeWithdrawLocked       = "withdraw_locked"
 	noticeWithdrawInsufficient = "withdraw_insufficient"
 	noticeWithdrawInvalid      = "withdraw_invalid"
+	noticeWithdrawBridge       = "withdraw_bridge"
 
 	fieldWithdrawZeny      = "zeny"
 	fieldWithdrawCashpoint = "cashpoint"
@@ -59,6 +60,8 @@ func (h *Handler) withdrawNotice(err error) string {
 		return noticeWithdrawInsufficient
 	case errors.Is(err, domain.ErrInvalidAmount):
 		return noticeWithdrawInvalid
+	case errors.Is(err, domain.ErrBridgeUnavailable):
+		return noticeWithdrawBridge
 	default:
 		h.logger.Error("account withdraw", "err", err)
 		return noticeWithdrawInvalid

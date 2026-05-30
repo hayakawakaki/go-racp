@@ -19,10 +19,16 @@ type WithdrawDTO struct {
 	Cashpoint int
 }
 
+type BridgePinger interface {
+	PingContext(ctx context.Context) error
+}
+
 type Service struct {
 	repo         domain.CurrencyRepository
 	now          func() time.Time
+	bridge       BridgePinger
 	cooldown     time.Duration
+	reapAfter    time.Duration
 	maxZeny      int64
 	maxCashpoint int
 }
@@ -46,6 +52,14 @@ func WithLimits(maxZeny int64, maxCashpoint int) Option {
 		s.maxZeny = maxZeny
 		s.maxCashpoint = maxCashpoint
 	}
+}
+
+func WithBridge(pinger BridgePinger) Option {
+	return func(s *Service) { s.bridge = pinger }
+}
+
+func WithReapAfter(d time.Duration) Option {
+	return func(s *Service) { s.reapAfter = d }
 }
 
 func NewService(repo domain.CurrencyRepository, opts ...Option) *Service {
@@ -75,6 +89,14 @@ func (s *Service) RequestWithdraw(ctx context.Context, accountID int, zeny int64
 	}
 	if zeny > s.maxZeny || cashpoint > s.maxCashpoint {
 		return domain.ErrInvalidAmount
+	}
+
+	if s.bridge != nil {
+		pingCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		defer cancel()
+		if err := s.bridge.PingContext(pingCtx); err != nil {
+			return fmt.Errorf("currency.Service.RequestWithdraw: %w", domain.ErrBridgeUnavailable)
+		}
 	}
 
 	now := s.now()

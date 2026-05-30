@@ -23,13 +23,14 @@ CREATE INDEX idx_cp_deposit_processed_recent ON cp_deposit_processed (processed_
 CREATE INDEX idx_cp_deposit_processed_account ON cp_deposit_processed (account_id, processed_at DESC, deposit_id DESC);
 
 CREATE TABLE cp_withdraw_requests (
-    id         BIGSERIAL   NOT NULL,
-    account_id INTEGER     NOT NULL,
-    zeny       BIGINT      NOT NULL DEFAULT 0,
-    cashpoint  INTEGER     NOT NULL DEFAULT 0,
-    status     SMALLINT    NOT NULL DEFAULT 1,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    sent_at    TIMESTAMPTZ,
+    id           BIGSERIAL   NOT NULL,
+    account_id   INTEGER     NOT NULL,
+    zeny         BIGINT      NOT NULL DEFAULT 0,
+    cashpoint    INTEGER     NOT NULL DEFAULT 0,
+    status       SMALLINT    NOT NULL DEFAULT 1,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    sent_at      TIMESTAMPTZ,
+    delivered_at TIMESTAMPTZ,
     PRIMARY KEY (id),
     CONSTRAINT cp_withdraw_requests_amounts CHECK (zeny >= 0 AND cashpoint >= 0)
 );
@@ -37,6 +38,8 @@ CREATE TABLE cp_withdraw_requests (
 CREATE INDEX idx_cp_withdraw_requests_pending ON cp_withdraw_requests (id) WHERE status = 1;
 
 CREATE INDEX idx_cp_withdraw_requests_account ON cp_withdraw_requests (account_id, id DESC);
+
+CREATE INDEX idx_cp_withdraw_requests_sent ON cp_withdraw_requests (sent_at) WHERE status = 2;
 
 CREATE TABLE cp_store_items (
     id                BIGSERIAL   NOT NULL,

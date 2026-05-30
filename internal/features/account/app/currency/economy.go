@@ -23,14 +23,15 @@ type DepositDTO struct {
 }
 
 type AdminWithdrawDTO struct {
-	CreatedAt time.Time
-	SentAt    *time.Time
-	Email     string
-	ID        int64
-	AccountID int
-	Zeny      int64
-	Cashpoint int
-	Status    int
+	CreatedAt   time.Time
+	SentAt      *time.Time
+	DeliveredAt *time.Time
+	Email       string
+	ID          int64
+	AccountID   int
+	Zeny        int64
+	Cashpoint   int
+	Status      int
 }
 
 type DepositPage struct {
@@ -47,6 +48,21 @@ type WithdrawHistoryPage struct {
 	Page       int
 	PerPage    int
 	TotalPages int
+}
+
+const stuckWithdrawLimit = 50
+
+func (s *Service) StuckWithdraws(ctx context.Context) ([]AdminWithdrawDTO, error) {
+	if s.reapAfter <= 0 {
+		return nil, nil
+	}
+
+	records, err := s.repo.SentBefore(ctx, s.now().Add(-s.reapAfter), stuckWithdrawLimit)
+	if err != nil {
+		return nil, fmt.Errorf("currency.Service.StuckWithdraws: %w", err)
+	}
+
+	return toWithdrawDTOs(records), nil
 }
 
 func (s *Service) Totals(ctx context.Context) (TotalsDTO, error) {
@@ -137,13 +153,14 @@ func toWithdrawDTOs(records []domain.WithdrawRecord) []AdminWithdrawDTO {
 	rows := make([]AdminWithdrawDTO, 0, len(records))
 	for _, record := range records {
 		rows = append(rows, AdminWithdrawDTO{
-			ID:        record.ID,
-			AccountID: record.AccountID,
-			Zeny:      record.Zeny,
-			Cashpoint: record.Cashpoint,
-			Status:    record.Status,
-			CreatedAt: record.CreatedAt,
-			SentAt:    record.SentAt,
+			ID:          record.ID,
+			AccountID:   record.AccountID,
+			Zeny:        record.Zeny,
+			Cashpoint:   record.Cashpoint,
+			Status:      record.Status,
+			CreatedAt:   record.CreatedAt,
+			SentAt:      record.SentAt,
+			DeliveredAt: record.DeliveredAt,
 		})
 	}
 

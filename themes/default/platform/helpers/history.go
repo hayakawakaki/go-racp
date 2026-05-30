@@ -22,12 +22,23 @@ func FormatSentTime(t *time.Time, loc *time.Location) string {
 	return FormatTime(*t, loc)
 }
 
-func WithdrawStatusLabel(status int) string {
-	if status == 2 {
-		return "Sent"
+func FormatDeliveredTime(t *time.Time, loc *time.Location) string {
+	if t == nil {
+		return "not delivered"
 	}
 
-	return "Pending"
+	return FormatTime(*t, loc)
+}
+
+func WithdrawStatusLabel(status int) string {
+	switch status {
+	case 3:
+		return "Delivered"
+	case 2:
+		return "Sent"
+	default:
+		return "Pending"
+	}
 }
 
 func HistoryHref(basePath, primaryKey, primaryValue, otherKey string, otherPage int) string {

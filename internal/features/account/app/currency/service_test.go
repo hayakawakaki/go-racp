@@ -90,6 +90,54 @@ func TestService_RequestWithdraw_WrapsRepoError(t *testing.T) {
 	}
 }
 
+type fakeBridge struct {
+	err error
+}
+
+func (f fakeBridge) PingContext(context.Context) error { return f.err }
+
+func TestService_RequestWithdraw_RejectsWhenBridgeDown(t *testing.T) {
+	t.Parallel()
+
+	svc := NewService(&fakeCurrencyRepo{}, WithLimits(1_000_000, 1000), WithBridge(fakeBridge{err: errors.New("mariadb down")}))
+
+	err := svc.RequestWithdraw(context.Background(), 1, 100, 0)
+	if !errors.Is(err, domain.ErrBridgeUnavailable) {
+		t.Errorf("err = %v, want ErrBridgeUnavailable", err)
+	}
+}
+
+func TestService_RequestWithdraw_ProceedsWhenBridgeUp(t *testing.T) {
+	t.Parallel()
+
+	called := false
+	repo := &fakeCurrencyRepo{
+		requestWithdrawFn: func(context.Context, int, int64, int, time.Time, time.Time) (int64, error) {
+			called = true
+			return 1, nil
+		},
+	}
+	svc := NewService(repo, WithLimits(1_000_000, 1000), WithBridge(fakeBridge{err: nil}))
+
+	if err := svc.RequestWithdraw(context.Background(), 1, 100, 0); err != nil {
+		t.Fatalf("RequestWithdraw: %v", err)
+	}
+	if !called {
+		t.Errorf("repo.RequestWithdraw must be called when the bridge is up")
+	}
+}
+
+func TestService_RequestWithdraw_ValidatesAmountBeforeBridge(t *testing.T) {
+	t.Parallel()
+
+	svc := NewService(&fakeCurrencyRepo{}, WithLimits(2000, 100), WithBridge(fakeBridge{err: errors.New("mariadb down")}))
+
+	err := svc.RequestWithdraw(context.Background(), 1, 0, 0)
+	if !errors.Is(err, domain.ErrInvalidAmount) {
+		t.Fatalf("err = %v, want ErrInvalidAmount (amount validation must run before the bridge ping)", err)
+	}
+}
+
 func TestService_Balance_MapsDTO(t *testing.T) {
 	t.Parallel()
 

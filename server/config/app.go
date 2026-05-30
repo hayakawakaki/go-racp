@@ -82,6 +82,7 @@ type CurrencyConfig struct {
 	Cooldown              time.Duration `yaml:"Cooldown"`
 	DepositPollInterval   time.Duration `yaml:"DepositPollInterval"`
 	WithdrawDrainInterval time.Duration `yaml:"WithdrawDrainInterval"`
+	ReapAfter             time.Duration `yaml:"ReapAfter"`
 	MaxZenyPerTx          int64         `yaml:"MaxZenyPerTx"`
 	MaxCashpointPerTx     int           `yaml:"MaxCashpointPerTx"`
 }
@@ -229,6 +230,7 @@ func appConfigDefaults() *AppConfig {
 			MaxCashpointPerTx:     1_000_000,
 			DepositPollInterval:   30 * time.Second,
 			WithdrawDrainInterval: 30 * time.Second,
+			ReapAfter:             30 * time.Minute,
 		},
 		Retention: RetentionConfig{
 			LoginAttempts: 30 * 24 * time.Hour,
@@ -368,6 +370,7 @@ func validateCurrencyConfig(cfg *CurrencyConfig, adjustments *[]ClampAdjustment)
 	cfg.Cooldown = recordClamp(adjustments, "Currency.Cooldown", cfg.Cooldown, 5*time.Minute, minCooldown, maxCooldown)
 	cfg.DepositPollInterval = recordClamp(adjustments, "Currency.DepositPollInterval", cfg.DepositPollInterval, 30*time.Second, minPoll, maxPoll)
 	cfg.WithdrawDrainInterval = recordClamp(adjustments, "Currency.WithdrawDrainInterval", cfg.WithdrawDrainInterval, 30*time.Second, minPoll, maxPoll)
+	cfg.ReapAfter = recordClamp(adjustments, "Currency.ReapAfter", cfg.ReapAfter, 30*time.Minute, 5*time.Minute, 24*time.Hour)
 
 	if cfg.MaxZenyPerTx <= 0 {
 		panic(fmt.Errorf("Currency.MaxZenyPerTx must be > 0"))
