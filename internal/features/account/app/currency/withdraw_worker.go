@@ -76,8 +76,14 @@ func (w *WithdrawWorker) confirm(ctx context.Context) {
 			}
 			continue
 		}
-		if err := w.repo.MarkWithdrawDelivered(ctx, row.ID, time.Unix(row.DeliveredAt, 0).UTC()); err != nil {
+
+		delivered, err := w.repo.MarkWithdrawDelivered(ctx, row.ID, time.Unix(row.DeliveredAt, 0).UTC())
+		if err != nil {
 			w.cfg.Logger.Error("currency: mark withdraw delivered", "id", row.ID, "err", err)
+			continue
+		}
+		if !delivered {
+			w.cfg.Logger.Warn("currency: delivered row not in sent state, leaving queued", "id", row.ID)
 			continue
 		}
 		if err := w.queue.Delete(ctx, row.ID); err != nil {

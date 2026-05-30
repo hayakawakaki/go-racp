@@ -166,14 +166,25 @@ func (r *CurrencyRepository) MarkWithdrawSent(ctx context.Context, id int64, now
 	return nil
 }
 
-func (r *CurrencyRepository) MarkWithdrawDelivered(ctx context.Context, id int64, deliveredAt time.Time) error {
-	if _, err := r.Pool.Exec(ctx,
+func (r *CurrencyRepository) MarkWithdrawDelivered(ctx context.Context, id int64, deliveredAt time.Time) (bool, error) {
+	tag, err := r.Pool.Exec(ctx,
 		`UPDATE cp_withdraw_requests SET status = 3, delivered_at = $1 WHERE id = $2 AND status = 2`, deliveredAt, id,
-	); err != nil {
-		return fmt.Errorf("infra.CurrencyRepository.MarkWithdrawDelivered: %w", err)
+	)
+	if err != nil {
+		return false, fmt.Errorf("infra.CurrencyRepository.MarkWithdrawDelivered: %w", err)
+	}
+	if tag.RowsAffected() > 0 {
+		return true, nil
 	}
 
-	return nil
+	var status int
+	if err := r.Pool.QueryRow(ctx,
+		`SELECT status FROM cp_withdraw_requests WHERE id = $1`, id,
+	).Scan(&status); err != nil {
+		return false, fmt.Errorf("infra.CurrencyRepository.MarkWithdrawDelivered status: %w", err)
+	}
+
+	return status == 3, nil
 }
 
 func (r *CurrencyRepository) SentBefore(ctx context.Context, before time.Time, limit int) ([]domain.WithdrawRecord, error) {

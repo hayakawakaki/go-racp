@@ -65,10 +65,10 @@ func TestWithdrawWorker_Confirm_MarksDeliveredBeforeDelete(t *testing.T) {
 	var order []string
 	var gotDelivered time.Time
 	repo := &fakeCurrencyRepo{
-		markDeliveredFn: func(_ context.Context, _ int64, deliveredAt time.Time) error {
+		markDeliveredFn: func(_ context.Context, _ int64, deliveredAt time.Time) (bool, error) {
 			order = append(order, "mark_delivered")
 			gotDelivered = deliveredAt
-			return nil
+			return true, nil
 		},
 	}
 	queue := &fakeWithdrawQueue{
@@ -94,9 +94,9 @@ func TestWithdrawWorker_Confirm_SkipsDeleteWhenMarkFails(t *testing.T) {
 
 	var order []string
 	repo := &fakeCurrencyRepo{
-		markDeliveredFn: func(context.Context, int64, time.Time) error {
+		markDeliveredFn: func(context.Context, int64, time.Time) (bool, error) {
 			order = append(order, "mark_delivered")
-			return errors.New("cp db down")
+			return false, errors.New("cp db down")
 		},
 	}
 	queue := &fakeWithdrawQueue{
@@ -114,12 +114,40 @@ func TestWithdrawWorker_Confirm_SkipsDeleteWhenMarkFails(t *testing.T) {
 	}
 }
 
+func TestWithdrawWorker_Confirm_SkipsDeleteWhenNotAdvanced(t *testing.T) {
+	t.Parallel()
+
+	var order []string
+	repo := &fakeCurrencyRepo{
+		markDeliveredFn: func(context.Context, int64, time.Time) (bool, error) {
+			order = append(order, "mark_delivered")
+			return false, nil
+		},
+	}
+	queue := &fakeWithdrawQueue{
+		deliveredFn: func(context.Context, int) ([]domain.DeliveredWithdraw, error) {
+			return []domain.DeliveredWithdraw{{ID: 9, DeliveredAt: 1700000000}}, nil
+		},
+		deleteFn: func(context.Context, int64) error { order = append(order, "delete"); return nil },
+	}
+	worker := NewWithdrawWorker(repo, queue, WithdrawWorkerConfig{Logger: discardLogger()})
+
+	worker.confirm(context.Background())
+
+	if want := []string{"mark_delivered"}; !slices.Equal(order, want) {
+		t.Errorf("call order = %v, want %v (an unadvanced ledger row must not delete the MariaDB row)", order, want)
+	}
+}
+
 func TestWithdrawWorker_Confirm_RequeuesWhenNotDrained(t *testing.T) {
 	t.Parallel()
 
 	var order []string
 	repo := &fakeCurrencyRepo{
-		markDeliveredFn: func(context.Context, int64, time.Time) error { order = append(order, "mark_delivered"); return nil },
+		markDeliveredFn: func(context.Context, int64, time.Time) (bool, error) {
+			order = append(order, "mark_delivered")
+			return true, nil
+		},
 	}
 	queue := &fakeWithdrawQueue{
 		deliveredFn: func(context.Context, int) ([]domain.DeliveredWithdraw, error) {

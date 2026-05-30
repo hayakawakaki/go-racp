@@ -167,7 +167,7 @@ type CurrencyRepository interface {
 	RequestWithdraw(ctx context.Context, accountID int, zeny int64, cashpoint int, lockUntil, now time.Time) (int64, error)
 	PendingWithdraws(ctx context.Context, limit int) ([]WithdrawRequest, error)
 	MarkWithdrawSent(ctx context.Context, id int64, now time.Time) error
-	MarkWithdrawDelivered(ctx context.Context, id int64, deliveredAt time.Time) error
+	MarkWithdrawDelivered(ctx context.Context, id int64, deliveredAt time.Time) (bool, error)
 	SentBefore(ctx context.Context, before time.Time, limit int) ([]WithdrawRecord, error)
 	RecentWithdraws(ctx context.Context, accountID, limit int) ([]WithdrawRequest, error)
 	Totals(ctx context.Context) (CurrencyTotals, error)

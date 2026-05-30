@@ -19,7 +19,7 @@ type fakeCurrencyRepo struct {
 	requestWithdrawFn        func(ctx context.Context, accountID int, zeny int64, cashpoint int, lockUntil, now time.Time) (int64, error)
 	pendingFn                func(ctx context.Context, limit int) ([]domain.WithdrawRequest, error)
 	markSentFn               func(ctx context.Context, id int64, now time.Time) error
-	markDeliveredFn          func(ctx context.Context, id int64, deliveredAt time.Time) error
+	markDeliveredFn          func(ctx context.Context, id int64, deliveredAt time.Time) (bool, error)
 	sentBeforeFn             func(ctx context.Context, before time.Time, limit int) ([]domain.WithdrawRecord, error)
 	recentFn                 func(ctx context.Context, accountID, limit int) ([]domain.WithdrawRequest, error)
 	totalsFn                 func(ctx context.Context) (domain.CurrencyTotals, error)
@@ -71,12 +71,12 @@ func (f *fakeCurrencyRepo) MarkWithdrawSent(ctx context.Context, id int64, now t
 	return nil
 }
 
-func (f *fakeCurrencyRepo) MarkWithdrawDelivered(ctx context.Context, id int64, deliveredAt time.Time) error {
+func (f *fakeCurrencyRepo) MarkWithdrawDelivered(ctx context.Context, id int64, deliveredAt time.Time) (bool, error) {
 	if f.markDeliveredFn != nil {
 		return f.markDeliveredFn(ctx, id, deliveredAt)
 	}
 
-	return nil
+	return true, nil
 }
 
 func (f *fakeCurrencyRepo) SentBefore(ctx context.Context, before time.Time, limit int) ([]domain.WithdrawRecord, error) {
