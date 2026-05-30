@@ -162,6 +162,7 @@ func Start() error {
 
 	handler := applyPluginMiddlewares(mux, in)
 
+	// hardcoded for webhooks for now, will update to config driven when needed
 	openRoutes, err := security.NewRouteMatcher([]string{"/webhooks/*"})
 	if err != nil {
 		return fmt.Errorf("server.Start: %w", err)
