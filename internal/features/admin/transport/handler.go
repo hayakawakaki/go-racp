@@ -301,10 +301,9 @@ func (h *Handler) economyState(ctx context.Context, params economyParams) state.
 		return s
 	}
 
-	dpage, wpage := params.dpage, params.wpage
 	g, gctx := errgroup.WithContext(ctx)
 	if h.economy != nil {
-		h.queueEconomyReads(gctx, g, &s, dpage, wpage)
+		h.queueEconomyReads(gctx, g, &s, params.dpage, params.wpage)
 	}
 	if h.purchases != nil {
 		h.queuePurchaseReads(gctx, g, &s, params)
@@ -382,7 +381,6 @@ func (h *Handler) queuePurchaseReads(gctx context.Context, g *errgroup.Group, s 
 			purchaseRows = append(purchaseRows, state.PurchaseRow{Purchase: p})
 		}
 		s.Purchases.Rows = purchaseRows
-		s.Purchases.Total = total
 		s.Purchases.Page = params.ppage
 		s.Purchases.TotalPages = (total + economyPerPage - 1) / economyPerPage
 		return nil

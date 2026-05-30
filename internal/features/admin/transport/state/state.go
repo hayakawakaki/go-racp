@@ -59,7 +59,6 @@ type PurchasePage struct {
 	HrefPattern string
 	Page        int
 	TotalPages  int
-	Total       int
 }
 
 type PeakTable struct {

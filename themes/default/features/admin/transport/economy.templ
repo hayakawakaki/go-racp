@@ -34,8 +34,8 @@ templ EconomyContent(state adminstate.EconomyState) {
 				<h1 class="text-3xl xl:text-4xl font-light tracking-tight text-font">Economy</h1>
 			</div>
 			<div class="flex gap-6 sm:gap-8">
-				@economyTotalStat("Total Zeny", state.Totals.Zeny, state.TotalsFailed)
-				@economyTotalStat("Total Cashpoint", state.Totals.Cashpoint, state.TotalsFailed)
+				@economyStat("Total Zeny", state.Totals.Zeny, state.TotalsFailed, "text-left sm:text-right")
+				@economyStat("Total Cashpoint", state.Totals.Cashpoint, state.TotalsFailed, "text-left sm:text-right")
 			</div>
 		</header>
 		<div class="flex flex-col lg:flex-row gap-4 lg:gap-6">
@@ -61,16 +61,16 @@ templ economyEarningsCard(state adminstate.EconomyState) {
 			}
 		</div>
 		<div class="grid grid-cols-2 gap-4 pt-4 sm:grid-cols-4 sm:gap-8">
-			@economyEarningStat("Today", state.Earnings.Today, state.EarningsFailed)
-			@economyEarningStat("This week", state.Earnings.Week, state.EarningsFailed)
-			@economyEarningStat("This month", state.Earnings.Month, state.EarningsFailed)
-			@economyEarningStat("All-time", state.Earnings.AllTime, state.EarningsFailed)
+			@economyStat("Today", state.Earnings.Today, state.EarningsFailed, "text-left")
+			@economyStat("This week", state.Earnings.Week, state.EarningsFailed, "text-left")
+			@economyStat("This month", state.Earnings.Month, state.EarningsFailed, "text-left")
+			@economyStat("All-time", state.Earnings.AllTime, state.EarningsFailed, "text-left")
 		</div>
 	}
 }
 
-templ economyEarningStat(label string, value int64, failed bool) {
-	<div class="text-left">
+templ economyStat(label string, value int64, failed bool, wrapClass string) {
+	<div class={ wrapClass }>
 		@components.BentoLabel("text-[10px]") {
 			{ label }
 		}
@@ -314,19 +314,6 @@ templ economyStuckCard(state adminstate.EconomyState) {
 			}
 		}
 	}
-}
-
-templ economyTotalStat(label string, value int64, failed bool) {
-	<div class="text-left sm:text-right">
-		@components.BentoLabel("text-[10px]") {
-			{ label }
-		}
-		if failed {
-			<p class="text-lg xl:text-xl font-light tracking-tight text-font-muted">Unavailable</p>
-		} else {
-			<p class="text-lg xl:text-xl font-light tracking-tight tabular-nums text-font">{ helpers.FormatAmount(value) }</p>
-		}
-	</div>
 }
 
 templ economyDepositsCard(state adminstate.EconomyState) {
