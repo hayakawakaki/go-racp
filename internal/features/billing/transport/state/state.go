@@ -8,3 +8,8 @@ type StoreState struct {
 	Packages  []domain.Package
 	Available bool
 }
+
+type PurchaseHistoryState struct {
+	Currency  string
+	Purchases []domain.Purchase
+}

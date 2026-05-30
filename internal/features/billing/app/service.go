@@ -21,8 +21,9 @@ type Repository interface {
 	MarkDisputed(ctx context.Context, id int64, now time.Time) (transitioned bool, err error)
 	MarkRefunded(ctx context.Context, id int64, now time.Time) (transitioned bool, err error)
 	MarkFailed(ctx context.Context, id int64, now time.Time) (transitioned bool, err error)
-	ListByAccount(ctx context.Context, accountID, limit int) ([]domain.Purchase, error)
-	ListRecent(ctx context.Context, limit int) ([]domain.Purchase, error)
+	ListPaidByAccount(ctx context.Context, accountID, limit int) ([]domain.Purchase, error)
+	ListFiltered(ctx context.Context, filter domain.PurchaseFilter, limit, offset int) (rows []domain.Purchase, total int, err error)
+	Earnings(ctx context.Context, dayStart, weekStart, monthStart time.Time) (domain.EarningsSummary, error)
 }
 
 type AccountBanner interface {
@@ -34,6 +35,7 @@ type Service struct {
 	provider domain.Provider
 	banner   AccountBanner
 	logger   *slog.Logger
+	loc      *time.Location
 	now      func() time.Time
 	catalog  domain.Catalog
 }
@@ -56,9 +58,16 @@ func WithNow(fn func() time.Time) Option {
 		}
 	}
 }
+func WithLocation(loc *time.Location) Option {
+	return func(s *Service) {
+		if loc != nil {
+			s.loc = loc
+		}
+	}
+}
 
 func NewService(repo Repository, catalog domain.Catalog, opts ...Option) *Service {
-	s := &Service{repo: repo, catalog: catalog, now: time.Now, logger: slog.Default()}
+	s := &Service{repo: repo, catalog: catalog, now: time.Now, loc: time.UTC, logger: slog.Default()}
 	for _, opt := range opts {
 		opt(s)
 	}
@@ -209,7 +218,7 @@ func (s *Service) FailPurchase(ctx context.Context, purchaseID int64) error {
 }
 
 func (s *Service) HistoryByAccount(ctx context.Context, accountID, limit int) ([]domain.Purchase, error) {
-	rows, err := s.repo.ListByAccount(ctx, accountID, clampHistoryLimit(limit))
+	rows, err := s.repo.ListPaidByAccount(ctx, accountID, clampHistoryLimit(limit))
 	if err != nil {
 		return nil, fmt.Errorf("billing.Service.HistoryByAccount: %w", err)
 	}
@@ -217,13 +226,34 @@ func (s *Service) HistoryByAccount(ctx context.Context, accountID, limit int) ([
 	return rows, nil
 }
 
-func (s *Service) RecentForAdmin(ctx context.Context, limit int) ([]domain.Purchase, error) {
-	rows, err := s.repo.ListRecent(ctx, clampHistoryLimit(limit))
+func (s *Service) AdminHistory(ctx context.Context, filter domain.PurchaseFilter, page, pageSize int) (rows []domain.Purchase, total int, err error) {
+	pageSize = clampHistoryLimit(pageSize)
+	if page < 1 {
+		page = 1
+	}
+	offset := (page - 1) * pageSize
+
+	rows, total, err = s.repo.ListFiltered(ctx, filter, pageSize, offset)
 	if err != nil {
-		return nil, fmt.Errorf("billing.Service.RecentForAdmin: %w", err)
+		return nil, 0, fmt.Errorf("billing.Service.AdminHistory: %w", err)
 	}
 
-	return rows, nil
+	return rows, total, nil
+}
+
+func (s *Service) Earnings(ctx context.Context) (domain.EarningsSummary, error) {
+	now := s.now().In(s.loc)
+	year, month, day := now.Date()
+	dayStart := time.Date(year, month, day, 0, 0, 0, 0, s.loc)
+	weekStart := dayStart.AddDate(0, 0, -((int(now.Weekday()) + 6) % 7))
+	monthStart := time.Date(year, month, 1, 0, 0, 0, 0, s.loc)
+
+	summary, err := s.repo.Earnings(ctx, dayStart, weekStart, monthStart)
+	if err != nil {
+		return domain.EarningsSummary{}, fmt.Errorf("billing.Service.Earnings: %w", err)
+	}
+
+	return summary, nil
 }
 
 func clampHistoryLimit(limit int) int {

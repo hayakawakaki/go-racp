@@ -285,3 +285,136 @@ func TestService_FailPurchase_MarksFailed(t *testing.T) {
 		})
 	}
 }
+
+func TestService_HistoryByAccount_UsesPaidAndClamps(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		limit     int
+		wantLimit int
+	}{
+		{name: "zero clamps to max", limit: 0, wantLimit: maxHistoryLimit},
+		{name: "over max clamps", limit: 5000, wantLimit: maxHistoryLimit},
+		{name: "in range passes through", limit: 25, wantLimit: 25},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			var gotAccountID, gotLimit int
+			repo := &fakeRepo{
+				listPaidByAccountFn: func(_ context.Context, accountID, limit int) ([]domain.Purchase, error) {
+					gotAccountID = accountID
+					gotLimit = limit
+					return []domain.Purchase{{ID: 1}}, nil
+				},
+			}
+			svc := NewService(repo, testCatalog(), WithLogger(discardLogger()))
+
+			rows, err := svc.HistoryByAccount(context.Background(), 7, tt.limit)
+			if err != nil {
+				t.Fatalf("HistoryByAccount: %v", err)
+			}
+			if len(rows) != 1 {
+				t.Errorf("rows = %d, want 1", len(rows))
+			}
+			if gotAccountID != 7 {
+				t.Errorf("accountID = %d, want 7", gotAccountID)
+			}
+			if gotLimit != tt.wantLimit {
+				t.Errorf("limit = %d, want %d", gotLimit, tt.wantLimit)
+			}
+		})
+	}
+}
+
+func TestService_AdminHistory_OffsetAndTotal(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		page       int
+		pageSize   int
+		wantLimit  int
+		wantOffset int
+	}{
+		{name: "page below one becomes one", page: 0, pageSize: 20, wantLimit: 20, wantOffset: 0},
+		{name: "negative page becomes one", page: -3, pageSize: 20, wantLimit: 20, wantOffset: 0},
+		{name: "third page offset", page: 3, pageSize: 20, wantLimit: 20, wantOffset: 40},
+		{name: "oversized page size clamps", page: 1, pageSize: 5000, wantLimit: maxHistoryLimit, wantOffset: 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			var gotLimit, gotOffset int
+			repo := &fakeRepo{
+				listFilteredFn: func(_ context.Context, _ domain.PurchaseFilter, limit, offset int) ([]domain.Purchase, int, error) {
+					gotLimit = limit
+					gotOffset = offset
+					return []domain.Purchase{{ID: 1}}, 137, nil
+				},
+			}
+			svc := NewService(repo, testCatalog(), WithLogger(discardLogger()))
+
+			rows, total, err := svc.AdminHistory(context.Background(), domain.PurchaseFilter{}, tt.page, tt.pageSize)
+			if err != nil {
+				t.Fatalf("AdminHistory: %v", err)
+			}
+			if len(rows) != 1 {
+				t.Errorf("rows = %d, want 1", len(rows))
+			}
+			if total != 137 {
+				t.Errorf("total = %d, want 137", total)
+			}
+			if gotLimit != tt.wantLimit {
+				t.Errorf("limit = %d, want %d", gotLimit, tt.wantLimit)
+			}
+			if gotOffset != tt.wantOffset {
+				t.Errorf("offset = %d, want %d", gotOffset, tt.wantOffset)
+			}
+		})
+	}
+}
+
+func TestService_Earnings_WindowStarts(t *testing.T) {
+	t.Parallel()
+
+	fixedNow := time.Date(2026, time.May, 27, 13, 45, 0, 0, time.UTC)
+	var gotDay, gotWeek, gotMonth time.Time
+	repo := &fakeRepo{
+		earningsFn: func(_ context.Context, dayStart, weekStart, monthStart time.Time) (domain.EarningsSummary, error) {
+			gotDay = dayStart
+			gotWeek = weekStart
+			gotMonth = monthStart
+			return domain.EarningsSummary{Today: 1, Week: 2, Month: 3, AllTime: 4}, nil
+		},
+	}
+	svc := NewService(repo, testCatalog(),
+		WithLogger(discardLogger()),
+		WithNow(func() time.Time { return fixedNow }),
+		WithLocation(time.UTC),
+	)
+
+	summary, err := svc.Earnings(context.Background())
+	if err != nil {
+		t.Fatalf("Earnings: %v", err)
+	}
+	if summary.AllTime != 4 {
+		t.Errorf("AllTime = %d, want 4", summary.AllTime)
+	}
+
+	wantDay := time.Date(2026, time.May, 27, 0, 0, 0, 0, time.UTC)
+	wantWeek := time.Date(2026, time.May, 25, 0, 0, 0, 0, time.UTC)
+	wantMonth := time.Date(2026, time.May, 1, 0, 0, 0, 0, time.UTC)
+	if !gotDay.Equal(wantDay) {
+		t.Errorf("dayStart = %s, want %s", gotDay, wantDay)
+	}
+	if !gotWeek.Equal(wantWeek) {
+		t.Errorf("weekStart = %s, want %s (Monday)", gotWeek, wantWeek)
+	}
+	if !gotMonth.Equal(wantMonth) {
+		t.Errorf("monthStart = %s, want %s", gotMonth, wantMonth)
+	}
+}

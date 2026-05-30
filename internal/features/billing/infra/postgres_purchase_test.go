@@ -41,6 +41,38 @@ func seedPending(t *testing.T, repo *PurchaseRepository, accountID, cashPoints i
 	return id
 }
 
+func seedPendingProvider(t *testing.T, repo *PurchaseRepository, accountID, cashPoints int, provider string, createdAt time.Time) int64 {
+	t.Helper()
+	id, err := repo.Create(context.Background(), domain.Purchase{
+		AccountID:  accountID,
+		PackageKey: "starter",
+		Provider:   provider,
+		Amount:     500,
+		Currency:   "USD",
+		CashPoints: cashPoints,
+		Status:     domain.StatusPending,
+		CreatedAt:  createdAt,
+	})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+
+	return id
+}
+
+func seedCompleted(t *testing.T, repo *PurchaseRepository, pool *pgxpool.Pool, accountID int, amount int64, completedAt time.Time) int64 {
+	t.Helper()
+	id := seedPending(t, repo, accountID, 100)
+	if _, err := pool.Exec(context.Background(),
+		`UPDATE cp_purchases SET status = 2, amount = $1, completed_at = $2 WHERE id = $3`,
+		amount, completedAt, id,
+	); err != nil {
+		t.Fatalf("seed completed: %v", err)
+	}
+
+	return id
+}
+
 func walletCashpoint(t *testing.T, pool *pgxpool.Pool, accountID int) int {
 	t.Helper()
 	var cashpoint int
@@ -170,5 +202,196 @@ func TestPurchaseRepository_MarkFailed_GatesOnPending(t *testing.T) {
 	}
 	if transitioned {
 		t.Errorf("MarkFailed on a completed row transitioned = true, want false (cannot undo a credit)")
+	}
+}
+
+func TestPurchaseRepository_ListPaidByAccount_ExcludesPendingAndFailed(t *testing.T) {
+	repo, _ := setupPurchaseRepo(t)
+	ctx := context.Background()
+	now := time.Now().UTC().Truncate(time.Second)
+
+	completedID := seedPending(t, repo, 42, 100)
+	if _, _, _, err := repo.Complete(ctx, completedID, "pay_done", now); err != nil {
+		t.Fatalf("Complete: %v", err)
+	}
+
+	disputedID := seedPending(t, repo, 42, 100)
+	if _, _, _, err := repo.Complete(ctx, disputedID, "pay_dis", now); err != nil {
+		t.Fatalf("Complete: %v", err)
+	}
+	if _, err := repo.MarkDisputed(ctx, disputedID, now); err != nil {
+		t.Fatalf("MarkDisputed: %v", err)
+	}
+
+	refundedID := seedPending(t, repo, 42, 100)
+	if _, _, _, err := repo.Complete(ctx, refundedID, "pay_ref", now); err != nil {
+		t.Fatalf("Complete: %v", err)
+	}
+	if _, err := repo.MarkRefunded(ctx, refundedID, now); err != nil {
+		t.Fatalf("MarkRefunded: %v", err)
+	}
+
+	pendingID := seedPending(t, repo, 42, 100)
+
+	failedID := seedPending(t, repo, 42, 100)
+	if _, err := repo.MarkFailed(ctx, failedID, now); err != nil {
+		t.Fatalf("MarkFailed: %v", err)
+	}
+
+	seedPending(t, repo, 99, 100)
+
+	rows, err := repo.ListPaidByAccount(ctx, 42, 50)
+	if err != nil {
+		t.Fatalf("ListPaidByAccount: %v", err)
+	}
+
+	got := make(map[int64]int, len(rows))
+	for _, p := range rows {
+		got[p.ID] = p.Status
+		if p.AccountID != 42 {
+			t.Errorf("row %d accountID = %d, want 42", p.ID, p.AccountID)
+		}
+	}
+	if len(rows) != 3 {
+		t.Fatalf("rows = %d, want 3 (completed, disputed, refunded)", len(rows))
+	}
+	if _, ok := got[pendingID]; ok {
+		t.Errorf("pending row %d must be excluded", pendingID)
+	}
+	if _, ok := got[failedID]; ok {
+		t.Errorf("failed row %d must be excluded", failedID)
+	}
+}
+
+func TestPurchaseRepository_ListFiltered_HonorsEachDimension(t *testing.T) {
+	repo, _ := setupPurchaseRepo(t)
+	ctx := context.Background()
+	base := time.Date(2026, time.May, 15, 12, 0, 0, 0, time.UTC)
+
+	stripeOld := seedPendingProvider(t, repo, 42, 100, "stripe", base)
+	stripeNew := seedPendingProvider(t, repo, 42, 100, "stripe", base.AddDate(0, 0, 5))
+	fakeRow := seedPendingProvider(t, repo, 7, 100, "fake", base.AddDate(0, 0, 2))
+	completedRow := seedPending(t, repo, 42, 100)
+	if _, _, _, err := repo.Complete(ctx, completedRow, "pay_c", base); err != nil {
+		t.Fatalf("Complete: %v", err)
+	}
+
+	collectIDs := func(rows []domain.Purchase) map[int64]struct{} {
+		out := make(map[int64]struct{}, len(rows))
+		for _, p := range rows {
+			out[p.ID] = struct{}{}
+		}
+
+		return out
+	}
+
+	t.Run("status", func(t *testing.T) {
+		rows, total, err := repo.ListFiltered(ctx, domain.PurchaseFilter{Status: domain.StatusCompleted}, 50, 0)
+		if err != nil {
+			t.Fatalf("ListFiltered: %v", err)
+		}
+		if total != 1 {
+			t.Errorf("total = %d, want 1", total)
+		}
+		if _, ok := collectIDs(rows)[completedRow]; !ok {
+			t.Errorf("completed row %d not returned", completedRow)
+		}
+	})
+
+	t.Run("account", func(t *testing.T) {
+		rows, total, err := repo.ListFiltered(ctx, domain.PurchaseFilter{AccountID: 7}, 50, 0)
+		if err != nil {
+			t.Fatalf("ListFiltered: %v", err)
+		}
+		if total != 1 {
+			t.Errorf("total = %d, want 1", total)
+		}
+		if _, ok := collectIDs(rows)[fakeRow]; !ok {
+			t.Errorf("account 7 row %d not returned", fakeRow)
+		}
+	})
+
+	t.Run("provider", func(t *testing.T) {
+		rows, total, err := repo.ListFiltered(ctx, domain.PurchaseFilter{Provider: "stripe"}, 50, 0)
+		if err != nil {
+			t.Fatalf("ListFiltered: %v", err)
+		}
+		if total != 2 {
+			t.Errorf("total = %d, want 2", total)
+		}
+		ids := collectIDs(rows)
+		if _, ok := ids[stripeOld]; !ok {
+			t.Errorf("stripe row %d not returned", stripeOld)
+		}
+		if _, ok := ids[stripeNew]; !ok {
+			t.Errorf("stripe row %d not returned", stripeNew)
+		}
+	})
+
+	t.Run("created range", func(t *testing.T) {
+		from := base.AddDate(0, 0, 1)
+		to := base.AddDate(0, 0, 4)
+		rows, total, err := repo.ListFiltered(ctx, domain.PurchaseFilter{From: &from, To: &to}, 50, 0)
+		if err != nil {
+			t.Fatalf("ListFiltered: %v", err)
+		}
+		if total != 1 {
+			t.Errorf("total = %d, want 1", total)
+		}
+		if _, ok := collectIDs(rows)[fakeRow]; !ok {
+			t.Errorf("in-range row %d not returned", fakeRow)
+		}
+	})
+
+	t.Run("total independent of page limit", func(t *testing.T) {
+		rows, total, err := repo.ListFiltered(ctx, domain.PurchaseFilter{}, 2, 0)
+		if err != nil {
+			t.Fatalf("ListFiltered: %v", err)
+		}
+		if total != 4 {
+			t.Errorf("total = %d, want 4 (all rows)", total)
+		}
+		if len(rows) != 2 {
+			t.Errorf("page rows = %d, want 2 (limited)", len(rows))
+		}
+	})
+}
+
+func TestPurchaseRepository_Earnings_SumsCompletedInWindows(t *testing.T) {
+	repo, pool := setupPurchaseRepo(t)
+	ctx := context.Background()
+
+	dayStart := time.Date(2026, time.May, 27, 0, 0, 0, 0, time.UTC)
+	weekStart := time.Date(2026, time.May, 25, 0, 0, 0, 0, time.UTC)
+	monthStart := time.Date(2026, time.May, 1, 0, 0, 0, 0, time.UTC)
+
+	seedCompleted(t, repo, pool, 1, 100, dayStart.Add(2*time.Hour))
+	seedCompleted(t, repo, pool, 1, 200, weekStart.Add(12*time.Hour))
+	seedCompleted(t, repo, pool, 1, 400, monthStart.Add(36*time.Hour))
+	seedCompleted(t, repo, pool, 1, 800, monthStart.AddDate(0, -1, 0))
+
+	pendingRow := seedPending(t, repo, 1, 100)
+	if _, err := pool.Exec(ctx,
+		`UPDATE cp_purchases SET amount = 9999, completed_at = $1 WHERE id = $2`,
+		dayStart.Add(time.Hour), pendingRow,
+	); err != nil {
+		t.Fatalf("seed pending with completed_at: %v", err)
+	}
+
+	summary, err := repo.Earnings(ctx, dayStart, weekStart, monthStart)
+	if err != nil {
+		t.Fatalf("Earnings: %v", err)
+	}
+	if summary.Today != 100 {
+		t.Errorf("Today = %d, want 100", summary.Today)
+	}
+	if summary.Week != 300 {
+		t.Errorf("Week = %d, want 300", summary.Week)
+	}
+	if summary.Month != 700 {
+		t.Errorf("Month = %d, want 700", summary.Month)
+	}
+	if summary.AllTime != 1500 {
+		t.Errorf("AllTime = %d, want 1500", summary.AllTime)
 	}
 }

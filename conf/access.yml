@@ -138,3 +138,6 @@ Store:
     RateLimit:
       RatePerMinute: 6
       Burst: 3
+  History:
+    Roles: ["*"]
+    Requires: ["Unrestricted"]

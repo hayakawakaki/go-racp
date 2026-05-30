@@ -14,6 +14,23 @@ const (
 	StatusFailed    = 5
 )
 
+func StatusLabel(status int) string {
+	switch status {
+	case StatusPending:
+		return "Pending"
+	case StatusCompleted:
+		return "Completed"
+	case StatusDisputed:
+		return "Disputed"
+	case StatusRefunded:
+		return "Refunded"
+	case StatusFailed:
+		return "Failed"
+	default:
+		return "Unknown"
+	}
+}
+
 type Package struct {
 	Key        string
 	Name       string
@@ -57,6 +74,21 @@ type Purchase struct {
 	AccountID         int
 	CashPoints        int
 	Status            int
+}
+
+type PurchaseFilter struct {
+	From      *time.Time
+	To        *time.Time
+	Provider  string
+	Status    int
+	AccountID int
+}
+
+type EarningsSummary struct {
+	Today   int64
+	Week    int64
+	Month   int64
+	AllTime int64
 }
 
 type CheckoutRequest struct {

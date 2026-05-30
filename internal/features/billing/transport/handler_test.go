@@ -25,10 +25,20 @@ func (stubTheme) StorePage(layout httpx.Layout, st state.StoreState) templ.Compo
 	return billingtpl.StorePage(layout, st)
 }
 
+func (stubTheme) PurchaseHistoryPage(layout httpx.Layout, st state.PurchaseHistoryState) templ.Component {
+	return billingtpl.PurchaseHistoryPage(layout, st)
+}
+
+func (stubTheme) PurchaseHistoryContent(st state.PurchaseHistoryState) templ.Component {
+	return billingtpl.PurchaseHistoryContent(st)
+}
+
 type stubService struct {
 	checkoutURL string
 	checkoutErr error
+	historyErr  error
 	packages    []domain.Package
+	history     []domain.Purchase
 	available   bool
 }
 
@@ -38,6 +48,10 @@ func (s *stubService) Available() bool { return s.available }
 
 func (s *stubService) StartCheckout(context.Context, int, string, string, string) (string, error) {
 	return s.checkoutURL, s.checkoutErr
+}
+
+func (s *stubService) HistoryByAccount(context.Context, int, int) ([]domain.Purchase, error) {
+	return s.history, s.historyErr
 }
 
 func discardLogger() *slog.Logger {
@@ -127,5 +141,79 @@ func TestHandler_StartCheckout_UnknownPackage(t *testing.T) {
 	}
 	if got := rr.Header().Get("Location"); got != "/store?notice=invalid" {
 		t.Errorf("Location = %q, want /store?notice=invalid", got)
+	}
+}
+
+func TestHandler_ShowHistory_WithPurchases(t *testing.T) {
+	t.Parallel()
+	svc := &stubService{
+		history: []domain.Purchase{
+			{PackageKey: "starter", Amount: 500, CashPoints: 500, Status: domain.StatusCompleted},
+			{PackageKey: "bundle", Amount: 1000, CashPoints: 1200, Status: domain.StatusRefunded},
+		},
+	}
+	h := newHandler(svc)
+
+	req := httptest.NewRequest(http.MethodGet, "/store/history", http.NoBody)
+	req = req.WithContext(middleware.ContextWithSnapshot(req.Context(), &middleware.AccountSnapshot{UserID: 42, Username: "kaki"}))
+
+	rr := httptest.NewRecorder()
+	h.showHistory(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rr.Code)
+	}
+	body := rr.Body.String()
+	if !strings.Contains(body, "starter") {
+		t.Errorf("body does not contain package key")
+	}
+	if !strings.Contains(body, "Completed") {
+		t.Errorf("body does not contain status label")
+	}
+}
+
+func TestHandler_ShowHistory_HTMXFragment(t *testing.T) {
+	t.Parallel()
+	svc := &stubService{
+		history: []domain.Purchase{
+			{PackageKey: "starter", Amount: 500, CashPoints: 500, Status: domain.StatusCompleted},
+		},
+	}
+	h := newHandler(svc)
+
+	req := httptest.NewRequest(http.MethodGet, "/store/history", http.NoBody)
+	req.Header.Set("HX-Request", "true")
+	req = req.WithContext(middleware.ContextWithSnapshot(req.Context(), &middleware.AccountSnapshot{UserID: 42, Username: "kaki"}))
+
+	rr := httptest.NewRecorder()
+	h.showHistory(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rr.Code)
+	}
+	body := rr.Body.String()
+	if !strings.Contains(body, "starter") {
+		t.Errorf("fragment does not contain package key")
+	}
+	if strings.Contains(body, "<html") {
+		t.Errorf("HTMX fragment must not include the full page shell")
+	}
+}
+
+func TestHandler_ShowHistory_Empty(t *testing.T) {
+	t.Parallel()
+	h := newHandler(&stubService{})
+
+	req := httptest.NewRequest(http.MethodGet, "/store/history", http.NoBody)
+	req = req.WithContext(middleware.ContextWithSnapshot(req.Context(), &middleware.AccountSnapshot{UserID: 7, Username: "testuser"}))
+
+	rr := httptest.NewRecorder()
+	h.showHistory(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rr.Code)
+	}
+	if !strings.Contains(rr.Body.String(), "no purchases yet") {
+		t.Errorf("body does not contain empty-state text")
 	}
 }

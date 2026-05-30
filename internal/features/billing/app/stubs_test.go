@@ -14,16 +14,17 @@ func discardLogger() *slog.Logger {
 }
 
 type fakeRepo struct {
-	createFn         func(ctx context.Context, purchase domain.Purchase) (int64, error)
-	setProviderRefFn func(ctx context.Context, id int64, ref string) error
-	getByIDFn        func(ctx context.Context, id int64) (domain.Purchase, error)
-	getByPaymentFn   func(ctx context.Context, provider, paymentID string) (domain.Purchase, error)
-	completeFn       func(ctx context.Context, id int64, providerPaymentID string, now time.Time) (bool, int, int, error)
-	markDisputedFn   func(ctx context.Context, id int64, now time.Time) (bool, error)
-	markRefundedFn   func(ctx context.Context, id int64, now time.Time) (bool, error)
-	markFailedFn     func(ctx context.Context, id int64, now time.Time) (bool, error)
-	listByAccountFn  func(ctx context.Context, accountID, limit int) ([]domain.Purchase, error)
-	listRecentFn     func(ctx context.Context, limit int) ([]domain.Purchase, error)
+	createFn            func(ctx context.Context, purchase domain.Purchase) (int64, error)
+	setProviderRefFn    func(ctx context.Context, id int64, ref string) error
+	getByIDFn           func(ctx context.Context, id int64) (domain.Purchase, error)
+	getByPaymentFn      func(ctx context.Context, provider, paymentID string) (domain.Purchase, error)
+	completeFn          func(ctx context.Context, id int64, providerPaymentID string, now time.Time) (bool, int, int, error)
+	markDisputedFn      func(ctx context.Context, id int64, now time.Time) (bool, error)
+	markRefundedFn      func(ctx context.Context, id int64, now time.Time) (bool, error)
+	markFailedFn        func(ctx context.Context, id int64, now time.Time) (bool, error)
+	listPaidByAccountFn func(ctx context.Context, accountID, limit int) ([]domain.Purchase, error)
+	listFilteredFn      func(ctx context.Context, filter domain.PurchaseFilter, limit, offset int) ([]domain.Purchase, int, error)
+	earningsFn          func(ctx context.Context, dayStart, weekStart, monthStart time.Time) (domain.EarningsSummary, error)
 }
 
 var _ Repository = (*fakeRepo)(nil)
@@ -92,20 +93,28 @@ func (f *fakeRepo) MarkFailed(ctx context.Context, id int64, now time.Time) (boo
 	return true, nil
 }
 
-func (f *fakeRepo) ListByAccount(ctx context.Context, accountID, limit int) ([]domain.Purchase, error) {
-	if f.listByAccountFn != nil {
-		return f.listByAccountFn(ctx, accountID, limit)
+func (f *fakeRepo) ListPaidByAccount(ctx context.Context, accountID, limit int) ([]domain.Purchase, error) {
+	if f.listPaidByAccountFn != nil {
+		return f.listPaidByAccountFn(ctx, accountID, limit)
 	}
 
 	return nil, nil
 }
 
-func (f *fakeRepo) ListRecent(ctx context.Context, limit int) ([]domain.Purchase, error) {
-	if f.listRecentFn != nil {
-		return f.listRecentFn(ctx, limit)
+func (f *fakeRepo) ListFiltered(ctx context.Context, filter domain.PurchaseFilter, limit, offset int) ([]domain.Purchase, int, error) {
+	if f.listFilteredFn != nil {
+		return f.listFilteredFn(ctx, filter, limit, offset)
 	}
 
-	return nil, nil
+	return nil, 0, nil
+}
+
+func (f *fakeRepo) Earnings(ctx context.Context, dayStart, weekStart, monthStart time.Time) (domain.EarningsSummary, error) {
+	if f.earningsFn != nil {
+		return f.earningsFn(ctx, dayStart, weekStart, monthStart)
+	}
+
+	return domain.EarningsSummary{}, nil
 }
 
 type fakeProvider struct {

@@ -41,6 +41,9 @@ templ AccountPage(layout httpx.Layout, state accountselfstate.AccountState) {
 			@accountIdentityCard(state)
 			<div id="modal"></div>
 			@accountWalletCard(state)
+			if !state.Account.Restricted {
+				@accountPurchasesCard()
+			}
 			@accountCharactersCard(state)
 		</div>
 	}
@@ -231,4 +234,21 @@ templ accountCharacterRow(c charapp.CharacterDTO) {
 			}
 		</a>
 	</li>
+}
+
+templ accountPurchasesCard() {
+	<div hx-get="/store/history" hx-trigger="load" hx-swap="innerHTML">
+		@components.BentoCard(components.BentoCardProps{
+			Delay:   "120ms",
+			Padding: "p-6 lg:p-8",
+			Class:   "gap-4",
+		}) {
+			<div class="pb-3 border-b border-border">
+				@components.BentoLabel("text-[11px]") {
+					Purchases
+				}
+			</div>
+			@ui.Skeleton(ui.SkeletonProps{Class: "h-4 w-40"})
+		}
+	</div>
 }

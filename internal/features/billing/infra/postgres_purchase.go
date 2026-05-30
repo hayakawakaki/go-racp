@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/hayakawakaki/go-racp/internal/features/billing/app"
@@ -157,27 +159,87 @@ func (r *PurchaseRepository) MarkFailed(ctx context.Context, id int64, now time.
 	return tag.RowsAffected() > 0, nil
 }
 
-func (r *PurchaseRepository) ListByAccount(ctx context.Context, accountID, limit int) ([]domain.Purchase, error) {
+func (r *PurchaseRepository) ListPaidByAccount(ctx context.Context, accountID, limit int) ([]domain.Purchase, error) {
 	rows, err := r.Pool.Query(ctx,
-		`SELECT `+purchaseColumns+` FROM cp_purchases WHERE account_id = $1 ORDER BY id DESC LIMIT $2`,
+		`SELECT `+purchaseColumns+` FROM cp_purchases WHERE account_id = $1 AND status IN (2, 3, 4) ORDER BY id DESC LIMIT $2`,
 		accountID, limit,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("infra.PurchaseRepository.ListByAccount: %w", err)
+		return nil, fmt.Errorf("infra.PurchaseRepository.ListPaidByAccount: %w", err)
 	}
 
 	return scanPurchases(rows)
 }
 
-func (r *PurchaseRepository) ListRecent(ctx context.Context, limit int) ([]domain.Purchase, error) {
-	rows, err := r.Pool.Query(ctx,
-		`SELECT `+purchaseColumns+` FROM cp_purchases ORDER BY id DESC LIMIT $1`, limit,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("infra.PurchaseRepository.ListRecent: %w", err)
+func buildPurchaseFilter(filter domain.PurchaseFilter) (whereClause string, args []any) {
+	var predicates []string
+	if filter.Status != 0 {
+		args = append(args, filter.Status)
+		predicates = append(predicates, "status = $"+strconv.Itoa(len(args)))
+	}
+	if filter.AccountID != 0 {
+		args = append(args, filter.AccountID)
+		predicates = append(predicates, "account_id = $"+strconv.Itoa(len(args)))
+	}
+	if filter.Provider != "" {
+		args = append(args, filter.Provider)
+		predicates = append(predicates, "provider = $"+strconv.Itoa(len(args)))
+	}
+	if filter.From != nil {
+		args = append(args, *filter.From)
+		predicates = append(predicates, "created_at >= $"+strconv.Itoa(len(args)))
+	}
+	if filter.To != nil {
+		args = append(args, *filter.To)
+		predicates = append(predicates, "created_at < $"+strconv.Itoa(len(args)))
+	}
+	if len(predicates) == 0 {
+		return "", args
 	}
 
-	return scanPurchases(rows)
+	return " WHERE " + strings.Join(predicates, " AND "), args
+}
+
+func (r *PurchaseRepository) ListFiltered(ctx context.Context, filter domain.PurchaseFilter, limit, offset int) (rows []domain.Purchase, total int, err error) {
+	whereClause, args := buildPurchaseFilter(filter)
+
+	if err = r.Pool.QueryRow(ctx, `SELECT COUNT(*) FROM cp_purchases`+whereClause, args...).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("infra.PurchaseRepository.ListFiltered: %w", err)
+	}
+
+	args = append(args, limit, offset)
+	query := `SELECT ` + purchaseColumns + ` FROM cp_purchases` + whereClause +
+		` ORDER BY id DESC LIMIT $` + strconv.Itoa(len(args)-1) + ` OFFSET $` + strconv.Itoa(len(args))
+
+	queried, err := r.Pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("infra.PurchaseRepository.ListFiltered: %w", err)
+	}
+
+	rows, err = scanPurchases(queried)
+	if err != nil {
+		return nil, 0, fmt.Errorf("infra.PurchaseRepository.ListFiltered: %w", err)
+	}
+
+	return rows, total, nil
+}
+
+func (r *PurchaseRepository) Earnings(ctx context.Context, dayStart, weekStart, monthStart time.Time) (domain.EarningsSummary, error) {
+	const query = `SELECT
+		COALESCE(SUM(amount) FILTER (WHERE completed_at >= $1), 0),
+		COALESCE(SUM(amount) FILTER (WHERE completed_at >= $2), 0),
+		COALESCE(SUM(amount) FILTER (WHERE completed_at >= $3), 0),
+		COALESCE(SUM(amount), 0)
+	FROM cp_purchases WHERE status = 2`
+
+	var summary domain.EarningsSummary
+	if err := r.Pool.QueryRow(ctx, query, dayStart, weekStart, monthStart).Scan(
+		&summary.Today, &summary.Week, &summary.Month, &summary.AllTime,
+	); err != nil {
+		return domain.EarningsSummary{}, fmt.Errorf("infra.PurchaseRepository.Earnings: %w", err)
+	}
+
+	return summary, nil
 }
 
 func scanPurchase(row pgx.Row) (domain.Purchase, error) {

@@ -53,6 +53,8 @@ type Theme interface {
 	DatabaseContent(state adminstate.DatabaseState) templ.Component
 	EconomyContent(state adminstate.EconomyState) templ.Component
 	AdminLayout(layout httpx.Layout, pageTitle string, content templ.Component) templ.Component
+	PurchaseHistoryPage(layout httpx.Layout, state billingstate.PurchaseHistoryState) templ.Component
+	PurchaseHistoryContent(state billingstate.PurchaseHistoryState) templ.Component
 	StorePage(layout httpx.Layout, state billingstate.StoreState) templ.Component
 	CharacterDetailPage(layout httpx.Layout, state characterstate.DetailState) templ.Component
 	GuildDetailPage(layout httpx.Layout, guildName string, state guildstate.DetailState) templ.Component

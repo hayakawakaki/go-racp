@@ -157,6 +157,14 @@ func (DefaultTheme) AdminLayout(layout httpx.Layout, pageTitle string, content t
 	return admin.AdminLayout(layout, pageTitle, content)
 }
 
+func (DefaultTheme) PurchaseHistoryPage(layout httpx.Layout, state billingstate.PurchaseHistoryState) templ.Component {
+	return billing.PurchaseHistoryPage(layout, state)
+}
+
+func (DefaultTheme) PurchaseHistoryContent(state billingstate.PurchaseHistoryState) templ.Component {
+	return billing.PurchaseHistoryContent(state)
+}
+
 func (DefaultTheme) StorePage(layout httpx.Layout, state billingstate.StoreState) templ.Component {
 	return billing.StorePage(layout, state)
 }

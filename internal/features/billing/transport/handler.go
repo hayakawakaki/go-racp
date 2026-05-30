@@ -17,16 +17,21 @@ const (
 	maxCheckoutFormBytes = 1 << 10
 
 	fieldPackage = "package"
+
+	historyPageSize = 50
 )
 
 type billingService interface {
 	Packages() []domain.Package
 	Available() bool
 	StartCheckout(ctx context.Context, accountID int, packageKey, successURL, cancelURL string) (string, error)
+	HistoryByAccount(ctx context.Context, accountID, limit int) ([]domain.Purchase, error)
 }
 
 type Renderer interface {
 	StorePage(layout httpx.Layout, state state.StoreState) templ.Component
+	PurchaseHistoryPage(layout httpx.Layout, state state.PurchaseHistoryState) templ.Component
+	PurchaseHistoryContent(state state.PurchaseHistoryState) templ.Component
 }
 
 //nolint:govet // GeneralConfig trailing bool forces alignment cost
@@ -71,4 +76,5 @@ func (h *Handler) layout() httpx.Layout {
 func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
 	reg.Wrap(mux, "Store.View", "GET /store", http.HandlerFunc(h.showStore))
 	reg.Wrap(mux, "Store.Checkout", "POST /store/checkout", http.HandlerFunc(h.startCheckout))
+	reg.Wrap(mux, "Store.History", "GET /store/history", http.HandlerFunc(h.showHistory))
 }
