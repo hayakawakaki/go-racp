@@ -127,6 +127,17 @@ func TestService_RequestWithdraw_ProceedsWhenBridgeUp(t *testing.T) {
 	}
 }
 
+func TestService_RequestWithdraw_ValidatesAmountBeforeBridge(t *testing.T) {
+	t.Parallel()
+
+	svc := NewService(&fakeCurrencyRepo{}, WithLimits(2000, 100), WithBridge(fakeBridge{err: errors.New("mariadb down")}))
+
+	err := svc.RequestWithdraw(context.Background(), 1, 0, 0)
+	if !errors.Is(err, domain.ErrInvalidAmount) {
+		t.Fatalf("err = %v, want ErrInvalidAmount (amount validation must run before the bridge ping)", err)
+	}
+}
+
 func TestService_Balance_MapsDTO(t *testing.T) {
 	t.Parallel()
 

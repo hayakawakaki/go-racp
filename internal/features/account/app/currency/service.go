@@ -81,13 +81,6 @@ func (s *Service) Balance(ctx context.Context, accountID int) (BalanceDTO, error
 }
 
 func (s *Service) RequestWithdraw(ctx context.Context, accountID int, zeny int64, cashpoint int) error {
-	if s.bridge != nil {
-		pingCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
-		defer cancel()
-		if err := s.bridge.PingContext(pingCtx); err != nil {
-			return fmt.Errorf("currency.Service.RequestWithdraw: %w", domain.ErrBridgeUnavailable)
-		}
-	}
 	if zeny < 0 || cashpoint < 0 {
 		return domain.ErrInvalidAmount
 	}
@@ -96,6 +89,14 @@ func (s *Service) RequestWithdraw(ctx context.Context, accountID int, zeny int64
 	}
 	if zeny > s.maxZeny || cashpoint > s.maxCashpoint {
 		return domain.ErrInvalidAmount
+	}
+
+	if s.bridge != nil {
+		pingCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		defer cancel()
+		if err := s.bridge.PingContext(pingCtx); err != nil {
+			return fmt.Errorf("currency.Service.RequestWithdraw: %w", domain.ErrBridgeUnavailable)
+		}
 	}
 
 	now := s.now()
