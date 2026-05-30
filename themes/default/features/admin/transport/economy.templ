@@ -41,7 +41,59 @@ templ EconomyContent(state adminstate.EconomyState) {
 			@economyDepositsCard(state)
 			@economyWithdrawsCard(state)
 		</div>
+		if len(state.Stuck) > 0 {
+			@economyStuckCard(state)
+		}
 	</div>
+}
+
+templ economyStuckCard(state adminstate.EconomyState) {
+	@components.BentoCard(components.BentoCardProps{
+		Padding: "p-0",
+		Class:   "overflow-hidden border-amber-500/40",
+	}) {
+		<div class="flex items-center justify-between gap-3 p-4 lg:p-5 border-b border-border">
+			@components.BentoLabel("text-[11px]") {
+				Stuck withdrawals
+			}
+		</div>
+		@ui.Table(ui.TableProps{Hover: true, Class: "text-font"}) {
+			@ui.TableHeader() {
+				@ui.TableRow(ui.TableRowProps{}) {
+					@ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}) {
+						Account
+					}
+					@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
+						Zeny
+					}
+					@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
+						Cashpoint
+					}
+					@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
+						Requested
+					}
+				}
+			}
+			@ui.TableBody() {
+				for _, wd := range state.Stuck {
+					@ui.TableRow(ui.TableRowProps{}) {
+						@ui.TableCell(ui.TableCellProps{Class: "font-mono tabular-nums"}) {
+							@economyAccountLink(wd.AccountID)
+						}
+						@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
+							{ helpers.FormatAmount(wd.Zeny) }
+						}
+						@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
+							{ helpers.FormatAmount(int64(wd.Cashpoint)) }
+						}
+						@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "text-font-muted tabular-nums"}) {
+							{ helpers.FormatTime(wd.CreatedAt, state.Location) }
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 templ economyTotalStat(label string, value int64, failed bool) {

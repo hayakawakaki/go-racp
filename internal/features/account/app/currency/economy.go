@@ -49,6 +49,21 @@ type WithdrawHistoryPage struct {
 	TotalPages int
 }
 
+const stuckWithdrawLimit = 50
+
+func (s *Service) StuckWithdraws(ctx context.Context) ([]AdminWithdrawDTO, error) {
+	if s.reapAfter <= 0 {
+		return nil, nil
+	}
+
+	records, err := s.repo.SentBefore(ctx, s.now().Add(-s.reapAfter), stuckWithdrawLimit)
+	if err != nil {
+		return nil, fmt.Errorf("currency.Service.StuckWithdraws: %w", err)
+	}
+
+	return toWithdrawDTOs(records), nil
+}
+
 func (s *Service) Totals(ctx context.Context) (TotalsDTO, error) {
 	totals, err := s.repo.Totals(ctx)
 	if err != nil {

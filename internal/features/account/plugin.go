@@ -125,10 +125,11 @@ func BuildCurrencyService(in *coreinfra.Infra) *currencyapp.Service {
 }
 
 func newCurrencyService(repo *infra.CurrencyRepository, cfg config.CurrencyConfig, opts ...currencyapp.Option) *currencyapp.Service {
-	base := make([]currencyapp.Option, 0, 2+len(opts))
+	base := make([]currencyapp.Option, 0, 3+len(opts))
 	base = append(base,
 		currencyapp.WithCooldown(cfg.Cooldown),
 		currencyapp.WithLimits(cfg.MaxZenyPerTx, cfg.MaxCashpointPerTx),
+		currencyapp.WithReapAfter(cfg.ReapAfter),
 	)
 	base = append(base, opts...)
 

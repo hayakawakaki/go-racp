@@ -67,6 +67,7 @@ type stubEconomyReader struct {
 	totalsFn    func(context.Context) (currency.TotalsDTO, error)
 	depositsFn  func(context.Context, int, int) (currency.DepositPage, error)
 	withdrawsFn func(context.Context, int, int) (currency.WithdrawHistoryPage, error)
+	stuckFn     func(context.Context) ([]currency.AdminWithdrawDTO, error)
 }
 
 func (s *stubEconomyReader) Totals(ctx context.Context) (currency.TotalsDTO, error) {
@@ -88,6 +89,13 @@ func (s *stubEconomyReader) WithdrawHistory(ctx context.Context, page, perPage i
 		return s.withdrawsFn(ctx, page, perPage)
 	}
 	return currency.WithdrawHistoryPage{}, nil
+}
+
+func (s *stubEconomyReader) StuckWithdraws(ctx context.Context) ([]currency.AdminWithdrawDTO, error) {
+	if s.stuckFn != nil {
+		return s.stuckFn(ctx)
+	}
+	return nil, nil
 }
 
 type stubMetric struct {
@@ -429,5 +437,32 @@ func TestHandler_ShowDashboard_PeaksReadFailure(t *testing.T) {
 	}
 	if strings.Contains(body, "No peaks recorded yet.") {
 		t.Errorf("failed peaks read must not look like genuinely empty:\n%s", body)
+	}
+}
+
+func TestHandler_ShowEconomy_RendersStuckWithdraws(t *testing.T) {
+	t.Parallel()
+
+	economy := &stubEconomyReader{
+		stuckFn: func(context.Context) ([]currency.AdminWithdrawDTO, error) {
+			return []currency.AdminWithdrawDTO{{ID: 1, AccountID: 7, Zeny: 100, Status: 2}}, nil
+		},
+	}
+	h := NewHandler(HandlerConfig{
+		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
+		General: config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
+		Theme:   stubTheme{},
+		Economy: economy,
+	})
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/admin/economy", http.NoBody)
+	h.showEconomy(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rr.Code)
+	}
+	if !strings.Contains(rr.Body.String(), "Stuck withdrawals") {
+		t.Errorf("body must include the stuck-withdrawals section:\n%s", rr.Body.String())
 	}
 }

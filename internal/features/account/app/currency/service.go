@@ -28,6 +28,7 @@ type Service struct {
 	now          func() time.Time
 	bridge       BridgePinger
 	cooldown     time.Duration
+	reapAfter    time.Duration
 	maxZeny      int64
 	maxCashpoint int
 }
@@ -55,6 +56,10 @@ func WithLimits(maxZeny int64, maxCashpoint int) Option {
 
 func WithBridge(pinger BridgePinger) Option {
 	return func(s *Service) { s.bridge = pinger }
+}
+
+func WithReapAfter(d time.Duration) Option {
+	return func(s *Service) { s.reapAfter = d }
 }
 
 func NewService(repo domain.CurrencyRepository, opts ...Option) *Service {

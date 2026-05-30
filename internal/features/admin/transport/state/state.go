@@ -27,6 +27,7 @@ type EconomyState struct {
 	Totals          currency.TotalsDTO
 	Deposits        currency.DepositPage
 	Withdraws       currency.WithdrawHistoryPage
+	Stuck           []currency.AdminWithdrawDTO
 	TotalsFailed    bool
 	DepositsFailed  bool
 	WithdrawsFailed bool

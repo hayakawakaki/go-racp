@@ -66,7 +66,7 @@ func TestWithdrawStatusLabel(t *testing.T) {
 		{name: "sent", status: 2, want: "Sent"},
 		{name: "pending", status: 1, want: "Pending"},
 		{name: "zero is pending", status: 0, want: "Pending"},
-		{name: "unknown is pending", status: 3, want: "Pending"},
+		{name: "delivered", status: 3, want: "Delivered"},
 	}
 
 	for _, tt := range tests {
