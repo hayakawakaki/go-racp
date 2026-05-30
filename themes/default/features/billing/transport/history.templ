@@ -1,0 +1,80 @@
+package transport
+
+import (
+	"fmt"
+
+	"github.com/hayakawakaki/go-racp/internal/features/billing/domain"
+	billingstate "github.com/hayakawakaki/go-racp/internal/features/billing/transport/state"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/ui"
+	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
+	"github.com/hayakawakaki/go-racp/themes/default/platform/helpers"
+)
+
+templ PurchaseHistoryPage(layout httpx.Layout, state billingstate.PurchaseHistoryState) {
+	@httpx.ActiveBase(layout, "Purchase History") {
+		<div class="space-y-4 lg:space-y-6">
+			@PurchaseHistoryContent(state)
+		</div>
+	}
+}
+
+templ PurchaseHistoryContent(state billingstate.PurchaseHistoryState) {
+	@components.BentoCard(components.BentoCardProps{
+		Delay:   "120ms",
+		Padding: "p-0",
+		Class:   "overflow-hidden",
+	}) {
+		<div class="px-6 pt-6 pb-3 border-b border-border">
+			@components.BentoLabel("text-[11px]") {
+				Purchases
+			}
+		</div>
+		if len(state.Purchases) == 0 {
+			<p class="px-6 py-6 text-sm text-font-muted">You have no purchases yet.</p>
+		} else {
+			@ui.Table(ui.TableProps{Hover: true, Class: "text-font"}) {
+				@ui.TableHeader() {
+					@ui.TableRow(ui.TableRowProps{}) {
+						@ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}) {
+							Package
+						}
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
+							Amount
+						}
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
+							Cash points
+						}
+						@ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}) {
+							Status
+						}
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
+							Date
+						}
+					}
+				}
+				@ui.TableBody() {
+					for _, purchase := range state.Purchases {
+						@ui.TableRow(ui.TableRowProps{}) {
+							@ui.TableCell(ui.TableCellProps{}) {
+								{ purchase.PackageKey }
+							}
+							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
+								{ fmt.Sprintf("%d %s", purchase.Amount, state.Currency) }
+							}
+							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
+								{ fmt.Sprintf("%d", purchase.CashPoints) }
+							}
+							@ui.TableCell(ui.TableCellProps{Class: "text-font-muted"}) {
+								{ domain.StatusLabel(purchase.Status) }
+							}
+							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "text-font-muted tabular-nums"}) {
+								{ helpers.FormatTime(purchase.CreatedAt, state.Location) }
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

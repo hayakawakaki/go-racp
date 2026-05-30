@@ -127,3 +127,17 @@ Vendor:
 Metric:
   API:
     Roles: ["Public"]
+
+Store:
+  View:
+    Roles: ["*"]
+    Requires: ["Unrestricted"]
+  Checkout:
+    Roles: ["*"]
+    Requires: ["Unrestricted"]
+    RateLimit:
+      RatePerMinute: 6
+      Burst: 3
+  History:
+    Roles: ["*"]
+    Requires: ["Unrestricted"]

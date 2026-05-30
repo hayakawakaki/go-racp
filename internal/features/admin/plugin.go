@@ -5,6 +5,7 @@ import (
 
 	"github.com/hayakawakaki/go-racp/internal/features/account"
 	"github.com/hayakawakaki/go-racp/internal/features/admin/transport"
+	"github.com/hayakawakaki/go-racp/internal/features/billing"
 	"github.com/hayakawakaki/go-racp/internal/features/guild"
 	"github.com/hayakawakaki/go-racp/internal/features/item"
 	"github.com/hayakawakaki/go-racp/internal/features/mob"
@@ -31,6 +32,7 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 		Users:      account.BuildModerationService(in),
 		Guilds:     guild.BuildService(in),
 		Economy:    account.BuildCurrencyService(in),
+		Purchases:  billing.BuildService(in),
 		Emails:     account.BuildUserDirectory(in),
 		Theme:      theme.Active,
 	})
