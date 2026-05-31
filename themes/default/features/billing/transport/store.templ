@@ -12,8 +12,10 @@ import (
 
 templ StorePage(layout httpx.Layout, state billingstate.StoreState) {
 	@httpx.ActiveBase(layout, "Store") {
-		if state.Success {
+		if state.Purchased != nil {
 			@successModal(state.Purchased, state.Currency)
+		} else if state.NotCompleted {
+			@notCompletedModal()
 		}
 		<div class="space-y-4 lg:space-y-6">
 			if state.Notice != "" {
@@ -182,6 +184,27 @@ templ successModal(purchased *domain.Package, currency string) {
 						View Account
 					}
 				</div>
+			</div>
+		}
+	}
+}
+
+templ notCompletedModal() {
+	@ui.Modal(ui.ModalProps{Open: true}) {
+		@ui.ModalContent(ui.ModalContentProps{Teleport: true, Size: ui.ModalSizeMD}) {
+			<div class="flex flex-col items-center gap-5 px-2 py-4 text-center">
+				<span class="flex size-14 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400">
+					@ui.Icon("alert-circle", "size-7")
+				</span>
+				<div class="space-y-1">
+					<h2 class="text-xl font-semibold text-font">Payment not completed</h2>
+					<p class="text-sm text-font-muted">Your payment was not completed. You can try again from the store whenever you are ready.</p>
+				</div>
+				@ui.ModalClose("flex w-full") {
+					@ui.Button(ui.ButtonProps{Variant: ui.ButtonSolid, Color: ui.ButtonColorIndigo, Rounded: ui.ButtonRoundedMD, Class: "w-full"}) {
+						Back to Store
+					}
+				}
 			</div>
 		}
 	}

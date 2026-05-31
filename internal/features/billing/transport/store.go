@@ -11,17 +11,6 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
-var storeNoticeText = map[string]string{
-	"unavailable": "The store is currently unavailable. Please try again later.",
-	"invalid":     "That request could not be processed. Please try again.",
-	"cancel":      "Checkout was cancelled. No payment was taken.",
-	"success":     "Payment received. Your cash points will be credited shortly.",
-}
-
-func noticeMessage(code string) string {
-	return storeNoticeText[code]
-}
-
 func (h *Handler) showStore(w http.ResponseWriter, r *http.Request) {
 	if h.svc == nil {
 		http.Error(w, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
@@ -38,30 +27,40 @@ func (h *Handler) showStore(w http.ResponseWriter, r *http.Request) {
 		Methods:   paymentMethods(available),
 		Available: available,
 	}
-	if notice == "success" {
-		if purchased, ok := findPackage(packages, r.URL.Query().Get(fieldPackage)); ok {
-			st.Success = true
+	switch notice {
+	case noticeSuccess:
+		if purchased, ok := h.confirmPurchase(r); ok {
 			st.Purchased = &purchased
+		} else {
+			st.NotCompleted = true
 		}
-	} else {
+	case noticeCancel:
+		st.NotCompleted = true
+	default:
 		st.Notice = noticeMessage(notice)
 	}
 
 	httpx.RenderHTML(w, r, h.logger, h.theme.StorePage(h.layout(), st))
 }
 
-func findPackage(packages []domain.Package, key string) (domain.Package, bool) {
-	if key == "" {
+func (h *Handler) confirmPurchase(r *http.Request) (domain.Package, bool) {
+	sessionID := r.URL.Query().Get(fieldSessionID)
+	if sessionID == "" {
 		return domain.Package{}, false
 	}
 
-	for _, pkg := range packages {
-		if pkg.Key == key {
-			return pkg, true
-		}
+	snapshot, ok := middleware.SnapshotFromContext(r.Context())
+	if !ok {
+		return domain.Package{}, false
 	}
 
-	return domain.Package{}, false
+	purchased, ok, err := h.svc.ConfirmCheckout(r.Context(), sessionID, snapshot.UserID)
+	if err != nil {
+		h.logger.Error("billing: confirm checkout", "err", err)
+		return domain.Package{}, false
+	}
+
+	return purchased, ok
 }
 
 func paymentMethods(stripeReady bool) []state.PaymentMethod {
@@ -74,42 +73,42 @@ func paymentMethods(stripeReady bool) []state.PaymentMethod {
 
 func (h *Handler) startCheckout(w http.ResponseWriter, r *http.Request) {
 	if h.svc == nil {
-		http.Redirect(w, r, "/store?notice=unavailable", http.StatusSeeOther)
+		http.Redirect(w, r, "/store?notice="+noticeUnavailable, http.StatusSeeOther)
 		return
 	}
 
 	r.Body = http.MaxBytesReader(w, r.Body, maxCheckoutFormBytes)
 	if err := r.ParseForm(); err != nil {
-		http.Redirect(w, r, "/store?notice=invalid", http.StatusSeeOther)
+		http.Redirect(w, r, "/store?notice="+noticeInvalid, http.StatusSeeOther)
 		return
 	}
 
 	snapshot, ok := middleware.SnapshotFromContext(r.Context())
 	if !ok {
-		http.Redirect(w, r, "/store?notice=invalid", http.StatusSeeOther)
+		http.Redirect(w, r, "/store?notice="+noticeInvalid, http.StatusSeeOther)
 		return
 	}
 
 	packageKey := r.FormValue(fieldPackage)
 	provider := r.FormValue(fieldProvider)
 	if provider != "" && provider != providerStripe {
-		http.Redirect(w, r, "/store?notice=invalid", http.StatusSeeOther)
+		http.Redirect(w, r, "/store?notice="+noticeInvalid, http.StatusSeeOther)
 		return
 	}
 
-	successURL := h.appURL + "/store?notice=success&package=" + url.QueryEscape(packageKey)
-	cancelURL := h.appURL + "/store?notice=cancel"
+	successURL := h.appURL + "/store?notice=" + noticeSuccess + "&" + fieldSessionID + "={CHECKOUT_SESSION_ID}"
+	cancelURL := h.appURL + "/store?notice=" + noticeCancel
 
 	redirectURL, err := h.svc.StartCheckout(r.Context(), snapshot.UserID, packageKey, successURL, cancelURL)
 	if err != nil {
 		switch {
 		case errors.Is(err, domain.ErrUnknownPackage):
-			http.Redirect(w, r, "/store?notice=invalid", http.StatusSeeOther)
+			http.Redirect(w, r, "/store?notice="+noticeInvalid, http.StatusSeeOther)
 		case errors.Is(err, domain.ErrProviderUnavailable):
-			http.Redirect(w, r, "/store?notice=unavailable", http.StatusSeeOther)
+			http.Redirect(w, r, "/store?notice="+noticeUnavailable, http.StatusSeeOther)
 		default:
 			h.logger.Error("billing: start checkout", "err", err)
-			http.Redirect(w, r, "/store?notice=invalid", http.StatusSeeOther)
+			http.Redirect(w, r, "/store?notice="+noticeInvalid, http.StatusSeeOther)
 		}
 		return
 	}
@@ -121,7 +120,7 @@ func (h *Handler) redirectToCheckout(w http.ResponseWriter, r *http.Request, red
 	parsed, parseErr := url.Parse(redirectURL)
 	if parseErr != nil || parsed.Scheme != "https" || parsed.Host == "" {
 		h.logger.Error("billing: provider returned an unexpected redirect url", "err", parseErr)
-		http.Redirect(w, r, "/store?notice=invalid", http.StatusSeeOther)
+		http.Redirect(w, r, "/store?notice="+noticeInvalid, http.StatusSeeOther)
 		return
 	}
 

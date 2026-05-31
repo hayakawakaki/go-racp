@@ -10,7 +10,9 @@ import (
 )
 
 type captureBackend struct {
-	params stripe.ParamsContainer
+	params   stripe.ParamsContainer
+	metadata map[string]string
+	status   stripe.CheckoutSessionPaymentStatus
 }
 
 var _ stripe.Backend = (*captureBackend)(nil)
@@ -20,6 +22,14 @@ func (b *captureBackend) Call(_, _, _ string, params stripe.ParamsContainer, v s
 	if sess, ok := v.(*stripe.CheckoutSession); ok {
 		sess.ID = "cs_test_123"
 		sess.URL = "https://checkout.stripe.com/c/pay/cs_test_123"
+		sess.PaymentStatus = stripe.CheckoutSessionPaymentStatusPaid
+		sess.Metadata = map[string]string{"purchase_id": "9"}
+		if b.status != "" {
+			sess.PaymentStatus = b.status
+		}
+		if b.metadata != nil {
+			sess.Metadata = b.metadata
+		}
 	}
 
 	return nil
@@ -83,6 +93,45 @@ func TestStripeProvider_CreateCheckout_MapsParams(t *testing.T) {
 	}
 	if params.Metadata["purchase_id"] != "9" {
 		t.Errorf("metadata purchase_id = %q, want 9", params.Metadata["purchase_id"])
+	}
+}
+
+func TestStripeProvider_RetrieveCheckout_Paid(t *testing.T) {
+	stripe.SetBackend(stripe.APIBackend, &captureBackend{})
+
+	provider := NewStripeProvider("sk_test_dummy")
+	confirmation, err := provider.RetrieveCheckout(context.Background(), "cs_test_123")
+	if err != nil {
+		t.Fatalf("RetrieveCheckout: %v", err)
+	}
+	if !confirmation.Paid {
+		t.Errorf("Paid = false, want true")
+	}
+	if confirmation.PurchaseID != 9 {
+		t.Errorf("PurchaseID = %d, want 9", confirmation.PurchaseID)
+	}
+}
+
+func TestStripeProvider_RetrieveCheckout_Unpaid(t *testing.T) {
+	stripe.SetBackend(stripe.APIBackend, &captureBackend{status: stripe.CheckoutSessionPaymentStatusUnpaid})
+
+	provider := NewStripeProvider("sk_test_dummy")
+	confirmation, err := provider.RetrieveCheckout(context.Background(), "cs_test_123")
+	if err != nil {
+		t.Fatalf("RetrieveCheckout: %v", err)
+	}
+	if confirmation.Paid {
+		t.Errorf("Paid = true for an unpaid session, want false")
+	}
+}
+
+func TestStripeProvider_RetrieveCheckout_InvalidMetadata(t *testing.T) {
+	stripe.SetBackend(stripe.APIBackend, &captureBackend{metadata: map[string]string{}})
+
+	provider := NewStripeProvider("sk_test_dummy")
+	_, err := provider.RetrieveCheckout(context.Background(), "cs_test_123")
+	if err == nil {
+		t.Fatal("RetrieveCheckout err = nil for missing purchase_id metadata, want non-nil")
 	}
 }
 

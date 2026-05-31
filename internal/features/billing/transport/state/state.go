@@ -13,13 +13,13 @@ type PaymentMethod struct {
 }
 
 type StoreState struct {
-	Currency  string
-	Notice    string
-	Purchased *domain.Package
-	Packages  []domain.Package
-	Methods   []PaymentMethod
-	Available bool
-	Success   bool
+	Currency     string
+	Notice       string
+	Purchased    *domain.Package
+	Packages     []domain.Package
+	Methods      []PaymentMethod
+	Available    bool
+	NotCompleted bool
 }
 
 type PurchaseHistoryState struct {

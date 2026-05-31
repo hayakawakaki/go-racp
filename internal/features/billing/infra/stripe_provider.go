@@ -56,3 +56,23 @@ func (p *StripeProvider) CreateCheckout(ctx context.Context, request domain.Chec
 
 	return domain.CheckoutResult{RedirectURL: created.URL, Reference: created.ID}, nil
 }
+
+func (p *StripeProvider) RetrieveCheckout(ctx context.Context, sessionID string) (domain.CheckoutConfirmation, error) {
+	params := &stripe.CheckoutSessionParams{}
+	params.Context = ctx
+
+	sess, err := session.Get(sessionID, params)
+	if err != nil {
+		return domain.CheckoutConfirmation{}, fmt.Errorf("billing.stripe.RetrieveCheckout: %w", err)
+	}
+
+	purchaseID, err := strconv.ParseInt(sess.Metadata["purchase_id"], 10, 64)
+	if err != nil {
+		return domain.CheckoutConfirmation{}, fmt.Errorf("billing.stripe.RetrieveCheckout: invalid purchase_id metadata: %w", err)
+	}
+
+	return domain.CheckoutConfirmation{
+		PurchaseID: purchaseID,
+		Paid:       sess.PaymentStatus == stripe.CheckoutSessionPaymentStatusPaid,
+	}, nil
+}

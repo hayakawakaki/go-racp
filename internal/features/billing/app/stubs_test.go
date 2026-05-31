@@ -119,7 +119,10 @@ func (f *fakeRepo) Earnings(ctx context.Context, dayStart, weekStart, monthStart
 
 type fakeProvider struct {
 	createErr   error
+	confirmErr  error
+	lastSession string
 	lastRequest domain.CheckoutRequest
+	confirm     domain.CheckoutConfirmation
 }
 
 var _ domain.Provider = (*fakeProvider)(nil)
@@ -133,6 +136,11 @@ func (f *fakeProvider) CreateCheckout(_ context.Context, request domain.Checkout
 	}
 
 	return domain.CheckoutResult{RedirectURL: "https://pay.test/x", Reference: "ref_1"}, nil
+}
+
+func (f *fakeProvider) RetrieveCheckout(_ context.Context, sessionID string) (domain.CheckoutConfirmation, error) {
+	f.lastSession = sessionID
+	return f.confirm, f.confirmErr
 }
 
 type fakeBanner struct {

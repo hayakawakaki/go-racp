@@ -16,8 +16,9 @@ import (
 const (
 	maxCheckoutFormBytes = 1 << 10
 
-	fieldPackage  = "package"
-	fieldProvider = "provider"
+	fieldPackage   = "package"
+	fieldProvider  = "provider"
+	fieldSessionID = "session_id"
 
 	providerStripe = "stripe"
 
@@ -36,6 +37,7 @@ type billingService interface {
 	Available() bool
 	StartCheckout(ctx context.Context, accountID int, packageKey, successURL, cancelURL string) (string, error)
 	HistoryByAccount(ctx context.Context, accountID, limit int) ([]domain.Purchase, error)
+	ConfirmCheckout(ctx context.Context, sessionID string, accountID int) (domain.Package, bool, error)
 	billingFulfiller
 }
 

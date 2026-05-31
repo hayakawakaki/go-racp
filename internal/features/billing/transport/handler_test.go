@@ -2,6 +2,7 @@ package transport
 
 import (
 	"context"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -34,24 +35,36 @@ func (stubTheme) PurchaseHistoryContent(st state.PurchaseHistoryState) templ.Com
 }
 
 type stubService struct {
-	checkoutURL string
-	checkoutErr error
-	historyErr  error
-	packages    []domain.Package
-	history     []domain.Purchase
-	available   bool
+	checkoutURL    string
+	lastSuccessURL string
+	lastCancelURL  string
+	checkoutErr    error
+	historyErr     error
+	confirmErr     error
+	packages       []domain.Package
+	history        []domain.Purchase
+	confirmPkg     domain.Package
+	available      bool
+	confirmOK      bool
 }
 
 func (s *stubService) Packages() []domain.Package { return s.packages }
 
 func (s *stubService) Available() bool { return s.available }
 
-func (s *stubService) StartCheckout(context.Context, int, string, string, string) (string, error) {
+func (s *stubService) StartCheckout(_ context.Context, _ int, _, successURL, cancelURL string) (string, error) {
+	s.lastSuccessURL = successURL
+	s.lastCancelURL = cancelURL
+
 	return s.checkoutURL, s.checkoutErr
 }
 
 func (s *stubService) HistoryByAccount(context.Context, int, int) ([]domain.Purchase, error) {
 	return s.history, s.historyErr
+}
+
+func (s *stubService) ConfirmCheckout(context.Context, string, int) (domain.Package, bool, error) {
+	return s.confirmPkg, s.confirmOK, s.confirmErr
 }
 
 func (s *stubService) CompletePurchase(context.Context, int64, string) error {
@@ -316,15 +329,19 @@ func TestHandler_ShowStore_RendersMethods(t *testing.T) {
 func TestHandler_ShowStore_SuccessModal(t *testing.T) {
 	t.Parallel()
 	svc := &stubService{
-		available: true,
+		available:  true,
+		confirmOK:  true,
+		confirmPkg: domain.Package{Key: "starter", Name: "Starter Pack", Currency: "USD", Price: 5, CashPoints: 500},
 		packages: []domain.Package{
 			{Key: "starter", Name: "Starter Pack", Currency: "USD", Price: 5, CashPoints: 500},
 		},
 	}
 	h := newHandler(svc)
 
+	req := httptest.NewRequest(http.MethodGet, "/store?notice=success&session_id=cs_test_1", http.NoBody)
+	req = req.WithContext(middleware.ContextWithSnapshot(req.Context(), &middleware.AccountSnapshot{UserID: 42, Username: "kaki"}))
 	rr := httptest.NewRecorder()
-	h.showStore(rr, httptest.NewRequest(http.MethodGet, "/store?notice=success&package=starter", http.NoBody))
+	h.showStore(rr, req)
 
 	body := rr.Body.String()
 	if !strings.Contains(body, "Purchase complete") {
@@ -332,5 +349,98 @@ func TestHandler_ShowStore_SuccessModal(t *testing.T) {
 	}
 	if !strings.Contains(body, "Starter Pack") {
 		t.Errorf("body does not contain the purchased package name")
+	}
+}
+
+func TestHandler_ShowStore_SuccessUnverifiedShowsNotice(t *testing.T) {
+	t.Parallel()
+	svc := &stubService{available: true, confirmOK: false}
+	h := newHandler(svc)
+
+	req := httptest.NewRequest(http.MethodGet, "/store?notice=success&session_id=forged", http.NoBody)
+	req = req.WithContext(middleware.ContextWithSnapshot(req.Context(), &middleware.AccountSnapshot{UserID: 42}))
+	rr := httptest.NewRecorder()
+	h.showStore(rr, req)
+
+	body := rr.Body.String()
+	if strings.Contains(body, "Purchase complete") {
+		t.Errorf("unverified success must not render the success modal")
+	}
+	if !strings.Contains(body, "Payment not completed") {
+		t.Errorf("body does not contain the not-completed modal heading")
+	}
+}
+
+func TestHandler_ShowStore_CancelShowsNotCompletedModal(t *testing.T) {
+	t.Parallel()
+	h := newHandler(&stubService{available: true})
+
+	req := httptest.NewRequest(http.MethodGet, "/store?notice=cancel", http.NoBody)
+	rr := httptest.NewRecorder()
+	h.showStore(rr, req)
+
+	body := rr.Body.String()
+	if !strings.Contains(body, "Payment not completed") {
+		t.Errorf("body does not contain the not-completed modal heading")
+	}
+	if strings.Contains(body, "Purchase complete") {
+		t.Errorf("cancel must not render the success modal")
+	}
+}
+
+func TestHandler_StartCheckout_SuccessURLCarriesSessionPlaceholder(t *testing.T) {
+	t.Parallel()
+	svc := &stubService{checkoutURL: "https://pay.test/session/9"}
+	h := newHandler(svc)
+
+	req := httptest.NewRequest(http.MethodPost, "/store/checkout", strings.NewReader("package=starter"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req = req.WithContext(middleware.ContextWithSnapshot(req.Context(), &middleware.AccountSnapshot{UserID: 42, Username: "kaki"}))
+
+	rr := httptest.NewRecorder()
+	h.startCheckout(rr, req)
+
+	if got := svc.lastSuccessURL; !strings.HasSuffix(got, "/store?notice=success&session_id={CHECKOUT_SESSION_ID}") {
+		t.Errorf("successURL = %q, want it to end with the notice and session placeholder", got)
+	}
+	if got := svc.lastCancelURL; !strings.HasSuffix(got, "/store?notice=cancel") {
+		t.Errorf("cancelURL = %q, want it to end with notice=cancel", got)
+	}
+}
+
+func TestHandler_ShowStore_SuccessMissingSessionShowsNotCompleted(t *testing.T) {
+	t.Parallel()
+	h := newHandler(&stubService{available: true})
+
+	req := httptest.NewRequest(http.MethodGet, "/store?notice=success", http.NoBody)
+	req = req.WithContext(middleware.ContextWithSnapshot(req.Context(), &middleware.AccountSnapshot{UserID: 42}))
+	rr := httptest.NewRecorder()
+	h.showStore(rr, req)
+
+	body := rr.Body.String()
+	if !strings.Contains(body, "Payment not completed") {
+		t.Errorf("a success notice with no session_id must render the not-completed modal")
+	}
+	if strings.Contains(body, "Purchase complete") {
+		t.Errorf("a success notice with no session_id must not render the success modal")
+	}
+}
+
+func TestHandler_ShowStore_SuccessConfirmErrorShowsNotCompleted(t *testing.T) {
+	t.Parallel()
+	svc := &stubService{available: true, confirmErr: errors.New("stripe down")}
+	h := newHandler(svc)
+
+	req := httptest.NewRequest(http.MethodGet, "/store?notice=success&session_id=cs_1", http.NoBody)
+	req = req.WithContext(middleware.ContextWithSnapshot(req.Context(), &middleware.AccountSnapshot{UserID: 42}))
+	rr := httptest.NewRecorder()
+	h.showStore(rr, req)
+
+	body := rr.Body.String()
+	if !strings.Contains(body, "Payment not completed") {
+		t.Errorf("a confirm error must render the not-completed modal")
+	}
+	if strings.Contains(body, "Purchase complete") {
+		t.Errorf("a confirm error must not render the success modal")
 	}
 }
