@@ -473,3 +473,78 @@ func TestService_ConfirmCheckout_NoProvider(t *testing.T) {
 		t.Fatal("ok = true with no provider, want false")
 	}
 }
+
+func TestService_ConfirmCheckout_RetrieveError(t *testing.T) {
+	t.Parallel()
+
+	provider := &fakeProvider{confirmErr: errors.New("stripe down")}
+	svc := NewService(&fakeRepo{}, testCatalog(), WithProvider(provider), WithLogger(discardLogger()))
+
+	_, ok, err := svc.ConfirmCheckout(context.Background(), "cs_1", 7)
+	if err != nil {
+		t.Fatalf("ConfirmCheckout: %v", err)
+	}
+	if ok {
+		t.Fatal("ok = true when retrieve failed, want false")
+	}
+}
+
+func TestService_ConfirmCheckout_PurchaseNotFound(t *testing.T) {
+	t.Parallel()
+
+	repo := &fakeRepo{
+		getByIDFn: func(_ context.Context, _ int64) (domain.Purchase, error) {
+			return domain.Purchase{}, domain.ErrPurchaseNotFound
+		},
+	}
+	provider := &fakeProvider{confirm: domain.CheckoutConfirmation{PurchaseID: 9, Paid: true}}
+	svc := NewService(repo, testCatalog(), WithProvider(provider), WithLogger(discardLogger()))
+
+	_, ok, err := svc.ConfirmCheckout(context.Background(), "cs_1", 7)
+	if err != nil {
+		t.Fatalf("ConfirmCheckout: %v", err)
+	}
+	if ok {
+		t.Fatal("ok = true for a missing purchase, want false")
+	}
+}
+
+func TestService_ConfirmCheckout_RepoError(t *testing.T) {
+	t.Parallel()
+
+	repo := &fakeRepo{
+		getByIDFn: func(_ context.Context, _ int64) (domain.Purchase, error) {
+			return domain.Purchase{}, errors.New("db unavailable")
+		},
+	}
+	provider := &fakeProvider{confirm: domain.CheckoutConfirmation{PurchaseID: 9, Paid: true}}
+	svc := NewService(repo, testCatalog(), WithProvider(provider), WithLogger(discardLogger()))
+
+	_, ok, err := svc.ConfirmCheckout(context.Background(), "cs_1", 7)
+	if err == nil {
+		t.Fatal("ConfirmCheckout err = nil for a repo failure, want non-nil")
+	}
+	if ok {
+		t.Fatal("ok = true for a repo failure, want false")
+	}
+}
+
+func TestService_ConfirmCheckout_UnknownPackage(t *testing.T) {
+	t.Parallel()
+
+	repo := &fakeRepo{
+		getByIDFn: func(_ context.Context, id int64) (domain.Purchase, error) {
+			return domain.Purchase{ID: id, AccountID: 7, PackageKey: "ghost"}, nil
+		},
+	}
+	provider := &fakeProvider{confirm: domain.CheckoutConfirmation{PurchaseID: 9, Paid: true}}
+	svc := NewService(repo, testCatalog(), WithProvider(provider), WithLogger(discardLogger()))
+
+	_, ok, err := svc.ConfirmCheckout(context.Background(), "cs_1", 7)
+	if err != nil {
+		t.Fatalf("ConfirmCheckout: %v", err)
+	}
+	if ok {
+		t.Fatal("ok = true for a package missing from the catalog, want false")
+	}
+}
