@@ -1,7 +1,9 @@
 package billing
 
 import (
+	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/hayakawakaki/go-racp/internal/features/account"
@@ -40,6 +42,10 @@ func BuildService(in *coreinfra.Infra) *app.Service {
 
 func buildCatalog(in *coreinfra.Infra) domain.Catalog {
 	purchases := in.Config.App.Purchases
+	if len(purchases.Packages) > 0 && !domain.IsSupportedCurrency(purchases.Currency) {
+		panic(fmt.Errorf("billing: Purchases.Currency %q is not supported, must be one of %v", purchases.Currency, domain.SupportedCurrencies()))
+	}
+
 	pkgs := make([]domain.Package, 0, len(purchases.Packages))
 	for _, pkg := range purchases.Packages {
 		pkgs = append(pkgs, domain.Package{
@@ -57,12 +63,29 @@ func buildCatalog(in *coreinfra.Infra) domain.Catalog {
 func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 	svc := BuildService(in)
 
+	webhookSecret := ""
+	isProd := in.Config.Env.Mode != "development"
+	if in.Config.App.Purchases.Providers.Stripe {
+		switch {
+		case in.Config.Env.StripeSecretKey == "":
+			in.Logger.Warn("payment provider stripe enabled but STRIPE_SECRET_KEY is unset, checkouts disabled")
+		case in.Config.Env.StripeWebhookSecret == "":
+			in.Logger.Warn("payment provider stripe enabled but STRIPE_WEBHOOK_SECRET is unset, checkouts disabled to avoid uncredited payments")
+		case isProd && strings.Contains(in.Config.Env.StripeSecretKey, "_test_"):
+			in.Logger.Warn("payment provider stripe is using a test secret key in production mode, checkouts disabled")
+		default:
+			SetProvider(infra.NewStripeProvider(in.Config.Env.StripeSecretKey))
+			webhookSecret = in.Config.Env.StripeWebhookSecret
+		}
+	}
+
 	h := transport.NewHandler(svc, transport.HandlerConfig{
-		Logger:   in.Logger,
-		Theme:    theme.Active,
-		General:  in.Config.App.General,
-		Currency: in.Config.App.Purchases.Currency,
-		AppURL:   in.Config.Env.AppURL,
+		Logger:              in.Logger,
+		Theme:               theme.Active,
+		General:             in.Config.App.General,
+		Currency:            in.Config.App.Purchases.Currency,
+		AppURL:              in.Config.Env.AppURL,
+		StripeWebhookSecret: webhookSecret,
 	})
 	h.RegisterRoutes(reg, mux)
 }

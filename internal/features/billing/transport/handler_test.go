@@ -54,6 +54,16 @@ func (s *stubService) HistoryByAccount(context.Context, int, int) ([]domain.Purc
 	return s.history, s.historyErr
 }
 
+func (s *stubService) CompletePurchase(context.Context, int64, string) error {
+	return nil
+}
+
+func (s *stubService) RefundPurchase(context.Context, string, string) error { return nil }
+
+func (s *stubService) DisputePurchase(context.Context, string, string) error { return nil }
+
+func (s *stubService) FailPurchase(context.Context, int64) error { return nil }
+
 func discardLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(io.Discard, nil))
 }

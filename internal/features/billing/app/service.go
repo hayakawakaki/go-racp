@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strings"
 	"time"
 
 	"github.com/hayakawakaki/go-racp/internal/features/billing/domain"
@@ -127,23 +126,7 @@ func (s *Service) StartCheckout(ctx context.Context, accountID int, packageKey, 
 	return result.RedirectURL, nil
 }
 
-func (s *Service) CompletePurchase(ctx context.Context, purchaseID int64, providerPaymentID string, paidAmount int64, paidCurrency string) error {
-	purchase, err := s.repo.GetByID(ctx, purchaseID)
-	if err != nil {
-		return fmt.Errorf("billing.Service.CompletePurchase: %w", err)
-	}
-	if paidAmount != purchase.Amount || !strings.EqualFold(paidCurrency, purchase.Currency) {
-		s.logger.Error("billing: paid amount mismatch, refusing credit",
-			"purchase_id", purchaseID,
-			"account_id", purchase.AccountID,
-			"expected_amount", purchase.Amount,
-			"paid_amount", paidAmount,
-			"expected_currency", purchase.Currency,
-			"paid_currency", paidCurrency,
-		)
-		return fmt.Errorf("billing.Service.CompletePurchase: %w", domain.ErrAmountMismatch)
-	}
-
+func (s *Service) CompletePurchase(ctx context.Context, purchaseID int64, providerPaymentID string) error {
 	credited, accountID, cashPoints, err := s.repo.Complete(ctx, purchaseID, providerPaymentID, s.now())
 	if err != nil {
 		return fmt.Errorf("billing.Service.CompletePurchase: %w", err)
@@ -153,8 +136,6 @@ func (s *Service) CompletePurchase(ctx context.Context, purchaseID int64, provid
 			"purchase_id", purchaseID,
 			"account_id", accountID,
 			"cash_points", cashPoints,
-			"amount", purchase.Amount,
-			"currency", purchase.Currency,
 			"provider_payment_id", providerPaymentID,
 		)
 	}

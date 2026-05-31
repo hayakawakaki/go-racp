@@ -141,3 +141,7 @@ Store:
   History:
     Roles: ["*"]
     Requires: ["Unrestricted"]
+
+Webhooks:
+  Stripe:
+    Roles: ["Public"]
