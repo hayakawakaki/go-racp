@@ -358,9 +358,26 @@ func TestHandler_ShowStore_SuccessUnverifiedShowsNotice(t *testing.T) {
 
 	body := rr.Body.String()
 	if strings.Contains(body, "Purchase complete") {
-		t.Errorf("unverified success must not render the modal")
+		t.Errorf("unverified success must not render the success modal")
 	}
-	if !strings.Contains(body, "not completed") {
-		t.Errorf("body does not contain the not-completed notice")
+	if !strings.Contains(body, "Payment not completed") {
+		t.Errorf("body does not contain the not-completed modal heading")
+	}
+}
+
+func TestHandler_ShowStore_CancelShowsNotCompletedModal(t *testing.T) {
+	t.Parallel()
+	h := newHandler(&stubService{available: true})
+
+	req := httptest.NewRequest(http.MethodGet, "/store?notice=cancel", http.NoBody)
+	rr := httptest.NewRecorder()
+	h.showStore(rr, req)
+
+	body := rr.Body.String()
+	if !strings.Contains(body, "Payment not completed") {
+		t.Errorf("body does not contain the not-completed modal heading")
+	}
+	if strings.Contains(body, "Purchase complete") {
+		t.Errorf("cancel must not render the success modal")
 	}
 }

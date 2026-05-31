@@ -14,7 +14,6 @@ import (
 var storeNoticeText = map[string]string{
 	"unavailable": "The store is currently unavailable. Please try again later.",
 	"invalid":     "That request could not be processed. Please try again.",
-	"cancel":      "Your payment was not completed.",
 }
 
 func noticeMessage(code string) string {
@@ -37,14 +36,17 @@ func (h *Handler) showStore(w http.ResponseWriter, r *http.Request) {
 		Methods:   paymentMethods(available),
 		Available: available,
 	}
-	if notice == "success" {
+	switch notice {
+	case "success":
 		if purchased, ok := h.confirmPurchase(r); ok {
 			st.Success = true
 			st.Purchased = &purchased
 		} else {
-			st.Notice = noticeMessage("cancel")
+			st.NotCompleted = true
 		}
-	} else {
+	case "cancel":
+		st.NotCompleted = true
+	default:
 		st.Notice = noticeMessage(notice)
 	}
 
