@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -124,6 +125,39 @@ func (s *Service) StartCheckout(ctx context.Context, accountID int, packageKey, 
 	}
 
 	return result.RedirectURL, nil
+}
+
+func (s *Service) ConfirmCheckout(ctx context.Context, sessionID string, accountID int) (domain.Package, bool, error) {
+	if s.provider == nil {
+		return domain.Package{}, false, nil
+	}
+
+	confirmation, err := s.provider.RetrieveCheckout(ctx, sessionID)
+	if err != nil {
+		s.logger.Warn("billing: confirm checkout retrieve failed", "session_id", sessionID, "err", err)
+		return domain.Package{}, false, nil
+	}
+	if !confirmation.Paid {
+		return domain.Package{}, false, nil
+	}
+
+	purchase, err := s.repo.GetByID(ctx, confirmation.PurchaseID)
+	if err != nil {
+		if errors.Is(err, domain.ErrPurchaseNotFound) {
+			return domain.Package{}, false, nil
+		}
+		return domain.Package{}, false, fmt.Errorf("billing.Service.ConfirmCheckout: %w", err)
+	}
+	if purchase.AccountID != accountID {
+		return domain.Package{}, false, nil
+	}
+
+	pkg, ok := s.catalog.Lookup(purchase.PackageKey)
+	if !ok {
+		return domain.Package{}, false, nil
+	}
+
+	return pkg, true, nil
 }
 
 func (s *Service) CompletePurchase(ctx context.Context, purchaseID int64, providerPaymentID string) error {

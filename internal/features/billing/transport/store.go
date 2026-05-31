@@ -14,8 +14,7 @@ import (
 var storeNoticeText = map[string]string{
 	"unavailable": "The store is currently unavailable. Please try again later.",
 	"invalid":     "That request could not be processed. Please try again.",
-	"cancel":      "Checkout was cancelled. No payment was taken.",
-	"success":     "Payment received. Your cash points will be credited shortly.",
+	"cancel":      "Your payment was not completed.",
 }
 
 func noticeMessage(code string) string {
@@ -39,9 +38,11 @@ func (h *Handler) showStore(w http.ResponseWriter, r *http.Request) {
 		Available: available,
 	}
 	if notice == "success" {
-		if purchased, ok := findPackage(packages, r.URL.Query().Get(fieldPackage)); ok {
+		if purchased, ok := h.confirmPurchase(r); ok {
 			st.Success = true
 			st.Purchased = &purchased
+		} else {
+			st.Notice = noticeMessage("cancel")
 		}
 	} else {
 		st.Notice = noticeMessage(notice)
@@ -50,18 +51,24 @@ func (h *Handler) showStore(w http.ResponseWriter, r *http.Request) {
 	httpx.RenderHTML(w, r, h.logger, h.theme.StorePage(h.layout(), st))
 }
 
-func findPackage(packages []domain.Package, key string) (domain.Package, bool) {
-	if key == "" {
+func (h *Handler) confirmPurchase(r *http.Request) (domain.Package, bool) {
+	sessionID := r.URL.Query().Get("session_id")
+	if sessionID == "" {
 		return domain.Package{}, false
 	}
 
-	for _, pkg := range packages {
-		if pkg.Key == key {
-			return pkg, true
-		}
+	snapshot, ok := middleware.SnapshotFromContext(r.Context())
+	if !ok {
+		return domain.Package{}, false
 	}
 
-	return domain.Package{}, false
+	purchased, ok, err := h.svc.ConfirmCheckout(r.Context(), sessionID, snapshot.UserID)
+	if err != nil {
+		h.logger.Error("billing: confirm checkout", "err", err)
+		return domain.Package{}, false
+	}
+
+	return purchased, ok
 }
 
 func paymentMethods(stripeReady bool) []state.PaymentMethod {
@@ -97,7 +104,7 @@ func (h *Handler) startCheckout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	successURL := h.appURL + "/store?notice=success&package=" + url.QueryEscape(packageKey)
+	successURL := h.appURL + "/store?notice=success&session_id={CHECKOUT_SESSION_ID}"
 	cancelURL := h.appURL + "/store?notice=cancel"
 
 	redirectURL, err := h.svc.StartCheckout(r.Context(), snapshot.UserID, packageKey, successURL, cancelURL)

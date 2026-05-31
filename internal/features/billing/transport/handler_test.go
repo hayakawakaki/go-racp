@@ -37,9 +37,12 @@ type stubService struct {
 	checkoutURL string
 	checkoutErr error
 	historyErr  error
+	confirmErr  error
 	packages    []domain.Package
 	history     []domain.Purchase
+	confirmPkg  domain.Package
 	available   bool
+	confirmOK   bool
 }
 
 func (s *stubService) Packages() []domain.Package { return s.packages }
@@ -52,6 +55,10 @@ func (s *stubService) StartCheckout(context.Context, int, string, string, string
 
 func (s *stubService) HistoryByAccount(context.Context, int, int) ([]domain.Purchase, error) {
 	return s.history, s.historyErr
+}
+
+func (s *stubService) ConfirmCheckout(context.Context, string, int) (domain.Package, bool, error) {
+	return s.confirmPkg, s.confirmOK, s.confirmErr
 }
 
 func (s *stubService) CompletePurchase(context.Context, int64, string) error {
@@ -316,15 +323,19 @@ func TestHandler_ShowStore_RendersMethods(t *testing.T) {
 func TestHandler_ShowStore_SuccessModal(t *testing.T) {
 	t.Parallel()
 	svc := &stubService{
-		available: true,
+		available:  true,
+		confirmOK:  true,
+		confirmPkg: domain.Package{Key: "starter", Name: "Starter Pack", Currency: "USD", Price: 5, CashPoints: 500},
 		packages: []domain.Package{
 			{Key: "starter", Name: "Starter Pack", Currency: "USD", Price: 5, CashPoints: 500},
 		},
 	}
 	h := newHandler(svc)
 
+	req := httptest.NewRequest(http.MethodGet, "/store?notice=success&session_id=cs_test_1", http.NoBody)
+	req = req.WithContext(middleware.ContextWithSnapshot(req.Context(), &middleware.AccountSnapshot{UserID: 42, Username: "kaki"}))
 	rr := httptest.NewRecorder()
-	h.showStore(rr, httptest.NewRequest(http.MethodGet, "/store?notice=success&package=starter", http.NoBody))
+	h.showStore(rr, req)
 
 	body := rr.Body.String()
 	if !strings.Contains(body, "Purchase complete") {
@@ -332,5 +343,24 @@ func TestHandler_ShowStore_SuccessModal(t *testing.T) {
 	}
 	if !strings.Contains(body, "Starter Pack") {
 		t.Errorf("body does not contain the purchased package name")
+	}
+}
+
+func TestHandler_ShowStore_SuccessUnverifiedShowsNotice(t *testing.T) {
+	t.Parallel()
+	svc := &stubService{available: true, confirmOK: false}
+	h := newHandler(svc)
+
+	req := httptest.NewRequest(http.MethodGet, "/store?notice=success&session_id=forged", http.NoBody)
+	req = req.WithContext(middleware.ContextWithSnapshot(req.Context(), &middleware.AccountSnapshot{UserID: 42}))
+	rr := httptest.NewRecorder()
+	h.showStore(rr, req)
+
+	body := rr.Body.String()
+	if strings.Contains(body, "Purchase complete") {
+		t.Errorf("unverified success must not render the modal")
+	}
+	if !strings.Contains(body, "not completed") {
+		t.Errorf("body does not contain the not-completed notice")
 	}
 }

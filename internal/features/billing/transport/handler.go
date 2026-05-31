@@ -36,6 +36,7 @@ type billingService interface {
 	Available() bool
 	StartCheckout(ctx context.Context, accountID int, packageKey, successURL, cancelURL string) (string, error)
 	HistoryByAccount(ctx context.Context, accountID, limit int) ([]domain.Purchase, error)
+	ConfirmCheckout(ctx context.Context, sessionID string, accountID int) (domain.Package, bool, error)
 	billingFulfiller
 }
 

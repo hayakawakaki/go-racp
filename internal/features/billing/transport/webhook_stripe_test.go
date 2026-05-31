@@ -52,6 +52,10 @@ func (s *webhookStub) HistoryByAccount(context.Context, int, int) ([]domain.Purc
 	return nil, nil
 }
 
+func (s *webhookStub) ConfirmCheckout(context.Context, string, int) (domain.Package, bool, error) {
+	return domain.Package{}, false, nil
+}
+
 func (s *webhookStub) CompletePurchase(_ context.Context, purchaseID int64, paymentID string) error {
 	s.completed = append(s.completed, completeCall{paymentID, purchaseID})
 

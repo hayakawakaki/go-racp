@@ -404,3 +404,72 @@ func TestService_Earnings_WindowStarts(t *testing.T) {
 		t.Errorf("monthStart = %s, want %s", gotMonth, wantMonth)
 	}
 }
+
+func TestService_ConfirmCheckout_PaidAndOwned(t *testing.T) {
+	t.Parallel()
+
+	repo := &fakeRepo{
+		getByIDFn: func(_ context.Context, id int64) (domain.Purchase, error) {
+			return domain.Purchase{ID: id, AccountID: 7, PackageKey: "starter"}, nil
+		},
+	}
+	provider := &fakeProvider{confirm: domain.CheckoutConfirmation{PurchaseID: 9, Paid: true}}
+	svc := NewService(repo, testCatalog(), WithProvider(provider), WithLogger(discardLogger()))
+
+	pkg, ok, err := svc.ConfirmCheckout(context.Background(), "cs_1", 7)
+	if err != nil {
+		t.Fatalf("ConfirmCheckout: %v", err)
+	}
+	if !ok || pkg.Key != "starter" {
+		t.Fatalf("ok=%v pkg=%q, want true/starter", ok, pkg.Key)
+	}
+}
+
+func TestService_ConfirmCheckout_WrongAccount(t *testing.T) {
+	t.Parallel()
+
+	repo := &fakeRepo{
+		getByIDFn: func(_ context.Context, id int64) (domain.Purchase, error) {
+			return domain.Purchase{ID: id, AccountID: 99, PackageKey: "starter"}, nil
+		},
+	}
+	provider := &fakeProvider{confirm: domain.CheckoutConfirmation{PurchaseID: 9, Paid: true}}
+	svc := NewService(repo, testCatalog(), WithProvider(provider), WithLogger(discardLogger()))
+
+	_, ok, err := svc.ConfirmCheckout(context.Background(), "cs_1", 7)
+	if err != nil {
+		t.Fatalf("ConfirmCheckout: %v", err)
+	}
+	if ok {
+		t.Fatal("ok = true for a session owned by another account, want false")
+	}
+}
+
+func TestService_ConfirmCheckout_NotPaid(t *testing.T) {
+	t.Parallel()
+
+	provider := &fakeProvider{confirm: domain.CheckoutConfirmation{PurchaseID: 9, Paid: false}}
+	svc := NewService(&fakeRepo{}, testCatalog(), WithProvider(provider), WithLogger(discardLogger()))
+
+	_, ok, err := svc.ConfirmCheckout(context.Background(), "cs_1", 7)
+	if err != nil {
+		t.Fatalf("ConfirmCheckout: %v", err)
+	}
+	if ok {
+		t.Fatal("ok = true for an unpaid session, want false")
+	}
+}
+
+func TestService_ConfirmCheckout_NoProvider(t *testing.T) {
+	t.Parallel()
+
+	svc := NewService(&fakeRepo{}, testCatalog(), WithLogger(discardLogger()))
+
+	_, ok, err := svc.ConfirmCheckout(context.Background(), "cs_1", 7)
+	if err != nil {
+		t.Fatalf("ConfirmCheckout: %v", err)
+	}
+	if ok {
+		t.Fatal("ok = true with no provider, want false")
+	}
+}
