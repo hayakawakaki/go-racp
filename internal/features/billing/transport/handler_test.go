@@ -287,3 +287,28 @@ func TestHandler_StartCheckout_EmptyProviderFallsBack(t *testing.T) {
 		t.Errorf("Location = %q, want provider URL", got)
 	}
 }
+
+func TestHandler_ShowStore_RendersMethods(t *testing.T) {
+	t.Parallel()
+	svc := &stubService{
+		available: true,
+		packages: []domain.Package{
+			{Key: "starter", Name: "Starter Pack", Currency: "USD", Price: 5, CashPoints: 500},
+		},
+	}
+	h := newHandler(svc)
+
+	rr := httptest.NewRecorder()
+	h.showStore(rr, httptest.NewRequest(http.MethodGet, "/store", http.NoBody))
+
+	body := rr.Body.String()
+	if !strings.Contains(body, "Stripe") {
+		t.Errorf("body does not contain the stripe method label")
+	}
+	if !strings.Contains(body, "Coming soon") {
+		t.Errorf("body does not contain a coming soon row")
+	}
+	if !strings.Contains(body, "$5 USD") {
+		t.Errorf("body does not contain the sign-and-code price")
+	}
+}

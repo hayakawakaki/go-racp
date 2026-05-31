@@ -14,12 +14,16 @@ import (
 )
 
 var (
+	precomputedHTMLPurchaseTerms template.HTML
 	precomputedHTMLServerInfo template.HTML
 )
 
 func init() {
 	var err error
 
+	if precomputedHTMLPurchaseTerms, err = themepage.RenderMarkdown(mustRead(Pages, "pages/purchase-terms.md")); err != nil {
+		panic("themesdefault: pre-render pages/purchase-terms.md: " + err.Error())
+	}
 	if precomputedHTMLServerInfo, err = themepage.RenderMarkdown(mustRead(Pages, "pages/server-info.md")); err != nil {
 		panic("themesdefault: pre-render pages/server-info.md: " + err.Error())
 	}
@@ -42,6 +46,11 @@ func MountRoutes(reg *routes.Registry, mux *http.ServeMux, layout httpx.Layout) 
 	}))
 	reg.Wrap(mux, "ThemePages.Download", "/download", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := pages.Download(themepage.BuildCtx(r, layout)).Render(r.Context(), w); err != nil {
+			http.Error(w, "render error", http.StatusInternalServerError)
+		}
+	}))
+	reg.Wrap(mux, "ThemePages.PurchaseTerms", "/purchase-terms", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := themepage.RenderMarkdownPageFrom(w, r, layout, "Purchase Terms & Conditions", "pages/purchase-terms.md", precomputedHTMLPurchaseTerms); err != nil {
 			http.Error(w, "render error", http.StatusInternalServerError)
 		}
 	}))
