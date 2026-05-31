@@ -106,7 +106,13 @@ type CheckoutResult struct {
 	Reference   string
 }
 
+type CheckoutConfirmation struct {
+	PurchaseID int64
+	Paid       bool
+}
+
 type Provider interface {
 	Name() string
 	CreateCheckout(ctx context.Context, request CheckoutRequest) (CheckoutResult, error)
+	RetrieveCheckout(ctx context.Context, sessionID string) (CheckoutConfirmation, error)
 }

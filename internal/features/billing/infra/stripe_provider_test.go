@@ -20,6 +20,8 @@ func (b *captureBackend) Call(_, _, _ string, params stripe.ParamsContainer, v s
 	if sess, ok := v.(*stripe.CheckoutSession); ok {
 		sess.ID = "cs_test_123"
 		sess.URL = "https://checkout.stripe.com/c/pay/cs_test_123"
+		sess.PaymentStatus = stripe.CheckoutSessionPaymentStatusPaid
+		sess.Metadata = map[string]string{"purchase_id": "9"}
 	}
 
 	return nil
@@ -83,6 +85,22 @@ func TestStripeProvider_CreateCheckout_MapsParams(t *testing.T) {
 	}
 	if params.Metadata["purchase_id"] != "9" {
 		t.Errorf("metadata purchase_id = %q, want 9", params.Metadata["purchase_id"])
+	}
+}
+
+func TestStripeProvider_RetrieveCheckout_Paid(t *testing.T) {
+	stripe.SetBackend(stripe.APIBackend, &captureBackend{})
+
+	provider := NewStripeProvider("sk_test_dummy")
+	confirmation, err := provider.RetrieveCheckout(context.Background(), "cs_test_123")
+	if err != nil {
+		t.Fatalf("RetrieveCheckout: %v", err)
+	}
+	if !confirmation.Paid {
+		t.Errorf("Paid = false, want true")
+	}
+	if confirmation.PurchaseID != 9 {
+		t.Errorf("PurchaseID = %d, want 9", confirmation.PurchaseID)
 	}
 }
 
