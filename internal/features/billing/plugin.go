@@ -1,6 +1,7 @@
 package billing
 
 import (
+	"fmt"
 	"net/http"
 	"sync"
 
@@ -40,6 +41,10 @@ func BuildService(in *coreinfra.Infra) *app.Service {
 
 func buildCatalog(in *coreinfra.Infra) domain.Catalog {
 	purchases := in.Config.App.Purchases
+	if len(purchases.Packages) > 0 && !domain.IsSupportedCurrency(purchases.Currency) {
+		panic(fmt.Errorf("billing: Purchases.Currency %q is not supported, must be one of %v", purchases.Currency, domain.SupportedCurrencies()))
+	}
+
 	pkgs := make([]domain.Package, 0, len(purchases.Packages))
 	for _, pkg := range purchases.Packages {
 		pkgs = append(pkgs, domain.Package{
@@ -57,15 +62,16 @@ func buildCatalog(in *coreinfra.Infra) domain.Catalog {
 func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 	svc := BuildService(in)
 
+	webhookSecret := ""
 	if in.Config.App.Purchases.Providers.Stripe {
-		if in.Config.Env.StripeSecretKey != "" {
+		switch {
+		case in.Config.Env.StripeSecretKey == "":
+			in.Logger.Warn("payment provider stripe enabled but STRIPE_SECRET_KEY is unset, checkouts disabled")
+		case in.Config.Env.StripeWebhookSecret == "":
+			in.Logger.Warn("payment provider stripe enabled but STRIPE_WEBHOOK_SECRET is unset, checkouts disabled to avoid uncredited payments")
+		default:
 			SetProvider(infra.NewStripeProvider(in.Config.Env.StripeSecretKey))
-		} else {
-			in.Logger.Warn("payment provider stripe enabled but STRIPE_SECRET_KEY is unset")
-		}
-
-		if in.Config.Env.StripeWebhookSecret == "" {
-			in.Logger.Warn("payment provider stripe enabled but STRIPE_WEBHOOK_SECRET is unset, fulfillment webhooks will be rejected")
+			webhookSecret = in.Config.Env.StripeWebhookSecret
 		}
 	}
 
@@ -75,7 +81,7 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 		General:             in.Config.App.General,
 		Currency:            in.Config.App.Purchases.Currency,
 		AppURL:              in.Config.Env.AppURL,
-		StripeWebhookSecret: in.Config.Env.StripeWebhookSecret,
+		StripeWebhookSecret: webhookSecret,
 	})
 	h.RegisterRoutes(reg, mux)
 }

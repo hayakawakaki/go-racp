@@ -2,6 +2,8 @@ package domain
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 )
 
@@ -27,4 +29,14 @@ func ToMinorUnits(amount int64, currency string) (int64, error) {
 	}
 
 	return amount * factor, nil
+}
+
+func IsSupportedCurrency(currency string) bool {
+	_, err := minorFactor(currency)
+
+	return err == nil
+}
+
+func SupportedCurrencies() []string {
+	return slices.Sorted(maps.Keys(minorUnitExponent))
 }
