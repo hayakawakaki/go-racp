@@ -312,3 +312,25 @@ func TestHandler_ShowStore_RendersMethods(t *testing.T) {
 		t.Errorf("body does not contain the sign-and-code price")
 	}
 }
+
+func TestHandler_ShowStore_SuccessModal(t *testing.T) {
+	t.Parallel()
+	svc := &stubService{
+		available: true,
+		packages: []domain.Package{
+			{Key: "starter", Name: "Starter Pack", Currency: "USD", Price: 5, CashPoints: 500},
+		},
+	}
+	h := newHandler(svc)
+
+	rr := httptest.NewRecorder()
+	h.showStore(rr, httptest.NewRequest(http.MethodGet, "/store?notice=success&package=starter", http.NoBody))
+
+	body := rr.Body.String()
+	if !strings.Contains(body, "Purchase complete") {
+		t.Errorf("body does not contain the success heading")
+	}
+	if !strings.Contains(body, "Starter Pack") {
+		t.Errorf("body does not contain the purchased package name")
+	}
+}

@@ -29,15 +29,39 @@ func (h *Handler) showStore(w http.ResponseWriter, r *http.Request) {
 	}
 
 	available := h.svc.Available()
+	packages := h.svc.Packages()
+	notice := r.URL.Query().Get("notice")
+
 	st := state.StoreState{
-		Packages:  h.svc.Packages(),
+		Packages:  packages,
 		Currency:  h.currency,
 		Methods:   paymentMethods(available),
-		Notice:    noticeMessage(r.URL.Query().Get("notice")),
 		Available: available,
+	}
+	if notice == "success" {
+		if purchased, ok := findPackage(packages, r.URL.Query().Get(fieldPackage)); ok {
+			st.Success = true
+			st.Purchased = &purchased
+		}
+	} else {
+		st.Notice = noticeMessage(notice)
 	}
 
 	httpx.RenderHTML(w, r, h.logger, h.theme.StorePage(h.layout(), st))
+}
+
+func findPackage(packages []domain.Package, key string) (domain.Package, bool) {
+	if key == "" {
+		return domain.Package{}, false
+	}
+
+	for _, pkg := range packages {
+		if pkg.Key == key {
+			return pkg, true
+		}
+	}
+
+	return domain.Package{}, false
 }
 
 func paymentMethods(stripeReady bool) []state.PaymentMethod {
@@ -73,7 +97,7 @@ func (h *Handler) startCheckout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	successURL := h.appURL + "/store?notice=success"
+	successURL := h.appURL + "/store?notice=success&package=" + url.QueryEscape(packageKey)
 	cancelURL := h.appURL + "/store?notice=cancel"
 
 	redirectURL, err := h.svc.StartCheckout(r.Context(), snapshot.UserID, packageKey, successURL, cancelURL)
