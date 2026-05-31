@@ -16,8 +16,9 @@ import (
 const (
 	maxCheckoutFormBytes = 1 << 10
 
-	fieldPackage  = "package"
-	fieldProvider = "provider"
+	fieldPackage   = "package"
+	fieldProvider  = "provider"
+	fieldSessionID = "session_id"
 
 	providerStripe = "stripe"
 

@@ -51,7 +51,7 @@ func StorePage(layout httpx.Layout, state billingstate.StoreState) templ.Compone
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			if state.Success {
+			if state.Purchased != nil {
 				templ_7745c5c3_Err = successModal(state.Purchased, state.Currency).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err

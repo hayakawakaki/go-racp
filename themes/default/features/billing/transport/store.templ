@@ -12,7 +12,7 @@ import (
 
 templ StorePage(layout httpx.Layout, state billingstate.StoreState) {
 	@httpx.ActiveBase(layout, "Store") {
-		if state.Success {
+		if state.Purchased != nil {
 			@successModal(state.Purchased, state.Currency)
 		} else if state.NotCompleted {
 			@notCompletedModal()

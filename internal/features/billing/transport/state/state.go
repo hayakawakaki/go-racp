@@ -19,7 +19,6 @@ type StoreState struct {
 	Packages     []domain.Package
 	Methods      []PaymentMethod
 	Available    bool
-	Success      bool
 	NotCompleted bool
 }
 
