@@ -42,6 +42,12 @@ func (h *Handler) stripeWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if event.Data == nil {
+		h.logger.Error("stripe webhook: event missing data object", "type", string(event.Type), "event_id", event.ID)
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
 	if err := h.dispatchStripeEvent(r.Context(), event); err != nil {
 		h.logger.Error("stripe webhook: transient failure, asking Stripe to retry",
 			"type", string(event.Type), "event_id", event.ID, "err", err)
@@ -87,6 +93,9 @@ func (h *Handler) handleCheckoutCompleted(ctx context.Context, event stripe.Even
 	paymentIntentID := ""
 	if sess.PaymentIntent != nil {
 		paymentIntentID = sess.PaymentIntent.ID
+	} else if sess.AmountTotal > 0 {
+		h.logger.Error("stripe webhook: paid session has an amount but no payment intent",
+			"session", sess.ID, "purchase_id", purchaseID, "amount_total", sess.AmountTotal)
 	}
 
 	return h.ackFulfillment(

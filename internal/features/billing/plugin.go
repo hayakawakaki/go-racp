@@ -63,6 +63,10 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 		} else {
 			in.Logger.Warn("payment provider stripe enabled but STRIPE_SECRET_KEY is unset")
 		}
+
+		if in.Config.Env.StripeWebhookSecret == "" {
+			in.Logger.Warn("payment provider stripe enabled but STRIPE_WEBHOOK_SECRET is unset, fulfillment webhooks will be rejected")
+		}
 	}
 
 	h := transport.NewHandler(svc, transport.HandlerConfig{
