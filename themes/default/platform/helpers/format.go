@@ -1,6 +1,15 @@
 package helpers
 
-import "strconv"
+import (
+	"strconv"
+	"strings"
+)
+
+var currencySign = map[string]string{
+	"USD": "$",
+	"EUR": "€",
+	"JPY": "¥",
+}
 
 func FormatAmount(value int64) string {
 	if value < 0 {
@@ -18,4 +27,14 @@ func FormatAmount(value int64) string {
 	}
 
 	return string(out)
+}
+
+func FormatPrice(value int64, currency string) string {
+	code := strings.ToUpper(currency)
+	amount := FormatAmount(value)
+	if sign, ok := currencySign[code]; ok {
+		return sign + amount + " " + code
+	}
+
+	return amount + " " + code
 }
