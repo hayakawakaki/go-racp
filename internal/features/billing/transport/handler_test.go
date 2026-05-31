@@ -227,3 +227,63 @@ func TestHandler_ShowHistory_Empty(t *testing.T) {
 		t.Errorf("body does not contain empty-state text")
 	}
 }
+
+func TestHandler_StartCheckout_StripeProvider(t *testing.T) {
+	t.Parallel()
+	svc := &stubService{checkoutURL: "https://pay.test/session/9"}
+	h := newHandler(svc)
+
+	req := httptest.NewRequest(http.MethodPost, "/store/checkout", strings.NewReader("package=starter&provider=stripe"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req = req.WithContext(middleware.ContextWithSnapshot(req.Context(), &middleware.AccountSnapshot{UserID: 42, Username: "kaki"}))
+
+	rr := httptest.NewRecorder()
+	h.startCheckout(rr, req)
+
+	if rr.Code != http.StatusSeeOther {
+		t.Fatalf("status = %d, want 303", rr.Code)
+	}
+	if got := rr.Header().Get("Location"); got != "https://pay.test/session/9" {
+		t.Errorf("Location = %q, want provider URL", got)
+	}
+}
+
+func TestHandler_StartCheckout_UnsupportedProvider(t *testing.T) {
+	t.Parallel()
+	svc := &stubService{checkoutURL: "https://pay.test/session/9"}
+	h := newHandler(svc)
+
+	req := httptest.NewRequest(http.MethodPost, "/store/checkout", strings.NewReader("package=starter&provider=paypal"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req = req.WithContext(middleware.ContextWithSnapshot(req.Context(), &middleware.AccountSnapshot{UserID: 42, Username: "kaki"}))
+
+	rr := httptest.NewRecorder()
+	h.startCheckout(rr, req)
+
+	if rr.Code != http.StatusSeeOther {
+		t.Fatalf("status = %d, want 303", rr.Code)
+	}
+	if got := rr.Header().Get("Location"); got != "/store?notice=invalid" {
+		t.Errorf("Location = %q, want /store?notice=invalid", got)
+	}
+}
+
+func TestHandler_StartCheckout_EmptyProviderFallsBack(t *testing.T) {
+	t.Parallel()
+	svc := &stubService{checkoutURL: "https://pay.test/session/9"}
+	h := newHandler(svc)
+
+	req := httptest.NewRequest(http.MethodPost, "/store/checkout", strings.NewReader("package=starter"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req = req.WithContext(middleware.ContextWithSnapshot(req.Context(), &middleware.AccountSnapshot{UserID: 42, Username: "kaki"}))
+
+	rr := httptest.NewRecorder()
+	h.startCheckout(rr, req)
+
+	if rr.Code != http.StatusSeeOther {
+		t.Fatalf("status = %d, want 303", rr.Code)
+	}
+	if got := rr.Header().Get("Location"); got != "https://pay.test/session/9" {
+		t.Errorf("Location = %q, want provider URL", got)
+	}
+}

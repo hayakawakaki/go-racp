@@ -28,14 +28,24 @@ func (h *Handler) showStore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	available := h.svc.Available()
 	st := state.StoreState{
 		Packages:  h.svc.Packages(),
 		Currency:  h.currency,
+		Methods:   paymentMethods(available),
 		Notice:    noticeMessage(r.URL.Query().Get("notice")),
-		Available: h.svc.Available(),
+		Available: available,
 	}
 
 	httpx.RenderHTML(w, r, h.logger, h.theme.StorePage(h.layout(), st))
+}
+
+func paymentMethods(stripeReady bool) []state.PaymentMethod {
+	return []state.PaymentMethod{
+		{Key: providerStripe, Label: "Stripe", Enabled: stripeReady},
+		{Key: "paypal", Label: "PayPal", Enabled: false},
+		{Key: "crypto", Label: "Crypto", Enabled: false},
+	}
 }
 
 func (h *Handler) startCheckout(w http.ResponseWriter, r *http.Request) {
@@ -57,6 +67,12 @@ func (h *Handler) startCheckout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	packageKey := r.FormValue(fieldPackage)
+	provider := r.FormValue(fieldProvider)
+	if provider != "" && provider != providerStripe {
+		http.Redirect(w, r, "/store?notice=invalid", http.StatusSeeOther)
+		return
+	}
+
 	successURL := h.appURL + "/store?notice=success"
 	cancelURL := h.appURL + "/store?notice=cancel"
 

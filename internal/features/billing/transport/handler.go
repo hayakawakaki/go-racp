@@ -16,7 +16,10 @@ import (
 const (
 	maxCheckoutFormBytes = 1 << 10
 
-	fieldPackage = "package"
+	fieldPackage  = "package"
+	fieldProvider = "provider"
+
+	providerStripe = "stripe"
 
 	historyPageSize = 50
 )
