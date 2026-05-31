@@ -3,6 +3,7 @@ package billing
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/hayakawakaki/go-racp/internal/features/account"
@@ -63,12 +64,15 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 	svc := BuildService(in)
 
 	webhookSecret := ""
+	isProd := in.Config.Env.Mode != "development"
 	if in.Config.App.Purchases.Providers.Stripe {
 		switch {
 		case in.Config.Env.StripeSecretKey == "":
 			in.Logger.Warn("payment provider stripe enabled but STRIPE_SECRET_KEY is unset, checkouts disabled")
 		case in.Config.Env.StripeWebhookSecret == "":
 			in.Logger.Warn("payment provider stripe enabled but STRIPE_WEBHOOK_SECRET is unset, checkouts disabled to avoid uncredited payments")
+		case isProd && strings.Contains(in.Config.Env.StripeSecretKey, "_test_"):
+			in.Logger.Warn("payment provider stripe is using a test secret key in production mode, checkouts disabled")
 		default:
 			SetProvider(infra.NewStripeProvider(in.Config.Env.StripeSecretKey))
 			webhookSecret = in.Config.Env.StripeWebhookSecret
