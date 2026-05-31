@@ -8,3 +8,5 @@ ThemePages:
     Roles: ["Public"]
   Download:
     Roles: ["Public"]
+  PurchaseTerms:
+    Roles: ["Public"]

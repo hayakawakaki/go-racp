@@ -1,18 +1,20 @@
 package transport
 
 import (
-	"fmt"
-
 	"github.com/hayakawakaki/go-racp/internal/features/billing/domain"
 	billingstate "github.com/hayakawakaki/go-racp/internal/features/billing/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/security"
 	"github.com/hayakawakaki/go-racp/internal/platform/ui"
 	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
+	"github.com/hayakawakaki/go-racp/themes/default/platform/helpers"
 )
 
 templ StorePage(layout httpx.Layout, state billingstate.StoreState) {
 	@httpx.ActiveBase(layout, "Store") {
+		if state.Success {
+			@successModal(state.Purchased, state.Currency)
+		}
 		<div class="space-y-4 lg:space-y-6">
 			if state.Notice != "" {
 				@ui.Alert(ui.AlertProps{Variant: ui.AlertInfo}) {
@@ -33,7 +35,7 @@ templ StorePage(layout httpx.Layout, state billingstate.StoreState) {
 			} else {
 				<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 					for _, pkg := range state.Packages {
-						@storePackageCard(pkg, state.Currency)
+						@storePackageCard(pkg, state.Currency, state.Methods)
 					}
 				</div>
 			}
@@ -41,31 +43,146 @@ templ StorePage(layout httpx.Layout, state billingstate.StoreState) {
 	}
 }
 
-templ storePackageCard(pkg domain.Package, currency string) {
+templ storePackageCard(pkg domain.Package, currency string, methods []billingstate.PaymentMethod) {
 	@components.BentoCard(components.BentoCardProps{
 		Padding: "p-6 lg:p-8",
 		Class:   "gap-4",
 	}) {
 		<div class="space-y-2">
-			@components.BentoLabel("text-[11px]") {
-				Package
-			}
 			<h2 class="text-2xl font-light tracking-tight text-font">{ pkg.Name }</h2>
-			<div class="text-sm text-font-muted tabular-nums">{ fmt.Sprintf("%d %s", pkg.Price, currency) }</div>
-			<div class="text-sm text-font-muted tabular-nums">{ fmt.Sprintf("%d cash points", pkg.CashPoints) }</div>
+			<p class="text-sm text-font-muted tabular-nums">{ helpers.FormatAmount(int64(pkg.CashPoints)) + " Cashpoints" }</p>
 		</div>
-		<form method="post" action="/store/checkout" class="pt-2">
-			@security.HiddenField()
-			<input type="hidden" name="package" value={ pkg.Key }/>
+		@ui.Modal(ui.ModalProps{}) {
+			@ui.ModalTrigger("pt-2 block") {
+				@ui.Button(ui.ButtonProps{
+					Variant: ui.ButtonSolid,
+					Color:   ui.ButtonColorIndigo,
+					Size:    ui.ButtonSizeMD,
+					Rounded: ui.ButtonRoundedMD,
+					Class:   "w-full text-xl",
+				}) {
+				   { helpers.FormatPrice(pkg.Price, currency) }
+				}
+			}
+			@ui.ModalContent(ui.ModalContentProps{Teleport: true, Class: "max-w-4xl p-2 gap-0"}) {
+				<form method="post" action="/store/checkout" class="flex flex-col lg:flex-row">
+					@security.HiddenField()
+					<input type="hidden" name="package" value={ pkg.Key }/>
+					@checkoutMethods(methods)
+					@checkoutSummary(pkg, currency)
+				</form>
+			}
+		}
+	}
+}
+
+templ checkoutMethods(methods []billingstate.PaymentMethod) {
+	<div class="flex flex-col gap-3 p-6 lg:w-3/5 lg:p-8">
+		<h3 class="text-base font-semibold text-font">Checkout</h3>
+		@components.BentoLabel("text-[11px]") {
+			Payment Methods
+		}
+		<div class="flex flex-col gap-2.5">
+			for _, method := range methods {
+				@checkoutMethodRow(method)
+			}
+		</div>
+	</div>
+}
+
+templ checkoutMethodRow(method billingstate.PaymentMethod) {
+	if method.Enabled {
+		<div class="flex items-center justify-between gap-3 rounded-lg border border-border bg-accent-wash px-4 py-3.5">
+			<span class="flex items-center gap-3">
+				@ui.Radio(ui.RadioProps{Name: "provider", Value: method.Key, Color: ui.RadioColorIndigo, Checked: true})
+				<span class="text-sm font-medium text-accent-on-surface">{ method.Label }</span>
+			</span>
+			@ui.Icon(method.Key, "h-6 w-auto")
+		</div>
+	} else {
+		<div class="flex items-center justify-between gap-3 rounded-lg border border-border px-4 py-3.5 opacity-60">
+			<span class="flex items-center gap-3">
+				@ui.Radio(ui.RadioProps{Name: "provider", Value: method.Key, Disabled: true})
+				<span class="text-sm font-medium text-font-muted">{ method.Label }</span>
+			</span>
+			<span class="flex items-center gap-2">
+				@ui.Badge(ui.BadgeProps{Variant: ui.BadgeSubtle, Color: ui.BadgeColorNeutral, Size: ui.BadgeSizeSM, Rounded: ui.BadgeRoundedFull}) {
+					Coming soon
+				}
+				@ui.Icon(method.Key, "h-6 w-auto")
+			</span>
+		</div>
+	}
+}
+
+templ checkoutSummary(pkg domain.Package, currency string) {
+	<div class="flex flex-col bg-bento p-6 lg:w-2/5 lg:p-8">
+		<div class="space-y-1">
+			@components.BentoLabel("text-[11px]") {
+				You receive
+			}
+			<div class="text-sm text-font-muted">{ pkg.Name }</div>
+			<div class="text-3xl font-semibold tracking-tight text-font tabular-nums">
+				{ helpers.FormatAmount(int64(pkg.CashPoints)) }
+				<span class="text-base font-normal text-font-muted">Cashpoints</span>
+			</div>
+		</div>
+		<div class="my-5 border-t border-border"></div>
+		<div class="flex items-baseline justify-between">
+			<span class="text-sm text-font-muted">Total:</span>
+			<span class="text-lg font-semibold text-font tabular-nums">{ helpers.FormatPrice(pkg.Price, currency) }</span>
+		</div>
+		<div class="mt-6 flex flex-col gap-3">
 			@ui.Button(ui.ButtonProps{
 				Variant: ui.ButtonSolid,
 				Color:   ui.ButtonColorIndigo,
-				Size:    ui.ButtonSizeMD,
+				Size:    ui.ButtonSizeLG,
 				Rounded: ui.ButtonRoundedMD,
 				Type:    ui.ButtonTypeSubmit,
+				Class:   "w-full",
 			}) {
-				Buy
+				{ "Pay " + helpers.FormatPrice(pkg.Price, currency) }
 			}
-		</form>
+			<p class="text-center text-xs text-font-muted">
+				By paying you agree to the <a href="/purchase-terms" class="underline hover:text-font">Purchase Terms</a>.
+			</p>
+		</div>
+	</div>
+}
+
+templ successModal(purchased *domain.Package, currency string) {
+	@ui.Modal(ui.ModalProps{Open: true}) {
+		@ui.ModalContent(ui.ModalContentProps{Teleport: true, Size: ui.ModalSizeMD}) {
+			<div class="flex flex-col items-center gap-5 px-2 py-4 text-center">
+				<span class="flex size-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400">
+					@ui.Icon("check", "size-7")
+				</span>
+				<div class="space-y-1">
+					<h2 class="text-xl font-semibold text-font">Purchase complete</h2>
+					<p class="text-sm text-font-muted">Your cash points will be credited shortly.</p>
+				</div>
+				if purchased != nil {
+					<div class="w-full rounded-lg bg-bento p-4 text-left">
+						<div class="text-sm text-font-muted">{ purchased.Name }</div>
+						<div class="text-3xl font-semibold tracking-tight text-font tabular-nums">
+							{ helpers.FormatAmount(int64(purchased.CashPoints)) }
+							<span class="text-base font-normal text-font-muted">Cashpoints</span>
+						</div>
+						<div class="mt-3 flex items-baseline justify-between border-t border-border pt-3">
+							<span class="text-sm text-font-muted">Paid:</span>
+							<span class="text-sm font-medium text-font tabular-nums">{ helpers.FormatPrice(purchased.Price, currency) }</span>
+						</div>
+					</div>
+				}
+				<div class="flex w-full flex-col gap-2 sm:flex-row">
+					@ui.Button(ui.ButtonProps{Variant: ui.ButtonOutline, Rounded: ui.ButtonRoundedMD, Href: "/store", Class: "w-full"}) {
+						Back to Store
+					}
+					@ui.Button(ui.ButtonProps{Variant: ui.ButtonSolid, Color: ui.ButtonColorIndigo, Rounded: ui.ButtonRoundedMD, Href: "/account", Class: "w-full"}) {
+						View Account
+					}
+				</div>
+			</div>
+		}
 	}
 }

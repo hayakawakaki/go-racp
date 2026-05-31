@@ -25,6 +25,7 @@ type ModalContentProps struct {
 	NoEscapeClose  bool
 	NoScrollLock   bool
 	NoCloseButton  bool
+	Teleport       bool
 }
 
 func modalOuterAttrs(p ModalContentProps) templ.Attributes {
@@ -87,7 +88,7 @@ templ ModalTrigger(class ...string) {
 	</div>
 }
 
-templ ModalContent(p ModalContentProps) {
+templ modalOverlay(p ModalContentProps) {
 	<div
 		x-show="open"
 		x-cloak
@@ -112,6 +113,20 @@ templ ModalContent(p ModalContentProps) {
 			</div>
 		</div>
 	</div>
+}
+
+templ ModalContent(p ModalContentProps) {
+	if p.Teleport {
+		<template x-teleport="body">
+			@modalOverlay(p) {
+				{ children... }
+			}
+		</template>
+	} else {
+		@modalOverlay(p) {
+			{ children... }
+		}
+	}
 }
 
 templ ModalHeader(class ...string) {

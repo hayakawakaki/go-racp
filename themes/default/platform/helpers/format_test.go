@@ -32,3 +32,30 @@ func TestFormatAmount(t *testing.T) {
 		})
 	}
 }
+
+func TestFormatPrice(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		currency string
+		want     string
+		in       int64
+	}{
+		{name: "usd", in: 20, currency: "USD", want: "$20 USD"},
+		{name: "usd thousands", in: 1000, currency: "USD", want: "$1,000 USD"},
+		{name: "eur", in: 20, currency: "EUR", want: "€20 EUR"},
+		{name: "jpy", in: 120, currency: "JPY", want: "¥120 JPY"},
+		{name: "lowercase code", in: 20, currency: "usd", want: "$20 USD"},
+		{name: "unmapped currency", in: 20, currency: "GBP", want: "20 GBP"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := FormatPrice(tt.in, tt.currency); got != tt.want {
+				t.Errorf("FormatPrice(%d, %q) = %q, want %q", tt.in, tt.currency, got, tt.want)
+			}
+		})
+	}
+}

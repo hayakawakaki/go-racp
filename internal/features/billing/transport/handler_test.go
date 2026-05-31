@@ -227,3 +227,110 @@ func TestHandler_ShowHistory_Empty(t *testing.T) {
 		t.Errorf("body does not contain empty-state text")
 	}
 }
+
+func TestHandler_StartCheckout_StripeProvider(t *testing.T) {
+	t.Parallel()
+	svc := &stubService{checkoutURL: "https://pay.test/session/9"}
+	h := newHandler(svc)
+
+	req := httptest.NewRequest(http.MethodPost, "/store/checkout", strings.NewReader("package=starter&provider=stripe"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req = req.WithContext(middleware.ContextWithSnapshot(req.Context(), &middleware.AccountSnapshot{UserID: 42, Username: "kaki"}))
+
+	rr := httptest.NewRecorder()
+	h.startCheckout(rr, req)
+
+	if rr.Code != http.StatusSeeOther {
+		t.Fatalf("status = %d, want 303", rr.Code)
+	}
+	if got := rr.Header().Get("Location"); got != "https://pay.test/session/9" {
+		t.Errorf("Location = %q, want provider URL", got)
+	}
+}
+
+func TestHandler_StartCheckout_UnsupportedProvider(t *testing.T) {
+	t.Parallel()
+	svc := &stubService{checkoutURL: "https://pay.test/session/9"}
+	h := newHandler(svc)
+
+	req := httptest.NewRequest(http.MethodPost, "/store/checkout", strings.NewReader("package=starter&provider=paypal"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req = req.WithContext(middleware.ContextWithSnapshot(req.Context(), &middleware.AccountSnapshot{UserID: 42, Username: "kaki"}))
+
+	rr := httptest.NewRecorder()
+	h.startCheckout(rr, req)
+
+	if rr.Code != http.StatusSeeOther {
+		t.Fatalf("status = %d, want 303", rr.Code)
+	}
+	if got := rr.Header().Get("Location"); got != "/store?notice=invalid" {
+		t.Errorf("Location = %q, want /store?notice=invalid", got)
+	}
+}
+
+func TestHandler_StartCheckout_EmptyProviderFallsBack(t *testing.T) {
+	t.Parallel()
+	svc := &stubService{checkoutURL: "https://pay.test/session/9"}
+	h := newHandler(svc)
+
+	req := httptest.NewRequest(http.MethodPost, "/store/checkout", strings.NewReader("package=starter"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req = req.WithContext(middleware.ContextWithSnapshot(req.Context(), &middleware.AccountSnapshot{UserID: 42, Username: "kaki"}))
+
+	rr := httptest.NewRecorder()
+	h.startCheckout(rr, req)
+
+	if rr.Code != http.StatusSeeOther {
+		t.Fatalf("status = %d, want 303", rr.Code)
+	}
+	if got := rr.Header().Get("Location"); got != "https://pay.test/session/9" {
+		t.Errorf("Location = %q, want provider URL", got)
+	}
+}
+
+func TestHandler_ShowStore_RendersMethods(t *testing.T) {
+	t.Parallel()
+	svc := &stubService{
+		available: true,
+		packages: []domain.Package{
+			{Key: "starter", Name: "Starter Pack", Currency: "USD", Price: 5, CashPoints: 500},
+		},
+	}
+	h := newHandler(svc)
+
+	rr := httptest.NewRecorder()
+	h.showStore(rr, httptest.NewRequest(http.MethodGet, "/store", http.NoBody))
+
+	body := rr.Body.String()
+	if !strings.Contains(body, "Stripe") {
+		t.Errorf("body does not contain the stripe method label")
+	}
+	if !strings.Contains(body, "Coming soon") {
+		t.Errorf("body does not contain a coming soon row")
+	}
+	if !strings.Contains(body, "$5 USD") {
+		t.Errorf("body does not contain the sign-and-code price")
+	}
+}
+
+func TestHandler_ShowStore_SuccessModal(t *testing.T) {
+	t.Parallel()
+	svc := &stubService{
+		available: true,
+		packages: []domain.Package{
+			{Key: "starter", Name: "Starter Pack", Currency: "USD", Price: 5, CashPoints: 500},
+		},
+	}
+	h := newHandler(svc)
+
+	rr := httptest.NewRecorder()
+	h.showStore(rr, httptest.NewRequest(http.MethodGet, "/store?notice=success&package=starter", http.NoBody))
+
+	body := rr.Body.String()
+	if !strings.Contains(body, "Purchase complete") {
+		t.Errorf("body does not contain the success heading")
+	}
+	if !strings.Contains(body, "Starter Pack") {
+		t.Errorf("body does not contain the purchased package name")
+	}
+}

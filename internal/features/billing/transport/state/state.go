@@ -6,11 +6,20 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/features/billing/domain"
 )
 
+type PaymentMethod struct {
+	Key     string
+	Label   string
+	Enabled bool
+}
+
 type StoreState struct {
 	Currency  string
 	Notice    string
+	Purchased *domain.Package
 	Packages  []domain.Package
+	Methods   []PaymentMethod
 	Available bool
+	Success   bool
 }
 
 type PurchaseHistoryState struct {

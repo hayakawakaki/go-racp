@@ -28,14 +28,48 @@ func (h *Handler) showStore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	available := h.svc.Available()
+	packages := h.svc.Packages()
+	notice := r.URL.Query().Get("notice")
+
 	st := state.StoreState{
-		Packages:  h.svc.Packages(),
+		Packages:  packages,
 		Currency:  h.currency,
-		Notice:    noticeMessage(r.URL.Query().Get("notice")),
-		Available: h.svc.Available(),
+		Methods:   paymentMethods(available),
+		Available: available,
+	}
+	if notice == "success" {
+		if purchased, ok := findPackage(packages, r.URL.Query().Get(fieldPackage)); ok {
+			st.Success = true
+			st.Purchased = &purchased
+		}
+	} else {
+		st.Notice = noticeMessage(notice)
 	}
 
 	httpx.RenderHTML(w, r, h.logger, h.theme.StorePage(h.layout(), st))
+}
+
+func findPackage(packages []domain.Package, key string) (domain.Package, bool) {
+	if key == "" {
+		return domain.Package{}, false
+	}
+
+	for _, pkg := range packages {
+		if pkg.Key == key {
+			return pkg, true
+		}
+	}
+
+	return domain.Package{}, false
+}
+
+func paymentMethods(stripeReady bool) []state.PaymentMethod {
+	return []state.PaymentMethod{
+		{Key: providerStripe, Label: "Stripe", Enabled: stripeReady},
+		{Key: "paypal", Label: "PayPal", Enabled: false},
+		{Key: "crypto", Label: "Crypto", Enabled: false},
+	}
 }
 
 func (h *Handler) startCheckout(w http.ResponseWriter, r *http.Request) {
@@ -57,7 +91,13 @@ func (h *Handler) startCheckout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	packageKey := r.FormValue(fieldPackage)
-	successURL := h.appURL + "/store?notice=success"
+	provider := r.FormValue(fieldProvider)
+	if provider != "" && provider != providerStripe {
+		http.Redirect(w, r, "/store?notice=invalid", http.StatusSeeOther)
+		return
+	}
+
+	successURL := h.appURL + "/store?notice=success&package=" + url.QueryEscape(packageKey)
 	cancelURL := h.appURL + "/store?notice=cancel"
 
 	redirectURL, err := h.svc.StartCheckout(r.Context(), snapshot.UserID, packageKey, successURL, cancelURL)
