@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -44,7 +45,9 @@ func (s *webhookStub) Packages() []domain.Package { return nil }
 
 func (s *webhookStub) Available() bool { return true }
 
-func (s *webhookStub) StartCheckout(context.Context, int, string, string, string) (string, error) {
+func (s *webhookStub) ProviderEnabled(key string) bool { return key == "stripe" }
+
+func (s *webhookStub) StartCheckout(context.Context, int, string, string, string, string) (string, error) {
 	return "", nil
 }
 
@@ -52,7 +55,7 @@ func (s *webhookStub) HistoryByAccount(context.Context, int, int) ([]domain.Purc
 	return nil, nil
 }
 
-func (s *webhookStub) ConfirmCheckout(context.Context, string, int) (domain.Package, bool, error) {
+func (s *webhookStub) ConfirmCheckout(context.Context, string, url.Values, int) (domain.Package, bool, error) {
 	return domain.Package{}, false, nil
 }
 

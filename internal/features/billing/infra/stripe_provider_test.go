@@ -3,6 +3,7 @@ package infra
 import (
 	"bytes"
 	"context"
+	"net/url"
 	"testing"
 
 	"github.com/hayakawakaki/go-racp/internal/features/billing/domain"
@@ -100,7 +101,7 @@ func TestStripeProvider_RetrieveCheckout_Paid(t *testing.T) {
 	stripe.SetBackend(stripe.APIBackend, &captureBackend{})
 
 	provider := NewStripeProvider("sk_test_dummy")
-	confirmation, err := provider.RetrieveCheckout(context.Background(), "cs_test_123")
+	confirmation, err := provider.RetrieveCheckout(context.Background(), url.Values{"session_id": {"cs_test_123"}})
 	if err != nil {
 		t.Fatalf("RetrieveCheckout: %v", err)
 	}
@@ -116,7 +117,7 @@ func TestStripeProvider_RetrieveCheckout_Unpaid(t *testing.T) {
 	stripe.SetBackend(stripe.APIBackend, &captureBackend{status: stripe.CheckoutSessionPaymentStatusUnpaid})
 
 	provider := NewStripeProvider("sk_test_dummy")
-	confirmation, err := provider.RetrieveCheckout(context.Background(), "cs_test_123")
+	confirmation, err := provider.RetrieveCheckout(context.Background(), url.Values{"session_id": {"cs_test_123"}})
 	if err != nil {
 		t.Fatalf("RetrieveCheckout: %v", err)
 	}
@@ -129,7 +130,7 @@ func TestStripeProvider_RetrieveCheckout_InvalidMetadata(t *testing.T) {
 	stripe.SetBackend(stripe.APIBackend, &captureBackend{metadata: map[string]string{}})
 
 	provider := NewStripeProvider("sk_test_dummy")
-	_, err := provider.RetrieveCheckout(context.Background(), "cs_test_123")
+	_, err := provider.RetrieveCheckout(context.Background(), url.Values{"session_id": {"cs_test_123"}})
 	if err == nil {
 		t.Fatal("RetrieveCheckout err = nil for missing purchase_id metadata, want non-nil")
 	}

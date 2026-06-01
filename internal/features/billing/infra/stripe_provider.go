@@ -3,6 +3,7 @@ package infra
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strconv"
 
 	"github.com/hayakawakaki/go-racp/internal/features/billing/domain"
@@ -31,7 +32,7 @@ func (p *StripeProvider) CreateCheckout(ctx context.Context, request domain.Chec
 	purchaseID := strconv.FormatInt(request.PurchaseID, 10)
 	params := &stripe.CheckoutSessionParams{
 		Mode:       stripe.String(string(stripe.CheckoutSessionModePayment)),
-		SuccessURL: stripe.String(request.SuccessURL),
+		SuccessURL: stripe.String(request.SuccessURL + "&session_id={CHECKOUT_SESSION_ID}"),
 		CancelURL:  stripe.String(request.CancelURL),
 		LineItems: []*stripe.CheckoutSessionLineItemParams{
 			{
@@ -57,7 +58,9 @@ func (p *StripeProvider) CreateCheckout(ctx context.Context, request domain.Chec
 	return domain.CheckoutResult{RedirectURL: created.URL, Reference: created.ID}, nil
 }
 
-func (p *StripeProvider) RetrieveCheckout(ctx context.Context, sessionID string) (domain.CheckoutConfirmation, error) {
+func (p *StripeProvider) RetrieveCheckout(ctx context.Context, values url.Values) (domain.CheckoutConfirmation, error) {
+	sessionID := values.Get("session_id")
+
 	params := &stripe.CheckoutSessionParams{}
 	params.Context = ctx
 

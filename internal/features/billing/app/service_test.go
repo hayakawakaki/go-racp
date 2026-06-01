@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"net/url"
 	"testing"
 	"time"
 
@@ -35,7 +36,7 @@ func TestService_StartCheckout_HappyPath(t *testing.T) {
 	provider := &fakeProvider{}
 	svc := NewService(repo, testCatalog(), WithProvider(provider), WithLogger(discardLogger()))
 
-	redirectURL, err := svc.StartCheckout(context.Background(), 7, "starter", "https://app.test/ok", "https://app.test/cancel")
+	redirectURL, err := svc.StartCheckout(context.Background(), 7, "fake", "starter", "https://app.test/ok", "https://app.test/cancel")
 	if err != nil {
 		t.Fatalf("StartCheckout: %v", err)
 	}
@@ -65,7 +66,7 @@ func TestService_StartCheckout_UnknownPackage(t *testing.T) {
 	}
 	svc := NewService(repo, testCatalog(), WithProvider(&fakeProvider{}), WithLogger(discardLogger()))
 
-	_, err := svc.StartCheckout(context.Background(), 7, "missing", "", "")
+	_, err := svc.StartCheckout(context.Background(), 7, "fake", "missing", "", "")
 	if !errors.Is(err, domain.ErrUnknownPackage) {
 		t.Fatalf("err = %v, want ErrUnknownPackage", err)
 	}
@@ -79,7 +80,7 @@ func TestService_StartCheckout_NoProvider(t *testing.T) {
 
 	svc := NewService(&fakeRepo{}, testCatalog(), WithLogger(discardLogger()))
 
-	_, err := svc.StartCheckout(context.Background(), 7, "starter", "", "")
+	_, err := svc.StartCheckout(context.Background(), 7, "fake", "starter", "", "")
 	if !errors.Is(err, domain.ErrProviderUnavailable) {
 		t.Fatalf("err = %v, want ErrProviderUnavailable", err)
 	}
@@ -416,7 +417,7 @@ func TestService_ConfirmCheckout_PaidAndOwned(t *testing.T) {
 	provider := &fakeProvider{confirm: domain.CheckoutConfirmation{PurchaseID: 9, Paid: true}}
 	svc := NewService(repo, testCatalog(), WithProvider(provider), WithLogger(discardLogger()))
 
-	pkg, ok, err := svc.ConfirmCheckout(context.Background(), "cs_1", 7)
+	pkg, ok, err := svc.ConfirmCheckout(context.Background(), "fake", url.Values{"session_id": {"cs_1"}}, 7)
 	if err != nil {
 		t.Fatalf("ConfirmCheckout: %v", err)
 	}
@@ -436,7 +437,7 @@ func TestService_ConfirmCheckout_WrongAccount(t *testing.T) {
 	provider := &fakeProvider{confirm: domain.CheckoutConfirmation{PurchaseID: 9, Paid: true}}
 	svc := NewService(repo, testCatalog(), WithProvider(provider), WithLogger(discardLogger()))
 
-	_, ok, err := svc.ConfirmCheckout(context.Background(), "cs_1", 7)
+	_, ok, err := svc.ConfirmCheckout(context.Background(), "fake", url.Values{"session_id": {"cs_1"}}, 7)
 	if err != nil {
 		t.Fatalf("ConfirmCheckout: %v", err)
 	}
@@ -451,7 +452,7 @@ func TestService_ConfirmCheckout_NotPaid(t *testing.T) {
 	provider := &fakeProvider{confirm: domain.CheckoutConfirmation{PurchaseID: 9, Paid: false}}
 	svc := NewService(&fakeRepo{}, testCatalog(), WithProvider(provider), WithLogger(discardLogger()))
 
-	_, ok, err := svc.ConfirmCheckout(context.Background(), "cs_1", 7)
+	_, ok, err := svc.ConfirmCheckout(context.Background(), "fake", url.Values{"session_id": {"cs_1"}}, 7)
 	if err != nil {
 		t.Fatalf("ConfirmCheckout: %v", err)
 	}
@@ -465,7 +466,7 @@ func TestService_ConfirmCheckout_NoProvider(t *testing.T) {
 
 	svc := NewService(&fakeRepo{}, testCatalog(), WithLogger(discardLogger()))
 
-	_, ok, err := svc.ConfirmCheckout(context.Background(), "cs_1", 7)
+	_, ok, err := svc.ConfirmCheckout(context.Background(), "fake", url.Values{"session_id": {"cs_1"}}, 7)
 	if err != nil {
 		t.Fatalf("ConfirmCheckout: %v", err)
 	}
@@ -480,7 +481,7 @@ func TestService_ConfirmCheckout_RetrieveError(t *testing.T) {
 	provider := &fakeProvider{confirmErr: errors.New("stripe down")}
 	svc := NewService(&fakeRepo{}, testCatalog(), WithProvider(provider), WithLogger(discardLogger()))
 
-	_, ok, err := svc.ConfirmCheckout(context.Background(), "cs_1", 7)
+	_, ok, err := svc.ConfirmCheckout(context.Background(), "fake", url.Values{"session_id": {"cs_1"}}, 7)
 	if err != nil {
 		t.Fatalf("ConfirmCheckout: %v", err)
 	}
@@ -500,7 +501,7 @@ func TestService_ConfirmCheckout_PurchaseNotFound(t *testing.T) {
 	provider := &fakeProvider{confirm: domain.CheckoutConfirmation{PurchaseID: 9, Paid: true}}
 	svc := NewService(repo, testCatalog(), WithProvider(provider), WithLogger(discardLogger()))
 
-	_, ok, err := svc.ConfirmCheckout(context.Background(), "cs_1", 7)
+	_, ok, err := svc.ConfirmCheckout(context.Background(), "fake", url.Values{"session_id": {"cs_1"}}, 7)
 	if err != nil {
 		t.Fatalf("ConfirmCheckout: %v", err)
 	}
@@ -520,7 +521,7 @@ func TestService_ConfirmCheckout_RepoError(t *testing.T) {
 	provider := &fakeProvider{confirm: domain.CheckoutConfirmation{PurchaseID: 9, Paid: true}}
 	svc := NewService(repo, testCatalog(), WithProvider(provider), WithLogger(discardLogger()))
 
-	_, ok, err := svc.ConfirmCheckout(context.Background(), "cs_1", 7)
+	_, ok, err := svc.ConfirmCheckout(context.Background(), "fake", url.Values{"session_id": {"cs_1"}}, 7)
 	if err == nil {
 		t.Fatal("ConfirmCheckout err = nil for a repo failure, want non-nil")
 	}
@@ -540,7 +541,7 @@ func TestService_ConfirmCheckout_UnknownPackage(t *testing.T) {
 	provider := &fakeProvider{confirm: domain.CheckoutConfirmation{PurchaseID: 9, Paid: true}}
 	svc := NewService(repo, testCatalog(), WithProvider(provider), WithLogger(discardLogger()))
 
-	_, ok, err := svc.ConfirmCheckout(context.Background(), "cs_1", 7)
+	_, ok, err := svc.ConfirmCheckout(context.Background(), "fake", url.Values{"session_id": {"cs_1"}}, 7)
 	if err != nil {
 		t.Fatalf("ConfirmCheckout: %v", err)
 	}

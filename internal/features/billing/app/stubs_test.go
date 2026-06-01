@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"log/slog"
+	"net/url"
 	"time"
 
 	"github.com/hayakawakaki/go-racp/internal/features/billing/domain"
@@ -138,8 +139,8 @@ func (f *fakeProvider) CreateCheckout(_ context.Context, request domain.Checkout
 	return domain.CheckoutResult{RedirectURL: "https://pay.test/x", Reference: "ref_1"}, nil
 }
 
-func (f *fakeProvider) RetrieveCheckout(_ context.Context, sessionID string) (domain.CheckoutConfirmation, error) {
-	f.lastSession = sessionID
+func (f *fakeProvider) RetrieveCheckout(_ context.Context, values url.Values) (domain.CheckoutConfirmation, error) {
+	f.lastSession = values.Get("session_id")
 	return f.confirm, f.confirmErr
 }
 

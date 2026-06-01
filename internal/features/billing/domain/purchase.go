@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"net/url"
 	"slices"
 	"time"
 )
@@ -114,5 +115,5 @@ type CheckoutConfirmation struct {
 type Provider interface {
 	Name() string
 	CreateCheckout(ctx context.Context, request CheckoutRequest) (CheckoutResult, error)
-	RetrieveCheckout(ctx context.Context, sessionID string) (CheckoutConfirmation, error)
+	RetrieveCheckout(ctx context.Context, values url.Values) (CheckoutConfirmation, error)
 }

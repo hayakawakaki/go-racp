@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"net/url"
 
 	"github.com/a-h/templ"
 	"github.com/hayakawakaki/go-racp/internal/features/billing/domain"
@@ -16,9 +17,8 @@ import (
 const (
 	maxCheckoutFormBytes = 1 << 10
 
-	fieldPackage   = "package"
-	fieldProvider  = "provider"
-	fieldSessionID = "session_id"
+	fieldPackage  = "package"
+	fieldProvider = "provider"
 
 	providerStripe = "stripe"
 
@@ -35,9 +35,10 @@ type billingFulfiller interface {
 type billingService interface {
 	Packages() []domain.Package
 	Available() bool
-	StartCheckout(ctx context.Context, accountID int, packageKey, successURL, cancelURL string) (string, error)
+	ProviderEnabled(key string) bool
+	StartCheckout(ctx context.Context, accountID int, providerKey, packageKey, successURL, cancelURL string) (string, error)
 	HistoryByAccount(ctx context.Context, accountID, limit int) ([]domain.Purchase, error)
-	ConfirmCheckout(ctx context.Context, sessionID string, accountID int) (domain.Package, bool, error)
+	ConfirmCheckout(ctx context.Context, providerKey string, values url.Values, accountID int) (domain.Package, bool, error)
 	billingFulfiller
 }
 
