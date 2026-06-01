@@ -581,7 +581,7 @@ func vendorRow(v domain.Vendor) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<button type=\"button\" class=\"block w-full text-left space-y-0.5 py-3 transition-colors hover:bg-accent-wash rounded-md px-2 -mx-2 cursor-pointer\" @click=\"open = true\" hx-get=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<button type=\"button\" class=\"block w-full text-left space-y-0.5 py-2 transition-colors hover:bg-accent-wash rounded-md px-2 -mx-2 cursor-pointer\" @click=\"open = true\" hx-get=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

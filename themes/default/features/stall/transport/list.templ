@@ -152,7 +152,7 @@ templ vendorRow(v domain.Vendor) {
 		@ui.Modal(ui.ModalProps{}) {
 			<button
 				type="button"
-				class="block w-full text-left space-y-0.5 py-3 transition-colors hover:bg-accent-wash rounded-md px-2 -mx-2 cursor-pointer"
+				class="block w-full text-left space-y-0.5 py-2 transition-colors hover:bg-accent-wash rounded-md px-2 -mx-2 cursor-pointer"
 				@click="open = true"
 				hx-get={ fmt.Sprintf("/vendors/%s/%d/items", v.Type.String(), v.ID) }
 				hx-target={ "#" + rowID(v) + "-box" }
