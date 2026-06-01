@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -29,6 +30,21 @@ func ToMinorUnits(amount int64, currency string) (int64, error) {
 	}
 
 	return amount * factor, nil
+}
+
+func ToDecimalString(amount int64, currency string) (string, error) {
+	factor, err := minorFactor(currency)
+	if err != nil {
+		return "", err
+	}
+
+	if factor == 1 {
+		return strconv.FormatInt(amount, 10), nil
+	}
+
+	decimals := len(strconv.FormatInt(factor, 10)) - 1
+
+	return fmt.Sprintf("%d.%0*d", amount, decimals, 0), nil
 }
 
 func IsSupportedCurrency(currency string) bool {

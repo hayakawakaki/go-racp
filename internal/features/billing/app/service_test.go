@@ -146,6 +146,144 @@ func TestService_CompletePurchase_CreditsOnMatch(t *testing.T) {
 	}
 }
 
+func TestService_CaptureApprovedOrder_UnknownProviderKey(t *testing.T) {
+	t.Parallel()
+
+	capturer := &fakeCapturer{fakeProvider: fakeProvider{name: "paypal"}}
+	svc := NewService(&fakeRepo{}, testCatalog(), WithProvider(capturer), WithLogger(discardLogger()))
+
+	err := svc.CaptureApprovedOrder(context.Background(), "missing", "ORDER1", 9)
+	if !errors.Is(err, domain.ErrProviderUnavailable) {
+		t.Fatalf("err = %v, want ErrProviderUnavailable", err)
+	}
+}
+
+func TestService_CaptureApprovedOrder_ProviderNotCapturer(t *testing.T) {
+	t.Parallel()
+
+	completed := false
+	repo := &fakeRepo{
+		completeFn: func(context.Context, int64, string, time.Time) (bool, int, int, error) {
+			completed = true
+			return true, 7, 500, nil
+		},
+	}
+	svc := NewService(repo, testCatalog(), WithProvider(&fakeProvider{name: "stripe"}), WithLogger(discardLogger()))
+
+	if err := svc.CaptureApprovedOrder(context.Background(), "stripe", "ORDER1", 9); err != nil {
+		t.Fatalf("CaptureApprovedOrder: %v", err)
+	}
+	if completed {
+		t.Errorf("repo.Complete must not be called when provider is not a Capturer")
+	}
+}
+
+func TestService_CaptureApprovedOrder_CompletedCredits(t *testing.T) {
+	t.Parallel()
+
+	var gotID int64
+	var gotPaymentID string
+	repo := &fakeRepo{
+		completeFn: func(_ context.Context, id int64, providerPaymentID string, _ time.Time) (bool, int, int, error) {
+			gotID = id
+			gotPaymentID = providerPaymentID
+			return true, 7, 500, nil
+		},
+	}
+	capturer := &fakeCapturer{
+		fakeProvider: fakeProvider{name: "paypal"},
+		outcome:      domain.CaptureOutcome{PaymentID: "CAP1", Completed: true},
+	}
+	svc := NewService(repo, testCatalog(), WithProvider(capturer), WithLogger(discardLogger()))
+
+	if err := svc.CaptureApprovedOrder(context.Background(), "paypal", "ORDER1", 9); err != nil {
+		t.Fatalf("CaptureApprovedOrder: %v", err)
+	}
+	if gotID != 9 {
+		t.Errorf("Complete id = %d, want 9", gotID)
+	}
+	if gotPaymentID != "CAP1" {
+		t.Errorf("Complete providerPaymentID = %q, want CAP1", gotPaymentID)
+	}
+	if capturer.captured != "ORDER1" {
+		t.Errorf("captured reference = %q, want ORDER1", capturer.captured)
+	}
+}
+
+func TestService_CaptureApprovedOrder_CompletedZeroPurchaseID(t *testing.T) {
+	t.Parallel()
+
+	completed := false
+	repo := &fakeRepo{
+		completeFn: func(context.Context, int64, string, time.Time) (bool, int, int, error) {
+			completed = true
+			return true, 7, 500, nil
+		},
+	}
+	capturer := &fakeCapturer{
+		fakeProvider: fakeProvider{name: "paypal"},
+		outcome:      domain.CaptureOutcome{PaymentID: "CAP1", Completed: true},
+	}
+	svc := NewService(repo, testCatalog(), WithProvider(capturer), WithLogger(discardLogger()))
+
+	if err := svc.CaptureApprovedOrder(context.Background(), "paypal", "ORDER1", 0); err != nil {
+		t.Fatalf("CaptureApprovedOrder: %v", err)
+	}
+	if completed {
+		t.Errorf("repo.Complete must not be called when purchaseID is 0")
+	}
+}
+
+func TestService_CaptureApprovedOrder_NotCompleted(t *testing.T) {
+	t.Parallel()
+
+	completed := false
+	repo := &fakeRepo{
+		completeFn: func(context.Context, int64, string, time.Time) (bool, int, int, error) {
+			completed = true
+			return true, 7, 500, nil
+		},
+	}
+	capturer := &fakeCapturer{
+		fakeProvider: fakeProvider{name: "paypal"},
+		outcome:      domain.CaptureOutcome{PaymentID: "CAP1", Completed: false},
+	}
+	svc := NewService(repo, testCatalog(), WithProvider(capturer), WithLogger(discardLogger()))
+
+	if err := svc.CaptureApprovedOrder(context.Background(), "paypal", "ORDER1", 9); err != nil {
+		t.Fatalf("CaptureApprovedOrder: %v", err)
+	}
+	if completed {
+		t.Errorf("repo.Complete must not be called when outcome is not completed")
+	}
+}
+
+func TestService_CaptureApprovedOrder_CaptureError(t *testing.T) {
+	t.Parallel()
+
+	completed := false
+	repo := &fakeRepo{
+		completeFn: func(context.Context, int64, string, time.Time) (bool, int, int, error) {
+			completed = true
+			return true, 7, 500, nil
+		},
+	}
+	captureErr := errors.New("paypal down")
+	capturer := &fakeCapturer{
+		fakeProvider: fakeProvider{name: "paypal"},
+		captureErr:   captureErr,
+	}
+	svc := NewService(repo, testCatalog(), WithProvider(capturer), WithLogger(discardLogger()))
+
+	err := svc.CaptureApprovedOrder(context.Background(), "paypal", "ORDER1", 9)
+	if !errors.Is(err, captureErr) {
+		t.Fatalf("err = %v, want capture error in chain", err)
+	}
+	if completed {
+		t.Errorf("repo.Complete must not be called when capture fails")
+	}
+}
+
 func TestService_DisputePurchase_BansThenMarks(t *testing.T) {
 	t.Parallel()
 

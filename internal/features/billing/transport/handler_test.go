@@ -84,6 +84,8 @@ func (s *stubService) DisputePurchase(context.Context, string, string) error { r
 
 func (s *stubService) FailPurchase(context.Context, int64) error { return nil }
 
+func (s *stubService) CaptureApprovedOrder(context.Context, string, string, int64) error { return nil }
+
 func discardLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(io.Discard, nil))
 }

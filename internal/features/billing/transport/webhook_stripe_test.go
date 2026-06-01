@@ -28,15 +28,23 @@ type paymentCall struct {
 	paymentID string
 }
 
+type captureApprovedCall struct {
+	provider   string
+	reference  string
+	purchaseID int64
+}
+
 type webhookStub struct {
 	completeErr error
 	refundErr   error
 	disputeErr  error
 	failErr     error
+	captureErr  error
 	completed   []completeCall
 	refunded    []paymentCall
 	disputed    []paymentCall
 	failed      []int64
+	captured    []captureApprovedCall
 }
 
 var _ billingService = (*webhookStub)(nil)
@@ -81,6 +89,12 @@ func (s *webhookStub) FailPurchase(_ context.Context, purchaseID int64) error {
 	s.failed = append(s.failed, purchaseID)
 
 	return s.failErr
+}
+
+func (s *webhookStub) CaptureApprovedOrder(_ context.Context, provider, reference string, purchaseID int64) error {
+	s.captured = append(s.captured, captureApprovedCall{provider, reference, purchaseID})
+
+	return s.captureErr
 }
 
 func newWebhookHandler(svc billingService, secret string) *Handler {

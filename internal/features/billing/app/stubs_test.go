@@ -151,6 +151,20 @@ func (f *fakeProvider) RetrieveCheckout(_ context.Context, values url.Values) (d
 	return f.confirm, f.confirmErr
 }
 
+type fakeCapturer struct {
+	captureErr error
+	captured   string
+	outcome    domain.CaptureOutcome
+	fakeProvider
+}
+
+var _ domain.Capturer = (*fakeCapturer)(nil)
+
+func (f *fakeCapturer) Capture(_ context.Context, reference string) (domain.CaptureOutcome, error) {
+	f.captured = reference
+	return f.outcome, f.captureErr
+}
+
 type fakeBanner struct {
 	banErr      error
 	bannedID    int

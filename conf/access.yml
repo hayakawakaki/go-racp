@@ -145,3 +145,5 @@ Store:
 Webhooks:
   Stripe:
     Roles: ["Public"]
+  Paypal:
+    Roles: ["Public"]
