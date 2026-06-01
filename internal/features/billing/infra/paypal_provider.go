@@ -70,7 +70,7 @@ func (p *PaypalProvider) RetrieveCheckout(ctx context.Context, values url.Values
 
 	return domain.CheckoutConfirmation{
 		PurchaseID: purchaseID,
-		Paid:       details.Status == "COMPLETED",
+		Paid:       details.Status == paypalStatusCompleted,
 	}, nil
 }
 
@@ -84,5 +84,5 @@ func (p *PaypalProvider) Capture(ctx context.Context, reference string) (domain.
 		return domain.CaptureOutcome{}, fmt.Errorf("billing.paypal.Capture: %w", err)
 	}
 
-	return domain.CaptureOutcome{PaymentID: result.CaptureID, Completed: result.Status == "COMPLETED"}, nil
+	return domain.CaptureOutcome{PaymentID: result.CaptureID, Completed: result.Status == paypalStatusCompleted}, nil
 }
