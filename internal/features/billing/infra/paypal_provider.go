@@ -54,6 +54,10 @@ func (p *PaypalProvider) RetrieveCheckout(ctx context.Context, values url.Values
 		return domain.CheckoutConfirmation{}, nil
 	}
 
+	if _, err := p.client.CaptureOrder(ctx, orderID); err != nil && !errors.Is(err, ErrPaypalOrderAlreadyCaptured) {
+		return domain.CheckoutConfirmation{}, fmt.Errorf("billing.paypal.RetrieveCheckout: %w", err)
+	}
+
 	details, err := p.client.GetOrder(ctx, orderID)
 	if err != nil {
 		return domain.CheckoutConfirmation{}, fmt.Errorf("billing.paypal.RetrieveCheckout: %w", err)
