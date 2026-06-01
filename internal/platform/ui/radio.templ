@@ -45,6 +45,7 @@ type RadioProps struct {
 	Checked   bool
 	Disabled  bool
 	Required  bool
+	Embedded  bool
 }
 
 type RadioGroupProps struct {
@@ -183,22 +184,32 @@ func radioGroupClasses(p RadioGroupProps) string {
 }
 
 templ Radio(p RadioProps) {
-	<label class={ radioOuterClasses(p) }>
-		<input
-			type="radio"
-			class="peer sr-only"
-			checked?={ p.Checked }
-			disabled?={ p.Disabled }
-			required?={ p.Required }
-			{ radioAttrs(p)... }
-		/>
-		<span class={ radioBoxClasses(p) }>
-			<span class={ radioDotClasses(p) }></span>
+	if p.Embedded {
+		<span class={ radioOuterClasses(p) }>
+			@radioControl(p)
 		</span>
-		if p.Label != "" {
-			<span class={ radioLabelClasses(p) }>{ p.Label }</span>
-		}
-	</label>
+	} else {
+		<label class={ radioOuterClasses(p) }>
+			@radioControl(p)
+		</label>
+	}
+}
+
+templ radioControl(p RadioProps) {
+	<input
+		type="radio"
+		class="peer sr-only"
+		checked?={ p.Checked }
+		disabled?={ p.Disabled }
+		required?={ p.Required }
+		{ radioAttrs(p)... }
+	/>
+	<span class={ radioBoxClasses(p) }>
+		<span class={ radioDotClasses(p) }></span>
+	</span>
+	if p.Label != "" {
+		<span class={ radioLabelClasses(p) }>{ p.Label }</span>
+	}
 }
 
 templ RadioGroup(p RadioGroupProps) {

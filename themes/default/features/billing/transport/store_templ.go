@@ -501,11 +501,11 @@ func checkoutMethodRow(method billingstate.PaymentMethod) templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		if method.Enabled {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<div class=\"flex items-center justify-between gap-3 rounded-lg border border-border bg-accent-wash px-4 py-3.5\"><span class=\"flex items-center gap-3\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<label class=\"flex cursor-pointer select-none items-center justify-between gap-3 rounded-lg border border-border bg-accent-wash px-4 py-3.5 transition-colors has-[:checked]:border-indigo-500\"><span class=\"flex items-center gap-3\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = ui.Radio(ui.RadioProps{Name: "provider", Value: method.Key, Color: ui.RadioColorIndigo, Checked: method.Checked}).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = ui.Radio(ui.RadioProps{Name: "provider", Value: method.Key, Color: ui.RadioColorIndigo, Checked: method.Checked, Embedded: true}).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -530,7 +530,7 @@ func checkoutMethodRow(method billingstate.PaymentMethod) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</label>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
