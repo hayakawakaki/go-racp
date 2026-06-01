@@ -63,21 +63,9 @@ func buildCatalog(in *coreinfra.Infra) domain.Catalog {
 func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 	svc := BuildService(in)
 
-	webhookSecret := ""
 	isProd := in.Config.Env.Mode != "development"
-	if in.Config.App.Purchases.Providers.Stripe {
-		switch {
-		case in.Config.Env.StripeSecretKey == "":
-			in.Logger.Warn("payment provider stripe enabled but STRIPE_SECRET_KEY is unset, checkouts disabled")
-		case in.Config.Env.StripeWebhookSecret == "":
-			in.Logger.Warn("payment provider stripe enabled but STRIPE_WEBHOOK_SECRET is unset, checkouts disabled to avoid uncredited payments")
-		case isProd && strings.Contains(in.Config.Env.StripeSecretKey, "_test_"):
-			in.Logger.Warn("payment provider stripe is using a test secret key in production mode, checkouts disabled")
-		default:
-			SetProvider(infra.NewStripeProvider(in.Config.Env.StripeSecretKey))
-			webhookSecret = in.Config.Env.StripeWebhookSecret
-		}
-	}
+	webhookSecret := registerStripeProvider(in, isProd)
+	registerPaypalProvider(in, isProd)
 
 	h := transport.NewHandler(svc, transport.HandlerConfig{
 		Logger:              in.Logger,
@@ -88,6 +76,43 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 		StripeWebhookSecret: webhookSecret,
 	})
 	h.RegisterRoutes(reg, mux)
+}
+
+func registerStripeProvider(in *coreinfra.Infra, isProd bool) string {
+	if !in.Config.App.Purchases.Providers.Stripe {
+		return ""
+	}
+
+	switch {
+	case in.Config.Env.StripeSecretKey == "":
+		in.Logger.Warn("payment provider stripe enabled but STRIPE_SECRET_KEY is unset, checkouts disabled")
+	case in.Config.Env.StripeWebhookSecret == "":
+		in.Logger.Warn("payment provider stripe enabled but STRIPE_WEBHOOK_SECRET is unset, checkouts disabled to avoid uncredited payments")
+	case isProd && strings.Contains(in.Config.Env.StripeSecretKey, "_test_"):
+		in.Logger.Warn("payment provider stripe is using a test secret key in production mode, checkouts disabled")
+	default:
+		SetProvider(infra.NewStripeProvider(in.Config.Env.StripeSecretKey))
+		return in.Config.Env.StripeWebhookSecret
+	}
+
+	return ""
+}
+
+func registerPaypalProvider(in *coreinfra.Infra, isProd bool) {
+	if !in.Config.App.Purchases.Providers.Paypal {
+		return
+	}
+
+	switch {
+	case in.Config.Env.PaypalClientID == "":
+		in.Logger.Warn("payment provider paypal enabled but PAYPAL_CLIENT_ID is unset, checkouts disabled")
+	case in.Config.Env.PaypalSecret == "":
+		in.Logger.Warn("payment provider paypal enabled but PAYPAL_SECRET is unset, checkouts disabled")
+	case in.Config.Env.PaypalWebhookID == "":
+		in.Logger.Warn("payment provider paypal enabled but PAYPAL_WEBHOOK_ID is unset, checkouts disabled to avoid uncredited payments")
+	default:
+		SetProvider(infra.NewPaypalProvider(infra.NewPaypalClient(in.Config.Env.PaypalClientID, in.Config.Env.PaypalSecret, isProd)))
+	}
 }
 
 func SetProvider(provider domain.Provider) {

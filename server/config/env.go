@@ -36,6 +36,9 @@ type EnvConfig struct {
 	// Payment platforms
 	StripeSecretKey     string `env:"STRIPE_SECRET_KEY" default:""`
 	StripeWebhookSecret string `env:"STRIPE_WEBHOOK_SECRET" default:""`
+	PaypalClientID      string `env:"PAYPAL_CLIENT_ID" default:""`
+	PaypalSecret        string `env:"PAYPAL_SECRET" default:""`
+	PaypalWebhookID     string `env:"PAYPAL_WEBHOOK_ID" default:""`
 
 	// Server Status
 	ServerHost string `env:"SERVER_HOST" default:"127.0.0.1"`
