@@ -17,5 +17,5 @@ Security:
   CSPExtraScriptSrc: []
   CSPExtraStyleSrc: []
   CSPExtraImgSrc: ["https://i.imgur.com"]
-  CSPExtraFormAction: ["https://checkout.stripe.com", "https://www.paypal.com", "https://www.sandbox.paypal.com"]
+  CSPExtraFormAction: ["https://checkout.stripe.com", "https://www.paypal.com", "https://www.sandbox.paypal.com", "https://nowpayments.io", "https://sandbox.nowpayments.io", "http://sandbox.nowpayments.io"]
   TrustedOrigins: []

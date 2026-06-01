@@ -5,7 +5,7 @@ Purchases:
   Providers:
     Stripe: true
     Paypal: true
-    Crypto: false
+    Crypto: true
 
   Packages:
     - Key: "starter"
