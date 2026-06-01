@@ -1,0 +1,9 @@
+# API key related config
+APIKeys:
+  Tiers:
+    Standard:
+      RatePerMinute: 180
+      Burst: 180
+    Elevated:
+      RatePerMinute: 600
+      Burst: 600
