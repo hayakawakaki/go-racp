@@ -14,6 +14,8 @@ templ StorePage(layout httpx.Layout, state billingstate.StoreState) {
 	@httpx.ActiveBase(layout, "Store") {
 		if state.Purchased != nil {
 			@successModal(state.Purchased, state.Currency)
+		} else if state.Pending {
+			@pendingModal()
 		} else if state.NotCompleted {
 			@notCompletedModal()
 		}
@@ -199,6 +201,27 @@ templ notCompletedModal() {
 				<div class="space-y-1">
 					<h2 class="text-xl font-semibold text-font">Payment not completed</h2>
 					<p class="text-sm text-font-muted">Your payment was not completed. You can try again from the store whenever you are ready.</p>
+				</div>
+				@ui.ModalClose("flex w-full") {
+					@ui.Button(ui.ButtonProps{Variant: ui.ButtonSolid, Color: ui.ButtonColorIndigo, Rounded: ui.ButtonRoundedMD, Class: "w-full"}) {
+						Back to Store
+					}
+				}
+			</div>
+		}
+	}
+}
+
+templ pendingModal() {
+	@ui.Modal(ui.ModalProps{Open: true}) {
+		@ui.ModalContent(ui.ModalContentProps{Teleport: true, Size: ui.ModalSizeMD}) {
+			<div class="flex flex-col items-center gap-5 px-2 py-4 text-center">
+				<span class="flex size-14 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400">
+					@ui.Icon("info", "size-7")
+				</span>
+				<div class="space-y-1">
+					<h2 class="text-xl font-semibold text-font">Payment received</h2>
+					<p class="text-sm text-font-muted">Your crypto payment is awaiting blockchain confirmation. Your Cashpoints will be credited automatically once it is confirmed.</p>
 				</div>
 				@ui.ModalClose("flex w-full") {
 					@ui.Button(ui.ButtonProps{Variant: ui.ButtonSolid, Color: ui.ButtonColorIndigo, Rounded: ui.ButtonRoundedMD, Class: "w-full"}) {

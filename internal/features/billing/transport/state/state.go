@@ -21,6 +21,7 @@ type StoreState struct {
 	Methods      []PaymentMethod
 	Available    bool
 	NotCompleted bool
+	Pending      bool
 }
 
 type PurchaseHistoryState struct {

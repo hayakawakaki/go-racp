@@ -22,6 +22,7 @@ const (
 	fieldProvider = "provider"
 
 	providerStripe = "stripe"
+	providerCrypto = "crypto"
 
 	historyPageSize = 50
 )
