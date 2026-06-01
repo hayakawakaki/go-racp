@@ -88,7 +88,7 @@ func tableAlignClass(a TableAlign) string {
 }
 
 func tableHeadClasses(p TableHeadProps) string {
-	return Merge("font-medium text-slate-900 dark:text-slate-100 align-middle", tableAlignClass(p.Align), p.Class)
+	return Merge("text-[10px] font-semibold tracking-[0.18em] uppercase text-slate-500 dark:text-slate-400 align-middle", tableAlignClass(p.Align), p.Class)
 }
 
 func tableCellClasses(p TableCellProps) string {
@@ -104,19 +104,19 @@ templ Table(p TableProps) {
 }
 
 templ TableHeader(class ...string) {
-	<thead class={ MergeWithDefault("[&_tr]:border-b-2 [&_tr]:border-slate-300 dark:[&_tr]:border-slate-600", class) }>
+	<thead class={ MergeWithDefault("[&_tr]:border-b [&_tr]:border-slate-200 dark:[&_tr]:border-slate-700", class) }>
 		{ children... }
 	</thead>
 }
 
 templ TableBody(class ...string) {
-	<tbody class={ MergeWithDefault("[&_tr]:border-b [&_tr]:border-slate-200 dark:[&_tr]:border-slate-700 [&_tr:last-child]:border-0", class) }>
+	<tbody class={ MergeWithDefault("divide-y divide-slate-200 dark:divide-slate-700", class) }>
 		{ children... }
 	</tbody>
 }
 
 templ TableFooter(class ...string) {
-	<tfoot class={ MergeWithDefault("bg-slate-50 dark:bg-slate-800/50 [&_tr]:border-t-2 [&_tr]:border-slate-300 dark:[&_tr]:border-slate-600 font-medium", class) }>
+	<tfoot class={ MergeWithDefault("bg-slate-50 dark:bg-slate-800/50 [&_tr]:border-t [&_tr]:border-slate-200 dark:[&_tr]:border-slate-700 font-medium", class) }>
 		{ children... }
 	</tfoot>
 }

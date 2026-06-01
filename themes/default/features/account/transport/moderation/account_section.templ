@@ -2,49 +2,102 @@ package moderation
 
 import (
 	"fmt"
+	"time"
 
 	accountmoderationstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/ui"
+	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
 )
 
 templ accountSection(state accountmoderationstate.DetailState) {
-	<section class="rounded-2xl bg-white ring-1 ring-gray-200 p-5">
-		<h2 class="text-lg font-semibold text-gray-900 mb-3">Account</h2>
-		<dl class="divide-y divide-gray-100 text-sm">
-			<div class="grid grid-cols-[10rem_minmax(0,1fr)] gap-x-6 py-2">
-				<dt class="text-gray-500">ID</dt>
-				<dd class="font-mono text-gray-900">{ fmt.Sprintf("%d", state.Detail.User.ID) }</dd>
-			</div>
-			<div class="grid grid-cols-[10rem_minmax(0,1fr)] gap-x-6 py-2">
-				<dt class="text-gray-500">Username</dt>
-				<dd class="text-gray-900">{ state.Detail.User.Username }</dd>
-			</div>
-			<div class="grid grid-cols-[10rem_minmax(0,1fr)] gap-x-6 py-2">
-				<dt class="text-gray-500">Email</dt>
-				<dd class="text-gray-900">{ state.Detail.User.Email }</dd>
-			</div>
-			<div class="grid grid-cols-[10rem_minmax(0,1fr)] gap-x-6 py-2">
-				<dt class="text-gray-500">Role</dt>
-				<dd class="text-gray-900">{ accountmoderationstate.RoleNameFor(state, state.Detail.User.GroupID) }</dd>
-			</div>
-			<div class="grid grid-cols-[10rem_minmax(0,1fr)] gap-x-6 py-2">
-				<dt class="text-gray-500">Tier</dt>
-				<dd class="text-gray-900">@tierBadge(state.Detail.User, state.Now)</dd>
-			</div>
-			<div class="grid grid-cols-[10rem_minmax(0,1fr)] gap-x-6 py-2">
-				<dt class="text-gray-500">Last IP</dt>
-				<dd class="font-mono text-gray-900">{ state.Detail.User.LastIP }</dd>
-			</div>
-			<div class="grid grid-cols-[10rem_minmax(0,1fr)] gap-x-6 py-2">
-				<dt class="text-gray-500">Last login</dt>
-				<dd class="text-gray-900">
-					if state.Detail.User.LastLogin.IsZero() {
-						never
-					} else {
-						@httpx.LocalTime(state.Detail.User.LastLogin.Format("2006-01-02T15:04:05Z07:00"))
+	@components.BentoCard(components.BentoCardProps{
+		Delay:   "0ms",
+		Padding: "p-6 lg:p-8",
+		Class:   "gap-6",
+	}) {
+		<div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+			<div class="space-y-3">
+				@components.BentoLabel("text-[11px]") {
+					Moderation
+				}
+				<h1 class="text-3xl xl:text-4xl font-light tracking-tight text-font">{ state.Detail.User.Username }</h1>
+				<div class="flex flex-wrap items-center gap-2">
+					@ui.Badge(ui.BadgeProps{Variant: ui.BadgeSubtle, Color: ui.BadgeColorIndigo, Size: ui.BadgeSizeSM}) {
+						{ accountmoderationstate.RoleNameFor(state, state.Detail.User.GroupID) }
 					}
-				</dd>
+					@tierBadge(state.Detail.User, state.Now)
+				</div>
 			</div>
-		</dl>
-	</section>
+			<div class="flex flex-wrap gap-2 lg:justify-end">
+				@ui.Button(ui.ButtonProps{
+					Variant: ui.ButtonSolid,
+					Color:   ui.ButtonColorRed,
+					Size:    ui.ButtonSizeMD,
+					Rounded: ui.ButtonRoundedMD,
+					Type:    ui.ButtonTypeButton,
+					Class:   "font-semibold",
+					Attrs:   actionModalAttrs(state.Detail.User.ID, "ban"),
+				}) {
+					Ban
+				}
+				@ui.Button(ui.ButtonProps{
+					Variant: ui.ButtonSolid,
+					Color:   ui.ButtonColorGreen,
+					Size:    ui.ButtonSizeMD,
+					Rounded: ui.ButtonRoundedMD,
+					Type:    ui.ButtonTypeButton,
+					Class:   "font-semibold",
+					Attrs:   actionModalAttrs(state.Detail.User.ID, "unban"),
+				}) {
+					Unban
+				}
+				if state.ViewerIsAdmin {
+					@ui.Button(ui.ButtonProps{
+						Variant: ui.ButtonOutline,
+						Color:   ui.ButtonColorNeutral,
+						Size:    ui.ButtonSizeMD,
+						Rounded: ui.ButtonRoundedMD,
+						Type:    ui.ButtonTypeButton,
+						Class:   "font-semibold",
+						Attrs:   actionModalAttrs(state.Detail.User.ID, "role"),
+					}) {
+						Update role
+					}
+				}
+			</div>
+		</div>
+		<div class="grid grid-cols-2 gap-x-6 gap-y-4 border-t border-border pt-5 sm:grid-cols-3 lg:gap-x-8">
+			@detailFact("Account ID", fmt.Sprintf("%d", state.Detail.User.ID))
+			if state.ViewerIsAdmin {
+				@detailFact("Email", state.Detail.User.Email)
+			}
+			@detailFact("Last IP", state.Detail.User.LastIP)
+			@detailFactTime("Last login", state.Detail.User.LastLogin)
+		</div>
+	}
+}
+
+templ detailFact(label, value string) {
+	<div class="space-y-1">
+		@components.BentoLabel("text-[10px]") {
+			{ label }
+		}
+		<p class="text-base font-mono tabular-nums text-font break-all">{ value }</p>
+	</div>
+}
+
+templ detailFactTime(label string, at time.Time) {
+	<div class="space-y-1">
+		@components.BentoLabel("text-[10px]") {
+			{ label }
+		}
+		if at.IsZero() {
+			<p class="text-base text-font-muted">never</p>
+		} else {
+			<p class="text-base tabular-nums text-font">
+				@httpx.LocalTime(at.Format("2006-01-02T15:04:05Z07:00"))
+			</p>
+		}
+	</div>
 }

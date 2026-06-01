@@ -17,6 +17,8 @@
 
 	--font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
 
+	--header-height: 5rem;
+
 	--color-body: #FAFAFA;
 	--color-surface: #FFFFFF;
 	--color-bento: #F2F2F2;
@@ -53,6 +55,10 @@
 	background-repeat: repeat;
 	background-size: 1024px 1024px;
 	background-attachment: fixed;
+}
+
+@utility min-h-body {
+	min-height: calc(100dvh - var(--header-height) - 3rem);
 }
 
 @keyframes fadeUp {

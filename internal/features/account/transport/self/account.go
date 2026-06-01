@@ -85,15 +85,8 @@ func (h *Handler) populateWallet(ctx context.Context, userID int, state *selfsta
 	if err != nil {
 		h.logger.Error("account balance", "err", err)
 		state.BalanceFailed = true
-	} else {
-		state.Balance = balance
+		return
 	}
 
-	recentWithdraws, err := h.currency.RecentWithdraws(ctx, userID, 5)
-	if err != nil {
-		h.logger.Error("account recent withdraws", "err", err)
-		state.WithdrawsFailed = true
-	} else {
-		state.RecentWithdraws = recentWithdraws
-	}
+	state.Balance = balance
 }

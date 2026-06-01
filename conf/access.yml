@@ -109,12 +109,12 @@ Mob:
 
 Users:
   View:
-    Roles: ["Admin"]
+    Roles: ["Enforcer"]
   Ban:
-    Roles: ["Moderator", "Enforcer"]
+    Roles: ["Enforcer"]
     Requires: ["Unrestricted"]
   Unban:
-    Roles: ["Moderator", "Enforcer"]
+    Roles: ["Enforcer"]
     Requires: ["Unrestricted"]
   SetRole:
     Roles: ["Admin"]

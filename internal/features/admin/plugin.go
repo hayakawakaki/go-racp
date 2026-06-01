@@ -26,6 +26,7 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 	h := transport.NewHandler(transport.HandlerConfig{
 		Logger:     in.Logger,
 		General:    in.Config.App.General,
+		Currency:   in.Config.App.Purchases.Currency,
 		ItemStatus: item.BuildService(in),
 		MobStatus:  mob.BuildService(in),
 		Metric:     in.Metric,

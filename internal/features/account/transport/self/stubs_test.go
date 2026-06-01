@@ -47,6 +47,21 @@ func (stubTheme) AccountChangePasswordForm(state selfstate.ChangePasswordState) 
 func (stubTheme) AccountChangePasswordPage(layout httpx.Layout, state selfstate.ChangePasswordState) templ.Component {
 	return accountself.AccountChangePasswordPage(layout, state)
 }
+func (stubTheme) AccountWithdrawModal(state selfstate.WithdrawState) templ.Component {
+	return accountself.AccountWithdrawModal(state)
+}
+func (stubTheme) AccountWithdrawForm(state selfstate.WithdrawState) templ.Component {
+	return accountself.AccountWithdrawForm(state)
+}
+func (stubTheme) AccountWithdrawPage(layout httpx.Layout, state selfstate.WithdrawState) templ.Component {
+	return accountself.AccountWithdrawPage(layout, state)
+}
+func (stubTheme) AccountWithdrawSuccess(state selfstate.WithdrawState) templ.Component {
+	return accountself.AccountWithdrawSuccess(state)
+}
+func (stubTheme) AccountWithdrawHistory(state selfstate.WithdrawHistoryState) templ.Component {
+	return accountself.AccountWithdrawHistory(state)
+}
 func (stubTheme) AccountEmailChangeResultPage(layout httpx.Layout, state selfstate.EmailChangeResultState) templ.Component {
 	return accountself.AccountEmailChangeResultPage(layout, state)
 }
@@ -318,6 +333,7 @@ type stubCurrencyService struct {
 	balanceFn         func(context.Context, int) (currency.BalanceDTO, error)
 	requestWithdrawFn func(context.Context, int, int64, int) error
 	recentFn          func(context.Context, int, int) ([]currency.WithdrawDTO, error)
+	withdrawHistoryFn func(context.Context, int, int, int) (currency.WithdrawHistoryPage, error)
 }
 
 func (s *stubCurrencyService) Balance(ctx context.Context, accountID int) (currency.BalanceDTO, error) {
@@ -339,4 +355,11 @@ func (s *stubCurrencyService) RecentWithdraws(ctx context.Context, accountID, li
 		return s.recentFn(ctx, accountID, limit)
 	}
 	return nil, nil
+}
+
+func (s *stubCurrencyService) WithdrawHistoryByAccount(ctx context.Context, accountID, page, perPage int) (currency.WithdrawHistoryPage, error) {
+	if s.withdrawHistoryFn != nil {
+		return s.withdrawHistoryFn(ctx, accountID, page, perPage)
+	}
+	return currency.WithdrawHistoryPage{}, nil
 }

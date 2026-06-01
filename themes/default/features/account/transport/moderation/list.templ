@@ -94,19 +94,19 @@ templ usersListResults(state accountmoderationstate.ListState) {
 			@ui.Table(ui.TableProps{Hover: true, Class: "text-font"}) {
 				@ui.TableHeader() {
 					@ui.TableRow(ui.TableRowProps{}) {
-						@ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}) {
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignCenter, Class: "text-font-muted"}) {
 							ID
 						}
-						@ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}) {
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignCenter, Class: "text-font-muted"}) {
 							Username
 						}
-						@ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}) {
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignCenter, Class: "text-font-muted"}) {
 							Email
 						}
-						@ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}) {
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignCenter, Class: "text-font-muted"}) {
 							Tier
 						}
-						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignCenter, Class: "text-font-muted"}) {
 							Last login
 						}
 					}
@@ -124,27 +124,26 @@ templ usersListResults(state accountmoderationstate.ListState) {
 
 templ usersRow(user accdomain.User, now time.Time) {
 	@ui.TableRow(ui.TableRowProps{}) {
-		@ui.TableCell(ui.TableCellProps{Class: "font-mono tabular-nums text-font-muted"}) {
+		@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignCenter, Class: "font-mono tabular-nums text-font-muted"}) {
 			{ fmt.Sprintf("%d", user.ID) }
 		}
-		@ui.TableCell(ui.TableCellProps{Class: "font-medium"}) {
+		@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignCenter, Class: "font-medium"}) {
 			<a
 				href={ templ.SafeURL(fmt.Sprintf("/users/%d", user.ID)) }
-				hx-get={ fmt.Sprintf("/users/%d", user.ID) }
-				hx-target="#admin-content"
-				hx-push-url="true"
+				target="_blank"
+				rel="noopener"
 				class="text-accent-on-surface hover:underline"
 			>
 				{ user.Username }
 			</a>
 		}
-		@ui.TableCell(ui.TableCellProps{Class: "text-font-muted"}) {
+		@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignCenter, Class: "text-font-muted"}) {
 			{ user.Email }
 		}
-		@ui.TableCell(ui.TableCellProps{}) {
+		@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignCenter}) {
 			@tierBadge(&user, now)
 		}
-		@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "text-xs text-font-muted"}) {
+		@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignCenter, Class: "text-xs text-font-muted"}) {
 			if user.LastLogin.IsZero() {
 				never
 			} else {

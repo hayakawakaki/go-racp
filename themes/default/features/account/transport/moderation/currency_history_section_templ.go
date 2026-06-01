@@ -26,7 +26,7 @@ func detailWithdrawsHref(state accountmoderationstate.DetailState) string {
 }
 
 var detailHistoryLinkAttrs = templ.Attributes{
-	"hx-target":   "#admin-content",
+	"hx-target":   "#user-detail",
 	"hx-push-url": "true",
 }
 

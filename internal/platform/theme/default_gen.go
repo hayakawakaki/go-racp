@@ -37,6 +37,18 @@ type DefaultTheme struct{}
 
 var _ Theme = DefaultTheme{}
 
+func (DefaultTheme) UsersBanModal(state accountmoderationstate.DetailState) templ.Component {
+	return accountmoderation.UsersBanModal(state)
+}
+
+func (DefaultTheme) UsersUnbanModal(state accountmoderationstate.DetailState) templ.Component {
+	return accountmoderation.UsersUnbanModal(state)
+}
+
+func (DefaultTheme) UsersRoleModal(state accountmoderationstate.DetailState) templ.Component {
+	return accountmoderation.UsersRoleModal(state)
+}
+
 func (DefaultTheme) UsersDetailPage(layout httpx.Layout, username string, state accountmoderationstate.DetailState) templ.Component {
 	return accountmoderation.UsersDetailPage(layout, username, state)
 }
@@ -141,6 +153,26 @@ func (DefaultTheme) AccountVerifyResultPage(layout httpx.Layout, state accountse
 	return accountself.AccountVerifyResultPage(layout, state)
 }
 
+func (DefaultTheme) AccountWithdrawModal(state accountselfstate.WithdrawState) templ.Component {
+	return accountself.AccountWithdrawModal(state)
+}
+
+func (DefaultTheme) AccountWithdrawForm(state accountselfstate.WithdrawState) templ.Component {
+	return accountself.AccountWithdrawForm(state)
+}
+
+func (DefaultTheme) AccountWithdrawPage(layout httpx.Layout, state accountselfstate.WithdrawState) templ.Component {
+	return accountself.AccountWithdrawPage(layout, state)
+}
+
+func (DefaultTheme) AccountWithdrawSuccess(state accountselfstate.WithdrawState) templ.Component {
+	return accountself.AccountWithdrawSuccess(state)
+}
+
+func (DefaultTheme) AccountWithdrawHistory(state accountselfstate.WithdrawHistoryState) templ.Component {
+	return accountself.AccountWithdrawHistory(state)
+}
+
 func (DefaultTheme) DashboardContent(state adminstate.DashboardState) templ.Component {
 	return admin.DashboardContent(state)
 }
@@ -163,6 +195,10 @@ func (DefaultTheme) PurchaseHistoryPage(layout httpx.Layout, state billingstate.
 
 func (DefaultTheme) PurchaseHistoryContent(state billingstate.PurchaseHistoryState) templ.Component {
 	return billing.PurchaseHistoryContent(state)
+}
+
+func (DefaultTheme) PurchaseHistorySummary(state billingstate.PurchaseHistoryState) templ.Component {
+	return billing.PurchaseHistorySummary(state)
 }
 
 func (DefaultTheme) StorePage(layout httpx.Layout, state billingstate.StoreState) templ.Component {

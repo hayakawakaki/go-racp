@@ -1,20 +1,32 @@
 package state
 
 import (
+	"time"
+
 	currency "github.com/hayakawakaki/go-racp/internal/features/account/app/currency"
 	app "github.com/hayakawakaki/go-racp/internal/features/account/app/self"
 	charapp "github.com/hayakawakaki/go-racp/internal/features/character/app"
 )
 
 type AccountState struct {
-	Account         *app.AccountDTO
-	Notice          string
-	BanBlocked      string
-	Characters      []charapp.CharacterDTO
-	RecentWithdraws []currency.WithdrawDTO
-	Balance         currency.BalanceDTO
-	BalanceFailed   bool
-	WithdrawsFailed bool
+	Account       *app.AccountDTO
+	Notice        string
+	BanBlocked    string
+	Characters    []charapp.CharacterDTO
+	Balance       currency.BalanceDTO
+	BalanceFailed bool
+}
+
+type WithdrawState struct {
+	FormError     string
+	Balance       currency.BalanceDTO
+	BalanceFailed bool
+}
+
+type WithdrawHistoryState struct {
+	Location *time.Location
+	Rows     []currency.AdminWithdrawDTO
+	Failed   bool
 }
 
 type ChangeEmailState struct {

@@ -1,0 +1,46 @@
+package self
+
+import (
+	accountselfstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/self/state"
+	"github.com/hayakawakaki/go-racp/internal/platform/ui"
+	"github.com/hayakawakaki/go-racp/themes/default/platform/helpers"
+)
+
+templ AccountWithdrawHistory(state accountselfstate.WithdrawHistoryState) {
+	if state.Failed {
+		<p class="py-6 text-center text-sm text-font-muted">Unable to load this right now.</p>
+	} else if len(state.Rows) == 0 {
+		<p class="py-6 text-center text-sm text-font-muted">No withdrawals yet.</p>
+	} else {
+		@ui.Table(ui.TableProps{Hover: true, Class: "text-font"}) {
+			@ui.TableHeader() {
+				@ui.TableRow(ui.TableRowProps{}) {
+					@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignCenter, Class: "text-font-muted"}) {
+						Cashpoint
+					}
+					@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignCenter, Class: "text-font-muted"}) {
+						Zeny
+					}
+					@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignCenter, Class: "text-font-muted"}) {
+						Date
+					}
+				}
+			}
+			@ui.TableBody() {
+				for _, row := range state.Rows {
+					@ui.TableRow(ui.TableRowProps{}) {
+						@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignCenter, Class: "font-mono tabular-nums"}) {
+							{ helpers.FormatAmount(int64(row.Cashpoint)) }
+						}
+						@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignCenter, Class: "font-mono tabular-nums"}) {
+							{ helpers.FormatAmount(row.Zeny) }
+						}
+						@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignCenter, Class: "text-font-muted tabular-nums"}) {
+							{ helpers.FormatTime(row.CreatedAt, state.Location) }
+						}
+					}
+				}
+			}
+		}
+	}
+}

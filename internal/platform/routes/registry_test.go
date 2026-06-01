@@ -431,6 +431,59 @@ func TestRegistry_Wrap_SoleAdminEntryIs404ForNonAdmin(t *testing.T) {
 	}
 }
 
+func TestRegistry_WrapHidden(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		cookie    bool
+		userGroup int
+		wantCode  int
+	}{
+		{name: "anonymous gets 404", cookie: false, wantCode: http.StatusNotFound},
+		{name: "wrong role gets 404", cookie: true, userGroup: 20, wantCode: http.StatusNotFound},
+		{name: "enforcer passes", cookie: true, userGroup: 10, wantCode: http.StatusOK},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			mux := http.NewServeMux()
+			buf := &bytes.Buffer{}
+			resolver := accdomain.NewRoleResolver(config.RolesConfig{"Enforcer": 10, "Moderator": 20})
+			logger := slog.New(slog.NewTextHandler(buf, nil))
+			sess := &stubSession{
+				validateFn: func(context.Context, string) (*accdomain.Session, error) {
+					return &accdomain.Session{UserID: 1}, nil
+				},
+			}
+			users := &stubUsers{
+				getFn: func(_ context.Context, id int) (*accdomain.User, error) {
+					return &accdomain.User{ID: id, GroupID: tt.userGroup, State: 0}, nil
+				},
+			}
+			cfg := config.AccessConfig{
+				"Users": config.ActionRoles{
+					"View": config.Entry{Roles: config.RoleList{"Enforcer"}},
+				},
+			}
+			reg := NewRegistry(cfg, nil, resolver, sess, users, logger, false, true, httpx.Layout{})
+
+			reg.WrapHidden(mux, "Users.View", "GET /users/{id}", okHandler())
+
+			rr := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodGet, "/users/7", http.NoBody)
+			if tt.cookie {
+				req.AddCookie(&http.Cookie{Name: "racp_session", Value: "valid"})
+			}
+			mux.ServeHTTP(rr, req)
+
+			if rr.Code != tt.wantCode {
+				t.Errorf("status = %d, want %d", rr.Code, tt.wantCode)
+			}
+		})
+	}
+}
+
 func TestRegistry_RoutesSnapshot_EmptyByDefault(t *testing.T) {
 	t.Parallel()
 

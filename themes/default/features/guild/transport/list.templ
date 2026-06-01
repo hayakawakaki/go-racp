@@ -92,19 +92,19 @@ templ guildListResults(state guildstate.ListState) {
 			@ui.Table(ui.TableProps{Hover: true, Class: "text-font"}) {
 				@ui.TableHeader() {
 					@ui.TableRow(ui.TableRowProps{}) {
-						@ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}) {
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignCenter, Class: "text-font-muted"}) {
 							ID
 						}
-						@ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}) {
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignCenter, Class: "text-font-muted"}) {
 							Name
 						}
-						@ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}) {
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignCenter, Class: "text-font-muted"}) {
 							Master
 						}
-						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignCenter, Class: "text-font-muted"}) {
 							Level
 						}
-						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}) {
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignCenter, Class: "text-font-muted"}) {
 							Max members
 						}
 					}
@@ -112,21 +112,20 @@ templ guildListResults(state guildstate.ListState) {
 				@ui.TableBody() {
 					for _, g := range state.Page.Guilds {
 						@ui.TableRow(ui.TableRowProps{}) {
-							@ui.TableCell(ui.TableCellProps{Class: "font-mono tabular-nums text-font-muted"}) {
+							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignCenter, Class: "font-mono tabular-nums text-font-muted"}) {
 								{ fmt.Sprintf("%d", g.ID) }
 							}
-							@ui.TableCell(ui.TableCellProps{Class: "font-medium"}) {
+							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignCenter, Class: "font-medium"}) {
 								<a
 									href={ templ.SafeURL(fmt.Sprintf("/guilds/%d", g.ID)) }
-									hx-get={ fmt.Sprintf("/guilds/%d", g.ID) }
-									hx-target="#admin-content"
-									hx-push-url="true"
+									target="_blank"
+									rel="noopener"
 									class="text-accent-on-surface hover:underline"
 								>
 									{ g.Name }
 								</a>
 							}
-							@ui.TableCell(ui.TableCellProps{Class: "text-font-muted"}) {
+							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignCenter, Class: "text-font-muted"}) {
 								<a
 									href={ templ.SafeURL(fmt.Sprintf("/characters/%d", g.MasterCharID)) }
 									class="text-accent-on-surface hover:underline"
@@ -134,10 +133,10 @@ templ guildListResults(state guildstate.ListState) {
 									{ g.MasterName }
 								</a>
 							}
-							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
+							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignCenter, Class: "font-mono tabular-nums"}) {
 								{ fmt.Sprintf("%d", g.GuildLevel) }
 							}
-							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "font-mono tabular-nums"}) {
+							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignCenter, Class: "font-mono tabular-nums"}) {
 								{ fmt.Sprintf("%d", g.MaxMember) }
 							}
 						}

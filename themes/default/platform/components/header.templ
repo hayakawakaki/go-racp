@@ -19,7 +19,7 @@ templ Header(layout httpx.Layout) {
 	@ui.Navbar(ui.NavbarProps{
 		Brand:   headerBrand(layout),
 		Actions: headerActions(layout),
-		Class:   "bg-body dark:bg-body border-b border-border bg-grain [&>div]:container [&>div]:mx-auto [&>div]:h-20 [&_nav]:bg-surface [&_nav]:border-border [&_nav]:min-h-[calc(100dvh_-_5rem)] [&_nav]:overflow-y-auto lg:[&_nav]:bg-transparent lg:[&_nav]:min-h-0 lg:[&_nav]:overflow-visible",
+		Class:   "bg-body dark:bg-body border-b border-border bg-grain [&>div]:container [&>div]:mx-auto [&>div]:h-[var(--header-height)] [&_nav]:bg-surface [&_nav]:border-border [&_nav]:min-h-[calc(100dvh_-_var(--header-height))] [&_nav]:overflow-y-auto lg:[&_nav]:bg-transparent lg:[&_nav]:min-h-0 lg:[&_nav]:overflow-visible",
 	}) {
 		for _, item := range themecfg.Cfg.Navbar.Items {
 			if len(item.Subitems) > 0 {

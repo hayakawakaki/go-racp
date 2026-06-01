@@ -75,6 +75,7 @@ type currencyService interface {
 	Balance(ctx context.Context, accountID int) (currency.BalanceDTO, error)
 	RequestWithdraw(ctx context.Context, accountID int, zeny int64, cashpoint int) error
 	RecentWithdraws(ctx context.Context, accountID, limit int) ([]currency.WithdrawDTO, error)
+	WithdrawHistoryByAccount(ctx context.Context, accountID, page, perPage int) (currency.WithdrawHistoryPage, error)
 }
 
 type Renderer interface {
@@ -85,6 +86,11 @@ type Renderer interface {
 	AccountChangePasswordModal(state selfstate.ChangePasswordState) templ.Component
 	AccountChangePasswordForm(state selfstate.ChangePasswordState) templ.Component
 	AccountChangePasswordPage(layout httpx.Layout, state selfstate.ChangePasswordState) templ.Component
+	AccountWithdrawModal(state selfstate.WithdrawState) templ.Component
+	AccountWithdrawForm(state selfstate.WithdrawState) templ.Component
+	AccountWithdrawPage(layout httpx.Layout, state selfstate.WithdrawState) templ.Component
+	AccountWithdrawSuccess(state selfstate.WithdrawState) templ.Component
+	AccountWithdrawHistory(state selfstate.WithdrawHistoryState) templ.Component
 	AccountEmailChangeResultPage(layout httpx.Layout, state selfstate.EmailChangeResultState) templ.Component
 	AccountForgotPasswordPage(layout httpx.Layout, state selfstate.ForgotPasswordState) templ.Component
 	AccountForgotPasswordForm(state selfstate.ForgotPasswordState) templ.Component
@@ -175,7 +181,9 @@ func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
 	reg.Wrap(mux, "Account.ChangePassword", "POST /account/password", http.HandlerFunc(h.doChangePassword))
 	reg.Wrap(mux, "Account.ChangeEmail", "GET /account/email", http.HandlerFunc(h.showChangeEmail))
 	reg.Wrap(mux, "Account.ChangeEmail", "POST /account/email", http.HandlerFunc(h.doChangeEmail))
+	reg.Wrap(mux, "Account.Withdraw", "GET /account/withdraw", http.HandlerFunc(h.showWithdraw))
 	reg.Wrap(mux, "Account.Withdraw", "POST /account/withdraw", http.HandlerFunc(h.doWithdraw))
+	reg.Wrap(mux, "Account.View", "GET /account/withdraws", http.HandlerFunc(h.showWithdrawHistory))
 }
 
 func (h *Handler) birthdateBounds() (minDate, maxDate string) {

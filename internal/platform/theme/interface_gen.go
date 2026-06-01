@@ -23,6 +23,9 @@ import (
 )
 
 type Theme interface {
+	UsersBanModal(state accountmoderationstate.DetailState) templ.Component
+	UsersUnbanModal(state accountmoderationstate.DetailState) templ.Component
+	UsersRoleModal(state accountmoderationstate.DetailState) templ.Component
 	UsersDetailPage(layout httpx.Layout, username string, state accountmoderationstate.DetailState) templ.Component
 	UsersDetailContent(state accountmoderationstate.DetailState) templ.Component
 	UsersListPage(layout httpx.Layout, state accountmoderationstate.ListState) templ.Component
@@ -49,12 +52,18 @@ type Theme interface {
 	AccountVerifyConfirmPage(layout httpx.Layout, state accountselfstate.VerifyConfirmState) templ.Component
 	AccountVerifyEmailChangeConfirmPage(layout httpx.Layout, state accountselfstate.VerifyEmailChangeConfirmState) templ.Component
 	AccountVerifyResultPage(layout httpx.Layout, state accountselfstate.VerifyResultState) templ.Component
+	AccountWithdrawModal(state accountselfstate.WithdrawState) templ.Component
+	AccountWithdrawForm(state accountselfstate.WithdrawState) templ.Component
+	AccountWithdrawPage(layout httpx.Layout, state accountselfstate.WithdrawState) templ.Component
+	AccountWithdrawSuccess(state accountselfstate.WithdrawState) templ.Component
+	AccountWithdrawHistory(state accountselfstate.WithdrawHistoryState) templ.Component
 	DashboardContent(state adminstate.DashboardState) templ.Component
 	DatabaseContent(state adminstate.DatabaseState) templ.Component
 	EconomyContent(state adminstate.EconomyState) templ.Component
 	AdminLayout(layout httpx.Layout, pageTitle string, content templ.Component) templ.Component
 	PurchaseHistoryPage(layout httpx.Layout, state billingstate.PurchaseHistoryState) templ.Component
 	PurchaseHistoryContent(state billingstate.PurchaseHistoryState) templ.Component
+	PurchaseHistorySummary(state billingstate.PurchaseHistoryState) templ.Component
 	StorePage(layout httpx.Layout, state billingstate.StoreState) templ.Component
 	CharacterDetailPage(layout httpx.Layout, state characterstate.DetailState) templ.Component
 	GuildDetailPage(layout httpx.Layout, guildName string, state guildstate.DetailState) templ.Component

@@ -34,6 +34,10 @@ func (stubTheme) PurchaseHistoryContent(st state.PurchaseHistoryState) templ.Com
 	return billingtpl.PurchaseHistoryContent(st)
 }
 
+func (stubTheme) PurchaseHistorySummary(st state.PurchaseHistoryState) templ.Component {
+	return billingtpl.PurchaseHistorySummary(st)
+}
+
 type stubService struct {
 	checkoutURL    string
 	lastSuccessURL string
@@ -192,6 +196,34 @@ func TestHandler_ShowHistory_WithPurchases(t *testing.T) {
 	}
 	if !strings.Contains(body, "Completed") {
 		t.Errorf("body does not contain status label")
+	}
+}
+
+func TestHandler_ShowHistorySummary(t *testing.T) {
+	t.Parallel()
+	svc := &stubService{
+		available: true,
+		history: []domain.Purchase{
+			{PackageKey: "starter", Amount: 500, CashPoints: 500, Status: domain.StatusCompleted},
+		},
+	}
+	h := newHandler(svc)
+
+	req := httptest.NewRequest(http.MethodGet, "/store/history/summary", http.NoBody)
+	req = req.WithContext(middleware.ContextWithSnapshot(req.Context(), &middleware.AccountSnapshot{UserID: 42, Username: "kaki"}))
+
+	rr := httptest.NewRecorder()
+	h.showHistorySummary(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rr.Code)
+	}
+	body := rr.Body.String()
+	if !strings.Contains(body, "$500 USD") {
+		t.Errorf("summary fragment does not contain the purchase amount: %s", body)
+	}
+	if strings.Contains(body, "<!DOCTYPE") {
+		t.Errorf("summary must be a fragment, not a full page")
 	}
 }
 
