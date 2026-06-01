@@ -2,6 +2,7 @@ package state
 
 import (
 	"github.com/hayakawakaki/go-racp/internal/features/guild/app"
+	"github.com/hayakawakaki/go-racp/internal/features/guild/domain"
 )
 
 type ListState struct {
@@ -11,5 +12,8 @@ type ListState struct {
 }
 
 type DetailState struct {
-	Detail app.GuildDetail
+	Detail     app.GuildDetail
+	Members    []domain.Member
+	Page       int
+	TotalPages int
 }

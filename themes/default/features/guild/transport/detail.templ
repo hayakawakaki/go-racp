@@ -3,82 +3,127 @@ package transport
 import (
 	"fmt"
 
-	admintransport "github.com/hayakawakaki/go-racp/themes/default/features/admin/transport"
 	guildstate "github.com/hayakawakaki/go-racp/internal/features/guild/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/ui"
+	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
 )
 
 templ GuildDetailPage(layout httpx.Layout, guildName string, state guildstate.DetailState) {
-	@admintransport.AdminLayout(layout, "Guild: "+guildName, GuildDetailContent(state))
+	@httpx.ActiveBase(layout, "Guild: "+guildName) {
+		@GuildDetailContent(state)
+	}
 }
 
 templ GuildDetailContent(state guildstate.DetailState) {
-	<div class="space-y-6">
-		<div>
-			<a href="/admin/guilds" hx-get="/admin/guilds" hx-target="#admin-content" hx-push-url="true" class="text-sm text-blue-600 hover:underline">&larr; Back to guilds</a>
-		</div>
-		<header class="flex items-center gap-4">
-			<img src={ fmt.Sprintf("/guilds/%d/emblem", state.Detail.Guild.ID) } alt="Guild emblem" width="24" height="24" class="ring-1 ring-gray-200 rounded-sm bg-gray-50"/>
-			<div>
-				<h1 class="text-2xl font-semibold text-gray-900">{ state.Detail.Guild.Name }</h1>
-				<p class="text-sm text-gray-600">
-					Master:
+	<div class="space-y-4 lg:space-y-6">
+		@guildHeader(state)
+		@guildMembersCard(state)
+	</div>
+}
+
+templ guildHeader(state guildstate.DetailState) {
+	@components.BentoCard(components.BentoCardProps{
+		Delay:   "0ms",
+		Padding: "p-6 lg:p-8",
+		Class:   "gap-6",
+	}) {
+		<div class="flex flex-col gap-4 sm:flex-row sm:items-center">
+			<img
+				src={ fmt.Sprintf("/guilds/%d/emblem", state.Detail.Guild.ID) }
+				alt="Guild emblem"
+				width="48"
+				height="48"
+				class="h-12 w-12 shrink-0 rounded-md border border-border bg-bento object-contain"
+			/>
+			<div class="space-y-2">
+				@components.BentoLabel("text-[11px]") {
+					Management
+				}
+				<h1 class="text-3xl xl:text-4xl font-light tracking-tight text-font">{ state.Detail.Guild.Name }</h1>
+				<p class="text-sm text-font-muted">
+					Master
 					<a
 						href={ templ.SafeURL(fmt.Sprintf("/characters/%d", state.Detail.Guild.MasterCharID)) }
-						class="text-blue-600 hover:underline"
+						class="text-accent-on-surface hover:underline"
 					>
 						{ state.Detail.Guild.MasterName }
 					</a>
 				</p>
 			</div>
-		</header>
-		<dl class="grid grid-cols-3 gap-4 text-sm">
-			<div>
-				<dt class="text-xs uppercase tracking-wide text-gray-500">Level</dt>
-				<dd class="mt-1 font-medium">{ fmt.Sprintf("%d", state.Detail.Guild.GuildLevel) }</dd>
-			</div>
-			<div>
-				<dt class="text-xs uppercase tracking-wide text-gray-500">Members</dt>
-				<dd class="mt-1 font-medium">{ fmt.Sprintf("%d / %d", len(state.Detail.Members), state.Detail.Guild.MaxMember) }</dd>
-			</div>
-			<div>
-				<dt class="text-xs uppercase tracking-wide text-gray-500">ID</dt>
-				<dd class="mt-1 font-mono">{ fmt.Sprintf("%d", state.Detail.Guild.ID) }</dd>
-			</div>
-		</dl>
-		<div class="overflow-hidden rounded-2xl ring-1 ring-gray-200 bg-white">
-			<table class="min-w-full text-sm">
-				<thead class="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
-					<tr>
-						<th class="px-4 py-2">Name</th>
-						<th class="px-4 py-2">Position</th>
-					</tr>
-				</thead>
-				<tbody>
-					for _, m := range state.Detail.Members {
-						<tr class="border-t border-gray-100">
-							<td class="px-4 py-2">
+		</div>
+		<div class="grid grid-cols-3 gap-x-6 gap-y-4 border-t border-border pt-5 lg:gap-x-8">
+			@guildFact("Level", fmt.Sprintf("%d", state.Detail.Guild.GuildLevel))
+			@guildFact("Members", fmt.Sprintf("%d / %d", len(state.Detail.Members), state.Detail.Guild.MaxMember))
+			@guildFact("Guild ID", fmt.Sprintf("%d", state.Detail.Guild.ID))
+		</div>
+	}
+}
+
+templ guildFact(label, value string) {
+	<div class="space-y-1">
+		@components.BentoLabel("text-[10px]") {
+			{ label }
+		}
+		<p class="text-base font-mono tabular-nums text-font">{ value }</p>
+	</div>
+}
+
+templ guildMembersCard(state guildstate.DetailState) {
+	@components.BentoCard(components.BentoCardProps{
+		Padding: "p-0",
+		Class:   "overflow-hidden",
+	}) {
+		<div class="flex items-center justify-between gap-3 p-4 lg:p-5 border-b border-border">
+			@components.BentoLabel("text-[11px]") {
+				Members
+			}
+			if state.TotalPages > 1 {
+				@ui.Pagination(ui.PaginationProps{
+					Page:        state.Page,
+					TotalPages:  state.TotalPages,
+					Size:        ui.PaginationSizeSM,
+					Color:       ui.PaginationColorIndigo,
+					HrefPattern: fmt.Sprintf("/guilds/%d?page=__PAGE__", state.Detail.Guild.ID),
+				})
+			}
+		</div>
+		if len(state.Detail.Members) == 0 {
+			<p class="p-6 text-sm text-font-muted">No members.</p>
+		} else {
+			@ui.Table(ui.TableProps{Hover: true, Class: "text-font"}) {
+				@ui.TableHeader() {
+					@ui.TableRow(ui.TableRowProps{}) {
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignCenter, Class: "text-font-muted"}) {
+							Name
+						}
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignCenter, Class: "text-font-muted"}) {
+							Position
+						}
+					}
+				}
+				@ui.TableBody() {
+					for _, m := range state.Members {
+						@ui.TableRow(ui.TableRowProps{}) {
+							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignCenter, Class: "font-medium"}) {
 								<a
 									href={ templ.SafeURL(fmt.Sprintf("/characters/%d", m.CharID)) }
-									class="text-blue-600 hover:underline"
+									class="text-accent-on-surface hover:underline"
 								>
 									{ m.Name }
 								</a>
-							</td>
-							<td class="px-4 py-2 text-gray-700">
+							}
+							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignCenter, Class: "text-font-muted"}) {
 								if m.PositionName != "" {
 									{ m.PositionName }
 								} else {
 									{ fmt.Sprintf("Position %d", m.Position) }
 								}
-							</td>
-						</tr>
+							}
+						}
 					}
-					if len(state.Detail.Members) == 0 {
-						<tr><td colspan="2" class="px-4 py-6 text-center text-gray-500">No members.</td></tr>
-					}
-				</tbody>
-			</table>
-		</div>
-	</div>
+				}
+			}
+		}
+	}
 }

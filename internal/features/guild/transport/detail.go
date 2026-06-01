@@ -9,6 +9,8 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
+const guildMembersPerPage = 10
+
 func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {
 	id := httpx.ParsePositiveInt(r.PathValue("id"), 0)
 	if id == 0 {
@@ -27,7 +29,15 @@ func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s := state.DetailState{Detail: detail}
+	page := httpx.ParsePositiveInt(r.URL.Query().Get("page"), 1)
+	total := len(detail.Members)
+	totalPages := max((total+guildMembersPerPage-1)/guildMembersPerPage, 1)
+	page = min(page, totalPages)
+
+	start := (page - 1) * guildMembersPerPage
+	end := min(start+guildMembersPerPage, total)
+
+	s := state.DetailState{Detail: detail, Members: detail.Members[start:end], Page: page, TotalPages: totalPages}
 	if httpx.IsHTMX(r) {
 		httpx.RenderHTML(w, r, h.logger, h.theme.GuildDetailContent(s))
 		return
