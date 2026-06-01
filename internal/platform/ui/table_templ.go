@@ -96,7 +96,7 @@ func tableAlignClass(a TableAlign) string {
 }
 
 func tableHeadClasses(p TableHeadProps) string {
-	return Merge("font-medium text-slate-900 dark:text-slate-100 align-middle", tableAlignClass(p.Align), p.Class)
+	return Merge("text-[10px] font-semibold tracking-[0.18em] uppercase text-slate-500 dark:text-slate-400 align-middle", tableAlignClass(p.Align), p.Class)
 }
 
 func tableCellClasses(p TableCellProps) string {
@@ -191,7 +191,7 @@ func TableHeader(class ...string) templ.Component {
 			templ_7745c5c3_Var4 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		var templ_7745c5c3_Var5 = []any{MergeWithDefault("[&_tr]:border-b-2 [&_tr]:border-slate-300 dark:[&_tr]:border-slate-600", class)}
+		var templ_7745c5c3_Var5 = []any{MergeWithDefault("[&_tr]:border-b [&_tr]:border-slate-200 dark:[&_tr]:border-slate-700", class)}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var5...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -246,7 +246,7 @@ func TableBody(class ...string) templ.Component {
 			templ_7745c5c3_Var7 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		var templ_7745c5c3_Var8 = []any{MergeWithDefault("[&_tr]:border-b [&_tr]:border-slate-200 dark:[&_tr]:border-slate-700 [&_tr:last-child]:border-0", class)}
+		var templ_7745c5c3_Var8 = []any{MergeWithDefault("divide-y divide-slate-200 dark:divide-slate-700", class)}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var8...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -301,7 +301,7 @@ func TableFooter(class ...string) templ.Component {
 			templ_7745c5c3_Var10 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		var templ_7745c5c3_Var11 = []any{MergeWithDefault("bg-slate-50 dark:bg-slate-800/50 [&_tr]:border-t-2 [&_tr]:border-slate-300 dark:[&_tr]:border-slate-600 font-medium", class)}
+		var templ_7745c5c3_Var11 = []any{MergeWithDefault("bg-slate-50 dark:bg-slate-800/50 [&_tr]:border-t [&_tr]:border-slate-200 dark:[&_tr]:border-slate-700 font-medium", class)}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var11...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err

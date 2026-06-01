@@ -345,7 +345,7 @@ func usersListResults(state accountmoderationstate.ListState) templ.Component {
 								}
 								return nil
 							})
-							templ_7745c5c3_Err = ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var14), templ_7745c5c3_Buffer)
+							templ_7745c5c3_Err = ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignCenter, Class: "text-font-muted"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var14), templ_7745c5c3_Buffer)
 							if templ_7745c5c3_Err != nil {
 								return templ_7745c5c3_Err
 							}
@@ -371,7 +371,7 @@ func usersListResults(state accountmoderationstate.ListState) templ.Component {
 								}
 								return nil
 							})
-							templ_7745c5c3_Err = ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var15), templ_7745c5c3_Buffer)
+							templ_7745c5c3_Err = ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignCenter, Class: "text-font-muted"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var15), templ_7745c5c3_Buffer)
 							if templ_7745c5c3_Err != nil {
 								return templ_7745c5c3_Err
 							}
@@ -397,7 +397,7 @@ func usersListResults(state accountmoderationstate.ListState) templ.Component {
 								}
 								return nil
 							})
-							templ_7745c5c3_Err = ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var16), templ_7745c5c3_Buffer)
+							templ_7745c5c3_Err = ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignCenter, Class: "text-font-muted"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var16), templ_7745c5c3_Buffer)
 							if templ_7745c5c3_Err != nil {
 								return templ_7745c5c3_Err
 							}
@@ -423,7 +423,7 @@ func usersListResults(state accountmoderationstate.ListState) templ.Component {
 								}
 								return nil
 							})
-							templ_7745c5c3_Err = ui.TableHead(ui.TableHeadProps{Class: "text-font-muted"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var17), templ_7745c5c3_Buffer)
+							templ_7745c5c3_Err = ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignCenter, Class: "text-font-muted"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var17), templ_7745c5c3_Buffer)
 							if templ_7745c5c3_Err != nil {
 								return templ_7745c5c3_Err
 							}
@@ -449,7 +449,7 @@ func usersListResults(state accountmoderationstate.ListState) templ.Component {
 								}
 								return nil
 							})
-							templ_7745c5c3_Err = ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignRight, Class: "text-font-muted"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var18), templ_7745c5c3_Buffer)
+							templ_7745c5c3_Err = ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignCenter, Class: "text-font-muted"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var18), templ_7745c5c3_Buffer)
 							if templ_7745c5c3_Err != nil {
 								return templ_7745c5c3_Err
 							}
@@ -578,7 +578,7 @@ func usersRow(user accdomain.User, now time.Time) templ.Component {
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = ui.TableCell(ui.TableCellProps{Class: "font-mono tabular-nums text-font-muted"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var22), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = ui.TableCell(ui.TableCellProps{Align: ui.TableAlignCenter, Class: "font-mono tabular-nums text-font-muted"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var22), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -643,7 +643,7 @@ func usersRow(user accdomain.User, now time.Time) templ.Component {
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = ui.TableCell(ui.TableCellProps{Class: "font-medium"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var24), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = ui.TableCell(ui.TableCellProps{Align: ui.TableAlignCenter, Class: "font-medium"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var24), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -674,7 +674,7 @@ func usersRow(user accdomain.User, now time.Time) templ.Component {
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = ui.TableCell(ui.TableCellProps{Class: "text-font-muted"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var28), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = ui.TableCell(ui.TableCellProps{Align: ui.TableAlignCenter, Class: "text-font-muted"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var28), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -700,7 +700,7 @@ func usersRow(user accdomain.User, now time.Time) templ.Component {
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = ui.TableCell(ui.TableCellProps{}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var30), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = ui.TableCell(ui.TableCellProps{Align: ui.TableAlignCenter}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var30), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -733,7 +733,7 @@ func usersRow(user accdomain.User, now time.Time) templ.Component {
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = ui.TableCell(ui.TableCellProps{Align: ui.TableAlignRight, Class: "text-xs text-font-muted"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var31), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = ui.TableCell(ui.TableCellProps{Align: ui.TableAlignCenter, Class: "text-xs text-font-muted"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var31), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

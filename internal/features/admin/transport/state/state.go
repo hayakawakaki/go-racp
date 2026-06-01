@@ -25,6 +25,7 @@ type DashboardState struct {
 //nolint:govet // grouped for readability over a few bytes of padding
 type EconomyState struct {
 	Location        *time.Location
+	Currency        string
 	Totals          currency.TotalsDTO
 	Earnings        billingdomain.EarningsSummary
 	Deposits        currency.DepositPage

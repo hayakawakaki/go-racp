@@ -169,6 +169,21 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
+    Alpine.data('adminNav', () => ({
+        path: window.location.pathname,
+        init() {
+            this._sync = () => { this.path = window.location.pathname; };
+            window.addEventListener('htmx:afterSettle', this._sync);
+            window.addEventListener('popstate', this._sync);
+        },
+        isActive(href) {
+            return this.path === href;
+        },
+        ariaCurrent(href) {
+            return this.path === href ? 'page' : null;
+        },
+    }));
+
     Alpine.magic('toast', () => {
         return (type, message, duration, size) => {
             window.dispatchEvent(new CustomEvent('toast', {

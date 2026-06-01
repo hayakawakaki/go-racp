@@ -81,6 +81,7 @@ type Renderer interface {
 //nolint:govet // GeneralConfig trailing bool forces alignment cost
 type HandlerConfig struct {
 	General    config.GeneralConfig
+	Currency   string
 	ItemStatus itemStatusProvider
 	MobStatus  mobStatusProvider
 	Metric     metricReader
@@ -96,6 +97,7 @@ type HandlerConfig struct {
 //nolint:govet // GeneralConfig trailing bool forces alignment cost
 type Handler struct {
 	general    config.GeneralConfig
+	currency   string
 	itemStatus itemStatusProvider
 	mobStatus  mobStatusProvider
 	metric     metricReader
@@ -120,6 +122,7 @@ func NewHandler(cfg HandlerConfig) *Handler {
 		purchases:  cfg.Purchases,
 		emails:     cfg.Emails,
 		general:    cfg.General,
+		currency:   cfg.Currency,
 		theme:      cfg.Theme,
 	}
 }
@@ -294,7 +297,7 @@ func purchasesHrefPattern(q url.Values) string {
 }
 
 func (h *Handler) economyState(ctx context.Context, params economyParams) state.EconomyState {
-	s := state.EconomyState{Location: h.general.Location()}
+	s := state.EconomyState{Location: h.general.Location(), Currency: h.currency}
 	s.Purchases.Form = params.form
 	s.Purchases.HrefPattern = params.purchasesHref
 	if h.economy == nil && h.purchases == nil {

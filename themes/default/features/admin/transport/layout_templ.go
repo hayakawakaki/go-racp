@@ -150,7 +150,7 @@ func adminSidebar(pageTitle string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, " <nav class=\"flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, " <nav x-data=\"adminNav\" class=\"flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -218,7 +218,7 @@ func adminNavItem(link adminNavLink, pageTitle string) templ.Component {
 			var templ_7745c5c3_Var8 string
 			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(link.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/layout.templ`, Line: 66, Col: 14}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/admin/transport/layout.templ`, Line: 68, Col: 14}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 			if templ_7745c5c3_Err != nil {
@@ -227,15 +227,17 @@ func adminNavItem(link adminNavLink, pageTitle string) templ.Component {
 			return nil
 		})
 		templ_7745c5c3_Err = ui.NavItem(ui.NavItemProps{
-			Href:   link.Href,
-			Icon:   ui.Icon(link.IconKey),
-			Size:   ui.NavItemSizeMD,
-			Active: pageTitle == link.Label,
-			Class:  "shrink-0 lg:w-full text-font hover:bg-accent-wash hover:text-accent-on-surface data-[active=true]:bg-accent-wash data-[active=true]:text-accent-on-surface",
+			Href:  link.Href,
+			Icon:  ui.Icon(link.IconKey),
+			Size:  ui.NavItemSizeMD,
+			Class: "shrink-0 lg:w-full text-font hover:bg-accent-wash hover:text-accent-on-surface data-[active=true]:bg-accent-wash data-[active=true]:text-accent-on-surface",
 			Attrs: templ.Attributes{
-				"hx-get":      link.Href,
-				"hx-target":   "#admin-content",
-				"hx-push-url": "true",
+				"hx-get":        link.Href,
+				"hx-target":     "#admin-content",
+				"hx-push-url":   "true",
+				"data-active":   adminActiveValue(pageTitle == link.Label),
+				":data-active":  "isActive('" + link.Href + "')",
+				":aria-current": "ariaCurrent('" + link.Href + "')",
 			},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var7), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
@@ -243,6 +245,14 @@ func adminNavItem(link adminNavLink, pageTitle string) templ.Component {
 		}
 		return nil
 	})
+}
+
+func adminActiveValue(active bool) string {
+	if active {
+		return "true"
+	}
+
+	return "false"
 }
 
 var _ = templruntime.GeneratedTemplate

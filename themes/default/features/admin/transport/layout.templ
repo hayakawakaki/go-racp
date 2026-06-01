@@ -41,7 +41,7 @@ templ adminSidebar(pageTitle string) {
 			@components.BentoLabel("text-[10px]") {
 				Admin
 			}
-			<nav class="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible">
+			<nav x-data="adminNav" class="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible">
 				for _, link := range adminNavLinks {
 					@adminNavItem(link, pageTitle)
 				}
@@ -52,17 +52,27 @@ templ adminSidebar(pageTitle string) {
 
 templ adminNavItem(link adminNavLink, pageTitle string) {
 	@ui.NavItem(ui.NavItemProps{
-		Href:   link.Href,
-		Icon:   ui.Icon(link.IconKey),
-		Size:   ui.NavItemSizeMD,
-		Active: pageTitle == link.Label,
-		Class:  "shrink-0 lg:w-full text-font hover:bg-accent-wash hover:text-accent-on-surface data-[active=true]:bg-accent-wash data-[active=true]:text-accent-on-surface",
+		Href:  link.Href,
+		Icon:  ui.Icon(link.IconKey),
+		Size:  ui.NavItemSizeMD,
+		Class: "shrink-0 lg:w-full text-font hover:bg-accent-wash hover:text-accent-on-surface data-[active=true]:bg-accent-wash data-[active=true]:text-accent-on-surface",
 		Attrs: templ.Attributes{
-			"hx-get":      link.Href,
-			"hx-target":   "#admin-content",
-			"hx-push-url": "true",
+			"hx-get":        link.Href,
+			"hx-target":     "#admin-content",
+			"hx-push-url":   "true",
+			"data-active":   adminActiveValue(pageTitle == link.Label),
+			":data-active":  "isActive('" + link.Href + "')",
+			":aria-current": "ariaCurrent('" + link.Href + "')",
 		},
 	}) {
 		{ link.Label }
 	}
+}
+
+func adminActiveValue(active bool) string {
+	if active {
+		return "true"
+	}
+
+	return "false"
 }
