@@ -40,6 +40,9 @@ type EnvConfig struct {
 	PaypalSecret        string `env:"PAYPAL_SECRET" default:""`
 	PaypalWebhookID     string `env:"PAYPAL_WEBHOOK_ID" default:""`
 
+	NowpaymentsAPIKey    string `env:"NOWPAYMENTS_API_KEY" default:""`
+	NowpaymentsIPNSecret string `env:"NOWPAYMENTS_IPN_SECRET" default:""`
+
 	// Server Status
 	ServerHost string `env:"SERVER_HOST" default:"127.0.0.1"`
 	LoginPort  int    `env:"LOGIN_PORT" default:"6900"`

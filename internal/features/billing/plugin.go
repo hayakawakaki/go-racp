@@ -66,6 +66,7 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 	isProd := in.Config.Env.Mode != "development"
 	webhookSecret := registerStripeProvider(in, isProd)
 	paypalClient := registerPaypalProvider(in, isProd)
+	nowpaymentsClient := registerCryptoProvider(in, isProd)
 
 	cfg := transport.HandlerConfig{
 		Logger:              in.Logger,
@@ -78,6 +79,9 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 	if paypalClient != nil {
 		cfg.Paypal = paypalClient
 		cfg.PaypalWebhookID = in.Config.Env.PaypalWebhookID
+	}
+	if nowpaymentsClient != nil {
+		cfg.NowPayments = nowpaymentsClient
 	}
 
 	h := transport.NewHandler(svc, cfg)
@@ -122,6 +126,27 @@ func registerPaypalProvider(in *coreinfra.Infra, isProd bool) *infra.PaypalClien
 	default:
 		client := infra.NewPaypalClient(in.Config.Env.PaypalClientID, in.Config.Env.PaypalSecret, isProd)
 		SetProvider(infra.NewPaypalProvider(client))
+
+		return client
+	}
+}
+
+func registerCryptoProvider(in *coreinfra.Infra, isProd bool) *infra.NowPaymentsClient {
+	if !in.Config.App.Purchases.Providers.Crypto {
+		return nil
+	}
+
+	switch {
+	case in.Config.Env.NowpaymentsAPIKey == "":
+		in.Logger.Warn("payment provider crypto enabled but NOWPAYMENTS_API_KEY is unset, checkouts disabled")
+		return nil
+	case in.Config.Env.NowpaymentsIPNSecret == "":
+		in.Logger.Warn("payment provider crypto enabled but NOWPAYMENTS_IPN_SECRET is unset, checkouts disabled to avoid uncredited payments")
+		return nil
+	default:
+		client := infra.NewNowPaymentsClient(in.Config.Env.NowpaymentsAPIKey, in.Config.Env.NowpaymentsIPNSecret, isProd)
+		ipnCallbackURL := in.Config.Env.AppURL + "/webhooks/nowpayments"
+		SetProvider(infra.NewNowPaymentsProvider(client, ipnCallbackURL))
 
 		return client
 	}

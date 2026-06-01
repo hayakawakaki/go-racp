@@ -37,6 +37,10 @@ type paypalVerifier interface {
 	VerifyWebhook(ctx context.Context, params infra.WebhookSignatureParams) (bool, error)
 }
 
+type nowpaymentsVerifier interface {
+	VerifyIPN(signature string, body []byte) (bool, error)
+}
+
 type billingService interface {
 	Packages() []domain.Package
 	Available() bool
@@ -60,6 +64,7 @@ type HandlerConfig struct {
 	Logger              *slog.Logger
 	Theme               Renderer
 	Paypal              paypalVerifier
+	NowPayments         nowpaymentsVerifier
 	Currency            string
 	AppURL              string
 	StripeWebhookSecret string
@@ -73,6 +78,7 @@ type Handler struct {
 	theme               Renderer
 	logger              *slog.Logger
 	paypal              paypalVerifier
+	nowpayments         nowpaymentsVerifier
 	currency            string
 	appURL              string
 	stripeWebhookSecret string
@@ -91,6 +97,7 @@ func NewHandler(svc billingService, cfg HandlerConfig) *Handler {
 		theme:               cfg.Theme,
 		logger:              logger,
 		paypal:              cfg.Paypal,
+		nowpayments:         cfg.NowPayments,
 		currency:            cfg.Currency,
 		appURL:              cfg.AppURL,
 		stripeWebhookSecret: cfg.StripeWebhookSecret,
