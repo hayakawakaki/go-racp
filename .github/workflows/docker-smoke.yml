@@ -38,10 +38,14 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Create databases
+      - name: Create databases and app user
         run: |
           mysql -h 127.0.0.1 -P 3306 -uroot -ptestpassword \
-            -e "CREATE DATABASE main; CREATE DATABASE log;"
+            -e "CREATE DATABASE main; CREATE DATABASE log;
+                CREATE USER 'cpuser'@'%' IDENTIFIED BY 'cppassword';
+                GRANT ALL PRIVILEGES ON main.* TO 'cpuser'@'%';
+                GRANT ALL PRIVILEGES ON log.* TO 'cpuser'@'%';
+                FLUSH PRIVILEGES;"
 
       - name: Load rAthena seed
         run: |
@@ -60,8 +64,8 @@ jobs:
             -e APP_PORT=8080 \
             -e APP_URL=http://localhost:8080 \
             -e MODE=production \
-            -e DB_MAIN_URL="root:testpassword@tcp(127.0.0.1:3306)/main" \
-            -e DB_LOG_URL="root:testpassword@tcp(127.0.0.1:3306)/log" \
+            -e DB_MAIN_URL="cpuser:cppassword@tcp(127.0.0.1:3306)/main" \
+            -e DB_LOG_URL="cpuser:cppassword@tcp(127.0.0.1:3306)/log" \
             -e DB_CP_URL="postgres://postgres:testpassword@127.0.0.1:5432/cp?sslmode=disable" \
             -e CSRF_SECRET=ZGV2LW9ubHktZHVtbXktY3NyZi1zZWNyZXQtcmVwbGFjZS1pbi1wcm9k \
             -e SMTP_HOST=localhost \
