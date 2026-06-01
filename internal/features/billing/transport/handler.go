@@ -22,7 +22,6 @@ const (
 	fieldProvider = "provider"
 
 	providerStripe = "stripe"
-	providerCrypto = "crypto"
 
 	historyPageSize = 50
 )
@@ -46,6 +45,7 @@ type billingService interface {
 	Packages() []domain.Package
 	Available() bool
 	ProviderEnabled(key string) bool
+	ProviderConfirmsAsync(key string) bool
 	StartCheckout(ctx context.Context, accountID int, providerKey, packageKey, successURL, cancelURL string) (string, error)
 	HistoryByAccount(ctx context.Context, accountID, limit int) ([]domain.Purchase, error)
 	ConfirmCheckout(ctx context.Context, providerKey string, values url.Values, accountID int) (domain.Package, bool, error)

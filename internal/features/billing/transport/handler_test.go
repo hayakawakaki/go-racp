@@ -59,6 +59,8 @@ func (s *stubService) Available() bool { return s.available }
 
 func (s *stubService) ProviderEnabled(key string) bool { return key == "stripe" }
 
+func (s *stubService) ProviderConfirmsAsync(key string) bool { return key == "crypto" }
+
 func (s *stubService) StartCheckout(_ context.Context, _ int, _, _, successURL, cancelURL string) (string, error) {
 	s.lastSuccessURL = successURL
 	s.lastCancelURL = cancelURL

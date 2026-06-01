@@ -9,7 +9,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
+	"slices"
 	"time"
 )
 
@@ -108,25 +110,35 @@ func (c *NowPaymentsClient) CreateInvoice(ctx context.Context, params CreateInvo
 }
 
 func (c *NowPaymentsClient) VerifyIPN(signature string, body []byte) (bool, error) {
-	decoder := json.NewDecoder(bytes.NewReader(body))
-	decoder.UseNumber()
+	if c.ipnSecret == "" {
+		return false, nil
+	}
 
-	var parsed any
-	if err := decoder.Decode(&parsed); err != nil {
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(body, &fields); err != nil {
 		return false, fmt.Errorf("billing.nowpayments.VerifyIPN: %w", err)
 	}
 
 	var buffer bytes.Buffer
-	encoder := json.NewEncoder(&buffer)
-	encoder.SetEscapeHTML(false)
-	if err := encoder.Encode(parsed); err != nil {
-		return false, fmt.Errorf("billing.nowpayments.VerifyIPN: %w", err)
-	}
+	buffer.WriteByte('{')
+	for index, key := range slices.Sorted(maps.Keys(fields)) {
+		if index > 0 {
+			buffer.WriteByte(',')
+		}
 
-	sorted := bytes.TrimRight(buffer.Bytes(), "\n")
+		encodedKey, err := json.Marshal(key)
+		if err != nil {
+			return false, fmt.Errorf("billing.nowpayments.VerifyIPN: %w", err)
+		}
+
+		buffer.Write(encodedKey)
+		buffer.WriteByte(':')
+		buffer.Write(fields[key])
+	}
+	buffer.WriteByte('}')
 
 	mac := hmac.New(sha512.New, []byte(c.ipnSecret))
-	mac.Write(sorted)
+	mac.Write(buffer.Bytes())
 	expected := hex.EncodeToString(mac.Sum(nil))
 
 	return hmac.Equal([]byte(expected), []byte(signature)), nil

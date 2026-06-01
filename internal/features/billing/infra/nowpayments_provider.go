@@ -12,6 +12,8 @@ import (
 
 var _ domain.Provider = (*NowPaymentsProvider)(nil)
 
+var _ domain.AsyncConfirmer = (*NowPaymentsProvider)(nil)
+
 type NowPaymentsProvider struct {
 	client         *NowPaymentsClient
 	ipnCallbackURL string
@@ -43,3 +45,5 @@ func (p *NowPaymentsProvider) CreateCheckout(ctx context.Context, request domain
 func (p *NowPaymentsProvider) RetrieveCheckout(ctx context.Context, values url.Values) (domain.CheckoutConfirmation, error) {
 	return domain.CheckoutConfirmation{}, nil
 }
+
+func (p *NowPaymentsProvider) ConfirmsAsync() {}

@@ -91,6 +91,17 @@ func (s *Service) ProviderEnabled(key string) bool {
 	return ok
 }
 
+func (s *Service) ProviderConfirmsAsync(key string) bool {
+	provider, ok := s.providers[key]
+	if !ok {
+		return false
+	}
+
+	_, ok = provider.(domain.AsyncConfirmer)
+
+	return ok
+}
+
 func (s *Service) SetProvider(provider domain.Provider) {
 	if provider != nil {
 		s.providers[provider.Name()] = provider

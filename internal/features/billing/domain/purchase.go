@@ -126,3 +126,7 @@ type CaptureOutcome struct {
 type Capturer interface {
 	Capture(ctx context.Context, reference string) (CaptureOutcome, error)
 }
+
+type AsyncConfirmer interface {
+	ConfirmsAsync()
+}

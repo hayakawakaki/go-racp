@@ -31,7 +31,7 @@ func (h *Handler) showStore(w http.ResponseWriter, r *http.Request) {
 	case noticeSuccess:
 		if purchased, ok := h.confirmPurchase(r); ok {
 			st.Purchased = &purchased
-		} else if r.URL.Query().Get(fieldProvider) == providerCrypto {
+		} else if h.svc.ProviderConfirmsAsync(r.URL.Query().Get(fieldProvider)) {
 			st.Pending = true
 		} else {
 			st.NotCompleted = true
