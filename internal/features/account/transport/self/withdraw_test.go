@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/hayakawakaki/go-racp/internal/features/account/domain"
@@ -151,5 +152,61 @@ func TestHandler_DoWithdraw_NoSessionRedirectsLogin(t *testing.T) {
 
 	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/login" {
 		t.Errorf("code=%d loc=%q, want 303 /login", rec.Code, rec.Header().Get("Location"))
+	}
+}
+
+func TestHandler_DoWithdraw_HTMXSuccessFiresToast(t *testing.T) {
+	t.Parallel()
+
+	stub := &stubCurrencyService{
+		requestWithdrawFn: func(context.Context, int, int64, int) error {
+			return nil
+		},
+	}
+	h := newTestHandler(&stubAccountService{}, &stubSessionService{}, nil)
+	h.currency = stub
+
+	req := postWithSession("/account/withdraw", 7, map[string]string{"cashpoint": "100", "zeny": "0"})
+	req.Header.Set("HX-Request", "true")
+
+	rec := httptest.NewRecorder()
+	h.doWithdraw(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("status = %d, want 200", rec.Code)
+	}
+	if loc := rec.Header().Get("Location"); loc != "" {
+		t.Errorf("Location = %q, want empty (no redirect)", loc)
+	}
+	if trigger := rec.Header().Get("HX-Trigger"); !strings.Contains(trigger, "toast") {
+		t.Errorf("HX-Trigger = %q, want it to contain a toast", trigger)
+	}
+}
+
+func TestHandler_DoWithdraw_HTMXErrorRendersForm(t *testing.T) {
+	t.Parallel()
+
+	stub := &stubCurrencyService{
+		requestWithdrawFn: func(context.Context, int, int64, int) error {
+			return domain.ErrInsufficientBalance
+		},
+	}
+	h := newTestHandler(&stubAccountService{}, &stubSessionService{}, nil)
+	h.currency = stub
+
+	req := postWithSession("/account/withdraw", 7, map[string]string{"cashpoint": "100", "zeny": "0"})
+	req.Header.Set("HX-Request", "true")
+
+	rec := httptest.NewRecorder()
+	h.doWithdraw(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("status = %d, want 200", rec.Code)
+	}
+	if loc := rec.Header().Get("Location"); loc != "" {
+		t.Errorf("Location = %q, want empty (no redirect)", loc)
+	}
+	if !strings.Contains(rec.Body.String(), "You do not have enough balance") {
+		t.Errorf("body should surface the insufficient notice; got %s", rec.Body.String())
 	}
 }

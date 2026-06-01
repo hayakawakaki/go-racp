@@ -40,6 +40,13 @@ func (s *stubService) Get(ctx context.Context, id int) (app.UserDetail, error) {
 	}
 	return app.UserDetail{}, accdomain.ErrUserNotFound
 }
+func (s *stubService) GetUser(ctx context.Context, id int) (*accdomain.User, error) {
+	d, err := s.Get(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return d.User, nil
+}
 func (s *stubService) Ban(ctx context.Context, cmd app.BanCommand) (app.UserDetail, error) {
 	if s.banFn != nil {
 		return s.banFn(ctx, cmd)
@@ -278,6 +285,44 @@ func TestHandler_DoBan_SwapsDetail(t *testing.T) {
 func TestHandler_DoBan_ValidationError(t *testing.T) {
 	t.Parallel()
 	svc := &stubService{
+		getFn: func(_ context.Context, _ int) (app.UserDetail, error) {
+			return app.UserDetail{User: &accdomain.User{ID: 7, Username: "kaki"}}, nil
+		},
+		banFn: func(_ context.Context, _ app.BanCommand) (app.UserDetail, error) {
+			return app.UserDetail{}, accdomain.ErrEmptyReason
+		},
+	}
+	h := NewHandler(svc, HandlerConfig{
+		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
+		General: config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
+		Theme:   stubTheme{},
+	})
+
+	rr := httptest.NewRecorder()
+	body := strings.NewReader("permanent=on")
+	req := httptest.NewRequest(http.MethodPost, "/users/7/ban", body)
+	req.SetPathValue("id", "7")
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req = req.WithContext(middlewareCtxWithActor(req.Context(), 1))
+	h.doBan(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("status = %d, want 200", rr.Code)
+	}
+	if got := rr.Header().Get("HX-Retarget"); got != "#modal" {
+		t.Errorf("HX-Retarget = %q, want #modal", got)
+	}
+	if got := rr.Header().Get("HX-Reswap"); got != "innerHTML" {
+		t.Errorf("HX-Reswap = %q, want innerHTML", got)
+	}
+	if !strings.Contains(rr.Body.String(), "Reason is required") {
+		t.Errorf("body should mention validation; got %s", rr.Body.String())
+	}
+}
+
+func TestHandler_DoBan_ValidationError_GetFailureFallback(t *testing.T) {
+	t.Parallel()
+	svc := &stubService{
 		banFn: func(_ context.Context, _ app.BanCommand) (app.UserDetail, error) {
 			return app.UserDetail{}, accdomain.ErrEmptyReason
 		},
@@ -301,6 +346,95 @@ func TestHandler_DoBan_ValidationError(t *testing.T) {
 	}
 	if !strings.Contains(rr.Body.String(), "Reason is required") {
 		t.Errorf("body should mention validation; got %s", rr.Body.String())
+	}
+}
+
+func TestHandler_ShowBanModal(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name         string
+		wantBody     string
+		wantLocation string
+		wantCode     int
+		htmx         bool
+	}{
+		{name: "htmx renders modal", htmx: true, wantCode: http.StatusOK, wantBody: "kaki"},
+		{name: "non-htmx redirects", htmx: false, wantCode: http.StatusSeeOther, wantLocation: "/users/7"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			svc := &stubService{
+				getFn: func(_ context.Context, _ int) (app.UserDetail, error) {
+					return app.UserDetail{User: &accdomain.User{ID: 7, Username: "kaki"}}, nil
+				},
+			}
+			h := NewHandler(svc, HandlerConfig{
+				Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
+				General: config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
+				Theme:   stubTheme{},
+			})
+
+			rr := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodGet, "/users/7/ban", http.NoBody)
+			req.SetPathValue("id", "7")
+			if tt.htmx {
+				req.Header.Set("HX-Request", "true")
+			}
+			req = req.WithContext(middlewareCtxWithActorGroup(req.Context(), 1, accdomain.RoleAdmin.GroupID))
+			h.showBanModal(rr, req)
+
+			if rr.Code != tt.wantCode {
+				t.Fatalf("status = %d, want %d", rr.Code, tt.wantCode)
+			}
+			if tt.wantBody != "" && !strings.Contains(rr.Body.String(), tt.wantBody) {
+				t.Errorf("body missing %q:\n%s", tt.wantBody, rr.Body.String())
+			}
+			if tt.wantLocation != "" {
+				if got := rr.Header().Get("Location"); got != tt.wantLocation {
+					t.Errorf("Location = %q, want %q", got, tt.wantLocation)
+				}
+			}
+		})
+	}
+}
+
+func TestHandler_ShowDetail_NonAdminSkipsFinance(t *testing.T) {
+	t.Parallel()
+
+	called := false
+	svc := &stubService{
+		getFn: func(_ context.Context, _ int) (app.UserDetail, error) {
+			return app.UserDetail{
+				User: &accdomain.User{ID: 7, Username: "kaki", Email: "k@example.com"},
+			}, nil
+		},
+	}
+	history := &stubCurrencyHistory{
+		depositsFn: func(_ context.Context, _, page, _ int) (currency.DepositPage, error) {
+			called = true
+			return currency.DepositPage{Page: page}, nil
+		},
+	}
+	h := NewHandler(svc, HandlerConfig{
+		Logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
+		General:  config.GeneralConfig{ServerName: "Test CP", Timezone: "UTC"},
+		Currency: history,
+		Theme:    stubTheme{},
+	})
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/users/7", http.NoBody)
+	req.SetPathValue("id", "7")
+	req = req.WithContext(middlewareCtxWithActorGroup(req.Context(), 1, 10))
+	h.showDetail(rr, req)
+
+	if called {
+		t.Errorf("deposit history must not load for a non-admin viewer")
+	}
+	if strings.Contains(rr.Body.String(), "Deposit history") {
+		t.Errorf("non-admin detail must not render the finance section:\n%s", rr.Body.String())
 	}
 }
 

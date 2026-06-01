@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -94,6 +95,72 @@ func TestHandler_ShowDetail_HappyPath(t *testing.T) {
 	body := w.Body.String()
 	if !strings.Contains(body, "kaki") {
 		t.Errorf("body missing guild name: %s", body)
+	}
+}
+
+func TestHandler_ShowDetail_PaginatesMembers(t *testing.T) {
+	t.Parallel()
+
+	members := make([]domain.Member, 0, 25)
+	for i := 1; i <= 25; i++ {
+		members = append(members, domain.Member{
+			Name:         fmt.Sprintf("Member%02d", i),
+			PositionName: "Member",
+			CharID:       1000 + i,
+			Position:     1,
+		})
+	}
+	svc := &fakeService{getResult: app.GuildDetail{
+		Guild:   &domain.Guild{ID: 42, Name: "kaki", MaxMember: 56},
+		Members: members,
+	}}
+
+	tests := []struct {
+		name      string
+		target    string
+		wantBody  []string
+		notInBody []string
+	}{
+		{
+			name:      "first page shows members 1-10",
+			target:    "/guilds/42?page=1",
+			wantBody:  []string{"Member01", "Member10"},
+			notInBody: []string{"Member11"},
+		},
+		{
+			name:      "second page shows members 11-20",
+			target:    "/guilds/42?page=2",
+			wantBody:  []string{"Member11", "Member20"},
+			notInBody: []string{"Member01"},
+		},
+		{
+			name:     "out-of-range page clamps to the last page",
+			target:   "/guilds/42?page=99",
+			wantBody: []string{"Member21"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := newRequest(t, http.MethodGet, tt.target, map[string]string{"id": "42"}, nil)
+			w := httptest.NewRecorder()
+			h := newTestHandler(svc)
+			h.showDetail(w, r)
+
+			if w.Code != http.StatusOK {
+				t.Fatalf("status = %d, want 200", w.Code)
+			}
+			body := w.Body.String()
+			for _, want := range tt.wantBody {
+				if !strings.Contains(body, want) {
+					t.Errorf("body missing %q:\n%s", want, body)
+				}
+			}
+			for _, absent := range tt.notInBody {
+				if strings.Contains(body, absent) {
+					t.Errorf("body should not contain %q:\n%s", absent, body)
+				}
+			}
+		})
 	}
 }
 

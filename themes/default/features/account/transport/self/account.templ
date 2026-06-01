@@ -9,6 +9,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/ui"
 	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
+	"github.com/hayakawakaki/go-racp/themes/default/platform/helpers"
 )
 
 templ AccountPage(layout httpx.Layout, state accountselfstate.AccountState) {
@@ -141,7 +142,7 @@ templ accountBalanceCells(balance currency.BalanceDTO, failed bool) {
 		if failed {
 			<div class="text-2xl font-light text-font-muted">Unavailable</div>
 		} else {
-			<div class="text-2xl font-light tabular-nums text-font">{ fmt.Sprintf("%d", balance.Cashpoint) }</div>
+			<div class="text-2xl font-light tabular-nums text-font">{ helpers.FormatAmount(int64(balance.Cashpoint)) }</div>
 		}
 	</div>
 	<div class="space-y-1 lg:text-right">
@@ -149,7 +150,7 @@ templ accountBalanceCells(balance currency.BalanceDTO, failed bool) {
 		if failed {
 			<div class="text-2xl font-light text-font-muted">Unavailable</div>
 		} else {
-			<div class="text-2xl font-light tabular-nums text-font">{ fmt.Sprintf("%d", balance.Zeny) }</div>
+			<div class="text-2xl font-light tabular-nums text-font">{ helpers.FormatAmount(balance.Zeny) }</div>
 		}
 	</div>
 }

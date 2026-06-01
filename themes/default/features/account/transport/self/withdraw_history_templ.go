@@ -9,8 +9,6 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	"fmt"
-
 	accountselfstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/self/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/ui"
 	"github.com/hayakawakaki/go-racp/themes/default/platform/helpers"
@@ -212,9 +210,9 @@ func AccountWithdrawHistory(state accountselfstate.WithdrawHistoryState) templ.C
 								}
 								ctx = templ.InitializeContext(ctx)
 								var templ_7745c5c3_Var11 string
-								templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", row.Cashpoint))
+								templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(helpers.FormatAmount(int64(row.Cashpoint)))
 								if templ_7745c5c3_Err != nil {
-									return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/account/transport/self/withdraw_history.templ`, Line: 35, Col: 41}
+									return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/account/transport/self/withdraw_history.templ`, Line: 33, Col: 51}
 								}
 								_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 								if templ_7745c5c3_Err != nil {
@@ -243,9 +241,9 @@ func AccountWithdrawHistory(state accountselfstate.WithdrawHistoryState) templ.C
 								}
 								ctx = templ.InitializeContext(ctx)
 								var templ_7745c5c3_Var13 string
-								templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", row.Zeny))
+								templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(helpers.FormatAmount(row.Zeny))
 								if templ_7745c5c3_Err != nil {
-									return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/account/transport/self/withdraw_history.templ`, Line: 38, Col: 36}
+									return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/account/transport/self/withdraw_history.templ`, Line: 36, Col: 39}
 								}
 								_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 								if templ_7745c5c3_Err != nil {
@@ -276,7 +274,7 @@ func AccountWithdrawHistory(state accountselfstate.WithdrawHistoryState) templ.C
 								var templ_7745c5c3_Var15 string
 								templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(helpers.FormatTime(row.CreatedAt, state.Location))
 								if templ_7745c5c3_Err != nil {
-									return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/account/transport/self/withdraw_history.templ`, Line: 41, Col: 58}
+									return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/features/account/transport/self/withdraw_history.templ`, Line: 39, Col: 58}
 								}
 								_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 								if templ_7745c5c3_Err != nil {

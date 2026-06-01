@@ -81,7 +81,7 @@ func (h *Handler) showActionModal(w http.ResponseWriter, r *http.Request, render
 		return
 	}
 
-	detail, err := h.svc.Get(r.Context(), id)
+	user, err := h.svc.GetUser(r.Context(), id)
 	if errors.Is(err, accdomain.ErrUserNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
@@ -92,7 +92,7 @@ func (h *Handler) showActionModal(w http.ResponseWriter, r *http.Request, render
 		return
 	}
 
-	httpx.RenderHTML(w, r, h.logger, render(h.modalState(r, detail)))
+	httpx.RenderHTML(w, r, h.logger, render(h.modalState(r, app.UserDetail{User: user})))
 }
 
 func (h *Handler) doBan(w http.ResponseWriter, r *http.Request) {
@@ -116,8 +116,11 @@ func (h *Handler) doBan(w http.ResponseWriter, r *http.Request) {
 		Reason:       r.FormValue("reason"),
 	})
 	if err != nil {
-		h.logUnexpectedActionError(err)
-		h.actionModalError(w, r, targetID, actionErrorMessage(err), banModal)
+		message, expected := actionErrorMessage(err)
+		if !expected {
+			h.logger.Error("users: action failed", "err", err)
+		}
+		h.actionModalError(w, r, targetID, message, banModal)
 		return
 	}
 
@@ -142,8 +145,11 @@ func (h *Handler) doUnban(w http.ResponseWriter, r *http.Request) {
 		Reason:       r.FormValue("reason"),
 	})
 	if err != nil {
-		h.logUnexpectedActionError(err)
-		h.actionModalError(w, r, targetID, actionErrorMessage(err), unbanModal)
+		message, expected := actionErrorMessage(err)
+		if !expected {
+			h.logger.Error("users: action failed", "err", err)
+		}
+		h.actionModalError(w, r, targetID, message, unbanModal)
 		return
 	}
 
@@ -175,8 +181,11 @@ func (h *Handler) doSetRole(w http.ResponseWriter, r *http.Request) {
 		Reason:       r.FormValue("reason"),
 	})
 	if err != nil {
-		h.logUnexpectedActionError(err)
-		h.actionModalError(w, r, targetID, actionErrorMessage(err), roleModal)
+		message, expected := actionErrorMessage(err)
+		if !expected {
+			h.logger.Error("users: action failed", "err", err)
+		}
+		h.actionModalError(w, r, targetID, message, roleModal)
 		return
 	}
 
@@ -198,13 +207,13 @@ func (h *Handler) writeActionError(w http.ResponseWriter, r *http.Request, messa
 }
 
 func (h *Handler) actionModalError(w http.ResponseWriter, r *http.Request, targetID int, message string, render func(state.DetailState) templ.Component) {
-	detail, err := h.svc.Get(r.Context(), targetID)
+	user, err := h.svc.GetUser(r.Context(), targetID)
 	if err != nil {
 		h.writeActionError(w, r, message, http.StatusBadRequest)
 		return
 	}
 
-	s := h.modalState(r, detail)
+	s := h.modalState(r, app.UserDetail{User: user})
 	s.ActionError = message
 	w.Header().Set("HX-Retarget", "#modal")
 	w.Header().Set("HX-Reswap", "innerHTML")
@@ -212,41 +221,25 @@ func (h *Handler) actionModalError(w http.ResponseWriter, r *http.Request, targe
 	httpx.RenderHTML(w, r, h.logger, render(s))
 }
 
-func (h *Handler) logUnexpectedActionError(err error) {
-	switch {
-	case errors.Is(err, accdomain.ErrSelfAction),
-		errors.Is(err, accdomain.ErrTargetIsAdmin),
-		errors.Is(err, accdomain.ErrTargetProtected),
-		errors.Is(err, accdomain.ErrEmptyReason),
-		errors.Is(err, accdomain.ErrInvalidDuration),
-		errors.Is(err, accdomain.ErrInvalidRole),
-		errors.Is(err, accdomain.ErrInvalidState),
-		errors.Is(err, accdomain.ErrUserNotFound):
-		return
-	default:
-		h.logger.Error("users: action failed", "err", err)
-	}
-}
-
-func actionErrorMessage(err error) string {
+func actionErrorMessage(err error) (string, bool) {
 	switch {
 	case errors.Is(err, accdomain.ErrSelfAction):
-		return "You can't perform admin actions on your own account."
+		return "You can't perform admin actions on your own account.", true
 	case errors.Is(err, accdomain.ErrTargetIsAdmin):
-		return "Admin-on-admin actions must go through the database."
+		return "Admin-on-admin actions must go through the database.", true
 	case errors.Is(err, accdomain.ErrTargetProtected):
-		return "You can only act on player accounts."
+		return "You can only act on player accounts.", true
 	case errors.Is(err, accdomain.ErrEmptyReason):
-		return "Reason is required."
+		return "Reason is required.", true
 	case errors.Is(err, accdomain.ErrInvalidDuration):
-		return "Invalid ban duration."
+		return "Invalid ban duration.", true
 	case errors.Is(err, accdomain.ErrInvalidRole):
-		return "Selected role is not allowed."
+		return "Selected role is not allowed.", true
 	case errors.Is(err, accdomain.ErrInvalidState):
-		return "Action not allowed in the current state."
+		return "Action not allowed in the current state.", true
 	case errors.Is(err, accdomain.ErrUserNotFound):
-		return "Account not found."
+		return "Account not found.", true
 	default:
-		return "Action failed. Check server logs."
+		return "Action failed. Check server logs.", false
 	}
 }

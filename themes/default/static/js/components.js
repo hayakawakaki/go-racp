@@ -176,6 +176,10 @@ document.addEventListener('alpine:init', () => {
             window.addEventListener('htmx:afterSettle', this._sync);
             window.addEventListener('popstate', this._sync);
         },
+        destroy() {
+            window.removeEventListener('htmx:afterSettle', this._sync);
+            window.removeEventListener('popstate', this._sync);
+        },
         isActive(href) {
             return this.path === href;
         },

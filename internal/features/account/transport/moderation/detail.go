@@ -31,9 +31,6 @@ func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dpage := httpx.ParsePositiveInt(r.URL.Query().Get("dpage"), 1)
-	wpage := httpx.ParsePositiveInt(r.URL.Query().Get("wpage"), 1)
-
 	s := state.DetailState{
 		Detail:       detail,
 		Now:          time.Now(),
@@ -45,22 +42,8 @@ func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {
 		s.ViewerIsAdmin = snap.IsAdmin()
 	}
 
-	if h.currency != nil {
-		deposits, depositErr := h.currency.DepositHistoryByAccount(r.Context(), detail.User.ID, dpage, detailHistoryPerPage)
-		if depositErr != nil {
-			h.logger.Warn("users: deposit history failed", "id", id, "err", depositErr)
-			s.DepositsFailed = true
-		} else {
-			s.Deposits = deposits
-		}
-
-		withdraws, withdrawErr := h.currency.WithdrawHistoryByAccount(r.Context(), detail.User.ID, wpage, detailHistoryPerPage)
-		if withdrawErr != nil {
-			h.logger.Warn("users: withdraw history failed", "id", id, "err", withdrawErr)
-			s.WithdrawsFailed = true
-		} else {
-			s.Withdraws = withdraws
-		}
+	if s.ViewerIsAdmin {
+		h.loadDetailHistory(r, &s, detail.User.ID)
 	}
 
 	if httpx.IsHTMX(r) {
@@ -68,4 +51,29 @@ func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.RenderHTML(w, r, h.logger, h.theme.UsersDetailPage(h.layout(), detail.User.Username, s))
+}
+
+func (h *Handler) loadDetailHistory(r *http.Request, s *state.DetailState, accountID int) {
+	if h.currency == nil {
+		return
+	}
+
+	dpage := httpx.ParsePositiveInt(r.URL.Query().Get("dpage"), 1)
+	wpage := httpx.ParsePositiveInt(r.URL.Query().Get("wpage"), 1)
+
+	deposits, err := h.currency.DepositHistoryByAccount(r.Context(), accountID, dpage, detailHistoryPerPage)
+	if err != nil {
+		h.logger.Warn("users: deposit history failed", "id", accountID, "err", err)
+		s.DepositsFailed = true
+	} else {
+		s.Deposits = deposits
+	}
+
+	withdraws, err := h.currency.WithdrawHistoryByAccount(r.Context(), accountID, wpage, detailHistoryPerPage)
+	if err != nil {
+		h.logger.Warn("users: withdraw history failed", "id", accountID, "err", err)
+		s.WithdrawsFailed = true
+	} else {
+		s.Withdraws = withdraws
+	}
 }

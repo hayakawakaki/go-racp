@@ -90,6 +90,15 @@ func (s *Service) Get(ctx context.Context, id int) (UserDetail, error) {
 	return UserDetail{User: user, Characters: chars, Recent: recent}, nil
 }
 
+func (s *Service) GetUser(ctx context.Context, id int) (*accdomain.User, error) {
+	user, err := s.users.GetByID(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("app.Service.GetUser: %w", err)
+	}
+
+	return user, nil
+}
+
 func (s *Service) loadMutableTarget(ctx context.Context, actorID, targetID int, actorIsAdmin bool) (*accdomain.User, error) {
 	if actorID == targetID {
 		return nil, accdomain.ErrSelfAction

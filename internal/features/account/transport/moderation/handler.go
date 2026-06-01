@@ -8,6 +8,7 @@ import (
 	"github.com/a-h/templ"
 	currency "github.com/hayakawakaki/go-racp/internal/features/account/app/currency"
 	app "github.com/hayakawakaki/go-racp/internal/features/account/app/moderation"
+	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
@@ -18,6 +19,7 @@ const detailHistoryPerPage = 15
 
 type userService interface {
 	Get(ctx context.Context, id int) (app.UserDetail, error)
+	GetUser(ctx context.Context, id int) (*accdomain.User, error)
 	Ban(ctx context.Context, cmd app.BanCommand) (app.UserDetail, error)
 	Unban(ctx context.Context, cmd app.UnbanCommand) (app.UserDetail, error)
 	SetRole(ctx context.Context, cmd app.SetRoleCommand) (app.UserDetail, error)

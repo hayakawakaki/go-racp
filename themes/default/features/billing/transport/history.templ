@@ -104,7 +104,7 @@ templ PurchaseHistorySummary(state billingstate.PurchaseHistoryState) {
 							{ helpers.FormatPrice(purchase.Amount, state.Currency) }
 						}
 						@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignCenter, Class: "font-mono tabular-nums"}) {
-							{ fmt.Sprintf("%d", purchase.CashPoints) }
+							{ helpers.FormatAmount(int64(purchase.CashPoints)) }
 						}
 						@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignCenter, Class: "text-font-muted tabular-nums"}) {
 							{ helpers.FormatTime(purchase.CreatedAt, state.Location) }

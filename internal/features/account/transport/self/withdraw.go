@@ -41,20 +41,20 @@ func (h *Handler) doWithdraw(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := httpx.ParseForm(w, r, maxWithdrawFormBytes); err != nil {
-		h.withdrawError(w, r, sess.UserID, noticeWithdrawInvalid)
+		h.withdrawError(w, r, noticeWithdrawInvalid)
 		return
 	}
 
 	zeny, errZeny := parseAmount64(r.PostFormValue(fieldWithdrawZeny))
 	cashpoint, errCash := parseAmount(r.PostFormValue(fieldWithdrawCashpoint))
 	if errZeny != nil || errCash != nil {
-		h.withdrawError(w, r, sess.UserID, noticeWithdrawInvalid)
+		h.withdrawError(w, r, noticeWithdrawInvalid)
 		return
 	}
 
 	err := h.currency.RequestWithdraw(r.Context(), sess.UserID, zeny, cashpoint)
 	if err != nil {
-		h.withdrawError(w, r, sess.UserID, h.withdrawNotice(err))
+		h.withdrawError(w, r, h.withdrawNotice(err))
 		return
 	}
 
@@ -109,16 +109,13 @@ func (h *Handler) withdrawState(ctx context.Context, userID int) selfstate.Withd
 	return state
 }
 
-func (h *Handler) withdrawError(w http.ResponseWriter, r *http.Request, userID int, notice string) {
+func (h *Handler) withdrawError(w http.ResponseWriter, r *http.Request, notice string) {
 	if !httpx.IsHTMX(r) {
 		httpx.Redirect(w, r, "/account?notice="+notice)
 		return
 	}
 
-	state := h.withdrawState(r.Context(), userID)
-	state.FormError = accountNoticeText[notice]
-
-	h.renderWithdraw(w, r, state, false)
+	h.renderWithdraw(w, r, selfstate.WithdrawState{FormError: accountNoticeText[notice]}, false)
 }
 
 func (h *Handler) withdrawSuccess(w http.ResponseWriter, r *http.Request, userID int) {
