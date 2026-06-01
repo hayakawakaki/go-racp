@@ -27,6 +27,8 @@ const (
 	paypalMaxResponseBytes  = 1 << 20
 )
 
+const paypalStatusCompleted = "COMPLETED"
+
 var ErrPaypalOrderAlreadyCaptured = errors.New("billing: paypal order already captured")
 
 type PaypalClient struct {
