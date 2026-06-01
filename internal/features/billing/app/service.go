@@ -153,7 +153,7 @@ func (s *Service) ConfirmCheckout(ctx context.Context, providerKey string, value
 
 	confirmation, err := provider.RetrieveCheckout(ctx, values)
 	if err != nil {
-		s.logger.Warn("billing: confirm checkout retrieve failed", "err", err)
+		s.logger.Warn("billing: confirm checkout retrieve failed", "provider", providerKey, "err", err)
 		return domain.Package{}, false, nil
 	}
 	if !confirmation.Paid {

@@ -45,7 +45,7 @@ func (h *Handler) showStore(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) confirmPurchase(r *http.Request) (domain.Package, bool) {
 	provider := r.URL.Query().Get(fieldProvider)
-	if provider == "" {
+	if !h.svc.ProviderEnabled(provider) {
 		return domain.Package{}, false
 	}
 

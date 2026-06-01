@@ -60,6 +60,9 @@ func (p *StripeProvider) CreateCheckout(ctx context.Context, request domain.Chec
 
 func (p *StripeProvider) RetrieveCheckout(ctx context.Context, values url.Values) (domain.CheckoutConfirmation, error) {
 	sessionID := values.Get("session_id")
+	if sessionID == "" {
+		return domain.CheckoutConfirmation{}, nil
+	}
 
 	params := &stripe.CheckoutSessionParams{}
 	params.Context = ctx
