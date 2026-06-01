@@ -34,12 +34,11 @@ type EnvConfig struct {
 	CSRFSecret string `env:"CSRF_SECRET" required:"true"`
 
 	// Payment platforms
-	StripeSecretKey     string `env:"STRIPE_SECRET_KEY" default:""`
-	StripeWebhookSecret string `env:"STRIPE_WEBHOOK_SECRET" default:""`
-	PaypalClientID      string `env:"PAYPAL_CLIENT_ID" default:""`
-	PaypalSecret        string `env:"PAYPAL_SECRET" default:""`
-	PaypalWebhookID     string `env:"PAYPAL_WEBHOOK_ID" default:""`
-
+	StripeSecretKey      string `env:"STRIPE_SECRET_KEY" default:""`
+	StripeWebhookSecret  string `env:"STRIPE_WEBHOOK_SECRET" default:""`
+	PaypalClientID       string `env:"PAYPAL_CLIENT_ID" default:""`
+	PaypalSecret         string `env:"PAYPAL_SECRET" default:""`
+	PaypalWebhookID      string `env:"PAYPAL_WEBHOOK_ID" default:""`
 	NowpaymentsAPIKey    string `env:"NOWPAYMENTS_API_KEY" default:""`
 	NowpaymentsIPNSecret string `env:"NOWPAYMENTS_IPN_SECRET" default:""`
 

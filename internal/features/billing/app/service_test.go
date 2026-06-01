@@ -126,6 +126,33 @@ func TestService_StartCheckout_UnknownProviderKey(t *testing.T) {
 	}
 }
 
+func TestService_ProviderConfirmsAsync(t *testing.T) {
+	t.Parallel()
+
+	syncProvider := &fakeProvider{name: "stripe"}
+	asyncProvider := &fakeAsyncProvider{fakeProvider: fakeProvider{name: "crypto"}}
+	svc := NewService(&fakeRepo{}, testCatalog(), WithProvider(syncProvider), WithProvider(asyncProvider), WithLogger(discardLogger()))
+
+	tests := []struct {
+		name string
+		key  string
+		want bool
+	}{
+		{name: "async provider", key: "crypto", want: true},
+		{name: "sync provider", key: "stripe", want: false},
+		{name: "unknown key", key: "missing", want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := svc.ProviderConfirmsAsync(tt.key); got != tt.want {
+				t.Errorf("ProviderConfirmsAsync(%q) = %v, want %v", tt.key, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestService_CompletePurchase_CreditsOnMatch(t *testing.T) {
 	t.Parallel()
 

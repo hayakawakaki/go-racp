@@ -151,6 +151,14 @@ func (f *fakeProvider) RetrieveCheckout(_ context.Context, values url.Values) (d
 	return f.confirm, f.confirmErr
 }
 
+type fakeAsyncProvider struct {
+	fakeProvider
+}
+
+var _ domain.AsyncConfirmer = (*fakeAsyncProvider)(nil)
+
+func (f *fakeAsyncProvider) ConfirmsAsync() {}
+
 type fakeCapturer struct {
 	captureErr error
 	captured   string

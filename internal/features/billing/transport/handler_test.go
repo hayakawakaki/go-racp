@@ -427,6 +427,27 @@ func TestHandler_ShowStore_SuccessUnverifiedShowsNotice(t *testing.T) {
 	}
 }
 
+func TestHandler_ShowStore_SuccessCryptoShowsPendingModal(t *testing.T) {
+	t.Parallel()
+	h := newHandler(&stubService{available: true})
+
+	req := httptest.NewRequest(http.MethodGet, "/store?notice=success&provider=crypto", http.NoBody)
+	req = req.WithContext(middleware.ContextWithSnapshot(req.Context(), &middleware.AccountSnapshot{UserID: 42}))
+	rr := httptest.NewRecorder()
+	h.showStore(rr, req)
+
+	body := rr.Body.String()
+	if !strings.Contains(body, "Payment received") {
+		t.Errorf("crypto success return must render the pending modal heading")
+	}
+	if strings.Contains(body, "Payment not completed") {
+		t.Errorf("crypto success return must not render the not-completed modal")
+	}
+	if strings.Contains(body, "Purchase complete") {
+		t.Errorf("crypto success return must not render the success modal")
+	}
+}
+
 func TestHandler_ShowStore_CancelShowsNotCompletedModal(t *testing.T) {
 	t.Parallel()
 	h := newHandler(&stubService{available: true})
