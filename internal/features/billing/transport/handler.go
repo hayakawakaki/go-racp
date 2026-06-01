@@ -45,6 +45,7 @@ type Renderer interface {
 	StorePage(layout httpx.Layout, state state.StoreState) templ.Component
 	PurchaseHistoryPage(layout httpx.Layout, state state.PurchaseHistoryState) templ.Component
 	PurchaseHistoryContent(state state.PurchaseHistoryState) templ.Component
+	PurchaseHistorySummary(state state.PurchaseHistoryState) templ.Component
 }
 
 //nolint:govet // GeneralConfig trailing bool forces alignment cost
@@ -93,5 +94,6 @@ func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
 	reg.Wrap(mux, "Store.View", "GET /store", http.HandlerFunc(h.showStore))
 	reg.Wrap(mux, "Store.Checkout", "POST /store/checkout", http.HandlerFunc(h.startCheckout))
 	reg.Wrap(mux, "Store.History", "GET /store/history", http.HandlerFunc(h.showHistory))
+	reg.Wrap(mux, "Store.History", "GET /store/history/summary", http.HandlerFunc(h.showHistorySummary))
 	reg.Wrap(mux, "Webhooks.Stripe", "POST /webhooks/stripe", http.HandlerFunc(h.stripeWebhook))
 }

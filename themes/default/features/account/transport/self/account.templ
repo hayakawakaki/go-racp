@@ -3,10 +3,10 @@ package self
 import (
 	"fmt"
 
+	currency "github.com/hayakawakaki/go-racp/internal/features/account/app/currency"
 	accountselfstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/self/state"
 	charapp "github.com/hayakawakaki/go-racp/internal/features/character/app"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
-	"github.com/hayakawakaki/go-racp/internal/platform/security"
 	"github.com/hayakawakaki/go-racp/internal/platform/ui"
 	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
 )
@@ -38,154 +38,157 @@ templ AccountPage(layout httpx.Layout, state accountselfstate.AccountState) {
 					}
 				}
 			}
-			@accountIdentityCard(state)
+			@accountHeader(state)
 			<div id="modal"></div>
-			@accountWalletCard(state)
-			if !state.Account.Restricted {
-				@accountPurchasesCard()
-			}
-			@accountCharactersCard(state)
+			<div class="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-5">
+				<div class={ "lg:col-span-8", templ.KV("lg:col-span-12", state.Account.Restricted) }>
+					@accountCharactersCard(state)
+				</div>
+				if !state.Account.Restricted {
+					<div class="lg:col-span-4">
+						@accountHistoryCard()
+					</div>
+				}
+			</div>
 		</div>
 	}
 }
 
-templ accountIdentityCard(state accountselfstate.AccountState) {
+templ accountHeader(state accountselfstate.AccountState) {
 	@components.BentoCard(components.BentoCardProps{
 		Delay:   "0ms",
 		Padding: "p-6 lg:p-8",
 		Class:   "gap-6",
 	}) {
-		<div class="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-			<div class="space-y-2">
-				@components.BentoLabel("text-[11px]") {
-					Account
-				}
-				<h1 class="text-3xl xl:text-4xl font-light tracking-tight text-font">{ state.Account.Username }</h1>
-				<div class="flex flex-wrap items-center gap-2">
-					<span class="text-sm text-font-muted">{ state.Account.Email }</span>
-					if state.Account.Verified {
-						@ui.Badge(ui.BadgeProps{Variant: ui.BadgeSubtle, Color: ui.BadgeColorGreen, Size: ui.BadgeSizeSM}) {
-							Verified
+		<div class="flex flex-col gap-6 lg:flex-row lg:items-stretch lg:justify-between">
+			<div class="flex flex-col gap-4">
+				<div class="space-y-2">
+					@components.BentoLabel("text-[11px]") {
+						Account
+					}
+					<h1 class="text-3xl xl:text-4xl font-light tracking-tight text-font">{ state.Account.Username }</h1>
+					<div class="flex flex-wrap items-center gap-2">
+						<span class="text-sm text-font-muted">{ state.Account.Email }</span>
+						if state.Account.Verified {
+							@ui.Badge(ui.BadgeProps{Variant: ui.BadgeSubtle, Color: ui.BadgeColorGreen, Size: ui.BadgeSizeSM}) {
+								Verified
+							}
+						} else {
+							@ui.Badge(ui.BadgeProps{Variant: ui.BadgeSubtle, Color: ui.BadgeColorYellow, Size: ui.BadgeSizeSM}) {
+								Unverified
+							}
 						}
-					} else {
-						@ui.Badge(ui.BadgeProps{Variant: ui.BadgeSubtle, Color: ui.BadgeColorYellow, Size: ui.BadgeSizeSM}) {
-							Unverified
-						}
+					</div>
+				</div>
+				<div class="flex flex-wrap gap-2 lg:mt-auto">
+					@ui.Button(ui.ButtonProps{
+						Variant: ui.ButtonOutline,
+						Color:   ui.ButtonColorNeutral,
+						Size:    ui.ButtonSizeMD,
+						Rounded: ui.ButtonRoundedMD,
+						Type:    ui.ButtonTypeButton,
+						Attrs: templ.Attributes{
+							"hx-get":    "/account/password",
+							"hx-target": "#modal",
+							"hx-swap":   "innerHTML",
+						},
+					}) {
+						Change password
+					}
+					@ui.Button(ui.ButtonProps{
+						Variant: ui.ButtonOutline,
+						Color:   ui.ButtonColorNeutral,
+						Size:    ui.ButtonSizeMD,
+						Rounded: ui.ButtonRoundedMD,
+						Type:    ui.ButtonTypeButton,
+						Attrs: templ.Attributes{
+							"hx-get":    "/account/email",
+							"hx-target": "#modal",
+							"hx-swap":   "innerHTML",
+						},
+					}) {
+						Change email
 					}
 				</div>
 			</div>
-			<div class="flex flex-wrap gap-2">
+			<div class="flex flex-col gap-4 lg:items-end lg:justify-between">
+				<div id="account-balances" class="flex flex-wrap gap-8 lg:justify-end">
+					@accountBalanceCells(state.Balance, state.BalanceFailed)
+				</div>
 				@ui.Button(ui.ButtonProps{
-					Variant: ui.ButtonOutline,
-					Color:   ui.ButtonColorNeutral,
+					Variant: ui.ButtonSolid,
+					Color:   ui.ButtonColorIndigo,
 					Size:    ui.ButtonSizeMD,
 					Rounded: ui.ButtonRoundedMD,
 					Type:    ui.ButtonTypeButton,
+					Class:   "lg:mt-auto",
 					Attrs: templ.Attributes{
-						"hx-get":    "/account/password",
+						"hx-get":    "/account/withdraw",
 						"hx-target": "#modal",
 						"hx-swap":   "innerHTML",
 					},
 				}) {
-					Change password
-				}
-				@ui.Button(ui.ButtonProps{
-					Variant: ui.ButtonOutline,
-					Color:   ui.ButtonColorNeutral,
-					Size:    ui.ButtonSizeMD,
-					Rounded: ui.ButtonRoundedMD,
-					Type:    ui.ButtonTypeButton,
-					Attrs: templ.Attributes{
-						"hx-get":    "/account/email",
-						"hx-target": "#modal",
-						"hx-swap":   "innerHTML",
-					},
-				}) {
-					Change email
+					Withdraw
 				}
 			</div>
 		</div>
 	}
 }
 
-templ accountWalletCard(state accountselfstate.AccountState) {
+templ accountBalanceCells(balance currency.BalanceDTO, failed bool) {
+	<div class="space-y-1 lg:text-right">
+		<div class="text-xs text-font-muted">Cashpoint</div>
+		if failed {
+			<div class="text-2xl font-light text-font-muted">Unavailable</div>
+		} else {
+			<div class="text-2xl font-light tabular-nums text-font">{ fmt.Sprintf("%d", balance.Cashpoint) }</div>
+		}
+	</div>
+	<div class="space-y-1 lg:text-right">
+		<div class="text-xs text-font-muted">Zeny</div>
+		if failed {
+			<div class="text-2xl font-light text-font-muted">Unavailable</div>
+		} else {
+			<div class="text-2xl font-light tabular-nums text-font">{ fmt.Sprintf("%d", balance.Zeny) }</div>
+		}
+	</div>
+}
+
+templ accountHistoryCard() {
 	@components.BentoCard(components.BentoCardProps{
-		Delay:   "40ms",
+		Delay:   "120ms",
 		Padding: "p-6 lg:p-8",
 		Class:   "gap-4",
 	}) {
-		<div class="pb-3 border-b border-border">
-			@components.BentoLabel("text-[11px]") {
-				Wallet
-			}
-		</div>
-		<div class="flex flex-wrap gap-8">
-			<div class="space-y-1">
-				<div class="text-xs text-font-muted">Cashpoint</div>
-				if state.BalanceFailed {
-					<div class="text-2xl font-light text-font-muted">Unavailable</div>
-				} else {
-					<div class="text-2xl font-light tabular-nums text-font">{ fmt.Sprintf("%d", state.Balance.Cashpoint) }</div>
+		@ui.Tabs(ui.TabsProps{Default: "purchases"}) {
+			@ui.TabsList(ui.TabsListProps{Class: "w-full"}) {
+				@ui.TabsTrigger(ui.TabsTriggerProps{Value: "purchases", Class: "flex-1"}) {
+					Purchase History
 				}
-			</div>
-			<div class="space-y-1">
-				<div class="text-xs text-font-muted">Zeny</div>
-				if state.BalanceFailed {
-					<div class="text-2xl font-light text-font-muted">Unavailable</div>
-				} else {
-					<div class="text-2xl font-light tabular-nums text-font">{ fmt.Sprintf("%d", state.Balance.Zeny) }</div>
+				@ui.TabsTrigger(ui.TabsTriggerProps{Value: "withdraws", Class: "flex-1"}) {
+					Withdraw History
 				}
-			</div>
-		</div>
-		<form method="post" action="/account/withdraw" class="flex flex-wrap items-end gap-3 pt-4 border-t border-border">
-			@security.HiddenField()
-			@ui.Field(ui.FieldProps{Label: "Withdraw cashpoint", For: "cashpoint"}) {
-				@ui.Input(ui.InputProps{
-					ID:      "cashpoint",
-					Name:    "cashpoint",
-					Type:    ui.InputTypeNumber,
-					Value:   "0",
-					Min:     "0",
-					Size:    ui.InputSizeMD,
-					Rounded: ui.InputRoundedMD,
-					Color:   ui.InputColorIndigo,
-				})
 			}
-			@ui.Field(ui.FieldProps{Label: "Withdraw zeny", For: "zeny"}) {
-				@ui.Input(ui.InputProps{
-					ID:      "zeny",
-					Name:    "zeny",
-					Type:    ui.InputTypeNumber,
-					Value:   "0",
-					Min:     "0",
-					Size:    ui.InputSizeMD,
-					Rounded: ui.InputRoundedMD,
-					Color:   ui.InputColorIndigo,
-				})
-			}
-			@ui.Button(ui.ButtonProps{
-				Variant: ui.ButtonSolid,
-				Color:   ui.ButtonColorIndigo,
-				Size:    ui.ButtonSizeMD,
-				Rounded: ui.ButtonRoundedMD,
-				Type:    ui.ButtonTypeSubmit,
+			@ui.TabsContent(ui.TabsContentProps{
+				Value: "purchases",
+				Attrs: templ.Attributes{
+					"hx-get":     "/store/history/summary",
+					"hx-trigger": "intersect once",
+					"hx-swap":    "innerHTML",
+				},
 			}) {
-				Withdraw
+				@ui.Skeleton(ui.SkeletonProps{Class: "h-4 w-40"})
 			}
-		</form>
-		if state.WithdrawsFailed {
-			@components.DataUnavailable("pt-4 border-t border-border")
-		} else if len(state.RecentWithdraws) > 0 {
-			<div class="pt-4 border-t border-border space-y-2">
-				@components.BentoLabel("text-[11px]") {
-					Recent withdrawals
-				}
-				<ul class="divide-y divide-border">
-					for _, wd := range state.RecentWithdraws {
-						<li class="py-2 text-sm text-font-muted tabular-nums">{ fmt.Sprintf("#%d  cashpoint %d  zeny %d", wd.ID, wd.Cashpoint, wd.Zeny) }</li>
-					}
-				</ul>
-			</div>
+			@ui.TabsContent(ui.TabsContentProps{
+				Value: "withdraws",
+				Attrs: templ.Attributes{
+					"hx-get":     "/account/withdraws",
+					"hx-trigger": "intersect once",
+					"hx-swap":    "innerHTML",
+				},
+			}) {
+				@ui.Skeleton(ui.SkeletonProps{Class: "h-4 w-40"})
+			}
 		}
 	}
 }
@@ -234,21 +237,4 @@ templ accountCharacterRow(c charapp.CharacterDTO) {
 			}
 		</a>
 	</li>
-}
-
-templ accountPurchasesCard() {
-	<div hx-get="/store/history" hx-trigger="load" hx-swap="innerHTML">
-		@components.BentoCard(components.BentoCardProps{
-			Delay:   "120ms",
-			Padding: "p-6 lg:p-8",
-			Class:   "gap-4",
-		}) {
-			<div class="pb-3 border-b border-border">
-				@components.BentoLabel("text-[11px]") {
-					Purchases
-				}
-			</div>
-			@ui.Skeleton(ui.SkeletonProps{Class: "h-4 w-40"})
-		}
-	</div>
 }

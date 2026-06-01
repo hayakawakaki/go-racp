@@ -78,3 +78,40 @@ templ PurchaseHistoryContent(state billingstate.PurchaseHistoryState) {
 		}
 	}
 }
+
+templ PurchaseHistorySummary(state billingstate.PurchaseHistoryState) {
+	if len(state.Purchases) == 0 {
+		<p class="py-6 text-center text-sm text-font-muted">You have no purchases yet.</p>
+	} else {
+		@ui.Table(ui.TableProps{Hover: true, Class: "text-font"}) {
+			@ui.TableHeader() {
+				@ui.TableRow(ui.TableRowProps{}) {
+					@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignCenter, Class: "text-font-muted"}) {
+						Amount
+					}
+					@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignCenter, Class: "text-font-muted"}) {
+						Cashpoint
+					}
+					@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignCenter, Class: "text-font-muted"}) {
+						Date
+					}
+				}
+			}
+			@ui.TableBody() {
+				for _, purchase := range state.Purchases {
+					@ui.TableRow(ui.TableRowProps{}) {
+						@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignCenter, Class: "font-mono tabular-nums"}) {
+							{ helpers.FormatPrice(purchase.Amount, state.Currency) }
+						}
+						@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignCenter, Class: "font-mono tabular-nums"}) {
+							{ fmt.Sprintf("%d", purchase.CashPoints) }
+						}
+						@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignCenter, Class: "text-font-muted tabular-nums"}) {
+							{ helpers.FormatTime(purchase.CreatedAt, state.Location) }
+						}
+					}
+				}
+			}
+		}
+	}
+}

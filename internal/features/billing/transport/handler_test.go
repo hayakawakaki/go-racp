@@ -34,6 +34,10 @@ func (stubTheme) PurchaseHistoryContent(st state.PurchaseHistoryState) templ.Com
 	return billingtpl.PurchaseHistoryContent(st)
 }
 
+func (stubTheme) PurchaseHistorySummary(st state.PurchaseHistoryState) templ.Component {
+	return billingtpl.PurchaseHistorySummary(st)
+}
+
 type stubService struct {
 	checkoutURL    string
 	lastSuccessURL string

@@ -1,0 +1,102 @@
+package self
+
+import (
+	accountselfstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/self/state"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/security"
+	"github.com/hayakawakaki/go-racp/internal/platform/ui"
+	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
+)
+
+templ AccountWithdrawModal(state accountselfstate.WithdrawState) {
+	@ui.Modal(ui.ModalProps{Open: true}) {
+		@ui.ModalContent(ui.ModalContentProps{Size: ui.ModalSizeMD}) {
+			@ui.ModalHeader() {
+				@ui.ModalTitle() {
+					Withdraw to in-game
+				}
+				@ui.ModalDescription() {
+					Move cashpoint or zeny from your panel balance into your account in-game.
+				}
+			}
+			@accountWithdrawBody(state)
+		}
+	}
+}
+
+templ accountWithdrawBody(state accountselfstate.WithdrawState) {
+	<div class="space-y-4">
+		<div class="flex flex-wrap gap-8">
+			@accountBalanceCells(state.Balance, state.BalanceFailed)
+		</div>
+		@AccountWithdrawForm(state)
+	</div>
+}
+
+templ AccountWithdrawForm(state accountselfstate.WithdrawState) {
+	<form hx-post="/account/withdraw" hx-swap="outerHTML" method="post" action="/account/withdraw" class="space-y-4">
+		@security.HiddenField()
+		if state.FormError != "" {
+			<p class="text-sm text-red-700 bg-red-50 dark:bg-red-950/30 dark:text-red-300 border border-red-200 dark:border-red-800 rounded-md px-3 py-2">{ state.FormError }</p>
+		}
+		@ui.Field(ui.FieldProps{Label: "Withdraw cashpoint", For: "cashpoint"}) {
+			@ui.Input(ui.InputProps{
+				ID:      "cashpoint",
+				Name:    "cashpoint",
+				Type:    ui.InputTypeNumber,
+				Value:   "0",
+				Min:     "0",
+				Size:    ui.InputSizeMD,
+				Rounded: ui.InputRoundedMD,
+				Color:   ui.InputColorIndigo,
+				Class:   "w-full",
+			})
+		}
+		@ui.Field(ui.FieldProps{Label: "Withdraw zeny", For: "zeny"}) {
+			@ui.Input(ui.InputProps{
+				ID:      "zeny",
+				Name:    "zeny",
+				Type:    ui.InputTypeNumber,
+				Value:   "0",
+				Min:     "0",
+				Size:    ui.InputSizeMD,
+				Rounded: ui.InputRoundedMD,
+				Color:   ui.InputColorIndigo,
+				Class:   "w-full",
+			})
+		}
+		@ui.Button(ui.ButtonProps{
+			Variant: ui.ButtonSolid,
+			Color:   ui.ButtonColorIndigo,
+			Size:    ui.ButtonSizeMD,
+			Rounded: ui.ButtonRoundedMD,
+			Type:    ui.ButtonTypeSubmit,
+			Class:   "w-full font-semibold",
+		}) {
+			Withdraw
+		}
+	</form>
+}
+
+templ AccountWithdrawPage(layout httpx.Layout, state accountselfstate.WithdrawState) {
+	@httpx.ActiveBase(layout, "Withdraw") {
+		<div class="mx-auto w-full max-w-md space-y-4">
+			<header class="space-y-2">
+				@components.BentoLabel("text-[11px]") {
+					Account
+				}
+				<h2 class="text-2xl font-light tracking-tight text-font">Withdraw to in-game</h2>
+			</header>
+			@components.BentoCard(components.BentoCardProps{Padding: "p-6 lg:p-8"}) {
+				@accountWithdrawBody(state)
+			}
+		</div>
+	}
+}
+
+templ AccountWithdrawSuccess(state accountselfstate.WithdrawState) {
+	<div id="account-balances" hx-swap-oob="true" class="flex flex-wrap gap-8 lg:justify-end">
+		@accountBalanceCells(state.Balance, state.BalanceFailed)
+	</div>
+	<div id="modal" hx-swap-oob="true"></div>
+}

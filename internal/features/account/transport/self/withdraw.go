@@ -1,6 +1,7 @@
 package self
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
+	selfstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/self/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
@@ -20,6 +22,10 @@ const (
 
 	fieldWithdrawZeny      = "zeny"
 	fieldWithdrawCashpoint = "cashpoint"
+
+	withdrawHistoryLimit = 10
+
+	withdrawToastTrigger = `{"toast":{"type":"success","message":"Withdrawal requested. It will be delivered in-game shortly."}}`
 )
 
 func (h *Handler) doWithdraw(w http.ResponseWriter, r *http.Request) {
@@ -35,19 +41,24 @@ func (h *Handler) doWithdraw(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := httpx.ParseForm(w, r, maxWithdrawFormBytes); err != nil {
-		httpx.Redirect(w, r, "/account?notice="+noticeWithdrawInvalid)
+		h.withdrawError(w, r, sess.UserID, noticeWithdrawInvalid)
 		return
 	}
 
 	zeny, errZeny := parseAmount64(r.PostFormValue(fieldWithdrawZeny))
 	cashpoint, errCash := parseAmount(r.PostFormValue(fieldWithdrawCashpoint))
 	if errZeny != nil || errCash != nil {
-		httpx.Redirect(w, r, "/account?notice="+noticeWithdrawInvalid)
+		h.withdrawError(w, r, sess.UserID, noticeWithdrawInvalid)
 		return
 	}
 
 	err := h.currency.RequestWithdraw(r.Context(), sess.UserID, zeny, cashpoint)
-	httpx.Redirect(w, r, "/account?notice="+h.withdrawNotice(err))
+	if err != nil {
+		h.withdrawError(w, r, sess.UserID, h.withdrawNotice(err))
+		return
+	}
+
+	h.withdrawSuccess(w, r, sess.UserID)
 }
 
 func (h *Handler) withdrawNotice(err error) string {
@@ -66,6 +77,93 @@ func (h *Handler) withdrawNotice(err error) string {
 		h.logger.Error("account withdraw", "err", err)
 		return noticeWithdrawInvalid
 	}
+}
+
+func (h *Handler) showWithdraw(w http.ResponseWriter, r *http.Request) {
+	sess, ok := middleware.SessionFromContext(r.Context())
+	if !ok || sess == nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	state := h.withdrawState(r.Context(), sess.UserID)
+
+	h.renderWithdraw(w, r, state, true)
+}
+
+func (h *Handler) withdrawState(ctx context.Context, userID int) selfstate.WithdrawState {
+	var state selfstate.WithdrawState
+	if h.currency == nil {
+		return state
+	}
+
+	balance, err := h.currency.Balance(ctx, userID)
+	if err != nil {
+		h.logger.Error("withdraw balance", "err", err)
+		state.BalanceFailed = true
+		return state
+	}
+
+	state.Balance = balance
+
+	return state
+}
+
+func (h *Handler) withdrawError(w http.ResponseWriter, r *http.Request, userID int, notice string) {
+	if !httpx.IsHTMX(r) {
+		httpx.Redirect(w, r, "/account?notice="+notice)
+		return
+	}
+
+	state := h.withdrawState(r.Context(), userID)
+	state.FormError = accountNoticeText[notice]
+
+	h.renderWithdraw(w, r, state, false)
+}
+
+func (h *Handler) withdrawSuccess(w http.ResponseWriter, r *http.Request, userID int) {
+	if !httpx.IsHTMX(r) {
+		httpx.Redirect(w, r, "/account?notice="+noticeWithdrawOK)
+		return
+	}
+
+	state := h.withdrawState(r.Context(), userID)
+	w.Header().Set("HX-Trigger", withdrawToastTrigger)
+
+	httpx.RenderHTML(w, r, h.logger, h.theme.AccountWithdrawSuccess(state))
+}
+
+func (h *Handler) renderWithdraw(w http.ResponseWriter, r *http.Request, state selfstate.WithdrawState, modalOnInitial bool) {
+	if httpx.IsHTMX(r) {
+		if modalOnInitial {
+			httpx.RenderHTML(w, r, h.logger, h.theme.AccountWithdrawModal(state))
+			return
+		}
+		httpx.RenderHTML(w, r, h.logger, h.theme.AccountWithdrawForm(state))
+		return
+	}
+	httpx.RenderHTML(w, r, h.logger, h.theme.AccountWithdrawPage(h.layout(), state))
+}
+
+func (h *Handler) showWithdrawHistory(w http.ResponseWriter, r *http.Request) {
+	sess, ok := middleware.SessionFromContext(r.Context())
+	if !ok || sess == nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	state := selfstate.WithdrawHistoryState{Location: h.general.Location()}
+	if h.currency != nil {
+		page, err := h.currency.WithdrawHistoryByAccount(r.Context(), sess.UserID, 1, withdrawHistoryLimit)
+		if err != nil {
+			h.logger.Error("account withdraw history", "err", err)
+			state.Failed = true
+		} else {
+			state.Rows = page.Rows
+		}
+	}
+
+	httpx.RenderHTML(w, r, h.logger, h.theme.AccountWithdrawHistory(state))
 }
 
 func parseAmount(raw string) (int, error) {
