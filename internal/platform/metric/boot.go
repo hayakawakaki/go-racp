@@ -38,6 +38,7 @@ func Start(ctx context.Context, deps Deps) *Reader {
 	online := app.NewOnlinePoller(app.OnlinePollerConfig{
 		Source:   source,
 		PeakSink: peakRepo,
+		Bridge:   deps.MainDB,
 		Logger:   deps.Logger,
 		Location: deps.Config.General.Location(),
 		Windows:  windows,
@@ -49,6 +50,7 @@ func Start(ctx context.Context, deps Deps) *Reader {
 	general := app.NewGeneralPoller(app.GeneralPollerConfig{
 		Source:   source,
 		Sink:     generalRepo,
+		Bridge:   deps.MainDB,
 		Logger:   deps.Logger,
 		Interval: deps.Config.Metrics.GeneralPollInterval,
 	})

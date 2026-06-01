@@ -70,6 +70,7 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 
 	cfg := transport.HandlerConfig{
 		Logger:              in.Logger,
+		Bridge:              in.MainDB,
 		Theme:               theme.Active,
 		General:             in.Config.App.General,
 		Currency:            in.Config.App.Purchases.Currency,

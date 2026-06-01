@@ -12,10 +12,23 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+const bridgePingTimeout = 2 * time.Second
+
 type OnlineSource interface {
 	CountOnlineTotal(ctx context.Context) (int, error)
 	CountVendors(ctx context.Context) (int, error)
 	CountUniqueOnline(ctx context.Context) (int, error)
+}
+
+type BridgePinger interface {
+	PingContext(ctx context.Context) error
+}
+
+func bridgeReachable(ctx context.Context, bridge BridgePinger) bool {
+	pingCtx, cancel := context.WithTimeout(ctx, bridgePingTimeout)
+	defer cancel()
+
+	return bridge.PingContext(pingCtx) == nil
 }
 
 type PeakSink interface {
@@ -25,6 +38,7 @@ type PeakSink interface {
 type OnlinePollerConfig struct {
 	Source   OnlineSource
 	PeakSink PeakSink
+	Bridge   BridgePinger
 	Logger   *slog.Logger
 	Now      func() time.Time
 	Location *time.Location
@@ -59,6 +73,10 @@ func (p *OnlinePoller) Run(ctx context.Context) {
 }
 
 func (p *OnlinePoller) RefreshOnce(ctx context.Context) {
+	if p.cfg.Bridge != nil && !bridgeReachable(ctx, p.cfg.Bridge) {
+		return
+	}
+
 	var total, vendor, unique int
 	g, gctx := errgroup.WithContext(ctx)
 	g.Go(func() error {

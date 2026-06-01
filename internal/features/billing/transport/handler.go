@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/a-h/templ"
 	"github.com/hayakawakaki/go-racp/internal/features/billing/domain"
@@ -17,6 +18,8 @@ import (
 
 const (
 	maxCheckoutFormBytes = 1 << 10
+
+	bridgePingTimeout = 2 * time.Second
 
 	fieldPackage  = "package"
 	fieldProvider = "provider"
@@ -39,6 +42,10 @@ type paypalVerifier interface {
 
 type nowpaymentsVerifier interface {
 	VerifyIPN(signature string, body []byte) (bool, error)
+}
+
+type bridgePinger interface {
+	PingContext(ctx context.Context) error
 }
 
 type billingService interface {
@@ -66,6 +73,7 @@ type HandlerConfig struct {
 	Theme               Renderer
 	Paypal              paypalVerifier
 	NowPayments         nowpaymentsVerifier
+	Bridge              bridgePinger
 	Currency            string
 	AppURL              string
 	StripeWebhookSecret string
@@ -80,6 +88,7 @@ type Handler struct {
 	logger              *slog.Logger
 	paypal              paypalVerifier
 	nowpayments         nowpaymentsVerifier
+	bridge              bridgePinger
 	currency            string
 	appURL              string
 	stripeWebhookSecret string
@@ -99,6 +108,7 @@ func NewHandler(svc billingService, cfg HandlerConfig) *Handler {
 		logger:              logger,
 		paypal:              cfg.Paypal,
 		nowpayments:         cfg.NowPayments,
+		bridge:              cfg.Bridge,
 		currency:            cfg.Currency,
 		appURL:              cfg.AppURL,
 		stripeWebhookSecret: cfg.StripeWebhookSecret,
@@ -109,6 +119,17 @@ func NewHandler(svc billingService, cfg HandlerConfig) *Handler {
 
 func (h *Handler) layout() httpx.Layout {
 	return httpx.Layout{GeneralConfig: h.general}
+}
+
+func (h *Handler) bridgeReachable(ctx context.Context) bool {
+	if h.bridge == nil {
+		return true
+	}
+
+	pingCtx, cancel := context.WithTimeout(ctx, bridgePingTimeout)
+	defer cancel()
+
+	return h.bridge.PingContext(pingCtx) == nil
 }
 
 func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {

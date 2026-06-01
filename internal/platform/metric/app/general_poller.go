@@ -24,6 +24,7 @@ type GeneralSink interface {
 type GeneralPollerConfig struct {
 	Source   GeneralSource
 	Sink     GeneralSink
+	Bridge   BridgePinger
 	Logger   *slog.Logger
 	Interval time.Duration
 }
@@ -42,6 +43,10 @@ func (p *GeneralPoller) Run(ctx context.Context) {
 }
 
 func (p *GeneralPoller) RefreshOnce(ctx context.Context) {
+	if p.cfg.Bridge != nil && !bridgeReachable(ctx, p.cfg.Bridge) {
+		return
+	}
+
 	var accounts, characters, guilds int
 	g, gctx := errgroup.WithContext(ctx)
 	g.Go(func() error {

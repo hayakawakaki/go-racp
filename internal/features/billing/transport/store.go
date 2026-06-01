@@ -87,6 +87,11 @@ func (h *Handler) startCheckout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !h.bridgeReachable(r.Context()) {
+		http.Redirect(w, r, "/store?notice="+noticeUnavailable, http.StatusSeeOther)
+		return
+	}
+
 	r.Body = http.MaxBytesReader(w, r.Body, maxCheckoutFormBytes)
 	if err := r.ParseForm(); err != nil {
 		http.Redirect(w, r, "/store?notice="+noticeInvalid, http.StatusSeeOther)
