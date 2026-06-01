@@ -85,7 +85,7 @@ See `.env.example` for the complete set of variables the binary reads.
 | HTTP | `net/http` standard library with method-aware `ServeMux` routing |
 | Logging | `log/slog`, structured |
 | Mail | `go-mail` over SMTP |
-| Payments | Stripe and PayPal |
+| Payments | Stripe, PayPal, and NowPayments(Crypto) |
 | Live reload | air, with Templ and themegen codegen in the pre-build step |
 
 There is no web framework and no ORM. Routing, middleware, and database access are written directly against the standard library and the database drivers.
@@ -145,7 +145,7 @@ Shipped slices:
 
 - `account` : registration, login, sessions, email verification, password reset, in-panel currency, bans and moderation, and logs
 - `admin` : staff dashboard aggregating users, purchases, guilds, economy, item and mob status, and metrics
-- `billing` : purchases and payments through Stripe and PayPal, including provider webhooks
+- `billing` : purchases and payments through Stripe, PayPal and NowPayments(Crypto), including provider webhooks
 - `character` : rAthena character records and detail views
 - `guild` : guild listings, details, and emblems
 - `item` : item database browsing, search, and detail pages, read straight from rAthena's YAML and Lua files

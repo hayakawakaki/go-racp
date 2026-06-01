@@ -37,10 +37,15 @@ type paypalVerifier interface {
 	VerifyWebhook(ctx context.Context, params infra.WebhookSignatureParams) (bool, error)
 }
 
+type nowpaymentsVerifier interface {
+	VerifyIPN(signature string, body []byte) (bool, error)
+}
+
 type billingService interface {
 	Packages() []domain.Package
 	Available() bool
 	ProviderEnabled(key string) bool
+	ProviderConfirmsAsync(key string) bool
 	StartCheckout(ctx context.Context, accountID int, providerKey, packageKey, successURL, cancelURL string) (string, error)
 	HistoryByAccount(ctx context.Context, accountID, limit int) ([]domain.Purchase, error)
 	ConfirmCheckout(ctx context.Context, providerKey string, values url.Values, accountID int) (domain.Package, bool, error)
@@ -60,6 +65,7 @@ type HandlerConfig struct {
 	Logger              *slog.Logger
 	Theme               Renderer
 	Paypal              paypalVerifier
+	NowPayments         nowpaymentsVerifier
 	Currency            string
 	AppURL              string
 	StripeWebhookSecret string
@@ -73,6 +79,7 @@ type Handler struct {
 	theme               Renderer
 	logger              *slog.Logger
 	paypal              paypalVerifier
+	nowpayments         nowpaymentsVerifier
 	currency            string
 	appURL              string
 	stripeWebhookSecret string
@@ -91,6 +98,7 @@ func NewHandler(svc billingService, cfg HandlerConfig) *Handler {
 		theme:               cfg.Theme,
 		logger:              logger,
 		paypal:              cfg.Paypal,
+		nowpayments:         cfg.NowPayments,
 		currency:            cfg.Currency,
 		appURL:              cfg.AppURL,
 		stripeWebhookSecret: cfg.StripeWebhookSecret,
@@ -110,4 +118,5 @@ func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
 	reg.Wrap(mux, "Store.History", "GET /store/history/summary", http.HandlerFunc(h.showHistorySummary))
 	reg.Wrap(mux, "Webhooks.Stripe", "POST /webhooks/stripe", http.HandlerFunc(h.stripeWebhook))
 	reg.Wrap(mux, "Webhooks.Paypal", "POST /webhooks/paypal", http.HandlerFunc(h.paypalWebhook))
+	reg.Wrap(mux, "Webhooks.Crypto", "POST /webhooks/nowpayments", http.HandlerFunc(h.nowpaymentsWebhook))
 }

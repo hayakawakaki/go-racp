@@ -55,6 +55,8 @@ func (s *webhookStub) Available() bool { return true }
 
 func (s *webhookStub) ProviderEnabled(key string) bool { return key == "stripe" }
 
+func (s *webhookStub) ProviderConfirmsAsync(key string) bool { return false }
+
 func (s *webhookStub) StartCheckout(context.Context, int, string, string, string, string) (string, error) {
 	return "", nil
 }

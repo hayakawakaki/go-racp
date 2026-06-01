@@ -59,6 +59,8 @@ func (s *stubService) Available() bool { return s.available }
 
 func (s *stubService) ProviderEnabled(key string) bool { return key == "stripe" }
 
+func (s *stubService) ProviderConfirmsAsync(key string) bool { return key == "crypto" }
+
 func (s *stubService) StartCheckout(_ context.Context, _ int, _, _, successURL, cancelURL string) (string, error) {
 	s.lastSuccessURL = successURL
 	s.lastCancelURL = cancelURL
@@ -422,6 +424,27 @@ func TestHandler_ShowStore_SuccessUnverifiedShowsNotice(t *testing.T) {
 	}
 	if !strings.Contains(body, "Payment not completed") {
 		t.Errorf("body does not contain the not-completed modal heading")
+	}
+}
+
+func TestHandler_ShowStore_SuccessCryptoShowsPendingModal(t *testing.T) {
+	t.Parallel()
+	h := newHandler(&stubService{available: true})
+
+	req := httptest.NewRequest(http.MethodGet, "/store?notice=success&provider=crypto", http.NoBody)
+	req = req.WithContext(middleware.ContextWithSnapshot(req.Context(), &middleware.AccountSnapshot{UserID: 42}))
+	rr := httptest.NewRecorder()
+	h.showStore(rr, req)
+
+	body := rr.Body.String()
+	if !strings.Contains(body, "Payment received") {
+		t.Errorf("crypto success return must render the pending modal heading")
+	}
+	if strings.Contains(body, "Payment not completed") {
+		t.Errorf("crypto success return must not render the not-completed modal")
+	}
+	if strings.Contains(body, "Purchase complete") {
+		t.Errorf("crypto success return must not render the success modal")
 	}
 }
 
