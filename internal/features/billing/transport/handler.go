@@ -8,6 +8,7 @@ import (
 
 	"github.com/a-h/templ"
 	"github.com/hayakawakaki/go-racp/internal/features/billing/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/billing/infra"
 	"github.com/hayakawakaki/go-racp/internal/features/billing/transport/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
@@ -32,6 +33,11 @@ type billingFulfiller interface {
 	FailPurchase(ctx context.Context, purchaseID int64) error
 }
 
+type paypalGateway interface {
+	VerifyWebhook(ctx context.Context, params infra.WebhookSignatureParams) (bool, error)
+	CaptureOrder(ctx context.Context, orderID string) (infra.CaptureResult, error)
+}
+
 type billingService interface {
 	Packages() []domain.Package
 	Available() bool
@@ -53,9 +59,11 @@ type Renderer interface {
 type HandlerConfig struct {
 	Logger              *slog.Logger
 	Theme               Renderer
+	Paypal              paypalGateway
 	Currency            string
 	AppURL              string
 	StripeWebhookSecret string
+	PaypalWebhookID     string
 	General             config.GeneralConfig
 }
 
@@ -64,9 +72,11 @@ type Handler struct {
 	svc                 billingService
 	theme               Renderer
 	logger              *slog.Logger
+	paypal              paypalGateway
 	currency            string
 	appURL              string
 	stripeWebhookSecret string
+	paypalWebhookID     string
 	general             config.GeneralConfig
 }
 
@@ -80,9 +90,11 @@ func NewHandler(svc billingService, cfg HandlerConfig) *Handler {
 		svc:                 svc,
 		theme:               cfg.Theme,
 		logger:              logger,
+		paypal:              cfg.Paypal,
 		currency:            cfg.Currency,
 		appURL:              cfg.AppURL,
 		stripeWebhookSecret: cfg.StripeWebhookSecret,
+		paypalWebhookID:     cfg.PaypalWebhookID,
 		general:             cfg.General,
 	}
 }
@@ -97,4 +109,5 @@ func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
 	reg.Wrap(mux, "Store.History", "GET /store/history", http.HandlerFunc(h.showHistory))
 	reg.Wrap(mux, "Store.History", "GET /store/history/summary", http.HandlerFunc(h.showHistorySummary))
 	reg.Wrap(mux, "Webhooks.Stripe", "POST /webhooks/stripe", http.HandlerFunc(h.stripeWebhook))
+	reg.Wrap(mux, "Webhooks.Paypal", "POST /webhooks/paypal", http.HandlerFunc(h.paypalWebhook))
 }

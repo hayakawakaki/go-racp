@@ -65,16 +65,22 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 
 	isProd := in.Config.Env.Mode != "development"
 	webhookSecret := registerStripeProvider(in, isProd)
-	registerPaypalProvider(in, isProd)
+	paypalClient := registerPaypalProvider(in, isProd)
 
-	h := transport.NewHandler(svc, transport.HandlerConfig{
+	cfg := transport.HandlerConfig{
 		Logger:              in.Logger,
 		Theme:               theme.Active,
 		General:             in.Config.App.General,
 		Currency:            in.Config.App.Purchases.Currency,
 		AppURL:              in.Config.Env.AppURL,
 		StripeWebhookSecret: webhookSecret,
-	})
+	}
+	if paypalClient != nil {
+		cfg.Paypal = paypalClient
+		cfg.PaypalWebhookID = in.Config.Env.PaypalWebhookID
+	}
+
+	h := transport.NewHandler(svc, cfg)
 	h.RegisterRoutes(reg, mux)
 }
 
@@ -98,20 +104,26 @@ func registerStripeProvider(in *coreinfra.Infra, isProd bool) string {
 	return ""
 }
 
-func registerPaypalProvider(in *coreinfra.Infra, isProd bool) {
+func registerPaypalProvider(in *coreinfra.Infra, isProd bool) *infra.PaypalClient {
 	if !in.Config.App.Purchases.Providers.Paypal {
-		return
+		return nil
 	}
 
 	switch {
 	case in.Config.Env.PaypalClientID == "":
 		in.Logger.Warn("payment provider paypal enabled but PAYPAL_CLIENT_ID is unset, checkouts disabled")
+		return nil
 	case in.Config.Env.PaypalSecret == "":
 		in.Logger.Warn("payment provider paypal enabled but PAYPAL_SECRET is unset, checkouts disabled")
+		return nil
 	case in.Config.Env.PaypalWebhookID == "":
 		in.Logger.Warn("payment provider paypal enabled but PAYPAL_WEBHOOK_ID is unset, checkouts disabled to avoid uncredited payments")
+		return nil
 	default:
-		SetProvider(infra.NewPaypalProvider(infra.NewPaypalClient(in.Config.Env.PaypalClientID, in.Config.Env.PaypalSecret, isProd)))
+		client := infra.NewPaypalClient(in.Config.Env.PaypalClientID, in.Config.Env.PaypalSecret, isProd)
+		SetProvider(infra.NewPaypalProvider(client))
+
+		return client
 	}
 }
 
