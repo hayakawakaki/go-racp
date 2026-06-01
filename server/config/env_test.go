@@ -2,6 +2,7 @@ package config
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -183,6 +184,84 @@ func TestProcessField_Errors(t *testing.T) {
 
 			if gotErr.Error() != tt.expectedErr {
 				t.Errorf("processField() error = %q, want %q", gotErr.Error(), tt.expectedErr)
+			}
+		})
+	}
+}
+
+func TestEnvConfig_Validate(t *testing.T) {
+	tests := []struct {
+		name      string
+		errSubstr string
+		cfg       EnvConfig
+		wantErr   bool
+	}{
+		{
+			name: "production rejects root main",
+			cfg: EnvConfig{
+				Mode:      "production",
+				DBMainURL: "root:pass@tcp(10.0.0.1:3306)/main",
+				DBLogURL:  "dbuser:pass@tcp(10.0.0.1:3306)/log",
+			},
+			wantErr:   true,
+			errSubstr: "the MariaDB user for DB_MAIN_URL must not be root in production",
+		},
+		{
+			name: "production rejects root log",
+			cfg: EnvConfig{
+				Mode:      "production",
+				DBMainURL: "dbuser:pass@tcp(10.0.0.1:3306)/main",
+				DBLogURL:  "ROOT:pass@tcp(10.0.0.1:3306)/log",
+			},
+			wantErr:   true,
+			errSubstr: "the MariaDB user for DB_LOG_URL must not be root in production",
+		},
+		{
+			name: "production allows non-root",
+			cfg: EnvConfig{
+				Mode:      "production",
+				DBMainURL: "dbuser:pass@tcp(10.0.0.1:3306)/main",
+				DBLogURL:  "dbuser:pass@tcp(10.0.0.1:3306)/log",
+			},
+			wantErr: false,
+		},
+		{
+			name: "development allows root",
+			cfg: EnvConfig{
+				Mode:      "development",
+				DBMainURL: "root:pass@tcp(10.0.0.1:3306)/main",
+				DBLogURL:  "root:pass@tcp(10.0.0.1:3306)/log",
+			},
+			wantErr: false,
+		},
+		{
+			name: "production rejects invalid dsn",
+			cfg: EnvConfig{
+				Mode:      "production",
+				DBMainURL: "::not-a-dsn::",
+				DBLogURL:  "dbuser:pass@tcp(10.0.0.1:3306)/log",
+			},
+			wantErr:   true,
+			errSubstr: "is not a valid MariaDB DSN",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.cfg.validate()
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("validate() expected error, got nil")
+				}
+				if !strings.Contains(err.Error(), tt.errSubstr) {
+					t.Errorf("validate() error = %q, want substring %q", err.Error(), tt.errSubstr)
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Errorf("validate() unexpected error: %v", err)
 			}
 		})
 	}
