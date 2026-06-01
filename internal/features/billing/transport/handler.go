@@ -33,9 +33,8 @@ type billingFulfiller interface {
 	FailPurchase(ctx context.Context, purchaseID int64) error
 }
 
-type paypalGateway interface {
+type paypalVerifier interface {
 	VerifyWebhook(ctx context.Context, params infra.WebhookSignatureParams) (bool, error)
-	CaptureOrder(ctx context.Context, orderID string) (infra.CaptureResult, error)
 }
 
 type billingService interface {
@@ -45,6 +44,7 @@ type billingService interface {
 	StartCheckout(ctx context.Context, accountID int, providerKey, packageKey, successURL, cancelURL string) (string, error)
 	HistoryByAccount(ctx context.Context, accountID, limit int) ([]domain.Purchase, error)
 	ConfirmCheckout(ctx context.Context, providerKey string, values url.Values, accountID int) (domain.Package, bool, error)
+	CaptureApprovedOrder(ctx context.Context, providerKey, reference string, purchaseID int64) error
 	billingFulfiller
 }
 
@@ -59,7 +59,7 @@ type Renderer interface {
 type HandlerConfig struct {
 	Logger              *slog.Logger
 	Theme               Renderer
-	Paypal              paypalGateway
+	Paypal              paypalVerifier
 	Currency            string
 	AppURL              string
 	StripeWebhookSecret string
@@ -72,7 +72,7 @@ type Handler struct {
 	svc                 billingService
 	theme               Renderer
 	logger              *slog.Logger
-	paypal              paypalGateway
+	paypal              paypalVerifier
 	currency            string
 	appURL              string
 	stripeWebhookSecret string

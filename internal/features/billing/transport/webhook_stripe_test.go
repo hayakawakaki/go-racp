@@ -83,6 +83,10 @@ func (s *webhookStub) FailPurchase(_ context.Context, purchaseID int64) error {
 	return s.failErr
 }
 
+func (s *webhookStub) CaptureApprovedOrder(context.Context, string, string, int64) error {
+	return nil
+}
+
 func newWebhookHandler(svc billingService, secret string) *Handler {
 	return NewHandler(svc, HandlerConfig{
 		Logger:              discardLogger(),

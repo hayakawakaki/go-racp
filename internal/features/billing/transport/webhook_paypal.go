@@ -91,7 +91,10 @@ func (h *Handler) dispatchPaypalEvent(ctx context.Context, eventType string, eve
 
 func (h *Handler) handlePaypalApproved(ctx context.Context, resource json.RawMessage) error {
 	var order struct {
-		ID string `json:"id"`
+		ID            string `json:"id"`
+		PurchaseUnits []struct {
+			CustomID string `json:"custom_id"`
+		} `json:"purchase_units"`
 	}
 	if err := json.Unmarshal(resource, &order); err != nil {
 		h.logger.Error("paypal webhook: bad order payload", "err", err)
@@ -102,16 +105,21 @@ func (h *Handler) handlePaypalApproved(ctx context.Context, resource json.RawMes
 		return nil
 	}
 
-	_, err := h.paypal.CaptureOrder(ctx, order.ID)
-	if err != nil {
-		if errors.Is(err, infra.ErrPaypalOrderAlreadyCaptured) {
-			return nil
+	var purchaseID int64
+	if len(order.PurchaseUnits) > 0 {
+		if id, ok := parsePurchaseID(order.PurchaseUnits[0].CustomID); ok {
+			purchaseID = id
+		} else {
+			h.logger.Warn("paypal webhook: approved order missing custom_id, completion falls back to capture webhook", "order", order.ID)
 		}
-
-		return fmt.Errorf("transport.Handler.paypalWebhook: %w", err)
+	} else {
+		h.logger.Warn("paypal webhook: approved order missing custom_id, completion falls back to capture webhook", "order", order.ID)
 	}
 
-	return nil
+	return h.ackPaypalFulfillment(
+		h.svc.CaptureApprovedOrder(ctx, "paypal", order.ID, purchaseID),
+		"capture", "order", order.ID, "purchase_id", purchaseID,
+	)
 }
 
 func (h *Handler) handlePaypalCaptureCompleted(ctx context.Context, resource json.RawMessage) error {
@@ -173,8 +181,7 @@ func (h *Handler) handlePaypalCaptureRefunded(ctx context.Context, eventTime tim
 
 	captureID := paypalCaptureIDFromLinks(refund.Links)
 	if captureID == "" {
-		h.logger.Error("paypal webhook: refund missing capture link", "refund", refund.ID)
-		return nil
+		return fmt.Errorf("transport.Handler.paypalWebhook: refund %s has no resolvable capture link", refund.ID)
 	}
 
 	return h.ackPaypalPaymentMatch(
@@ -194,12 +201,16 @@ func (h *Handler) handlePaypalDisputeCreated(ctx context.Context, eventTime time
 		h.logger.Error("paypal webhook: bad dispute payload", "err", err)
 		return nil
 	}
-	if len(dispute.DisputedTransactions) == 0 || dispute.DisputedTransactions[0].SellerTransactionID == "" {
-		h.logger.Error("paypal webhook: dispute missing capture id", "dispute", dispute.DisputeID)
-		return nil
+	var captureID string
+	for _, transaction := range dispute.DisputedTransactions {
+		if transaction.SellerTransactionID != "" {
+			captureID = transaction.SellerTransactionID
+			break
+		}
 	}
-
-	captureID := dispute.DisputedTransactions[0].SellerTransactionID
+	if captureID == "" {
+		return fmt.Errorf("transport.Handler.paypalWebhook: dispute %s has no usable capture id", dispute.DisputeID)
+	}
 
 	return h.ackPaypalPaymentMatch(
 		h.svc.DisputePurchase(ctx, "paypal", captureID),
@@ -222,7 +233,7 @@ func (h *Handler) ackPaypalFulfillment(err error, kind string, attrs ...any) err
 
 func (h *Handler) ackPaypalPaymentMatch(err error, eventTime time.Time, kind string, attrs ...any) error {
 	if errors.Is(err, domain.ErrPurchaseNotFound) {
-		if time.Since(eventTime) < webhookRetryWindow {
+		if eventTime.IsZero() || time.Since(eventTime) < webhookRetryWindow {
 			return fmt.Errorf("transport.Handler.paypalWebhook: %w", err)
 		}
 		h.logger.Error("paypal webhook: purchase unmatched past retry window, giving up", logArgs(kind, attrs, err)...)

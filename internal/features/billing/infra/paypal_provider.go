@@ -2,14 +2,20 @@ package infra
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
+	"regexp"
 	"strconv"
 
 	"github.com/hayakawakaki/go-racp/internal/features/billing/domain"
 )
 
 var _ domain.Provider = (*PaypalProvider)(nil)
+
+var _ domain.Capturer = (*PaypalProvider)(nil)
+
+var paypalOrderIDPattern = regexp.MustCompile(`^[A-Za-z0-9-]+$`)
 
 type PaypalProvider struct {
 	client *PaypalClient
@@ -44,7 +50,7 @@ func (p *PaypalProvider) CreateCheckout(ctx context.Context, request domain.Chec
 
 func (p *PaypalProvider) RetrieveCheckout(ctx context.Context, values url.Values) (domain.CheckoutConfirmation, error) {
 	orderID := values.Get("token")
-	if orderID == "" {
+	if !paypalOrderIDPattern.MatchString(orderID) {
 		return domain.CheckoutConfirmation{}, nil
 	}
 
@@ -60,6 +66,19 @@ func (p *PaypalProvider) RetrieveCheckout(ctx context.Context, values url.Values
 
 	return domain.CheckoutConfirmation{
 		PurchaseID: purchaseID,
-		Paid:       details.Status == "APPROVED" || details.Status == "COMPLETED",
+		Paid:       details.Status == "COMPLETED",
 	}, nil
+}
+
+func (p *PaypalProvider) Capture(ctx context.Context, reference string) (domain.CaptureOutcome, error) {
+	result, err := p.client.CaptureOrder(ctx, reference)
+	if err != nil {
+		if errors.Is(err, ErrPaypalOrderAlreadyCaptured) {
+			return domain.CaptureOutcome{}, nil
+		}
+
+		return domain.CaptureOutcome{}, fmt.Errorf("billing.paypal.Capture: %w", err)
+	}
+
+	return domain.CaptureOutcome{PaymentID: result.CaptureID, Completed: result.Status == "COMPLETED"}, nil
 }

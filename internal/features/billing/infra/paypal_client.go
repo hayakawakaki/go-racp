@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -90,8 +91,9 @@ type WebhookSignatureParams struct {
 }
 
 type paypalError struct {
-	issue      string
+	name       string
 	raw        string
+	issues     []string
 	statusCode int
 }
 
@@ -99,16 +101,30 @@ func (e *paypalError) Error() string {
 	return fmt.Sprintf("paypal api status %d: %s", e.statusCode, e.raw)
 }
 
+func (e *paypalError) hasIssue(code string) bool {
+	if e.name == code {
+		return true
+	}
+
+	return slices.Contains(e.issues, code)
+}
+
 func newPaypalError(statusCode int, body []byte) *paypalError {
 	apiErr := &paypalError{statusCode: statusCode, raw: string(body)}
 
 	var decoded struct {
+		Name    string `json:"name"`
 		Details []struct {
 			Issue string `json:"issue"`
 		} `json:"details"`
 	}
-	if err := json.Unmarshal(body, &decoded); err == nil && len(decoded.Details) > 0 {
-		apiErr.issue = decoded.Details[0].Issue
+	if err := json.Unmarshal(body, &decoded); err == nil {
+		apiErr.name = decoded.Name
+		for _, detail := range decoded.Details {
+			if detail.Issue != "" {
+				apiErr.issues = append(apiErr.issues, detail.Issue)
+			}
+		}
 	}
 
 	return apiErr
@@ -299,7 +315,7 @@ func (c *PaypalClient) CaptureOrder(ctx context.Context, orderID string) (Captur
 	status, err := c.doJSON(ctx, http.MethodPost, "/v2/checkout/orders/"+orderID+"/capture", struct{}{}, headers, &decoded)
 	if err != nil {
 		var apiErr *paypalError
-		if status == http.StatusUnprocessableEntity && errors.As(err, &apiErr) && apiErr.issue == "ORDER_ALREADY_CAPTURED" {
+		if status == http.StatusUnprocessableEntity && errors.As(err, &apiErr) && apiErr.hasIssue("ORDER_ALREADY_CAPTURED") {
 			return CaptureResult{}, fmt.Errorf("billing.paypal.CaptureOrder: %w", ErrPaypalOrderAlreadyCaptured)
 		}
 

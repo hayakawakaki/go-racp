@@ -117,3 +117,12 @@ type Provider interface {
 	CreateCheckout(ctx context.Context, request CheckoutRequest) (CheckoutResult, error)
 	RetrieveCheckout(ctx context.Context, values url.Values) (CheckoutConfirmation, error)
 }
+
+type CaptureOutcome struct {
+	PaymentID string
+	Completed bool
+}
+
+type Capturer interface {
+	Capture(ctx context.Context, reference string) (CaptureOutcome, error)
+}

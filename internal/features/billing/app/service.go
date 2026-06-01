@@ -196,6 +196,27 @@ func (s *Service) CompletePurchase(ctx context.Context, purchaseID int64, provid
 	return nil
 }
 
+func (s *Service) CaptureApprovedOrder(ctx context.Context, providerKey, reference string, purchaseID int64) error {
+	provider, ok := s.providers[providerKey]
+	if !ok {
+		return domain.ErrProviderUnavailable
+	}
+	capturer, ok := provider.(domain.Capturer)
+	if !ok {
+		return nil
+	}
+
+	outcome, err := capturer.Capture(ctx, reference)
+	if err != nil {
+		return fmt.Errorf("billing.Service.CaptureApprovedOrder: %w", err)
+	}
+	if outcome.Completed && purchaseID > 0 {
+		return s.CompletePurchase(ctx, purchaseID, outcome.PaymentID)
+	}
+
+	return nil
+}
+
 func (s *Service) DisputePurchase(ctx context.Context, provider, providerPaymentID string) error {
 	purchase, err := s.repo.GetByPaymentID(ctx, provider, providerPaymentID)
 	if err != nil {
