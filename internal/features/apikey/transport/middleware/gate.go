@@ -17,36 +17,37 @@ type Validator interface {
 	Validate(ctx context.Context, rawKey string) (*domain.APIKey, error)
 }
 
-type gateError struct {
-	Error string `json:"error"`
+type GateConfig struct {
+	Validator Validator
+	Limiters  map[string]*security.RateLimiter
+	Fallback  *security.RateLimiter
+	Invalid   *security.RateLimiter
+	Logger    *slog.Logger
 }
 
-func APIKeyGate(validator Validator, limiters map[string]*security.RateLimiter, logger *slog.Logger) func(http.Handler) http.Handler {
+func APIKeyGate(cfg GateConfig) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			rawKey, ok := bearerToken(r)
 			if !ok {
-				writeGateError(w, http.StatusUnauthorized, "missing or malformed api key")
+				rejectInvalid(w, r, cfg.Invalid)
 				return
 			}
 
-			key, err := validator.Validate(r.Context(), rawKey)
+			key, err := cfg.Validator.Validate(r.Context(), rawKey)
 			if err != nil {
-				writeGateError(w, http.StatusUnauthorized, "invalid api key")
+				rejectInvalid(w, r, cfg.Invalid)
 				return
 			}
 
-			limiter, found := limiters[key.RateTier]
-			if !found {
-				logger.Warn("apikey gate: tier has no limiter", "tier", key.RateTier)
-				next.ServeHTTP(w, r)
-				return
+			limiter := cfg.Limiters[key.RateTier]
+			if limiter == nil {
+				cfg.Logger.Warn("apikey gate: tier has no limiter, applying fallback", "tier", key.RateTier)
+				limiter = cfg.Fallback
 			}
 
-			delay, allowed := limiter.Allow(strconv.FormatInt(key.ID, 10))
-			if !allowed {
-				seconds := max(int(delay.Round(time.Second).Seconds()), 1)
-				w.Header().Set("Retry-After", strconv.Itoa(seconds))
+			if delay, allowed := limiter.Allow(strconv.FormatInt(key.ID, 10)); !allowed {
+				w.Header().Set("Retry-After", retryAfterSeconds(delay))
 				writeGateError(w, http.StatusTooManyRequests, "rate limit exceeded")
 				return
 			}
@@ -54,6 +55,16 @@ func APIKeyGate(validator Validator, limiters map[string]*security.RateLimiter, 
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+func rejectInvalid(w http.ResponseWriter, r *http.Request, invalid *security.RateLimiter) {
+	if delay, ok := invalid.AllowRequest(r); !ok {
+		w.Header().Set("Retry-After", retryAfterSeconds(delay))
+		writeGateError(w, http.StatusTooManyRequests, "rate limit exceeded")
+		return
+	}
+
+	writeGateError(w, http.StatusUnauthorized, "invalid api key")
 }
 
 func bearerToken(r *http.Request) (string, bool) {
@@ -70,7 +81,11 @@ func bearerToken(r *http.Request) (string, bool) {
 	return token, true
 }
 
+func retryAfterSeconds(delay time.Duration) string {
+	return strconv.Itoa(max(int(delay.Round(time.Second).Seconds()), 1))
+}
+
 func writeGateError(w http.ResponseWriter, status int, message string) {
 	w.Header().Set("Cache-Control", "no-store")
-	_ = httpx.WriteJSON(w, status, gateError{Error: message})
+	_ = httpx.WriteJSONError(w, status, message)
 }

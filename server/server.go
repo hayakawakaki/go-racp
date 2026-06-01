@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"maps"
 	"net/http"
 	"os"
 	"os/signal"
@@ -130,7 +131,7 @@ func Start() error {
 	secure := cfg.Env.Mode != "development"
 	withSession := middleware.WithSession(sessSvc, logger, secure)
 
-	apikeyGate, err := buildAPIKeyGate(ctx, apikeyService, cfg.App.APIKeys, logger)
+	apikeyGate, err := buildAPIKeyGate(ctx, apikeyService, cfg.App.APIKeys, cfg.App.Security.TrustedProxyCIDRs, logger)
 	if err != nil {
 		return fmt.Errorf("server.Start: %w", err)
 	}
@@ -288,6 +289,15 @@ func buildRateLimiters(ctx context.Context, accessCfg config.AccessConfig, trust
 	return limiters, nil
 }
 
+const apiKeyStandardTier = "Standard"
+
+var apiKeyDefaultTierCaps = map[string]config.RateLimitRule{
+	apiKeyStandardTier: {RatePerMinute: 100, Burst: 100},
+	"Elevated":         {RatePerMinute: 1000, Burst: 1000},
+}
+
+var apiKeyInvalidCap = config.RateLimitRule{RatePerMinute: 60, Burst: 20}
+
 func buildAPIKeyTierSet(cfg config.APIKeysConfig) apikeydomain.TierSet {
 	tiers := make([]apikeydomain.Tier, 0, len(cfg.Tiers))
 	for name, rule := range cfg.Tiers {
@@ -298,8 +308,12 @@ func buildAPIKeyTierSet(cfg config.APIKeysConfig) apikeydomain.TierSet {
 }
 
 func buildAPIKeyLimiters(ctx context.Context, cfg config.APIKeysConfig, logger *slog.Logger) (map[string]*security.RateLimiter, error) {
-	limiters := make(map[string]*security.RateLimiter, len(cfg.Tiers))
-	for name, rule := range cfg.Tiers {
+	rules := make(map[string]config.RateLimitRule, len(apiKeyDefaultTierCaps)+len(cfg.Tiers))
+	maps.Copy(rules, apiKeyDefaultTierCaps)
+	maps.Copy(rules, cfg.Tiers)
+
+	limiters := make(map[string]*security.RateLimiter, len(rules))
+	for name, rule := range rules {
 		limiter, err := security.NewRateLimiter(security.RateLimiterOptions{
 			Name:   "apikey:" + name,
 			Rule:   rule,
@@ -316,7 +330,7 @@ func buildAPIKeyLimiters(ctx context.Context, cfg config.APIKeysConfig, logger *
 	return limiters, nil
 }
 
-func buildAPIKeyGate(ctx context.Context, service *apikeyapp.Service, cfg config.APIKeysConfig, logger *slog.Logger) (func(http.Handler) http.Handler, error) {
+func buildAPIKeyGate(ctx context.Context, service *apikeyapp.Service, cfg config.APIKeysConfig, trustedProxies []string, logger *slog.Logger) (func(http.Handler) http.Handler, error) {
 	if err := service.Warm(ctx); err != nil {
 		return nil, fmt.Errorf("server.buildAPIKeyGate: %w", err)
 	}
@@ -326,7 +340,25 @@ func buildAPIKeyGate(ctx context.Context, service *apikeyapp.Service, cfg config
 		return nil, fmt.Errorf("server.buildAPIKeyGate: %w", err)
 	}
 
-	return apikeymiddleware.APIKeyGate(service, limiters, logger), nil
+	invalid, err := security.NewRateLimiter(security.RateLimiterOptions{
+		Name:           "apikey:invalid",
+		Rule:           apiKeyInvalidCap,
+		TrustedProxies: trustedProxies,
+		Logger:         logger,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("server.buildAPIKeyGate: %w", err)
+	}
+
+	go invalid.Run(ctx)
+
+	return apikeymiddleware.APIKeyGate(apikeymiddleware.GateConfig{
+		Validator: service,
+		Limiters:  limiters,
+		Fallback:  limiters[apiKeyStandardTier],
+		Invalid:   invalid,
+		Logger:    logger,
+	}), nil
 }
 
 func logClampWarnings(logger *slog.Logger, cfg *config.AppConfig) {

@@ -292,8 +292,8 @@ func appConfigDefaults() *AppConfig {
 		},
 		APIKeys: APIKeysConfig{
 			Tiers: map[string]RateLimitRule{
-				"standard": {RatePerMinute: 100, Burst: 100},
-				"elevated": {RatePerMinute: 1000, Burst: 1000},
+				"Standard": {RatePerMinute: 100, Burst: 100},
+				"Elevated": {RatePerMinute: 1000, Burst: 1000},
 			},
 		},
 	}

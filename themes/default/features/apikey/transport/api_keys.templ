@@ -107,11 +107,17 @@ templ apiKeysCreateForm(state apikeystate.ListState) {
 			</div>
 			<div class="flex-1 space-y-1">
 				<label for="apikey-tier" class="block text-sm font-medium text-font">Rate tier</label>
-				<select id="apikey-tier" name="tier" class="w-full rounded-md border border-border bg-body px-3 py-2 text-sm text-font focus:border-accent-on-surface focus:outline-none">
-					for _, tier := range state.Tiers {
-						<option value={ tier.Name } selected?={ tier.Name == state.FormTier }>{ fmt.Sprintf("%s (%d/min)", tier.Name, tier.RatePerMinute) }</option>
-					}
-				</select>
+				@ui.Select(ui.SelectProps{
+					ID:      "apikey-tier",
+					Name:    "tier",
+					Value:   state.FormTier,
+					Options: apiKeyTierOptions(state.Tiers),
+					Size:    ui.SelectSizeMD,
+					Rounded: ui.SelectRoundedMD,
+					Color:   ui.SelectColorIndigo,
+					Invalid: state.Errors["tier"] != "",
+					Class:   "w-full",
+				})
 				if msg := state.Errors["tier"]; msg != "" {
 					<p class="text-sm text-red-600">{ msg }</p>
 				}
@@ -221,4 +227,16 @@ templ apiKeysRow(key domain.APIKey) {
 			}
 		}
 	}
+}
+
+func apiKeyTierOptions(tiers []domain.Tier) []ui.SelectOption {
+	options := make([]ui.SelectOption, 0, len(tiers))
+	for _, tier := range tiers {
+		options = append(options, ui.SelectOption{
+			Value: tier.Name,
+			Label: fmt.Sprintf("%s (%d/min)", tier.Name, tier.RatePerMinute),
+		})
+	}
+
+	return options
 }
