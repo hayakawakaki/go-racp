@@ -147,3 +147,5 @@ Webhooks:
     Roles: ["Public"]
   Paypal:
     Roles: ["Public"]
+  Crypto:
+    Roles: ["Public"]

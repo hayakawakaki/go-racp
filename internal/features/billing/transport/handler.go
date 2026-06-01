@@ -117,4 +117,5 @@ func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
 	reg.Wrap(mux, "Store.History", "GET /store/history/summary", http.HandlerFunc(h.showHistorySummary))
 	reg.Wrap(mux, "Webhooks.Stripe", "POST /webhooks/stripe", http.HandlerFunc(h.stripeWebhook))
 	reg.Wrap(mux, "Webhooks.Paypal", "POST /webhooks/paypal", http.HandlerFunc(h.paypalWebhook))
+	reg.Wrap(mux, "Webhooks.Crypto", "POST /webhooks/nowpayments", http.HandlerFunc(h.nowpaymentsWebhook))
 }
