@@ -10,6 +10,7 @@ type PaymentMethod struct {
 	Key     string
 	Label   string
 	Enabled bool
+	Checked bool
 }
 
 type StoreState struct {

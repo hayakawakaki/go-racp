@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -56,7 +57,9 @@ func (s *stubService) Packages() []domain.Package { return s.packages }
 
 func (s *stubService) Available() bool { return s.available }
 
-func (s *stubService) StartCheckout(_ context.Context, _ int, _, successURL, cancelURL string) (string, error) {
+func (s *stubService) ProviderEnabled(key string) bool { return key == "stripe" }
+
+func (s *stubService) StartCheckout(_ context.Context, _ int, _, _, successURL, cancelURL string) (string, error) {
 	s.lastSuccessURL = successURL
 	s.lastCancelURL = cancelURL
 
@@ -67,7 +70,7 @@ func (s *stubService) HistoryByAccount(context.Context, int, int) ([]domain.Purc
 	return s.history, s.historyErr
 }
 
-func (s *stubService) ConfirmCheckout(context.Context, string, int) (domain.Package, bool, error) {
+func (s *stubService) ConfirmCheckout(context.Context, string, url.Values, int) (domain.Package, bool, error) {
 	return s.confirmPkg, s.confirmOK, s.confirmErr
 }
 
@@ -136,7 +139,7 @@ func TestHandler_StartCheckout_KnownPackage(t *testing.T) {
 	svc := &stubService{checkoutURL: "https://pay.test/session/1"}
 	h := newHandler(svc)
 
-	req := httptest.NewRequest(http.MethodPost, "/store/checkout", strings.NewReader("package=starter"))
+	req := httptest.NewRequest(http.MethodPost, "/store/checkout", strings.NewReader("package=starter&provider=stripe"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req = req.WithContext(middleware.ContextWithSnapshot(req.Context(), &middleware.AccountSnapshot{UserID: 42, Username: "kaki"}))
 
@@ -156,7 +159,7 @@ func TestHandler_StartCheckout_UnknownPackage(t *testing.T) {
 	svc := &stubService{checkoutErr: domain.ErrUnknownPackage}
 	h := newHandler(svc)
 
-	req := httptest.NewRequest(http.MethodPost, "/store/checkout", strings.NewReader("package=bogus"))
+	req := httptest.NewRequest(http.MethodPost, "/store/checkout", strings.NewReader("package=bogus&provider=stripe"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req = req.WithContext(middleware.ContextWithSnapshot(req.Context(), &middleware.AccountSnapshot{UserID: 7, Username: "testuser"}))
 
@@ -313,7 +316,7 @@ func TestHandler_StartCheckout_UnsupportedProvider(t *testing.T) {
 	}
 }
 
-func TestHandler_StartCheckout_EmptyProviderFallsBack(t *testing.T) {
+func TestHandler_StartCheckout_EmptyProviderRejected(t *testing.T) {
 	t.Parallel()
 	svc := &stubService{checkoutURL: "https://pay.test/session/9"}
 	h := newHandler(svc)
@@ -328,8 +331,8 @@ func TestHandler_StartCheckout_EmptyProviderFallsBack(t *testing.T) {
 	if rr.Code != http.StatusSeeOther {
 		t.Fatalf("status = %d, want 303", rr.Code)
 	}
-	if got := rr.Header().Get("Location"); got != "https://pay.test/session/9" {
-		t.Errorf("Location = %q, want provider URL", got)
+	if got := rr.Header().Get("Location"); got != "/store?notice=invalid" {
+		t.Errorf("Location = %q, want /store?notice=invalid", got)
 	}
 }
 
@@ -358,6 +361,23 @@ func TestHandler_ShowStore_RendersMethods(t *testing.T) {
 	}
 }
 
+func TestHandler_PaymentMethods_DefaultsToFirstEnabled(t *testing.T) {
+	t.Parallel()
+	h := newHandler(&stubService{available: true})
+
+	methods := h.paymentMethods()
+
+	var checked []string
+	for _, method := range methods {
+		if method.Checked {
+			checked = append(checked, method.Key)
+		}
+	}
+	if len(checked) != 1 || checked[0] != providerStripe {
+		t.Errorf("checked methods = %v, want exactly [stripe]", checked)
+	}
+}
+
 func TestHandler_ShowStore_SuccessModal(t *testing.T) {
 	t.Parallel()
 	svc := &stubService{
@@ -370,7 +390,7 @@ func TestHandler_ShowStore_SuccessModal(t *testing.T) {
 	}
 	h := newHandler(svc)
 
-	req := httptest.NewRequest(http.MethodGet, "/store?notice=success&session_id=cs_test_1", http.NoBody)
+	req := httptest.NewRequest(http.MethodGet, "/store?notice=success&provider=stripe&session_id=cs_test_1", http.NoBody)
 	req = req.WithContext(middleware.ContextWithSnapshot(req.Context(), &middleware.AccountSnapshot{UserID: 42, Username: "kaki"}))
 	rr := httptest.NewRecorder()
 	h.showStore(rr, req)
@@ -389,7 +409,7 @@ func TestHandler_ShowStore_SuccessUnverifiedShowsNotice(t *testing.T) {
 	svc := &stubService{available: true, confirmOK: false}
 	h := newHandler(svc)
 
-	req := httptest.NewRequest(http.MethodGet, "/store?notice=success&session_id=forged", http.NoBody)
+	req := httptest.NewRequest(http.MethodGet, "/store?notice=success&provider=stripe&session_id=forged", http.NoBody)
 	req = req.WithContext(middleware.ContextWithSnapshot(req.Context(), &middleware.AccountSnapshot{UserID: 42}))
 	rr := httptest.NewRecorder()
 	h.showStore(rr, req)
@@ -420,27 +440,27 @@ func TestHandler_ShowStore_CancelShowsNotCompletedModal(t *testing.T) {
 	}
 }
 
-func TestHandler_StartCheckout_SuccessURLCarriesSessionPlaceholder(t *testing.T) {
+func TestHandler_StartCheckout_SuccessURLCarriesProvider(t *testing.T) {
 	t.Parallel()
 	svc := &stubService{checkoutURL: "https://pay.test/session/9"}
 	h := newHandler(svc)
 
-	req := httptest.NewRequest(http.MethodPost, "/store/checkout", strings.NewReader("package=starter"))
+	req := httptest.NewRequest(http.MethodPost, "/store/checkout", strings.NewReader("package=starter&provider=stripe"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req = req.WithContext(middleware.ContextWithSnapshot(req.Context(), &middleware.AccountSnapshot{UserID: 42, Username: "kaki"}))
 
 	rr := httptest.NewRecorder()
 	h.startCheckout(rr, req)
 
-	if got := svc.lastSuccessURL; !strings.HasSuffix(got, "/store?notice=success&session_id={CHECKOUT_SESSION_ID}") {
-		t.Errorf("successURL = %q, want it to end with the notice and session placeholder", got)
+	if got := svc.lastSuccessURL; !strings.HasSuffix(got, "/store?notice=success&provider=stripe") {
+		t.Errorf("successURL = %q, want it to end with the notice and provider key", got)
 	}
 	if got := svc.lastCancelURL; !strings.HasSuffix(got, "/store?notice=cancel") {
 		t.Errorf("cancelURL = %q, want it to end with notice=cancel", got)
 	}
 }
 
-func TestHandler_ShowStore_SuccessMissingSessionShowsNotCompleted(t *testing.T) {
+func TestHandler_ShowStore_SuccessMissingProviderShowsNotCompleted(t *testing.T) {
 	t.Parallel()
 	h := newHandler(&stubService{available: true})
 
@@ -451,10 +471,10 @@ func TestHandler_ShowStore_SuccessMissingSessionShowsNotCompleted(t *testing.T) 
 
 	body := rr.Body.String()
 	if !strings.Contains(body, "Payment not completed") {
-		t.Errorf("a success notice with no session_id must render the not-completed modal")
+		t.Errorf("a success notice with no provider must render the not-completed modal")
 	}
 	if strings.Contains(body, "Purchase complete") {
-		t.Errorf("a success notice with no session_id must not render the success modal")
+		t.Errorf("a success notice with no provider must not render the success modal")
 	}
 }
 
@@ -463,7 +483,7 @@ func TestHandler_ShowStore_SuccessConfirmErrorShowsNotCompleted(t *testing.T) {
 	svc := &stubService{available: true, confirmErr: errors.New("stripe down")}
 	h := newHandler(svc)
 
-	req := httptest.NewRequest(http.MethodGet, "/store?notice=success&session_id=cs_1", http.NoBody)
+	req := httptest.NewRequest(http.MethodGet, "/store?notice=success&provider=stripe&session_id=cs_1", http.NoBody)
 	req = req.WithContext(middleware.ContextWithSnapshot(req.Context(), &middleware.AccountSnapshot{UserID: 42}))
 	rr := httptest.NewRecorder()
 	h.showStore(rr, req)

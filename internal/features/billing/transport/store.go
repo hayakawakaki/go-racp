@@ -24,7 +24,7 @@ func (h *Handler) showStore(w http.ResponseWriter, r *http.Request) {
 	st := state.StoreState{
 		Packages:  packages,
 		Currency:  h.currency,
-		Methods:   paymentMethods(available),
+		Methods:   h.paymentMethods(),
 		Available: available,
 	}
 	switch notice {
@@ -44,8 +44,8 @@ func (h *Handler) showStore(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) confirmPurchase(r *http.Request) (domain.Package, bool) {
-	sessionID := r.URL.Query().Get(fieldSessionID)
-	if sessionID == "" {
+	provider := r.URL.Query().Get(fieldProvider)
+	if !h.svc.ProviderEnabled(provider) {
 		return domain.Package{}, false
 	}
 
@@ -54,7 +54,7 @@ func (h *Handler) confirmPurchase(r *http.Request) (domain.Package, bool) {
 		return domain.Package{}, false
 	}
 
-	purchased, ok, err := h.svc.ConfirmCheckout(r.Context(), sessionID, snapshot.UserID)
+	purchased, ok, err := h.svc.ConfirmCheckout(r.Context(), provider, r.URL.Query(), snapshot.UserID)
 	if err != nil {
 		h.logger.Error("billing: confirm checkout", "err", err)
 		return domain.Package{}, false
@@ -63,12 +63,20 @@ func (h *Handler) confirmPurchase(r *http.Request) (domain.Package, bool) {
 	return purchased, ok
 }
 
-func paymentMethods(stripeReady bool) []state.PaymentMethod {
-	return []state.PaymentMethod{
-		{Key: providerStripe, Label: "Stripe", Enabled: stripeReady},
-		{Key: "paypal", Label: "PayPal", Enabled: false},
-		{Key: "crypto", Label: "Crypto", Enabled: false},
+func (h *Handler) paymentMethods() []state.PaymentMethod {
+	methods := []state.PaymentMethod{
+		{Key: providerStripe, Label: "Stripe", Enabled: h.svc.ProviderEnabled(providerStripe)},
+		{Key: "paypal", Label: "PayPal", Enabled: h.svc.ProviderEnabled("paypal")},
+		{Key: "crypto", Label: "Crypto", Enabled: h.svc.ProviderEnabled("crypto")},
 	}
+	for i := range methods {
+		if methods[i].Enabled {
+			methods[i].Checked = true
+			break
+		}
+	}
+
+	return methods
 }
 
 func (h *Handler) startCheckout(w http.ResponseWriter, r *http.Request) {
@@ -91,15 +99,15 @@ func (h *Handler) startCheckout(w http.ResponseWriter, r *http.Request) {
 
 	packageKey := r.FormValue(fieldPackage)
 	provider := r.FormValue(fieldProvider)
-	if provider != "" && provider != providerStripe {
+	if !h.svc.ProviderEnabled(provider) {
 		http.Redirect(w, r, "/store?notice="+noticeInvalid, http.StatusSeeOther)
 		return
 	}
 
-	successURL := h.appURL + "/store?notice=" + noticeSuccess + "&" + fieldSessionID + "={CHECKOUT_SESSION_ID}"
+	successURL := h.appURL + "/store?notice=" + noticeSuccess + "&" + fieldProvider + "=" + provider
 	cancelURL := h.appURL + "/store?notice=" + noticeCancel
 
-	redirectURL, err := h.svc.StartCheckout(r.Context(), snapshot.UserID, packageKey, successURL, cancelURL)
+	redirectURL, err := h.svc.StartCheckout(r.Context(), snapshot.UserID, provider, packageKey, successURL, cancelURL)
 	if err != nil {
 		switch {
 		case errors.Is(err, domain.ErrUnknownPackage):

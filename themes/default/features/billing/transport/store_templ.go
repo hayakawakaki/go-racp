@@ -505,7 +505,7 @@ func checkoutMethodRow(method billingstate.PaymentMethod) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = ui.Radio(ui.RadioProps{Name: "provider", Value: method.Key, Color: ui.RadioColorIndigo, Checked: true}).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = ui.Radio(ui.RadioProps{Name: "provider", Value: method.Key, Color: ui.RadioColorIndigo, Checked: method.Checked}).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

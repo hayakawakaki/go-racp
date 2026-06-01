@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"time"
 
 	"github.com/hayakawakaki/go-racp/internal/features/billing/domain"
@@ -31,19 +32,25 @@ type AccountBanner interface {
 }
 
 type Service struct {
-	repo     Repository
-	provider domain.Provider
-	banner   AccountBanner
-	logger   *slog.Logger
-	loc      *time.Location
-	now      func() time.Time
-	catalog  domain.Catalog
+	repo      Repository
+	providers map[string]domain.Provider
+	banner    AccountBanner
+	logger    *slog.Logger
+	loc       *time.Location
+	now       func() time.Time
+	catalog   domain.Catalog
 }
 
 type Option func(*Service)
 
-func WithProvider(provider domain.Provider) Option { return func(s *Service) { s.provider = provider } }
-func WithBanner(banner AccountBanner) Option       { return func(s *Service) { s.banner = banner } }
+func WithProvider(provider domain.Provider) Option {
+	return func(s *Service) {
+		if provider != nil {
+			s.providers[provider.Name()] = provider
+		}
+	}
+}
+func WithBanner(banner AccountBanner) Option { return func(s *Service) { s.banner = banner } }
 func WithLogger(logger *slog.Logger) Option {
 	return func(s *Service) {
 		if logger != nil {
@@ -67,7 +74,7 @@ func WithLocation(loc *time.Location) Option {
 }
 
 func NewService(repo Repository, catalog domain.Catalog, opts ...Option) *Service {
-	s := &Service{repo: repo, catalog: catalog, now: time.Now, loc: time.UTC, logger: slog.Default()}
+	s := &Service{repo: repo, catalog: catalog, providers: make(map[string]domain.Provider), now: time.Now, loc: time.UTC, logger: slog.Default()}
 	for _, opt := range opts {
 		opt(s)
 	}
@@ -77,16 +84,27 @@ func NewService(repo Repository, catalog domain.Catalog, opts ...Option) *Servic
 
 func (s *Service) Packages() []domain.Package { return s.catalog.List() }
 
-func (s *Service) Available() bool { return s.provider != nil }
+func (s *Service) Available() bool { return len(s.providers) > 0 }
 
-func (s *Service) SetProvider(provider domain.Provider) { s.provider = provider }
+func (s *Service) ProviderEnabled(key string) bool {
+	_, ok := s.providers[key]
+	return ok
+}
 
-func (s *Service) StartCheckout(ctx context.Context, accountID int, packageKey, successURL, cancelURL string) (string, error) {
+func (s *Service) SetProvider(provider domain.Provider) {
+	if provider != nil {
+		s.providers[provider.Name()] = provider
+	}
+}
+
+func (s *Service) StartCheckout(ctx context.Context, accountID int, providerKey, packageKey, successURL, cancelURL string) (string, error) {
 	pkg, ok := s.catalog.Lookup(packageKey)
 	if !ok {
 		return "", domain.ErrUnknownPackage
 	}
-	if s.provider == nil {
+
+	provider, ok := s.providers[providerKey]
+	if !ok {
 		return "", domain.ErrProviderUnavailable
 	}
 
@@ -94,7 +112,7 @@ func (s *Service) StartCheckout(ctx context.Context, accountID int, packageKey, 
 	purchase := domain.Purchase{
 		AccountID:  accountID,
 		PackageKey: pkg.Key,
-		Provider:   s.provider.Name(),
+		Provider:   provider.Name(),
 		Amount:     pkg.Price,
 		Currency:   pkg.Currency,
 		CashPoints: pkg.CashPoints,
@@ -107,7 +125,7 @@ func (s *Service) StartCheckout(ctx context.Context, accountID int, packageKey, 
 		return "", fmt.Errorf("billing.Service.StartCheckout: %w", err)
 	}
 
-	result, err := s.provider.CreateCheckout(ctx, domain.CheckoutRequest{
+	result, err := provider.CreateCheckout(ctx, domain.CheckoutRequest{
 		PurchaseID:  id,
 		PackageKey:  pkg.Key,
 		Description: pkg.Name,
@@ -127,14 +145,15 @@ func (s *Service) StartCheckout(ctx context.Context, accountID int, packageKey, 
 	return result.RedirectURL, nil
 }
 
-func (s *Service) ConfirmCheckout(ctx context.Context, sessionID string, accountID int) (domain.Package, bool, error) {
-	if s.provider == nil {
+func (s *Service) ConfirmCheckout(ctx context.Context, providerKey string, values url.Values, accountID int) (domain.Package, bool, error) {
+	provider, ok := s.providers[providerKey]
+	if !ok {
 		return domain.Package{}, false, nil
 	}
 
-	confirmation, err := s.provider.RetrieveCheckout(ctx, sessionID)
+	confirmation, err := provider.RetrieveCheckout(ctx, values)
 	if err != nil {
-		s.logger.Warn("billing: confirm checkout retrieve failed", "session_id", sessionID, "err", err)
+		s.logger.Warn("billing: confirm checkout retrieve failed", "provider", providerKey, "err", err)
 		return domain.Package{}, false, nil
 	}
 	if !confirmation.Paid {

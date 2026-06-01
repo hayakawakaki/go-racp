@@ -3,6 +3,7 @@ package infra
 import (
 	"bytes"
 	"context"
+	"net/url"
 	"testing"
 
 	"github.com/hayakawakaki/go-racp/internal/features/billing/domain"
@@ -94,13 +95,16 @@ func TestStripeProvider_CreateCheckout_MapsParams(t *testing.T) {
 	if params.Metadata["purchase_id"] != "9" {
 		t.Errorf("metadata purchase_id = %q, want 9", params.Metadata["purchase_id"])
 	}
+	if params.SuccessURL == nil || *params.SuccessURL != "https://app.test/ok&session_id={CHECKOUT_SESSION_ID}" {
+		t.Errorf("success url = %v, want the session placeholder appended", params.SuccessURL)
+	}
 }
 
 func TestStripeProvider_RetrieveCheckout_Paid(t *testing.T) {
 	stripe.SetBackend(stripe.APIBackend, &captureBackend{})
 
 	provider := NewStripeProvider("sk_test_dummy")
-	confirmation, err := provider.RetrieveCheckout(context.Background(), "cs_test_123")
+	confirmation, err := provider.RetrieveCheckout(context.Background(), url.Values{"session_id": {"cs_test_123"}})
 	if err != nil {
 		t.Fatalf("RetrieveCheckout: %v", err)
 	}
@@ -116,7 +120,7 @@ func TestStripeProvider_RetrieveCheckout_Unpaid(t *testing.T) {
 	stripe.SetBackend(stripe.APIBackend, &captureBackend{status: stripe.CheckoutSessionPaymentStatusUnpaid})
 
 	provider := NewStripeProvider("sk_test_dummy")
-	confirmation, err := provider.RetrieveCheckout(context.Background(), "cs_test_123")
+	confirmation, err := provider.RetrieveCheckout(context.Background(), url.Values{"session_id": {"cs_test_123"}})
 	if err != nil {
 		t.Fatalf("RetrieveCheckout: %v", err)
 	}
@@ -129,7 +133,7 @@ func TestStripeProvider_RetrieveCheckout_InvalidMetadata(t *testing.T) {
 	stripe.SetBackend(stripe.APIBackend, &captureBackend{metadata: map[string]string{}})
 
 	provider := NewStripeProvider("sk_test_dummy")
-	_, err := provider.RetrieveCheckout(context.Background(), "cs_test_123")
+	_, err := provider.RetrieveCheckout(context.Background(), url.Values{"session_id": {"cs_test_123"}})
 	if err == nil {
 		t.Fatal("RetrieveCheckout err = nil for missing purchase_id metadata, want non-nil")
 	}
