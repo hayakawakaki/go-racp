@@ -6,6 +6,7 @@ import (
 	"log/slog"
 
 	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
+	apikeyapp "github.com/hayakawakaki/go-racp/internal/features/apikey/app"
 	actiontokenapp "github.com/hayakawakaki/go-racp/internal/platform/actiontoken/app"
 	"github.com/hayakawakaki/go-racp/internal/platform/metric"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -21,6 +22,7 @@ type Infra struct {
 	Logger       *slog.Logger
 	Mailer       *mailer.SMTPMailer
 	TokenManager *actiontokenapp.Manager
+	APIKeys      *apikeyapp.Service
 	Config       *config.Config
 	Roles        accdomain.RoleResolver
 	Metric       *metric.Reader
