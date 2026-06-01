@@ -118,9 +118,8 @@ templ guildListResults(state guildstate.ListState) {
 							@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignCenter, Class: "font-medium"}) {
 								<a
 									href={ templ.SafeURL(fmt.Sprintf("/guilds/%d", g.ID)) }
-									hx-get={ fmt.Sprintf("/guilds/%d", g.ID) }
-									hx-target="#admin-content"
-									hx-push-url="true"
+									target="_blank"
+									rel="noopener"
 									class="text-accent-on-surface hover:underline"
 								>
 									{ g.Name }

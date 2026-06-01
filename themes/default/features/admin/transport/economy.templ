@@ -469,9 +469,8 @@ templ economyStuckCard(state adminstate.EconomyState) {
 templ economyAccountLink(accountID int) {
 	<a
 		href={ templ.SafeURL(fmt.Sprintf("/users/%d", accountID)) }
-		hx-get={ fmt.Sprintf("/users/%d", accountID) }
-		hx-target="#admin-content"
-		hx-push-url="true"
+		target="_blank"
+		rel="noopener"
 		class="text-accent-on-surface hover:underline"
 	>
 		{ strconv.Itoa(accountID) }
