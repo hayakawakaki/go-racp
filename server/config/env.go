@@ -6,7 +6,9 @@ import (
 	"os"
 	"reflect"
 	"strconv"
+	"strings"
 
+	gomysql "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
 )
 
@@ -68,7 +70,46 @@ func ProcessEnv() *EnvConfig {
 		}
 	}
 
+	if err := env.validate(); err != nil {
+		log.Fatal(err)
+	}
+
 	return env
+}
+
+func (env *EnvConfig) validate() error {
+	if env.Mode != "production" {
+		return nil
+	}
+
+	dsns := []struct {
+		envName string
+		url     string
+	}{
+		{"DB_MAIN_URL", env.DBMainURL},
+		{"DB_LOG_URL", env.DBLogURL},
+	}
+
+	for _, dsn := range dsns {
+		if err := guardMariaDBRoot(dsn.envName, dsn.url); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func guardMariaDBRoot(envName, url string) error {
+	cfg, err := gomysql.ParseDSN(url)
+	if err != nil {
+		return fmt.Errorf("the value for %s is not a valid MariaDB DSN: %w", envName, err)
+	}
+
+	if strings.EqualFold(cfg.User, "root") {
+		return fmt.Errorf("the MariaDB user for %s must not be root in production", envName)
+	}
+
+	return nil
 }
 
 func processField(field reflect.StructField, fieldVal reflect.Value) error {
