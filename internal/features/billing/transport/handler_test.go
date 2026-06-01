@@ -361,6 +361,23 @@ func TestHandler_ShowStore_RendersMethods(t *testing.T) {
 	}
 }
 
+func TestHandler_PaymentMethods_DefaultsToFirstEnabled(t *testing.T) {
+	t.Parallel()
+	h := newHandler(&stubService{available: true})
+
+	methods := h.paymentMethods()
+
+	var checked []string
+	for _, method := range methods {
+		if method.Checked {
+			checked = append(checked, method.Key)
+		}
+	}
+	if len(checked) != 1 || checked[0] != providerStripe {
+		t.Errorf("checked methods = %v, want exactly [stripe]", checked)
+	}
+}
+
 func TestHandler_ShowStore_SuccessModal(t *testing.T) {
 	t.Parallel()
 	svc := &stubService{

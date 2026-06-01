@@ -86,6 +86,46 @@ func TestService_StartCheckout_NoProvider(t *testing.T) {
 	}
 }
 
+func TestService_StartCheckout_RoutesToSelectedProvider(t *testing.T) {
+	t.Parallel()
+
+	var recordedProvider string
+	repo := &fakeRepo{
+		createFn: func(_ context.Context, purchase domain.Purchase) (int64, error) {
+			recordedProvider = purchase.Provider
+			return 42, nil
+		},
+	}
+	stripe := &fakeProvider{name: "stripe"}
+	paypal := &fakeProvider{name: "paypal"}
+	svc := NewService(repo, testCatalog(), WithProvider(stripe), WithProvider(paypal), WithLogger(discardLogger()))
+
+	_, err := svc.StartCheckout(context.Background(), 7, "paypal", "starter", "https://app.test/ok", "https://app.test/cancel")
+	if err != nil {
+		t.Fatalf("StartCheckout: %v", err)
+	}
+	if recordedProvider != "paypal" {
+		t.Errorf("recorded provider = %q, want paypal", recordedProvider)
+	}
+	if paypal.lastRequest.PurchaseID != 42 {
+		t.Errorf("selected provider was not invoked, lastRequest = %+v", paypal.lastRequest)
+	}
+	if stripe.lastRequest.PurchaseID != 0 {
+		t.Errorf("unselected provider was invoked, lastRequest = %+v", stripe.lastRequest)
+	}
+}
+
+func TestService_StartCheckout_UnknownProviderKey(t *testing.T) {
+	t.Parallel()
+
+	svc := NewService(&fakeRepo{}, testCatalog(), WithProvider(&fakeProvider{name: "stripe"}), WithLogger(discardLogger()))
+
+	_, err := svc.StartCheckout(context.Background(), 7, "paypal", "starter", "", "")
+	if !errors.Is(err, domain.ErrProviderUnavailable) {
+		t.Fatalf("err = %v, want ErrProviderUnavailable", err)
+	}
+}
+
 func TestService_CompletePurchase_CreditsOnMatch(t *testing.T) {
 	t.Parallel()
 
@@ -472,6 +512,51 @@ func TestService_ConfirmCheckout_NoProvider(t *testing.T) {
 	}
 	if ok {
 		t.Fatal("ok = true with no provider, want false")
+	}
+}
+
+func TestService_ConfirmCheckout_RoutesToSelectedProvider(t *testing.T) {
+	t.Parallel()
+
+	repo := &fakeRepo{
+		getByIDFn: func(_ context.Context, id int64) (domain.Purchase, error) {
+			return domain.Purchase{ID: id, AccountID: 7, PackageKey: "starter"}, nil
+		},
+	}
+	stripe := &fakeProvider{name: "stripe", confirm: domain.CheckoutConfirmation{PurchaseID: 1, Paid: false}}
+	paypal := &fakeProvider{name: "paypal", confirm: domain.CheckoutConfirmation{PurchaseID: 9, Paid: true}}
+	svc := NewService(repo, testCatalog(), WithProvider(stripe), WithProvider(paypal), WithLogger(discardLogger()))
+
+	pkg, ok, err := svc.ConfirmCheckout(context.Background(), "paypal", url.Values{"session_id": {"cs_paypal"}}, 7)
+	if err != nil {
+		t.Fatalf("ConfirmCheckout: %v", err)
+	}
+	if !ok || pkg.Key != "starter" {
+		t.Fatalf("ok=%v pkg=%q, want true/starter", ok, pkg.Key)
+	}
+	if paypal.lastSession != "cs_paypal" {
+		t.Errorf("selected provider session = %q, want cs_paypal", paypal.lastSession)
+	}
+	if stripe.lastSession != "" {
+		t.Errorf("unselected provider was invoked with session %q", stripe.lastSession)
+	}
+}
+
+func TestService_ConfirmCheckout_UnknownProviderKey(t *testing.T) {
+	t.Parallel()
+
+	provider := &fakeProvider{name: "stripe", confirm: domain.CheckoutConfirmation{PurchaseID: 9, Paid: true}}
+	svc := NewService(&fakeRepo{}, testCatalog(), WithProvider(provider), WithLogger(discardLogger()))
+
+	_, ok, err := svc.ConfirmCheckout(context.Background(), "paypal", url.Values{"session_id": {"cs_1"}}, 7)
+	if err != nil {
+		t.Fatalf("ConfirmCheckout: %v", err)
+	}
+	if ok {
+		t.Fatal("ok = true for a provider key that is not registered, want false")
+	}
+	if provider.lastSession != "" {
+		t.Errorf("registered provider was invoked for a different key, session %q", provider.lastSession)
 	}
 }
 

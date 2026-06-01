@@ -119,6 +119,7 @@ func (f *fakeRepo) Earnings(ctx context.Context, dayStart, weekStart, monthStart
 }
 
 type fakeProvider struct {
+	name        string
 	createErr   error
 	confirmErr  error
 	lastSession string
@@ -128,7 +129,13 @@ type fakeProvider struct {
 
 var _ domain.Provider = (*fakeProvider)(nil)
 
-func (f *fakeProvider) Name() string { return "fake" }
+func (f *fakeProvider) Name() string {
+	if f.name == "" {
+		return "fake"
+	}
+
+	return f.name
+}
 
 func (f *fakeProvider) CreateCheckout(_ context.Context, request domain.CheckoutRequest) (domain.CheckoutResult, error) {
 	f.lastRequest = request

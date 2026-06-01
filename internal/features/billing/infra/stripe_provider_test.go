@@ -95,6 +95,9 @@ func TestStripeProvider_CreateCheckout_MapsParams(t *testing.T) {
 	if params.Metadata["purchase_id"] != "9" {
 		t.Errorf("metadata purchase_id = %q, want 9", params.Metadata["purchase_id"])
 	}
+	if params.SuccessURL == nil || *params.SuccessURL != "https://app.test/ok&session_id={CHECKOUT_SESSION_ID}" {
+		t.Errorf("success url = %v, want the session placeholder appended", params.SuccessURL)
+	}
 }
 
 func TestStripeProvider_RetrieveCheckout_Paid(t *testing.T) {
