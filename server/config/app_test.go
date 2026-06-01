@@ -119,6 +119,15 @@ Metrics:
       Price: 5
       CashPoints: 500
 `,
+		"apikeys.yml": `APIKeys:
+  Tiers:
+    Standard:
+      RatePerMinute: 180
+      Burst: 180
+    Elevated:
+      RatePerMinute: 600
+      Burst: 600
+`,
 	}
 }
 
@@ -574,6 +583,7 @@ func TestLoadAppConfigFromDir_TolereratesEmptyFiles(t *testing.T) {
 		"app.yml": "", "auth.yml": "", "security.yml": "",
 		"roles.yml": "", "tickets.yml": "", "news.yml": "",
 		"datasources.yml": "", "polling.yml": "", "purchases.yml": "",
+		"apikeys.yml": "",
 	}
 	dir := writeConfDir(t, empty)
 
