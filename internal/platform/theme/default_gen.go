@@ -7,6 +7,7 @@ import (
 	accountmoderationstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation/state"
 	accountselfstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/self/state"
 	adminstate "github.com/hayakawakaki/go-racp/internal/features/admin/transport/state"
+	apikeystate "github.com/hayakawakaki/go-racp/internal/features/apikey/transport/state"
 	billingstate "github.com/hayakawakaki/go-racp/internal/features/billing/transport/state"
 	characterstate "github.com/hayakawakaki/go-racp/internal/features/character/transport/state"
 	guildstate "github.com/hayakawakaki/go-racp/internal/features/guild/transport/state"
@@ -22,6 +23,7 @@ import (
 	accountmoderation "github.com/hayakawakaki/go-racp/themes/default/features/account/transport/moderation"
 	accountself "github.com/hayakawakaki/go-racp/themes/default/features/account/transport/self"
 	admin "github.com/hayakawakaki/go-racp/themes/default/features/admin/transport"
+	apikey "github.com/hayakawakaki/go-racp/themes/default/features/apikey/transport"
 	billing "github.com/hayakawakaki/go-racp/themes/default/features/billing/transport"
 	character "github.com/hayakawakaki/go-racp/themes/default/features/character/transport"
 	guild "github.com/hayakawakaki/go-racp/themes/default/features/guild/transport"
@@ -187,6 +189,14 @@ func (DefaultTheme) EconomyContent(state adminstate.EconomyState) templ.Componen
 
 func (DefaultTheme) AdminLayout(layout httpx.Layout, pageTitle string, content templ.Component) templ.Component {
 	return admin.AdminLayout(layout, pageTitle, content)
+}
+
+func (DefaultTheme) APIKeysPage(layout httpx.Layout, state apikeystate.ListState) templ.Component {
+	return apikey.APIKeysPage(layout, state)
+}
+
+func (DefaultTheme) APIKeysContent(state apikeystate.ListState) templ.Component {
+	return apikey.APIKeysContent(state)
 }
 
 func (DefaultTheme) PurchaseHistoryPage(layout httpx.Layout, state billingstate.PurchaseHistoryState) templ.Component {

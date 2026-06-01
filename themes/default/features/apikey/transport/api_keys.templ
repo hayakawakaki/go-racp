@@ -1,0 +1,224 @@
+package transport
+
+import (
+	"fmt"
+
+	"github.com/hayakawakaki/go-racp/internal/features/apikey/domain"
+	apikeystate "github.com/hayakawakaki/go-racp/internal/features/apikey/transport/state"
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/security"
+	"github.com/hayakawakaki/go-racp/internal/platform/ui"
+	admintransport "github.com/hayakawakaki/go-racp/themes/default/features/admin/transport"
+	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
+)
+
+templ APIKeysPage(layout httpx.Layout, state apikeystate.ListState) {
+	@admintransport.AdminLayout(layout, "API Keys", APIKeysContent(state))
+}
+
+templ APIKeysContent(state apikeystate.ListState) {
+	<div class="space-y-4 lg:space-y-6">
+		<header class="space-y-2">
+			@components.BentoLabel("text-[11px]") {
+				Access
+			}
+			<h2 class="text-3xl xl:text-4xl font-light tracking-tight text-font">API Keys</h2>
+			<p class="text-sm text-font-muted">Keys authenticate the public API routes. The secret is shown once at creation and stored only as a hash.</p>
+		</header>
+		if state.RevealedKey != "" {
+			@apiKeysReveal(state)
+		}
+		@apiKeysCreateForm(state)
+		@apiKeysTable(state)
+	</div>
+}
+
+templ apiKeysReveal(state apikeystate.ListState) {
+	@components.BentoCard(components.BentoCardProps{
+		Delay:   "0ms",
+		Padding: "p-4 lg:p-5",
+		Class:   "gap-3 border border-green-500/40",
+	}) {
+		<div class="space-y-1">
+			<p class="text-sm font-semibold text-font">Key created: { state.RevealedName }</p>
+			<p class="text-xs text-font-muted">Copy it now. You will not be able to see it again.</p>
+		</div>
+		<div x-data="{ copied: false }" class="flex items-center gap-2">
+			<code class="flex-1 min-w-0 truncate rounded bg-body px-3 py-2 font-mono text-sm text-font">{ state.RevealedKey }</code>
+			@ui.Button(ui.ButtonProps{
+				Variant: ui.ButtonSolid,
+				Color:   ui.ButtonColorIndigo,
+				Size:    ui.ButtonSizeMD,
+				Rounded: ui.ButtonRoundedMD,
+				Type:    ui.ButtonTypeButton,
+				Attrs: templ.Attributes{
+					"@click":      fmt.Sprintf("$copy('%s')", state.RevealedKey),
+					"@copied":     "copied = true",
+					"@copy-reset": "copied = false",
+				},
+			}) {
+				<span x-show="!copied" class="flex items-center gap-1">
+					@ui.Icon("copy", "h-4 w-4")
+					Copy
+				</span>
+				<span x-show="copied" class="flex items-center gap-1">
+					@ui.Icon("check", "h-4 w-4")
+					Copied
+				</span>
+			}
+		</div>
+	}
+}
+
+templ apiKeysCreateForm(state apikeystate.ListState) {
+	@components.BentoCard(components.BentoCardProps{
+		Delay:   "40ms",
+		Padding: "p-4 lg:p-5",
+		Class:   "gap-4",
+	}) {
+		@components.BentoLabel("text-[10px]") {
+			New key
+		}
+		<form
+			hx-post="/admin/api-keys"
+			hx-target="#admin-content"
+			hx-swap="innerHTML"
+			method="post"
+			action="/admin/api-keys"
+			class="flex flex-col gap-3 sm:flex-row sm:items-end"
+		>
+			@security.HiddenField()
+			<div class="flex-1 space-y-1">
+				<label for="apikey-name" class="block text-sm font-medium text-font">Name</label>
+				@ui.Input(ui.InputProps{
+					ID:          "apikey-name",
+					Name:        "name",
+					Type:        ui.InputTypeText,
+					Value:       state.FormName,
+					Placeholder: "discord-bot",
+					Size:        ui.InputSizeMD,
+					Rounded:     ui.InputRoundedMD,
+					Color:       ui.InputColorIndigo,
+					Class:       "w-full",
+				})
+				if msg := state.Errors["name"]; msg != "" {
+					<p class="text-sm text-red-600">{ msg }</p>
+				}
+			</div>
+			<div class="flex-1 space-y-1">
+				<label for="apikey-tier" class="block text-sm font-medium text-font">Rate tier</label>
+				<select id="apikey-tier" name="tier" class="w-full rounded-md border border-border bg-body px-3 py-2 text-sm text-font focus:border-accent-on-surface focus:outline-none">
+					for _, tier := range state.Tiers {
+						<option value={ tier.Name } selected?={ tier.Name == state.FormTier }>{ fmt.Sprintf("%s (%d/min)", tier.Name, tier.RatePerMinute) }</option>
+					}
+				</select>
+				if msg := state.Errors["tier"]; msg != "" {
+					<p class="text-sm text-red-600">{ msg }</p>
+				}
+			</div>
+			@ui.Button(ui.ButtonProps{
+				Variant: ui.ButtonSolid,
+				Color:   ui.ButtonColorIndigo,
+				Size:    ui.ButtonSizeMD,
+				Rounded: ui.ButtonRoundedMD,
+				Type:    ui.ButtonTypeSubmit,
+				Class:   "font-semibold",
+			}) {
+				Generate
+			}
+		</form>
+	}
+}
+
+templ apiKeysTable(state apikeystate.ListState) {
+	if len(state.Keys) == 0 {
+		@components.BentoCard(components.BentoCardProps{
+			Delay:   "80ms",
+			Padding: "p-10 lg:p-16",
+			Class:   "items-center justify-center text-center gap-2",
+		}) {
+			<p class="text-base font-semibold text-font">No API keys yet</p>
+			<p class="text-sm text-font-muted">Generate one above to grant access to the public API.</p>
+		}
+	} else {
+		@components.BentoCard(components.BentoCardProps{
+			Delay:   "80ms",
+			Padding: "p-0",
+			Class:   "overflow-hidden",
+		}) {
+			@ui.Table(ui.TableProps{Hover: true, Class: "text-font"}) {
+				@ui.TableHeader() {
+					@ui.TableRow(ui.TableRowProps{}) {
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignLeft, Class: "text-font-muted"}) {
+							Name
+						}
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignCenter, Class: "text-font-muted"}) {
+							Tier
+						}
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignCenter, Class: "text-font-muted"}) {
+							Created
+						}
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignCenter, Class: "text-font-muted"}) {
+							Last used
+						}
+						@ui.TableHead(ui.TableHeadProps{Align: ui.TableAlignCenter, Class: "text-font-muted"}) {
+							Actions
+						}
+					}
+				}
+				@ui.TableBody() {
+					for _, key := range state.Keys {
+						@apiKeysRow(key)
+					}
+				}
+			}
+		}
+	}
+}
+
+templ apiKeysRow(key domain.APIKey) {
+	@ui.TableRow(ui.TableRowProps{}) {
+		@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignLeft, Class: "font-medium"}) {
+			{ key.Name }
+			if key.IsRevoked() {
+				<span class="ml-2 rounded px-1.5 py-0.5 text-xs font-medium text-red-600 bg-red-500/10">revoked</span>
+			}
+		}
+		@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignCenter, Class: "text-font-muted"}) {
+			{ key.RateTier }
+		}
+		@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignCenter, Class: "text-xs text-font-muted"}) {
+			@httpx.LocalTime(key.CreatedAt.Format("2006-01-02T15:04:05Z07:00"))
+		}
+		@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignCenter, Class: "text-xs text-font-muted"}) {
+			if key.LastUsedAt == nil {
+				never
+			} else {
+				@httpx.LocalTime(key.LastUsedAt.Format("2006-01-02T15:04:05Z07:00"))
+			}
+		}
+		@ui.TableCell(ui.TableCellProps{Align: ui.TableAlignCenter}) {
+			if !key.IsRevoked() {
+				<form
+					hx-post={ fmt.Sprintf("/admin/api-keys/%d/revoke", key.ID) }
+					hx-target="#admin-content"
+					hx-swap="innerHTML"
+					hx-confirm="Revoke this key? Requests using it will immediately fail."
+					method="post"
+					action={ templ.URL(fmt.Sprintf("/admin/api-keys/%d/revoke", key.ID)) }
+				>
+					@security.HiddenField()
+					@ui.Button(ui.ButtonProps{
+						Variant: ui.ButtonSubtle,
+						Color:   ui.ButtonColorRed,
+						Size:    ui.ButtonSizeSM,
+						Rounded: ui.ButtonRoundedMD,
+						Type:    ui.ButtonTypeSubmit,
+					}) {
+						Revoke
+					}
+				</form>
+			}
+		}
+	}
+}

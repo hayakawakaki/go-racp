@@ -128,6 +128,10 @@ func (s *Service) List(ctx context.Context) ([]domain.APIKey, error) {
 	return keys, nil
 }
 
+func (s *Service) Tiers() []domain.Tier {
+	return s.tiers.List()
+}
+
 func (s *Service) Revoke(ctx context.Context, id int64) error {
 	if err := s.repo.Revoke(ctx, id); err != nil {
 		return fmt.Errorf("app.Service.Revoke: %w", err)
