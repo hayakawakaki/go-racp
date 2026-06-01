@@ -98,6 +98,15 @@ func (stubTheme) UsersNotFoundPage(layout httpx.Layout, id string) templ.Compone
 func (stubTheme) UsersActionError(message string) templ.Component {
 	return accountmoderation.UsersActionError(message)
 }
+func (stubTheme) UsersBanModal(state accountmoderationstate.DetailState) templ.Component {
+	return accountmoderation.UsersBanModal(state)
+}
+func (stubTheme) UsersUnbanModal(state accountmoderationstate.DetailState) templ.Component {
+	return accountmoderation.UsersUnbanModal(state)
+}
+func (stubTheme) UsersRoleModal(state accountmoderationstate.DetailState) templ.Component {
+	return accountmoderation.UsersRoleModal(state)
+}
 
 func TestHandler_ShowDetail_RendersUsernameAndChars(t *testing.T) {
 	t.Parallel()
@@ -119,6 +128,7 @@ func TestHandler_ShowDetail_RendersUsernameAndChars(t *testing.T) {
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/users/7", http.NoBody)
 	req.SetPathValue("id", "7")
+	req = req.WithContext(middleware.ContextWithSnapshot(req.Context(), &middleware.AccountSnapshot{UserID: 1, GroupID: accdomain.RoleAdmin.GroupID}))
 	h.showDetail(rr, req)
 
 	body := rr.Body.String()
@@ -157,6 +167,7 @@ func TestHandler_ShowDetail_RendersCurrencyHistory(t *testing.T) {
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/users/7?dpage=2", http.NoBody)
 	req.SetPathValue("id", "7")
+	req = req.WithContext(middleware.ContextWithSnapshot(req.Context(), &middleware.AccountSnapshot{UserID: 1, GroupID: accdomain.RoleAdmin.GroupID}))
 	h.showDetail(rr, req)
 
 	if gotDepositPage != 2 {
@@ -193,6 +204,7 @@ func TestHandler_ShowDetail_DepositHistoryReadFailure(t *testing.T) {
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/users/7", http.NoBody)
 	req.SetPathValue("id", "7")
+	req = req.WithContext(middleware.ContextWithSnapshot(req.Context(), &middleware.AccountSnapshot{UserID: 1, GroupID: accdomain.RoleAdmin.GroupID}))
 	h.showDetail(rr, req)
 
 	if rr.Code != http.StatusOK {

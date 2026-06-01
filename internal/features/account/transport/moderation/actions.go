@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/a-h/templ"
 	app "github.com/hayakawakaki/go-racp/internal/features/account/app/moderation"
 	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
@@ -30,13 +31,68 @@ func (h *Handler) targetAndActor(w http.ResponseWriter, r *http.Request) (target
 	return targetID, snap.UserID, snap.IsAdmin(), true
 }
 
-func (h *Handler) renderDetail(w http.ResponseWriter, r *http.Request, detail app.UserDetail) {
+func (h *Handler) renderDetail(w http.ResponseWriter, r *http.Request, detail app.UserDetail, viewerIsAdmin bool) {
+	s := state.DetailState{
+		Detail:        detail,
+		Now:           time.Now(),
+		Location:      h.general.Location(),
+		AllowedRoles:  state.BuildRoleOptions(h.svc.AllowedRoles()),
+		ViewerIsAdmin: viewerIsAdmin,
+	}
+
+	httpx.RenderHTML(w, r, h.logger, h.theme.UsersDetailContent(s))
+}
+
+func (h *Handler) modalState(r *http.Request, detail app.UserDetail) state.DetailState {
 	s := state.DetailState{
 		Detail:       detail,
 		Now:          time.Now(),
+		Location:     h.general.Location(),
 		AllowedRoles: state.BuildRoleOptions(h.svc.AllowedRoles()),
 	}
-	httpx.RenderHTML(w, r, h.logger, h.theme.UsersDetailContent(s))
+	if snap, ok := middleware.SnapshotFromContext(r.Context()); ok && snap != nil {
+		s.ViewerIsAdmin = snap.IsAdmin()
+	}
+
+	return s
+}
+
+func (h *Handler) showBanModal(w http.ResponseWriter, r *http.Request) {
+	h.showActionModal(w, r, func(s state.DetailState) templ.Component { return h.theme.UsersBanModal(s) })
+}
+
+func (h *Handler) showUnbanModal(w http.ResponseWriter, r *http.Request) {
+	h.showActionModal(w, r, func(s state.DetailState) templ.Component { return h.theme.UsersUnbanModal(s) })
+}
+
+func (h *Handler) showRoleModal(w http.ResponseWriter, r *http.Request) {
+	h.showActionModal(w, r, func(s state.DetailState) templ.Component { return h.theme.UsersRoleModal(s) })
+}
+
+func (h *Handler) showActionModal(w http.ResponseWriter, r *http.Request, render func(state.DetailState) templ.Component) {
+	id, ok := pathID(r)
+	if !ok {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	if !httpx.IsHTMX(r) {
+		httpx.Redirect(w, r, "/users/"+strconv.Itoa(id))
+		return
+	}
+
+	detail, err := h.svc.Get(r.Context(), id)
+	if errors.Is(err, accdomain.ErrUserNotFound) {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		h.logger.Error("users: modal get failed", "id", id, "err", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	httpx.RenderHTML(w, r, h.logger, render(h.modalState(r, detail)))
 }
 
 func (h *Handler) doBan(w http.ResponseWriter, r *http.Request) {
@@ -44,8 +100,9 @@ func (h *Handler) doBan(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	banModal := func(s state.DetailState) templ.Component { return h.theme.UsersBanModal(s) }
 	if err := httpx.ParseForm(w, r, maxUserActionFormBytes); err != nil {
-		h.writeActionError(w, r, "Invalid form data.", http.StatusBadRequest)
+		h.actionModalError(w, r, targetID, "Invalid form data.", banModal)
 		return
 	}
 
@@ -59,10 +116,12 @@ func (h *Handler) doBan(w http.ResponseWriter, r *http.Request) {
 		Reason:       r.FormValue("reason"),
 	})
 	if err != nil {
-		h.writeActionErrorFromDomain(w, r, err)
+		h.logUnexpectedActionError(err)
+		h.actionModalError(w, r, targetID, actionErrorMessage(err), banModal)
 		return
 	}
-	h.renderDetail(w, r, detail)
+
+	h.renderDetail(w, r, detail, actorIsAdmin)
 }
 
 func (h *Handler) doUnban(w http.ResponseWriter, r *http.Request) {
@@ -70,8 +129,9 @@ func (h *Handler) doUnban(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	unbanModal := func(s state.DetailState) templ.Component { return h.theme.UsersUnbanModal(s) }
 	if err := httpx.ParseForm(w, r, maxUserActionFormBytes); err != nil {
-		h.writeActionError(w, r, "Invalid form data.", http.StatusBadRequest)
+		h.actionModalError(w, r, targetID, "Invalid form data.", unbanModal)
 		return
 	}
 
@@ -82,10 +142,12 @@ func (h *Handler) doUnban(w http.ResponseWriter, r *http.Request) {
 		Reason:       r.FormValue("reason"),
 	})
 	if err != nil {
-		h.writeActionErrorFromDomain(w, r, err)
+		h.logUnexpectedActionError(err)
+		h.actionModalError(w, r, targetID, actionErrorMessage(err), unbanModal)
 		return
 	}
-	h.renderDetail(w, r, detail)
+
+	h.renderDetail(w, r, detail, actorIsAdmin)
 }
 
 func (h *Handler) doSetRole(w http.ResponseWriter, r *http.Request) {
@@ -93,14 +155,15 @@ func (h *Handler) doSetRole(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	roleModal := func(s state.DetailState) templ.Component { return h.theme.UsersRoleModal(s) }
 	if err := httpx.ParseForm(w, r, maxUserActionFormBytes); err != nil {
-		h.writeActionError(w, r, "Invalid form data.", http.StatusBadRequest)
+		h.actionModalError(w, r, targetID, "Invalid form data.", roleModal)
 		return
 	}
 
 	groupID, err := strconv.Atoi(r.FormValue("group_id"))
 	if err != nil {
-		h.writeActionError(w, r, "Invalid role selection.", http.StatusBadRequest)
+		h.actionModalError(w, r, targetID, "Invalid role selection.", roleModal)
 		return
 	}
 
@@ -112,10 +175,12 @@ func (h *Handler) doSetRole(w http.ResponseWriter, r *http.Request) {
 		Reason:       r.FormValue("reason"),
 	})
 	if err != nil {
-		h.writeActionErrorFromDomain(w, r, err)
+		h.logUnexpectedActionError(err)
+		h.actionModalError(w, r, targetID, actionErrorMessage(err), roleModal)
 		return
 	}
-	h.renderDetail(w, r, detail)
+
+	h.renderDetail(w, r, detail, actorIsAdmin)
 }
 
 func pathID(r *http.Request) (int, bool) {
@@ -132,26 +197,56 @@ func (h *Handler) writeActionError(w http.ResponseWriter, r *http.Request, messa
 	httpx.RenderHTML(w, r, h.logger, h.theme.UsersActionError(message))
 }
 
-func (h *Handler) writeActionErrorFromDomain(w http.ResponseWriter, r *http.Request, err error) {
+func (h *Handler) actionModalError(w http.ResponseWriter, r *http.Request, targetID int, message string, render func(state.DetailState) templ.Component) {
+	detail, err := h.svc.Get(r.Context(), targetID)
+	if err != nil {
+		h.writeActionError(w, r, message, http.StatusBadRequest)
+		return
+	}
+
+	s := h.modalState(r, detail)
+	s.ActionError = message
+	w.Header().Set("HX-Retarget", "#modal")
+	w.Header().Set("HX-Reswap", "innerHTML")
+
+	httpx.RenderHTML(w, r, h.logger, render(s))
+}
+
+func (h *Handler) logUnexpectedActionError(err error) {
 	switch {
-	case errors.Is(err, accdomain.ErrSelfAction):
-		h.writeActionError(w, r, "You can't perform admin actions on your own account.", http.StatusBadRequest)
-	case errors.Is(err, accdomain.ErrTargetIsAdmin):
-		h.writeActionError(w, r, "Admin-on-admin actions must go through the database.", http.StatusBadRequest)
-	case errors.Is(err, accdomain.ErrTargetProtected):
-		h.writeActionError(w, r, "You can only act on player accounts.", http.StatusBadRequest)
-	case errors.Is(err, accdomain.ErrEmptyReason):
-		h.writeActionError(w, r, "Reason is required.", http.StatusBadRequest)
-	case errors.Is(err, accdomain.ErrInvalidDuration):
-		h.writeActionError(w, r, "Invalid ban duration.", http.StatusBadRequest)
-	case errors.Is(err, accdomain.ErrInvalidRole):
-		h.writeActionError(w, r, "Selected role is not allowed.", http.StatusBadRequest)
-	case errors.Is(err, accdomain.ErrInvalidState):
-		h.writeActionError(w, r, "Action not allowed in the current state.", http.StatusBadRequest)
-	case errors.Is(err, accdomain.ErrUserNotFound):
-		h.writeActionError(w, r, "Account not found.", http.StatusNotFound)
+	case errors.Is(err, accdomain.ErrSelfAction),
+		errors.Is(err, accdomain.ErrTargetIsAdmin),
+		errors.Is(err, accdomain.ErrTargetProtected),
+		errors.Is(err, accdomain.ErrEmptyReason),
+		errors.Is(err, accdomain.ErrInvalidDuration),
+		errors.Is(err, accdomain.ErrInvalidRole),
+		errors.Is(err, accdomain.ErrInvalidState),
+		errors.Is(err, accdomain.ErrUserNotFound):
+		return
 	default:
 		h.logger.Error("users: action failed", "err", err)
-		h.writeActionError(w, r, "Action failed. Check server logs.", http.StatusInternalServerError)
+	}
+}
+
+func actionErrorMessage(err error) string {
+	switch {
+	case errors.Is(err, accdomain.ErrSelfAction):
+		return "You can't perform admin actions on your own account."
+	case errors.Is(err, accdomain.ErrTargetIsAdmin):
+		return "Admin-on-admin actions must go through the database."
+	case errors.Is(err, accdomain.ErrTargetProtected):
+		return "You can only act on player accounts."
+	case errors.Is(err, accdomain.ErrEmptyReason):
+		return "Reason is required."
+	case errors.Is(err, accdomain.ErrInvalidDuration):
+		return "Invalid ban duration."
+	case errors.Is(err, accdomain.ErrInvalidRole):
+		return "Selected role is not allowed."
+	case errors.Is(err, accdomain.ErrInvalidState):
+		return "Action not allowed in the current state."
+	case errors.Is(err, accdomain.ErrUserNotFound):
+		return "Account not found."
+	default:
+		return "Action failed. Check server logs."
 	}
 }

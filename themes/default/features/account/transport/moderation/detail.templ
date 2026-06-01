@@ -2,21 +2,24 @@ package moderation
 
 import (
 	accountmoderationstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation/state"
-	admintransport "github.com/hayakawakaki/go-racp/themes/default/features/admin/transport"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
 
 templ UsersDetailPage(layout httpx.Layout, username string, state accountmoderationstate.DetailState) {
-	@admintransport.AdminLayout(layout, "Users / "+username, UsersDetailContent(state))
+	@httpx.ActiveBase(layout, "User: "+username) {
+		@UsersDetailContent(state)
+	}
 }
 
 templ UsersDetailContent(state accountmoderationstate.DetailState) {
-	<div id="user-detail" class="space-y-6">
+	<div id="user-detail" class="space-y-4 lg:space-y-6">
 		@accountSection(state)
 		@charactersSection(state)
-		@depositsHistorySection(state)
-		@withdrawsHistorySection(state)
-		@actionsSection(state)
-		@auditSection(state)
+		if state.ViewerIsAdmin {
+			@depositsHistorySection(state)
+			@withdrawsHistorySection(state)
+			@auditSection(state)
+		}
+		<div id="modal"></div>
 	</div>
 }

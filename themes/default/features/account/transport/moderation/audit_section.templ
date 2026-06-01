@@ -5,26 +5,34 @@ import (
 
 	accountmoderationstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
 )
 
 templ auditSection(state accountmoderationstate.DetailState) {
-	<section class="rounded-2xl bg-white ring-1 ring-gray-200 p-5">
-		<h2 class="text-lg font-semibold text-gray-900 mb-3">Recent actions</h2>
+	@components.BentoCard(components.BentoCardProps{
+		Padding: "p-6 lg:p-8",
+		Class:   "gap-4",
+	}) {
+		<div class="pb-3 border-b border-border">
+			@components.BentoLabel("text-[11px]") {
+				Recent actions
+			}
+		</div>
 		if len(state.Detail.Recent) == 0 {
-			<p class="text-sm text-gray-500">No prior actions on this account.</p>
+			<p class="text-sm text-font-muted">No prior actions on this account.</p>
 		} else {
-			<ul class="space-y-2 text-sm">
+			<ul class="divide-y divide-border">
 				for _, a := range state.Detail.Recent {
-					<li class="flex items-start gap-3 border-t border-gray-100 pt-2">
-						<span class="text-xs text-gray-500 font-mono w-44">
+					<li class="flex flex-wrap items-baseline gap-x-4 gap-y-1 py-2 text-sm">
+						<span class="w-44 font-mono text-xs text-font-muted">
 							@httpx.LocalTime(a.At.Format("2006-01-02T15:04:05Z07:00"))
 						</span>
-						<span class="text-xs font-medium text-gray-900 w-20">{ string(a.Kind) }</span>
-						<span class="text-xs text-gray-500 w-32">{ fmt.Sprintf("actor #%d", a.ActorUserID) }</span>
-						<span class="flex-1 text-gray-700">{ a.Reason }</span>
+						<span class="w-20 text-xs font-medium text-font">{ string(a.Kind) }</span>
+						<span class="w-32 text-xs text-font-muted">{ fmt.Sprintf("actor #%d", a.ActorUserID) }</span>
+						<span class="flex-1 text-font-muted">{ a.Reason }</span>
 					</li>
 				}
 			</ul>
 		}
-	</section>
+	}
 }

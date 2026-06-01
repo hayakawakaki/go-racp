@@ -7,6 +7,7 @@ import (
 	"time"
 
 	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
+	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 )
@@ -38,6 +39,10 @@ func (h *Handler) showDetail(w http.ResponseWriter, r *http.Request) {
 		Now:          time.Now(),
 		Location:     h.general.Location(),
 		AllowedRoles: state.BuildRoleOptions(h.svc.AllowedRoles()),
+	}
+
+	if snap, ok := middleware.SnapshotFromContext(r.Context()); ok && snap != nil {
+		s.ViewerIsAdmin = snap.IsAdmin()
 	}
 
 	if h.currency != nil {

@@ -34,6 +34,9 @@ type Renderer interface {
 	UsersDetailContent(state state.DetailState) templ.Component
 	UsersNotFoundPage(layout httpx.Layout, id string) templ.Component
 	UsersActionError(message string) templ.Component
+	UsersBanModal(state state.DetailState) templ.Component
+	UsersUnbanModal(state state.DetailState) templ.Component
+	UsersRoleModal(state state.DetailState) templ.Component
 }
 
 //nolint:govet // GeneralConfig trailing bool forces alignment cost
@@ -67,8 +70,11 @@ func (h *Handler) layout() httpx.Layout {
 }
 
 func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
-	reg.Wrap(mux, "Users.View", "GET /users/{id}", http.HandlerFunc(h.showDetail))
-	reg.Wrap(mux, "Users.Ban", "POST /users/{id}/ban", http.HandlerFunc(h.doBan))
-	reg.Wrap(mux, "Users.Unban", "POST /users/{id}/unban", http.HandlerFunc(h.doUnban))
+	reg.WrapHidden(mux, "Users.View", "GET /users/{id}", http.HandlerFunc(h.showDetail))
+	reg.WrapHidden(mux, "Users.Ban", "GET /users/{id}/ban", http.HandlerFunc(h.showBanModal))
+	reg.WrapHidden(mux, "Users.Ban", "POST /users/{id}/ban", http.HandlerFunc(h.doBan))
+	reg.WrapHidden(mux, "Users.Unban", "GET /users/{id}/unban", http.HandlerFunc(h.showUnbanModal))
+	reg.WrapHidden(mux, "Users.Unban", "POST /users/{id}/unban", http.HandlerFunc(h.doUnban))
+	reg.Wrap(mux, "Users.SetRole", "GET /users/{id}/role", http.HandlerFunc(h.showRoleModal))
 	reg.Wrap(mux, "Users.SetRole", "POST /users/{id}/role", http.HandlerFunc(h.doSetRole))
 }

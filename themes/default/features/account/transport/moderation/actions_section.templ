@@ -5,147 +5,221 @@ import (
 
 	accountmoderationstate "github.com/hayakawakaki/go-racp/internal/features/account/transport/moderation/state"
 	"github.com/hayakawakaki/go-racp/internal/platform/security"
+	"github.com/hayakawakaki/go-racp/internal/platform/ui"
+	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
 )
 
-templ actionsSection(state accountmoderationstate.DetailState) {
-	<section class="rounded-2xl bg-white ring-1 ring-gray-200 p-5 space-y-4">
-		<h2 class="text-lg font-semibold text-gray-900">Actions</h2>
-		<div class="grid gap-4 md:grid-cols-3 items-stretch">
+func actionModalAttrs(targetID int, action string) templ.Attributes {
+	return templ.Attributes{
+		"hx-get":    fmt.Sprintf("/users/%d/%s", targetID, action),
+		"hx-target": "#modal",
+		"hx-swap":   "innerHTML",
+	}
+}
+
+templ UsersBanModal(state accountmoderationstate.DetailState) {
+	@ui.Modal(ui.ModalProps{Open: true}) {
+		@ui.ModalContent(ui.ModalContentProps{Size: ui.ModalSizeMD}) {
+			@ui.ModalHeader() {
+				@ui.ModalTitle() {
+					Ban { state.Detail.User.Username }
+				}
+				@ui.ModalDescription() {
+					Restrict this account from logging in.
+				}
+			}
+			@actionModalError(state.ActionError)
 			@banForm(state.Detail.User.ID)
+		}
+	}
+}
+
+templ UsersUnbanModal(state accountmoderationstate.DetailState) {
+	@ui.Modal(ui.ModalProps{Open: true}) {
+		@ui.ModalContent(ui.ModalContentProps{Size: ui.ModalSizeMD}) {
+			@ui.ModalHeader() {
+				@ui.ModalTitle() {
+					Unban { state.Detail.User.Username }
+				}
+				@ui.ModalDescription() {
+					Lift the current ban on this account.
+				}
+			}
+			@actionModalError(state.ActionError)
 			@unbanForm(state.Detail.User.ID)
+		}
+	}
+}
+
+templ UsersRoleModal(state accountmoderationstate.DetailState) {
+	@ui.Modal(ui.ModalProps{Open: true}) {
+		@ui.ModalContent(ui.ModalContentProps{Size: ui.ModalSizeMD}) {
+			@ui.ModalHeader() {
+				@ui.ModalTitle() {
+					Update role for { state.Detail.User.Username }
+				}
+				@ui.ModalDescription() {
+					Change which group this account belongs to.
+				}
+			}
+			@actionModalError(state.ActionError)
 			@setRoleForm(state)
-		</div>
-	</section>
+		}
+	}
 }
 
-templ actionCardHeader(dotClass, title string) {
-	<header class="flex items-center gap-2">
-		<span class={ "h-2 w-2 rounded-full", dotClass }></span>
-		<h3 class="font-medium text-gray-900">{ title }</h3>
-	</header>
-}
-
-templ fieldLabel(text string) {
-	<span class="text-[11px] font-medium uppercase tracking-wider text-gray-500">{ text }</span>
+templ actionModalError(message string) {
+	if message != "" {
+		<p class="text-sm text-red-700 bg-red-50 dark:bg-red-950/30 dark:text-red-300 border border-red-200 dark:border-red-800 rounded-md px-3 py-2">{ message }</p>
+	}
 }
 
 templ banForm(targetID int) {
-	<div class="rounded-xl ring-1 ring-gray-200 p-4 flex flex-col gap-3">
-		@actionCardHeader("bg-rose-500", "Ban")
-		<form
-			class="flex flex-col gap-3 flex-1"
-			x-data="{ permanent: false }"
-			hx-post={ fmt.Sprintf("/users/%d/ban", targetID) }
-			hx-target="#user-detail"
-			hx-swap="outerHTML"
-		>
-			@security.HiddenField()
-			<label class="block space-y-1">
-				@fieldLabel("Reason (required)")
-				<input
-					type="text"
-					name="reason"
-					placeholder="Cheating, macro, scamming…"
-					class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-rose-500 focus:ring-1 focus:ring-rose-500 focus:outline-none"
-				/>
-			</label>
-			<label class="flex items-center gap-2 text-sm text-gray-700 select-none">
-				<input
-					type="checkbox"
-					name="permanent"
-					value="on"
-					x-model="permanent"
-					class="h-4 w-4 rounded border-gray-300 text-rose-600 focus:ring-rose-500"
-				/>
-				<span>Permanent ban</span>
-			</label>
-			<label class="block space-y-1" :class="permanent && 'opacity-40'">
-				@fieldLabel("Duration in days")
-				<input
-					type="number"
-					name="days"
-					min="1"
-					:disabled="permanent"
-					class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-rose-500 focus:ring-1 focus:ring-rose-500 focus:outline-none disabled:bg-gray-50"
-				/>
-			</label>
-			<button
-				type="submit"
-				class="mt-auto w-full rounded-md bg-rose-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-rose-700 active:bg-rose-800"
-			>
-				Apply ban
-			</button>
-		</form>
-	</div>
+	<form
+		class="flex flex-col gap-3 rounded-xl border border-border p-4"
+		x-data="{ permanent: false }"
+		hx-post={ fmt.Sprintf("/users/%d/ban", targetID) }
+		hx-target="#user-detail"
+		hx-swap="outerHTML"
+	>
+		@security.HiddenField()
+		@components.BentoLabel("text-[11px]") {
+			Ban
+		}
+		@ui.Field(ui.FieldProps{Label: "Reason", For: "ban-reason", Required: true}) {
+			@ui.Input(ui.InputProps{
+				ID:          "ban-reason",
+				Name:        "reason",
+				Type:        ui.InputTypeText,
+				Placeholder: "Cheating, macro, scamming",
+				Size:        ui.InputSizeMD,
+				Rounded:     ui.InputRoundedMD,
+				Color:       ui.InputColorIndigo,
+				Class:       "w-full",
+			})
+		}
+		<label class="flex items-center gap-2 text-sm text-font select-none">
+			<input type="checkbox" name="permanent" value="on" x-model="permanent" class="h-4 w-4 rounded border-border"/>
+			<span>Permanent ban</span>
+		</label>
+		<div :class="permanent && 'opacity-40'">
+			@ui.Field(ui.FieldProps{Label: "Duration in days", For: "ban-days"}) {
+				@ui.Input(ui.InputProps{
+					ID:      "ban-days",
+					Name:    "days",
+					Type:    ui.InputTypeNumber,
+					Min:     "1",
+					Size:    ui.InputSizeMD,
+					Rounded: ui.InputRoundedMD,
+					Color:   ui.InputColorIndigo,
+					Class:   "w-full",
+					Attrs:   templ.Attributes{":disabled": "permanent"},
+				})
+			}
+		</div>
+		@ui.Button(ui.ButtonProps{
+			Variant: ui.ButtonSolid,
+			Color:   ui.ButtonColorRed,
+			Size:    ui.ButtonSizeMD,
+			Rounded: ui.ButtonRoundedMD,
+			Type:    ui.ButtonTypeSubmit,
+			Class:   "w-full font-semibold",
+		}) {
+			Apply ban
+		}
+	</form>
 }
 
 templ unbanForm(targetID int) {
-	<div class="rounded-xl ring-1 ring-gray-200 p-4 flex flex-col gap-3">
-		@actionCardHeader("bg-emerald-500", "Unban")
-		<form
-			class="flex flex-col gap-3 flex-1"
-			hx-post={ fmt.Sprintf("/users/%d/unban", targetID) }
-			hx-target="#user-detail"
-			hx-swap="outerHTML"
-		>
-			@security.HiddenField()
-			<label class="block space-y-1">
-				@fieldLabel("Reason (optional)")
-				<input
-					type="text"
-					name="reason"
-					placeholder="Appeal accepted, false positive…"
-					class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
-				/>
-			</label>
-			<button
-				type="submit"
-				class="mt-auto w-full rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-700 active:bg-emerald-800"
-			>
-				Lift ban
-			</button>
-		</form>
-	</div>
+	<form
+		class="flex flex-col gap-3 rounded-xl border border-border p-4"
+		hx-post={ fmt.Sprintf("/users/%d/unban", targetID) }
+		hx-target="#user-detail"
+		hx-swap="outerHTML"
+	>
+		@security.HiddenField()
+		@components.BentoLabel("text-[11px]") {
+			Unban
+		}
+		@ui.Field(ui.FieldProps{Label: "Reason", For: "unban-reason"}) {
+			@ui.Input(ui.InputProps{
+				ID:          "unban-reason",
+				Name:        "reason",
+				Type:        ui.InputTypeText,
+				Placeholder: "Appeal accepted, false positive",
+				Size:        ui.InputSizeMD,
+				Rounded:     ui.InputRoundedMD,
+				Color:       ui.InputColorIndigo,
+				Class:       "w-full",
+			})
+		}
+		@ui.Button(ui.ButtonProps{
+			Variant: ui.ButtonSolid,
+			Color:   ui.ButtonColorGreen,
+			Size:    ui.ButtonSizeMD,
+			Rounded: ui.ButtonRoundedMD,
+			Type:    ui.ButtonTypeSubmit,
+			Class:   "w-full font-semibold",
+		}) {
+			Lift ban
+		}
+	</form>
 }
 
 templ setRoleForm(state accountmoderationstate.DetailState) {
-	<div class="rounded-xl ring-1 ring-gray-200 p-4 flex flex-col gap-3">
-		@actionCardHeader("bg-slate-500", "Set role")
-		<form
-			class="flex flex-col gap-3 flex-1"
-			hx-post={ fmt.Sprintf("/users/%d/role", state.Detail.User.ID) }
-			hx-target="#user-detail"
-			hx-swap="outerHTML"
-		>
-			@security.HiddenField()
-			<label class="block space-y-1">
-				@fieldLabel("Reason (optional)")
-				<input
-					type="text"
-					name="reason"
-					placeholder="Promotion, demotion…"
-					class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
-				/>
-			</label>
-			<label class="block space-y-1">
-				@fieldLabel("Role")
-				<select
-					name="group_id"
-					class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
-				>
-					for _, opt := range state.AllowedRoles {
-						<option value={ fmt.Sprintf("%d", opt.GroupID) } selected?={ opt.GroupID == state.Detail.User.GroupID }>
-							{ opt.Name }
-						</option>
-					}
-				</select>
-			</label>
-			<button
-				type="submit"
-				class="mt-auto w-full rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-slate-800 active:bg-slate-950"
-			>
-				Apply role
-			</button>
-		</form>
-	</div>
+	<form
+		class="flex flex-col gap-3 rounded-xl border border-border p-4"
+		hx-post={ fmt.Sprintf("/users/%d/role", state.Detail.User.ID) }
+		hx-target="#user-detail"
+		hx-swap="outerHTML"
+	>
+		@security.HiddenField()
+		@components.BentoLabel("text-[11px]") {
+			Set role
+		}
+		@ui.Field(ui.FieldProps{Label: "Reason", For: "role-reason"}) {
+			@ui.Input(ui.InputProps{
+				ID:          "role-reason",
+				Name:        "reason",
+				Type:        ui.InputTypeText,
+				Placeholder: "Promotion, demotion",
+				Size:        ui.InputSizeMD,
+				Rounded:     ui.InputRoundedMD,
+				Color:       ui.InputColorIndigo,
+				Class:       "w-full",
+			})
+		}
+		@ui.Field(ui.FieldProps{Label: "Role", For: "role-group"}) {
+			@ui.Select(ui.SelectProps{
+				ID:      "role-group",
+				Name:    "group_id",
+				Value:   fmt.Sprintf("%d", state.Detail.User.GroupID),
+				Size:    ui.SelectSizeMD,
+				Class:   "w-full",
+				Options: roleSelectOptions(state),
+			})
+		}
+		@ui.Button(ui.ButtonProps{
+			Variant: ui.ButtonSolid,
+			Color:   ui.ButtonColorNeutral,
+			Size:    ui.ButtonSizeMD,
+			Rounded: ui.ButtonRoundedMD,
+			Type:    ui.ButtonTypeSubmit,
+			Class:   "w-full font-semibold",
+		}) {
+			Apply role
+		}
+	</form>
+}
+
+func roleSelectOptions(state accountmoderationstate.DetailState) []ui.SelectOption {
+	options := make([]ui.SelectOption, 0, len(state.AllowedRoles))
+	for _, opt := range state.AllowedRoles {
+		options = append(options, ui.SelectOption{
+			Value: fmt.Sprintf("%d", opt.GroupID),
+			Label: opt.Name,
+		})
+	}
+
+	return options
 }

@@ -37,6 +37,18 @@ type DefaultTheme struct{}
 
 var _ Theme = DefaultTheme{}
 
+func (DefaultTheme) UsersBanModal(state accountmoderationstate.DetailState) templ.Component {
+	return accountmoderation.UsersBanModal(state)
+}
+
+func (DefaultTheme) UsersUnbanModal(state accountmoderationstate.DetailState) templ.Component {
+	return accountmoderation.UsersUnbanModal(state)
+}
+
+func (DefaultTheme) UsersRoleModal(state accountmoderationstate.DetailState) templ.Component {
+	return accountmoderation.UsersRoleModal(state)
+}
+
 func (DefaultTheme) UsersDetailPage(layout httpx.Layout, username string, state accountmoderationstate.DetailState) templ.Component {
 	return accountmoderation.UsersDetailPage(layout, username, state)
 }

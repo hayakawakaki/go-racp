@@ -68,6 +68,14 @@ func NewRegistry(
 
 // Wrap mounts handler under pattern with role gating derived from tag ("Group.Action"). Admin tags are hardcoded, other tags consult access.yml and pass through ungated (recorded for audit) when no entry is configured.
 func (r *Registry) Wrap(mux *http.ServeMux, tag, pattern string, handler http.Handler) {
+	r.wrap(mux, tag, pattern, handler, false)
+}
+
+func (r *Registry) WrapHidden(mux *http.ServeMux, tag, pattern string, handler http.Handler) {
+	r.wrap(mux, tag, pattern, handler, true)
+}
+
+func (r *Registry) wrap(mux *http.ServeMux, tag, pattern string, handler http.Handler, hidden bool) {
 	group, action := parseTag(tag)
 	r.registered[tag] = struct{}{}
 	r.routes = append(r.routes, RouteInfo{Tag: tag, Pattern: pattern})
@@ -100,6 +108,11 @@ func (r *Registry) Wrap(mux *http.ServeMux, tag, pattern string, handler http.Ha
 	}
 
 	policy := middleware.AuthPolicy{AllowTempBannedLogin: r.allowTempBannedLogin, Unrestricted: entry.unrestricted}
+	if hidden {
+		mux.Handle(pattern, middleware.RequireRoleHidden(r.sessSvc, r.users, r.resolver, r.logger, r.secure, r.hiddenLayout, policy, entry.roles...)(handler))
+		return
+	}
+
 	mux.Handle(pattern, middleware.RequireRole(r.sessSvc, r.users, r.resolver, r.logger, r.secure, policy, entry.roles...)(handler))
 }
 

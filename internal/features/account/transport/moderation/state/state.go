@@ -27,9 +27,11 @@ type DetailState struct {
 	Now             time.Time
 	Location        *time.Location
 	Detail          app.UserDetail
+	ActionError     string
 	AllowedRoles    []RoleOption
 	Deposits        currency.DepositPage
 	Withdraws       currency.WithdrawHistoryPage
+	ViewerIsAdmin   bool
 	DepositsFailed  bool
 	WithdrawsFailed bool
 }

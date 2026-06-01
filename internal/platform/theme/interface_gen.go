@@ -23,6 +23,9 @@ import (
 )
 
 type Theme interface {
+	UsersBanModal(state accountmoderationstate.DetailState) templ.Component
+	UsersUnbanModal(state accountmoderationstate.DetailState) templ.Component
+	UsersRoleModal(state accountmoderationstate.DetailState) templ.Component
 	UsersDetailPage(layout httpx.Layout, username string, state accountmoderationstate.DetailState) templ.Component
 	UsersDetailContent(state accountmoderationstate.DetailState) templ.Component
 	UsersListPage(layout httpx.Layout, state accountmoderationstate.ListState) templ.Component
