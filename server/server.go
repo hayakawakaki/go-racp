@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"maps"
 	"net/http"
 	"os"
 	"os/signal"
@@ -19,6 +20,10 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	accinfra "github.com/hayakawakaki/go-racp/internal/features/account/infra"
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
+	apikeyapp "github.com/hayakawakaki/go-racp/internal/features/apikey/app"
+	apikeydomain "github.com/hayakawakaki/go-racp/internal/features/apikey/domain"
+	apikeyinfra "github.com/hayakawakaki/go-racp/internal/features/apikey/infra"
+	apikeymiddleware "github.com/hayakawakaki/go-racp/internal/features/apikey/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/infra"
 	"github.com/hayakawakaki/go-racp/internal/infra/mailer"
 	"github.com/hayakawakaki/go-racp/internal/infra/mysql"
@@ -47,13 +52,7 @@ func Start() error {
 	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
 	logger.Info("theme: active", "name", theme.ActiveName)
 
-	for _, adjustment := range cfg.App.ClampWarnings() {
-		logger.Warn("config: interval clamped to allowed range",
-			"field", adjustment.Field,
-			"given", adjustment.Given,
-			"clamped", adjustment.Clamped,
-		)
-	}
+	logClampWarnings(logger, cfg.App)
 
 	// Mailer (constructed before any defer-cleanup steps so a failure here can log.Fatal cleanly)
 	mailClient, err := mailer.NewClient(cfg.Env.SMTPHost, cfg.Env.SMTPPort, cfg.Env.Mode != "development")
@@ -91,6 +90,10 @@ func Start() error {
 	actionTokenRepo := actiontokeninfra.NewPostgresRepository(cpPool)
 	tokenMgr := actiontokenapp.NewManager(actionTokenRepo)
 
+	apikeyRepo := apikeyinfra.NewRepository(cpPool)
+	apikeyTiers := buildAPIKeyTierSet(cfg.App.APIKeys)
+	apikeyService := apikeyapp.NewService(apikeyRepo, apikeyTiers, logger)
+
 	in := &infra.Infra{
 		MainDB:       mainDB,
 		LogDB:        logsDB,
@@ -98,6 +101,7 @@ func Start() error {
 		Logger:       logger,
 		Mailer:       smtpMailer,
 		TokenManager: tokenMgr,
+		APIKeys:      apikeyService,
 		Config:       cfg,
 		Roles:        domain.NewRoleResolver(cfg.App.UserRoles),
 		ShutdownCtx:  ctx,
@@ -127,6 +131,11 @@ func Start() error {
 	secure := cfg.Env.Mode != "development"
 	withSession := middleware.WithSession(sessSvc, logger, secure)
 
+	apikeyGate, err := buildAPIKeyGate(ctx, apikeyService, cfg.App.APIKeys, cfg.App.Security.TrustedProxyCIDRs, logger)
+	if err != nil {
+		return fmt.Errorf("server.Start: %w", err)
+	}
+
 	userRepo := accinfra.NewRepository(mainDB)
 	reg := routes.NewRegistry(
 		accessCfg,
@@ -138,6 +147,7 @@ func Start() error {
 		secure,
 		cfg.App.Auth.AllowTempBannedLogin,
 		layout,
+		apikeyGate,
 	)
 
 	// Plugin Mounting
@@ -277,6 +287,88 @@ func buildRateLimiters(ctx context.Context, accessCfg config.AccessConfig, trust
 	}
 
 	return limiters, nil
+}
+
+const apiKeyStandardTier = "Standard"
+
+var apiKeyDefaultTierCaps = map[string]config.RateLimitRule{
+	apiKeyStandardTier: {RatePerMinute: 100, Burst: 100},
+	"Elevated":         {RatePerMinute: 1000, Burst: 1000},
+}
+
+var apiKeyInvalidCap = config.RateLimitRule{RatePerMinute: 60, Burst: 20}
+
+func buildAPIKeyTierSet(cfg config.APIKeysConfig) apikeydomain.TierSet {
+	tiers := make([]apikeydomain.Tier, 0, len(cfg.Tiers))
+	for name, rule := range cfg.Tiers {
+		tiers = append(tiers, apikeydomain.Tier{Name: name, RatePerMinute: rule.RatePerMinute, Burst: rule.Burst})
+	}
+
+	return apikeydomain.NewTierSet(tiers)
+}
+
+func buildAPIKeyLimiters(ctx context.Context, cfg config.APIKeysConfig, logger *slog.Logger) (map[string]*security.RateLimiter, error) {
+	rules := make(map[string]config.RateLimitRule, len(apiKeyDefaultTierCaps)+len(cfg.Tiers))
+	maps.Copy(rules, apiKeyDefaultTierCaps)
+	maps.Copy(rules, cfg.Tiers)
+
+	limiters := make(map[string]*security.RateLimiter, len(rules))
+	for name, rule := range rules {
+		limiter, err := security.NewRateLimiter(security.RateLimiterOptions{
+			Name:   "apikey:" + name,
+			Rule:   rule,
+			Logger: logger,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("server.buildAPIKeyLimiters: %w", err)
+		}
+
+		go limiter.Run(ctx)
+		limiters[name] = limiter
+	}
+
+	return limiters, nil
+}
+
+func buildAPIKeyGate(ctx context.Context, service *apikeyapp.Service, cfg config.APIKeysConfig, trustedProxies []string, logger *slog.Logger) (func(http.Handler) http.Handler, error) {
+	if err := service.Warm(ctx); err != nil {
+		return nil, fmt.Errorf("server.buildAPIKeyGate: %w", err)
+	}
+
+	limiters, err := buildAPIKeyLimiters(ctx, cfg, logger)
+	if err != nil {
+		return nil, fmt.Errorf("server.buildAPIKeyGate: %w", err)
+	}
+
+	invalid, err := security.NewRateLimiter(security.RateLimiterOptions{
+		Name:           "apikey:invalid",
+		Rule:           apiKeyInvalidCap,
+		TrustedProxies: trustedProxies,
+		Logger:         logger,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("server.buildAPIKeyGate: %w", err)
+	}
+
+	go invalid.Run(ctx)
+
+	return apikeymiddleware.APIKeyGate(apikeymiddleware.GateConfig{
+		Validator: service,
+		Limiters:  limiters,
+		Fallback:  limiters[apiKeyStandardTier],
+		Invalid:   invalid,
+		Logger:    logger,
+	}), nil
+}
+
+func logClampWarnings(logger *slog.Logger, cfg *config.AppConfig) {
+	for _, adjustment := range cfg.ClampWarnings() {
+		logger.Warn("config: interval clamped to allowed range",
+			"field", adjustment.Field,
+			"given", adjustment.Given,
+			"clamped", adjustment.Clamped,
+		)
+	}
 }
 
 func rateLimitRejectFunc(layout httpx.Layout, logger *slog.Logger) security.RejectFunc {

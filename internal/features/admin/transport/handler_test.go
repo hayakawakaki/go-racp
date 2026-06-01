@@ -267,6 +267,7 @@ func TestHandler_RegisterRoutes_WrapsAdminRouteInRegistry(t *testing.T) {
 		false,
 		true,
 		httpx.Layout{},
+		nil,
 	)
 	mux := http.NewServeMux()
 	h.RegisterRoutes(reg, mux)
@@ -293,6 +294,7 @@ func TestHandler_RegisterRoutes_RejectsNonGet(t *testing.T) {
 		false,
 		true,
 		httpx.Layout{},
+		nil,
 	)
 	mux := http.NewServeMux()
 	h.RegisterRoutes(reg, mux)

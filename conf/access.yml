@@ -8,6 +8,7 @@
 # Valid Roles: ["Public", "*", "Admin", "Event", "Moderator", "Enforcer"]
 # Valid Requires:
 #  Unrestricted: Not permanently banned, Not temporarily banned, Email Verified and Exists in Database
+#  APIKey: Requires generated api key to access. (Public Routes)
 #
 # Entry shape: either a bare role list, or an object with:
 #   Roles:     required, list of role names (or ["Public"] / ["Admin"] / ["*"])
@@ -100,12 +101,14 @@ Item:
     Roles: ["*"]
   API:
     Roles: ["Public"]
+    Requires: ["APIKey"]
 
 Mob:
   View:
     Roles: ["*"]
   API:
     Roles: ["Public"]
+    Requires: ["APIKey"]
 
 Users:
   View:
@@ -127,6 +130,7 @@ Vendor:
 Metric:
   API:
     Roles: ["Public"]
+    Requires: ["APIKey"]
 
 Store:
   View:

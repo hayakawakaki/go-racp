@@ -109,6 +109,32 @@ func (rl *RateLimiter) Middleware(next http.Handler) http.Handler {
 	})
 }
 
+func (rl *RateLimiter) Allow(key string) (time.Duration, bool) {
+	entry := rl.bucket(key)
+
+	reservation := entry.limiter.Reserve()
+	if delay := reservation.Delay(); delay > 0 {
+		reservation.Cancel()
+
+		return delay, false
+	}
+
+	return 0, true
+}
+
+func (rl *RateLimiter) AllowRequest(r *http.Request) (time.Duration, bool) {
+	entry := rl.bucket(rl.resolveKey(r))
+
+	reservation := entry.limiter.Reserve()
+	if delay := reservation.Delay(); delay > 0 {
+		reservation.Cancel()
+
+		return delay, false
+	}
+
+	return 0, true
+}
+
 func (rl *RateLimiter) reject(w http.ResponseWriter, r *http.Request, key string, retry time.Duration) {
 	seconds := max(int(retry.Round(time.Second).Seconds()), 1)
 

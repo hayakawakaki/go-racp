@@ -6,6 +6,7 @@ package main
 import (
 	_ "github.com/hayakawakaki/go-racp/internal/features/account"
 	_ "github.com/hayakawakaki/go-racp/internal/features/admin"
+	_ "github.com/hayakawakaki/go-racp/internal/features/apikey"
 	_ "github.com/hayakawakaki/go-racp/internal/features/billing"
 	_ "github.com/hayakawakaki/go-racp/internal/features/character"
 	_ "github.com/hayakawakaki/go-racp/internal/features/guild"

@@ -14,3 +14,11 @@ func WriteJSON(w http.ResponseWriter, status int, payload any) error {
 
 	return nil
 }
+
+type jsonError struct {
+	Error string `json:"error"`
+}
+
+func WriteJSONError(w http.ResponseWriter, status int, message string) error {
+	return WriteJSON(w, status, jsonError{Error: message})
+}

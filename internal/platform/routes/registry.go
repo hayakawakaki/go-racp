@@ -18,6 +18,7 @@ const adminGroup = "Admin"
 //nolint:govet // GeneralConfig trailing bool forces alignment cost
 type Registry struct {
 	hiddenLayout         httpx.Layout
+	apiKeyGate           func(http.Handler) http.Handler
 	sessSvc              middleware.SessionValidator
 	users                middleware.UserLookup
 	resolver             domain.RoleResolver
@@ -51,6 +52,7 @@ func NewRegistry(
 	secure bool,
 	allowTempBannedLogin bool,
 	hiddenLayout httpx.Layout,
+	apiKeyGate func(http.Handler) http.Handler,
 ) *Registry {
 	return &Registry{
 		cfg:                  cfg,
@@ -62,6 +64,7 @@ func NewRegistry(
 		secure:               secure,
 		allowTempBannedLogin: allowTempBannedLogin,
 		hiddenLayout:         hiddenLayout,
+		apiKeyGate:           apiKeyGate,
 		registered:           make(map[string]struct{}),
 	}
 }
@@ -103,7 +106,7 @@ func (r *Registry) wrap(mux *http.ServeMux, tag, pattern string, handler http.Ha
 	}
 
 	if len(entry.roles) == 1 && entry.roles[0] == domain.RolePublic {
-		mux.Handle(pattern, handler)
+		r.mountPublic(mux, tag, pattern, handler, entry.requiresAPIKey)
 		return
 	}
 
@@ -121,9 +124,23 @@ func (r *Registry) mountAdminOnly(mux *http.ServeMux, pattern string, handler ht
 	mux.Handle(pattern, middleware.RequireRoleHidden(r.sessSvc, r.users, r.resolver, r.logger, r.secure, r.hiddenLayout, policy)(handler))
 }
 
+func (r *Registry) mountPublic(mux *http.ServeMux, tag, pattern string, handler http.Handler, requiresAPIKey bool) {
+	if !requiresAPIKey {
+		mux.Handle(pattern, handler)
+		return
+	}
+
+	if r.apiKeyGate == nil {
+		panic(fmt.Errorf("routes: tag %q requires APIKey but no API key gate is configured", tag))
+	}
+
+	mux.Handle(pattern, r.apiKeyGate(handler))
+}
+
 type resolvedEntry struct {
-	roles        []domain.Role
-	unrestricted bool
+	roles          []domain.Role
+	unrestricted   bool
+	requiresAPIKey bool
 }
 
 func (r *Registry) lookup(group, action string) (resolvedEntry, bool) {
@@ -147,7 +164,7 @@ func (r *Registry) lookup(group, action string) (resolvedEntry, bool) {
 		roles = append(roles, role)
 	}
 
-	return resolvedEntry{roles: roles, unrestricted: cfgEntry.RequiresUnrestricted()}, true
+	return resolvedEntry{roles: roles, unrestricted: cfgEntry.RequiresUnrestricted(), requiresAPIKey: cfgEntry.RequiresAPIKey()}, true
 }
 
 func parseTag(tag string) (group, action string) {

@@ -166,6 +166,10 @@ type MetricsConfig struct {
 	StatusPollInterval  time.Duration `yaml:"StatusPollInterval"`
 }
 
+type APIKeysConfig struct {
+	Tiers map[string]RateLimitRule `yaml:"Tiers"`
+}
+
 type SecurityConfig struct {
 	TrustedProxyCIDRs     []string `yaml:"TrustedProxyCIDRs"`
 	CSPExtraScriptSrc     []string `yaml:"CSPExtraScriptSrc"`
@@ -205,6 +209,7 @@ type AppConfig struct {
 	Vendor           VendorConfig           `yaml:"Vendor"`
 	Metrics          MetricsConfig          `yaml:"Metrics"`
 	Security         SecurityConfig         `yaml:"Security"`
+	APIKeys          APIKeysConfig          `yaml:"APIKeys"`
 	clampWarnings    []ClampAdjustment
 }
 
@@ -285,6 +290,12 @@ func appConfigDefaults() *AppConfig {
 			HSTSMaxAge:            31536000,
 			HSTSIncludeSubdomains: true,
 		},
+		APIKeys: APIKeysConfig{
+			Tiers: map[string]RateLimitRule{
+				"Standard": {RatePerMinute: 100, Burst: 100},
+				"Elevated": {RatePerMinute: 1000, Burst: 1000},
+			},
+		},
 	}
 }
 
@@ -298,6 +309,7 @@ var appConfigFiles = []string{
 	"datasources.yml",
 	"polling.yml",
 	"purchases.yml",
+	"apikeys.yml",
 }
 
 func ProcessAppConfig() *AppConfig {
@@ -381,7 +393,22 @@ func validateAppConfig(cfg *AppConfig) {
 	validateRatesConfig(&cfg.General.Rates)
 	validateCurrencyConfig(&cfg.Currency, &clamps)
 	validatePurchasesConfig(&cfg.Purchases)
+	validateAPIKeysConfig(&cfg.APIKeys)
 	cfg.clampWarnings = clamps
+}
+
+func validateAPIKeysConfig(cfg *APIKeysConfig) {
+	for tier, rule := range cfg.Tiers {
+		if tier == "" {
+			panic(fmt.Errorf("APIKeys.Tiers has an empty tier name"))
+		}
+		if rule.RatePerMinute <= 0 {
+			panic(fmt.Errorf("APIKeys.Tiers.%s.RatePerMinute %d, must be > 0", tier, rule.RatePerMinute))
+		}
+		if rule.Burst <= 0 {
+			panic(fmt.Errorf("APIKeys.Tiers.%s.Burst %d, must be > 0", tier, rule.Burst))
+		}
+	}
 }
 
 func validatePurchasesConfig(cfg *PurchasesConfig) {
