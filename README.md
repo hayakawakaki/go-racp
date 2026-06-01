@@ -145,6 +145,7 @@ Shipped slices:
 
 - `account` : registration, login, sessions, email verification, password reset, in-panel currency, bans and moderation, and logs
 - `admin` : staff dashboard aggregating users, purchases, guilds, economy, item and mob status, and metrics
+- `apikey` : hashed API keys with per-key rate tiers, minted and revoked from the admin dashboard, gating the public JSON API
 - `billing` : purchases and payments through Stripe, PayPal and NowPayments(Crypto), including provider webhooks
 - `character` : rAthena character records and detail views
 - `guild` : guild listings, details, and emblems
@@ -172,6 +173,14 @@ At startup `server.Start` builds the shared infrastructure (database pools, logg
 ### Request gating
 
 Every route declares its access level. A route is `Public`, wrapped as `Admin.X`, or wrapped as a `Group.Action`. These are resolved against `conf/access.yml` merged with the active theme's `access.yml`. The route registry binds each gated route to its required roles and, where configured, to a dedicated rate limiter keyed per `Group.Action`. Public actions are limited by client address. Authenticated actions are limited per user.
+
+### Public API and key gating
+
+The panel exposes a read-only JSON API mainly for discord bot usage, such as `GET /api/items/{id}` and `GET /api/mobs/{id}`. These routes are gated by API key instead of a login cookie.
+
+A caller presents its key as an `Authorization: Bearer <key>` header. The `apikey` gate validates the key against the `cp_api_keys` table, where keys are stored hashed and never in plaintext, then applies a rate limiter chosen by the key's tier and keyed on the key ID. A missing or invalid key returns `401` as JSON, throttled by a separate limiter so bad keys cannot be brute-forced. Exceeding a tier's limit returns `429` with a `Retry-After` header.
+
+Server owners mint and revoke keys from the admin dashboard at `/admin/api-keys`. Each key carries a name, a rate tier, and a last-used timestamp, and revocation is a soft delete that the gate honors immediately.
 
 ### Theme system
 
