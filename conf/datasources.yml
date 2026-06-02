@@ -1,23 +1,13 @@
-# Item Database
-# Relative paths resolve against the cp root. Absolute paths are followed as is.
+# Item and Mob databases.
+# File locations come from the APP_DATA_DIR env var.
+# Files: paths relative to APP_DATA_DIR, or absolute paths.
 # Rathena's footer import is not resolved on the parser. Use the direct path to the yml files.
-#
-# Path examples:
-# Local Path
-#   Path: "data/"
-# Linux Absolute Path
-#   Path: "/home/username/rathena/db/"
-# Windows Absolute Path
-#   Path: "C:\Users\user1\Desktop\rathena\db\"
 ItemDB:
   YAML:
-    Path: "data/"
     Files: ["item_db_equip.yml", "item_db_etc.yml", "item_db_usable.yml"]
   Lua:
-    Path: "data/"
     Files: ["iteminfo.lub"]
 
 MobDB:
   YAML:
-    Path: "data/"
     Files: ["mob_db.yml"]

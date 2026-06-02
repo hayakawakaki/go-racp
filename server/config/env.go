@@ -15,9 +15,10 @@ import (
 //nolint:govet // field order is intentionally grouped by domain (app, db, mailer) over memory-optimal layout
 type EnvConfig struct {
 	// App Setting
-	Mode    string `env:"MODE" default:"development"`
-	AppPort int    `env:"APP_PORT" default:"8080"`
-	AppURL  string `env:"APP_URL" required:"true"`
+	Mode       string `env:"MODE" default:"development"`
+	AppPort    int    `env:"APP_PORT" default:"8080"`
+	AppURL     string `env:"APP_URL" required:"true"`
+	AppDataDir string `env:"APP_DATA_DIR" default:"/data"`
 
 	// MySQL or MariaDB. Populated by Docker Compose.
 	DBMainURL       string `env:"DB_MAIN_URL" required:"true"`

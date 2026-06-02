@@ -60,6 +60,7 @@ Only the development stack is exercised today. A production `Dockerfile` and `do
 Deployment is custom, so there is no prod `make` target. The production Compose file reads each `${...}` value from the process environment. A `.env` file works, but it is not the encouraged path. Prefer [Docker secrets](https://docs.docker.com/compose/how-tos/use-secrets/) or pass the variables on the command directly:
 
 ```bash
+APP_URL=https://panel.example.com CSRF_SECRET=$(openssl rand -base64 32) \
 DB_HOST=db.internal DB_USER=cp DB_PASSWORD=secret DB_MAIN_NAME=ragnarok DB_LOG_NAME=log \
 DB_CP_HOST=pg.internal DB_CP_USER=cp DB_CP_PASSWORD=secret DB_CP_NAME=cp \
 MAIL_HOSTNAME=mail.example.com SMTP_ALLOWED_SENDER_DOMAINS=example.com \
