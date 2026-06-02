@@ -19,6 +19,7 @@ var _ domain.CurrencyRepository = (*CurrencyRepository)(nil)
 func setupCurrencyRepo(t *testing.T) (*CurrencyRepository, *pgxpool.Pool) {
 	t.Helper()
 	pool := testutil.OpenPostgres(t, "DB_CP_TEST_URL")
+	testutil.LockPostgres(t, pool, testutil.CurrencyLockKey)
 	testutil.TruncatePostgres(t, pool, "cp_currency")
 	testutil.TruncatePostgres(t, pool, "cp_deposit_processed")
 	testutil.TruncatePostgres(t, pool, "cp_withdraw_requests")

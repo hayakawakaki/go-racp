@@ -15,6 +15,7 @@ import (
 func setupPurchaseRepo(t *testing.T) (*PurchaseRepository, *pgxpool.Pool) {
 	t.Helper()
 	pool := testutil.OpenPostgres(t, "DB_CP_TEST_URL")
+	testutil.LockPostgres(t, pool, testutil.CurrencyLockKey)
 	testutil.TruncatePostgres(t, pool, "cp_purchases")
 	testutil.TruncatePostgres(t, pool, "cp_currency")
 

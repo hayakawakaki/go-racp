@@ -48,3 +48,26 @@ func TruncatePostgres(t *testing.T, pool *pgxpool.Pool, table string) {
 		t.Fatalf("TRUNCATE %s: %v", table, err)
 	}
 }
+
+const CurrencyLockKey int64 = 4242
+
+func LockPostgres(t *testing.T, pool *pgxpool.Pool, key int64) {
+	t.Helper()
+
+	ctx := context.Background()
+
+	connection, err := pool.Acquire(ctx)
+	if err != nil {
+		t.Fatalf("pool.Acquire: %v", err)
+	}
+
+	if _, err := connection.Exec(ctx, `SELECT pg_advisory_lock($1)`, key); err != nil {
+		connection.Release()
+		t.Fatalf("pg_advisory_lock: %v", err)
+	}
+
+	t.Cleanup(func() {
+		_, _ = connection.Exec(ctx, `SELECT pg_advisory_unlock($1)`, key)
+		connection.Release()
+	})
+}
