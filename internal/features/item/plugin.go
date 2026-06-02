@@ -80,9 +80,10 @@ func BuildService(in *coreinfra.Infra) *app.Service {
 func buildSources(in *coreinfra.Infra) app.Sources {
 	cfg := in.Config.App.ItemDB
 	sources := app.Sources{
-		Logger: in.Logger,
-		YAML:   cfg.YAML,
-		Lua:    cfg.Lua,
+		Logger:  in.Logger,
+		BaseDir: in.Config.Env.AppDataDir,
+		YAML:    cfg.YAML,
+		Lua:     cfg.Lua,
 	}
 	if dir := coreinfra.DevCacheDir(in.Config.Env.Mode, in.Logger); dir != "" {
 		sources.Cache = &app.ItemCache{

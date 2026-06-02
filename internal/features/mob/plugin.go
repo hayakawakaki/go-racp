@@ -96,8 +96,9 @@ func BuildService(in *coreinfra.Infra) *app.Service {
 func buildSources(in *coreinfra.Infra) app.Sources {
 	cfg := in.Config.App.MobDB
 	sources := app.Sources{
-		Logger: in.Logger,
-		YAML:   cfg.YAML,
+		Logger:  in.Logger,
+		BaseDir: in.Config.Env.AppDataDir,
+		YAML:    cfg.YAML,
 	}
 	if dir := coreinfra.DevCacheDir(in.Config.Env.Mode, in.Logger); dir != "" {
 		sources.Cache = &app.MobCache{

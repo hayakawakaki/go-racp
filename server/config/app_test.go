@@ -93,11 +93,9 @@ Tickets:
 `,
 		"datasources.yml": `ItemDB:
   YAML:
-    Path: "data/"
     Files: ["item_db.yml"]
 MobDB:
   YAML:
-    Path: "data/"
     Files: ["mob_db.yml"]
 `,
 		"polling.yml": `Vendor:
@@ -542,8 +540,8 @@ func TestLoadAppConfigFromDir_ReadsAllSections(t *testing.T) {
 	if _, ok := cfg.NewsCategories["Announcement"]; !ok {
 		t.Errorf("NewsCategories missing Announcement")
 	}
-	if cfg.ItemDB.YAML.Path != "data/" {
-		t.Errorf("ItemDB.YAML.Path = %q, want %q", cfg.ItemDB.YAML.Path, "data/")
+	if len(cfg.ItemDB.YAML.Files) != 1 || cfg.ItemDB.YAML.Files[0] != "item_db.yml" {
+		t.Errorf("ItemDB.YAML.Files = %v, want [item_db.yml]", cfg.ItemDB.YAML.Files)
 	}
 	if cfg.Vendor.PollInterval != 30*time.Second {
 		t.Errorf("Vendor.PollInterval = %v, want 30s", cfg.Vendor.PollInterval)

@@ -19,9 +19,10 @@ import (
 type MobCache = refdata.Cache[[]*domain.Mob]
 
 type Sources struct {
-	Logger *slog.Logger
-	Cache  *MobCache
-	YAML   refdata.SourceGroup
+	Logger  *slog.Logger
+	Cache   *MobCache
+	BaseDir string
+	YAML    refdata.SourceGroup
 }
 
 func ParseSources(sources Sources) (*domain.Snapshot, error) {
@@ -63,7 +64,7 @@ func ResolveSourcePaths(sources Sources) ([]string, error) {
 		return nil, fmt.Errorf("app.ResolveSourcePaths: %w", err)
 	}
 
-	return refdata.ResolvePaths(projectRoot, sources.YAML.Path, sources.YAML.Files), nil
+	return refdata.ResolvePaths(projectRoot, sources.BaseDir, sources.YAML.Files), nil
 }
 
 func tryLoadFromCache(cache *MobCache, paths []string, logger *slog.Logger) (*domain.Snapshot, bool) {

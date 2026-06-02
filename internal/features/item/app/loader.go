@@ -20,10 +20,11 @@ import (
 type ItemCache = refdata.Cache[[]*domain.Item]
 
 type Sources struct {
-	Logger *slog.Logger
-	Cache  *ItemCache
-	YAML   refdata.SourceGroup
-	Lua    refdata.SourceGroup
+	Logger  *slog.Logger
+	Cache   *ItemCache
+	BaseDir string
+	YAML    refdata.SourceGroup
+	Lua     refdata.SourceGroup
 }
 
 func ParseSources(sources Sources) (*domain.Snapshot, error) {
@@ -65,8 +66,8 @@ func ResolveSourcePaths(sources Sources) (yamlPaths, luaPaths []string, err erro
 	if err != nil {
 		return nil, nil, fmt.Errorf("app.ResolveSourcePaths: %w", err)
 	}
-	yamlPaths = refdata.ResolvePaths(projectRoot, sources.YAML.Path, sources.YAML.Files)
-	luaPaths = refdata.ResolvePaths(projectRoot, sources.Lua.Path, sources.Lua.Files)
+	yamlPaths = refdata.ResolvePaths(projectRoot, sources.BaseDir, sources.YAML.Files)
+	luaPaths = refdata.ResolvePaths(projectRoot, sources.BaseDir, sources.Lua.Files)
 
 	return yamlPaths, luaPaths, nil
 }
