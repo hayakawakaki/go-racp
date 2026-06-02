@@ -1,0 +1,126 @@
+//===== rAthena script ===========================================|
+//= Go Rathena Control Panel Currency Manager                    =|
+//===== By: ======================================================|
+//= crazyarashi/hayakawakaki                                     =|
+//===== Current Version: =========================================|
+//= 1.0 Initial Version                                          =|
+//================================================================|
+
+-	script	Currency Manager#00	-1,{
+	if ( gettimetick(2) < #CP_CUR_TIMER ) {
+		mes "[Currency Manager]";
+		mes "Your CP actions is currently on cooldown.";
+		mes "Cooldown until : " + gettimestr("%H:%M:%S",21,#CP_CUR_TIMER);
+		close;
+	}
+	.@start_zeny = Zeny;
+	.@start_cp = #CASHPOINTS;
+	mes "[Currency Manager]";
+	mes "Deposit or withdraw your zeny to the Control Panel.";
+	mes "Deposit and withdraw have a shared cooldown of ^FF0000" + .cooldown + " " + (.cooldown > 1 ? "minutes" : "minute") + "^000000, so make sure you deposit/withdraw what you need at once.";
+	next;
+	if ( select("Deposit", "Withdraw Zeny") == 2 ) {
+		if ( #CP_PENDING_ZENY < 1 ) {
+			mes "You don't have any pending zeny available.";
+			close;
+		}
+		.@max_zeny = MAX_ZENY - Zeny;
+		.@withdrawable = min(#CP_PENDING_ZENY, .@max_zeny);
+		if ( .@withdrawable < 1 ) {
+			mes "Open up a Zeny space to withdraw.";
+			close;
+		}
+		mes "[Currency Manager]";
+		mes "Withdrawable : " + F_InsertComma(.@withdrawable);
+		next;
+		if ( select("Withdraw Max", "Custom Amount") == 2 ) {
+			input .@amount;
+			if ( .@amount < 1 || .@amount > .@withdrawable ) {
+				mes "[Currency Manager]";
+				mes "Invalid amount.";
+				close;
+			}
+		} else {
+			.@amount = .@withdrawable;
+		}
+		#CP_PENDING_ZENY -= .@amount;
+		Zeny += .@amount;
+		mes "[Currency Manager]";
+		mes "You withdrawed " + F_InsertComma(.@amount) + ".";
+		close;
+	}
+	if ( Zeny < .min_zeny && #CASHPOINTS < .min_cp ) {
+		mes "[Currency Manager]";
+		mes "You don't have any Zeny or Cashpoints to proceed with the deposit.";
+		close;
+	}
+	.@z = ( Zeny >= .min_zeny );
+	.@c = ( #CASHPOINTS >= .min_cp );
+	mes "[Currency Manager]";
+	mes "What kind of deposit do you want to make?";
+	next;
+	.@s = select( (.@z ? "Zeny Deposit" : ""), (.@c ? "Cashpoint Deposit" : "") );
+	if ( .@s == 1 ) {
+		mes "[Currency Manager]";
+		mes "How much Zeny do you want to deposit.";
+		mes "Minimum Amount : " + F_InsertComma(.min_zeny);
+		mes "Zeny : " + F_InsertComma(Zeny);
+		next;
+		input .@amount;
+		if ( .@amount < .min_zeny || .@amount > Zeny || .@amount >= MAX_ZENY ) {
+			mes "[Currency Manager]";
+			mes "Invalid amount.";
+			close;
+		}
+		if ( .@start_zeny != Zeny ) {
+			mes "[Currency Manager]";
+			mes "Something change within your account. Please try again.";
+			close;
+		}
+		if ( gettimetick(2) < #CP_CUR_TIMER ) {
+			mes "[Currency Manager]";
+			mes "You are currently on cooldown. Please try again later.";
+			close;
+		}
+		Zeny -= .@amount;
+		#CP_CUR_TIMER = gettimetick(2) + (.cooldown * 60);
+		query_sql( sprintf("INSERT INTO `cp_deposit` (`account_id`,`zeny`,`points`) VALUES (%d, %d, %d)", getcharid(3), .@amount, 0) );
+		mes "[Currency Manager]";
+		mes "You have deposited " + F_InsertComma(.@amount) + " Zeny.";
+	} else {
+		mes "How much Cashpoint do you want to deposit.";
+		mes "Minimum Amount : " + F_InsertComma(.min_cp);
+		mes "Maximum Amount : " + F_InsertComma(.max_cp);
+		mes "Cashpoint : " + F_InsertComma(#CASHPOINTS);
+		next;
+		input .@amount;
+		if ( .@amount < .min_cp || .@amount > #CASHPOINTS || .@amount > .max_cp ) {
+			mes "[Currency Manager]";
+			mes "Invalid amount.";
+			close;
+		}
+		if ( .@start_cp != #CASHPOINTS ) {
+			mes "[Currency Manager]";
+			mes "Something change within your account. Please try again.";
+			close;
+		}
+		if ( gettimetick(2) < #CP_CUR_TIMER ) {
+			mes "[Currency Manager]";
+			mes "You are currently on cooldown. Please try again later.";
+			close;
+		}
+		#CASHPOINTS -= .@amount;
+		#CP_CUR_TIMER = gettimetick(2) + (.cooldown * 60);
+		query_sql( sprintf("INSERT INTO `cp_deposit` (`account_id`,`zeny`,`points`) VALUES (%d, %d, %d)", getcharid(3), 0, .@amount) );
+		mes "[Currency Manager]";
+		mes "You have deposited " + F_InsertComma(.@amount) + " Cashpoints.";
+	}
+	end;
+
+OnInit:
+	.min_zeny = 500000;
+	.min_cp = 500;
+	.max_cp = 1000000;
+	.cooldown = 1; //In minute
+end;
+}

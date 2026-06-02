@@ -1,0 +1,104 @@
+//===== rAthena script ===========================================|
+//= Go Rathena Control Deposit Poller                            =|
+//===== By: ======================================================|
+//= crazyarashi/hayakawakaki                                     =|
+//===== Current Version: =========================================|
+//= 1.0 Initial Version                                          =|
+//================================================================|
+
+-	script	cp_withdraw_poller	-1,{
+OnInit:
+	.max = 50;
+	.cooldown = 1; // In minute
+	.manager_npc$ = "Currency Manager";
+	query_sql("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'cp_withdraw'", .@count);
+	if ( !.@count ) {
+		errormes "cp_withdraw_poller: the cp_withdraw doesn't exist on the database.";
+		end;
+	}
+	initnpctimer;
+end;
+
+OnTimer60000:
+	stopnpctimer;
+	.@c = query_sql( "SELECT `id`,`account_id`,`zeny`,`points` FROM `cp_withdraw` WHERE `delivered_at` = 0 ORDER BY `id` ASC LIMIT " + .max, .@id, .@aid, .@zeny, .@cash );
+	if ( .@c == 0 ) {
+		initnpctimer;
+		end;
+	}
+	for ( .@i = 0; .@i < .@c; ++.@i ) {
+		// Tracker reset
+		.@q = 0;
+		.@zvalue = 0;
+		.@cvalue = 0;
+		.@body$ = "";
+		.@online = ( isloggedin(.@aid[.@i]) == true );
+
+		// Credit Zeny
+		if ( .@zeny[.@i] > 0 ) {
+			if ( .@online ) {
+				if ( attachrid(.@aid[.@i]) ) {
+					dispbottom "Your " + .@cash[.@i] + " Cashpoint withdrawal has been credit to your account. Please withdraw it at the " + .manager_npc$;
+					query_sql( sprintf("UPDATE `cp_withdraw` SET `zeny` = 0 WHERE `id` = %d", .@id[.@i]) );
+					#CP_PENDING_ZENY += .@zeny[.@i];
+					detachrid;
+					.@zvalue = .@zeny[.@i];
+					.@q++;
+				}
+			} else {
+				query_sql( sprintf("UPDATE `cp_withdraw` SET `zeny` = 0 WHERE `id` = %d", .@id[.@i]) );
+				query_sql( sprintf("INSERT INTO `acc_reg_num` (`account_id`,`key`,`index`,`value`) VALUES(%d,'#CP_PENDING_ZENY',0,%d) ON DUPLICATE KEY UPDATE `value`=`value`+%d", .@aid[.@i], .@zeny[.@i], .@zeny[.@i]) );
+				.@q++;
+			}
+		} else {
+			.@q++;
+		}
+
+		// Credit Cashpoint
+		if ( .@cash[.@i] > 0 ) {
+			if ( .@online ) {
+				if ( attachrid(.@aid[.@i]) ) {
+					dispbottom "Your " + .@cash[.@i] + " Cashpoint withdrawal has been credit to your account.";
+					query_sql( sprintf("UPDATE `cp_withdraw` SET `points` = 0 WHERE `id` = %d", .@id[.@i]) );
+					#CASHPOINTS += .@cash[.@i];
+					detachrid;
+					.@cvalue = .@cash[.@i];
+					.@q++;
+				}
+			} else {
+				query_sql( sprintf("UPDATE `cp_withdraw` SET `points` = 0 WHERE `id` = %d", .@id[.@i]) );
+				query_sql( sprintf("INSERT INTO `acc_reg_num` (`account_id`,`key`,`index`,`value`) VALUES(%d,'#CASHPOINTS',0,%d) ON DUPLICATE KEY UPDATE `value`=`value`+%d", .@aid[.@i], .@cash[.@i], .@cash[.@i]) );
+				.@q++;
+			}
+		} else {
+			.@q++;
+		}
+
+		if ( .@zvalue || .@cvalue ) {
+			.@cid = convertpcinfo(.@aid[.@i], CPC_CHAR);
+			if ( .@cid ) {
+				if ( .@zvalue ) .@body$ = "Zeny : " + .@zvalue + "\n";
+				if ( .@cvalue ) .@body$ += "Cashpoint : " + .@cvalue + "\n";
+				.@body$ += "Please claim your Zeny at the " + .manager_npc$ + ".";
+				mail .@cid, "Server", "Withdraw Notice", .@body$;
+			}
+		}
+
+		if ( .@q == 2 ) {
+			query_sql( sprintf("UPDATE `cp_withdraw` SET `delivered_at` = %d WHERE `id` = %d", gettimetick(2), .@id[.@i]) );
+
+		    // Set cooldown
+		    .@cd = gettimetick(2) + (.cooldown * 60);
+			if ( .@online ) {
+				if ( attachrid(.@aid[.@i]) ) {
+					#CP_CUR_TIMER = .@cd;
+					detachrid;
+				}
+			} else {
+				query_sql( sprintf("INSERT INTO `acc_reg_num` (`account_id`,`key`,`index`,`value`) VALUES(%d,'#CP_CUR_TIMER',0,%d) ON DUPLICATE KEY UPDATE `value`=%d", .@aid[.@i], .@cd, .@cd) );
+			}
+		}
+	}
+	initnpctimer;
+end;
+}
