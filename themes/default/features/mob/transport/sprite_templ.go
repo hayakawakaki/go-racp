@@ -60,7 +60,7 @@ func spriteBox(src string, sizeClass string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" alt=\"\" onerror=\"this.previousElementSibling.classList.remove('hidden');this.remove()\" class=\"relative max-h-full max-w-full object-contain\"></span>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" alt=\"\" data-sprite-fallback=\"true\" class=\"relative max-h-full max-w-full object-contain\"></span>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

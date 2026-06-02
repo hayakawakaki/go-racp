@@ -74,7 +74,7 @@ func itemCard(item *domain.Item, lines []string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" onerror=\"this.onerror=null; this.src='/static/collection/unknown.webp'\"></div><section class=\"relative col-span-2 max-w-[28ch] break-keep px-2 pt-[22px] pb-1.5 text-[12px]\"><h2 class=\"absolute -top-[3px] left-[5px] whitespace-nowrap\" style=\"text-shadow: 1px 0 0 white\"><span>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" data-fallback-src=\"/static/collection/unknown.webp\"></div><section class=\"relative col-span-2 max-w-[28ch] break-keep px-2 pt-[22px] pb-1.5 text-[12px]\"><h2 class=\"absolute -top-[3px] left-[5px] whitespace-nowrap\" style=\"text-shadow: 1px 0 0 white\"><span>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

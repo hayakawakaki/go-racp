@@ -209,3 +209,19 @@ document.addEventListener('click', e => {
         },
     }));
 });
+
+document.addEventListener('error', e => {
+    const img = e.target;
+    if (!(img instanceof HTMLImageElement)) return;
+    const fallbackSrc = img.dataset.fallbackSrc;
+    if (fallbackSrc) {
+        if (img.getAttribute('src') === fallbackSrc) return;
+        img.src = fallbackSrc;
+        return;
+    }
+    if (img.dataset.spriteFallback === 'true') {
+        const marker = img.previousElementSibling;
+        if (marker) marker.classList.remove('hidden');
+        img.remove();
+    }
+}, true);

@@ -27,7 +27,7 @@ templ itemCard(item *domain.Item, lines []string) {
 					<img
 						src={ "/static/collection/" + item.Image + ".webp" }
 						alt={ item.ClientName + " Collection" }
-						onerror="this.onerror=null; this.src='/static/collection/unknown.webp'"
+						data-fallback-src="/static/collection/unknown.webp"
 					/>
 				</div>
 				<section class="relative col-span-2 max-w-[28ch] break-keep px-2 pt-[22px] pb-1.5 text-[12px]">
