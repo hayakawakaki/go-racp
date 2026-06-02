@@ -2,6 +2,7 @@ services:
   app:
     build:
       dockerfile: Dockerfile
+    env_file: .env
     ports:
       - "127.0.0.1:${APP_PORT:-8080}:8080"
     environment:
@@ -10,14 +11,41 @@ services:
       - DB_LOG_URL=${DB_USER}:${DB_PASSWORD}@tcp(${DB_HOST}:${DB_PORT:-3306})/${DB_LOG_NAME}
       - DB_MAX_OPEN_CONN=${DB_MAX_OPEN_CONN:-8}
       - DB_MAX_IDLE_CONN=${DB_MAX_IDLE_CONN:-4}
-      - DB_CP_URL=postgres://${DB_CP_USER}:${DB_CP_PASSWORD}@${DB_CP_HOST}:${DB_CP_PORT:-5432}/${DB_CP_NAME}?sslmode=${DB_CP_SSLMODE:-require}
+      - DB_CP_URL=postgres://${DB_CP_USER}:${DB_CP_PASSWORD}@${DB_CP_HOST}:${DB_CP_PORT:-5432}/${DB_CP_NAME}?sslmode=${DB_CP_SSLMODE:-disabled}
       - DB_CP_MAX_OPEN_CONN=${DB_CP_MAX_OPEN_CONN:-8}
       - DB_CP_MAX_IDLE_CONN=${DB_CP_MAX_IDLE_CONN:-4}
       - SMTP_HOST=smtp-relay
       - SMTP_PORT=587
+      - APP_DATA_DIR=${APP_DATA_DIR:-/data}
+    volumes:
+      - ${APP_DATA_DIR:-/data}:${APP_DATA_DIR:-/data}:ro
+      - ./static/item:/home/app/static/item:ro
+      - ./static/mob:/home/app/static/mob:ro
+      - ./static/collection:/home/app/static/collection:ro
     restart: unless-stopped
     depends_on:
-      - smtp-relay
+      db:
+        condition: service_healthy
+      smtp-relay:
+        condition: service_started
+    networks:
+      - app-network
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      - POSTGRES_USER=${DB_CP_USER}
+      - POSTGRES_PASSWORD=${DB_CP_PASSWORD}
+      - POSTGRES_DB=${DB_CP_NAME}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_CP_USER} -d ${DB_CP_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
     networks:
       - app-network
 
@@ -36,6 +64,10 @@ services:
 networks:
   app-network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
 
 volumes:
   dkim-keys:
+  postgres-data:
