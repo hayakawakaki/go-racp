@@ -17,6 +17,7 @@ App:
 # Mail Stuffs
 Mailer:
   FromAddress: "noreply@your-server.example"
+  RequireTLS: false
 
 # Default save location used by /characters/{id}/location
 DefaultLocation:

@@ -50,6 +50,7 @@ func (g GeneralConfig) Location() *time.Location {
 // MailerConfig holds outgoing-mail settings.
 type MailerConfig struct {
 	FromAddress string `yaml:"FromAddress"`
+	RequireTLS  bool   `yaml:"RequireTLS"`
 }
 
 // TTLConfig groups every lifetime knob (HTTP session + action-token lifetimes).

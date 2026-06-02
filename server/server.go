@@ -55,7 +55,7 @@ func Start() error {
 	logClampWarnings(logger, cfg.App)
 
 	// Mailer (constructed before any defer-cleanup steps so a failure here can log.Fatal cleanly)
-	mailClient, err := mailer.NewClient(cfg.Env.SMTPHost, cfg.Env.SMTPPort, cfg.Env.Mode != "development")
+	mailClient, err := mailer.NewClient(cfg.Env.SMTPHost, cfg.Env.SMTPPort, cfg.App.Mailer.RequireTLS)
 	if err != nil {
 		log.Fatalf("init mailer: %v", err)
 	}
