@@ -480,7 +480,6 @@ func TestFormatImport(t *testing.T) {
 }
 
 func TestWriteIfChanged_NewFile(t *testing.T) {
-	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "out.txt")
 
@@ -498,7 +497,6 @@ func TestWriteIfChanged_NewFile(t *testing.T) {
 }
 
 func TestWriteIfChanged_DifferentContent_Writes(t *testing.T) {
-	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "out.txt")
 
@@ -520,7 +518,6 @@ func TestWriteIfChanged_DifferentContent_Writes(t *testing.T) {
 }
 
 func TestWriteIfChanged_SameContent_DoesNotTouchMtime(t *testing.T) {
-	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "out.txt")
 
