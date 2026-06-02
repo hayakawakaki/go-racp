@@ -1,6 +1,7 @@
 package httpx
 
 import (
+	"github.com/hayakawakaki/go-racp/internal/platform/colormode"
 	"github.com/hayakawakaki/go-racp/internal/platform/security"
 	"github.com/hayakawakaki/go-racp/internal/platform/ui"
 	"github.com/hayakawakaki/go-racp/themes/default/platform/components"
@@ -10,7 +11,7 @@ import (
 
 templ Base(layout platformhttpx.Layout, title string) {
 	<!DOCTYPE html>
-	<html lang="en">
+	<html lang="en" class={ templ.KV("dark", colormode.IsDark(ctx)) }>
 		<head>
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
