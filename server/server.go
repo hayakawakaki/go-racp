@@ -30,6 +30,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/infra/postgres"
 	actiontokenapp "github.com/hayakawakaki/go-racp/internal/platform/actiontoken/app"
 	actiontokeninfra "github.com/hayakawakaki/go-racp/internal/platform/actiontoken/infra"
+	"github.com/hayakawakaki/go-racp/internal/platform/colormode"
 	"github.com/hayakawakaki/go-racp/internal/platform/health"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/metric"
@@ -171,6 +172,7 @@ func Start() error {
 	}
 
 	handler := applyPluginMiddlewares(mux, in)
+	handler = colormode.Middleware(handler)
 
 	// hardcoded for webhooks for now, will update to config driven when needed
 	openRoutes, err := security.NewRouteMatcher([]string{"/webhooks/*"})
