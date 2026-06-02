@@ -62,7 +62,7 @@ func ResolveSourcePaths(sources Sources) (yamlPaths, luaPaths []string, err erro
 	if len(sources.YAML.Files) == 0 && len(sources.Lua.Files) == 0 {
 		return nil, nil, nil
 	}
-	projectRoot, err := config.ProjectRoot()
+	projectRoot, err := config.ProjectRootForBase(sources.BaseDir)
 	if err != nil {
 		return nil, nil, fmt.Errorf("app.ResolveSourcePaths: %w", err)
 	}

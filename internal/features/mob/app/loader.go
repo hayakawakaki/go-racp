@@ -59,7 +59,7 @@ func ResolveSourcePaths(sources Sources) ([]string, error) {
 	if len(sources.YAML.Files) == 0 {
 		return nil, nil
 	}
-	projectRoot, err := config.ProjectRoot()
+	projectRoot, err := config.ProjectRootForBase(sources.BaseDir)
 	if err != nil {
 		return nil, fmt.Errorf("app.ResolveSourcePaths: %w", err)
 	}

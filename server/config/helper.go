@@ -34,6 +34,14 @@ func ProjectRoot() (string, error) {
 	}
 }
 
+func ProjectRootForBase(baseDir string) (string, error) {
+	if filepath.IsAbs(baseDir) {
+		return "", nil
+	}
+
+	return ProjectRoot()
+}
+
 // GetTargetFilePath walks up from the current working directory to find target by name, stopping at the directory containing go.mod.
 func GetTargetFilePath(target string) (string, error) {
 	dir, err := os.Getwd()
