@@ -1,15 +1,3 @@
-(function () {
-    var stored = null;
-    try { stored = localStorage.getItem('theme'); } catch (e) { stored = null; }
-    var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    var dark = stored === 'dark' || (stored === null && prefersDark);
-    if (dark) {
-        document.documentElement.classList.add('dark');
-    } else {
-        document.documentElement.classList.remove('dark');
-    }
-})();
-
 document.addEventListener('alpine:init', () => {
     Alpine.data('theme', () => ({
         dark: false,
@@ -23,10 +11,10 @@ document.addEventListener('alpine:init', () => {
         apply() {
             if (this.dark) {
                 document.documentElement.classList.add('dark');
-                localStorage.setItem('theme', 'dark');
+                document.cookie = 'theme=dark;path=/;max-age=31536000;samesite=lax';
             } else {
                 document.documentElement.classList.remove('dark');
-                localStorage.setItem('theme', 'light');
+                document.cookie = 'theme=light;path=/;max-age=31536000;samesite=lax';
             }
         },
     }));
