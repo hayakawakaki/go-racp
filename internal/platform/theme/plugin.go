@@ -58,6 +58,8 @@ func mountStaticHandler(mux *http.ServeMux, devMode bool, themeName string, embe
 	urlPrefix := "/themes/" + themeName + "/static/"
 
 	var handler http.Handler
+
+	var etags map[string]string
 	if devMode {
 		handler = http.FileServer(http.Dir("themes/" + themeName + "/static"))
 	} else {
@@ -67,9 +69,16 @@ func mountStaticHandler(mux *http.ServeMux, devMode bool, themeName string, embe
 		}
 
 		handler = http.FileServer(http.FS(sub))
+
+		tags, err := httpx.StaticETags(sub, urlPrefix)
+		if err != nil {
+			panic("theme: static etags " + themeName + ": " + err.Error())
+		}
+
+		etags = tags
 	}
 
-	mux.Handle(urlPrefix, http.StripPrefix(urlPrefix, handler))
+	mux.Handle(urlPrefix, httpx.StaticCache(http.StripPrefix(urlPrefix, handler), devMode, etags))
 }
 
 func devRoutesHandler(reg *routes.Registry) http.HandlerFunc {

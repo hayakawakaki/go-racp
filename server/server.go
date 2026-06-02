@@ -153,7 +153,9 @@ func Start() error {
 
 	// Plugin Mounting
 	mux := http.NewServeMux()
-	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
+	staticHandler := http.StripPrefix("/static/", http.FileServer(http.Dir("./static")))
+
+	mux.Handle("/static/", httpx.StaticCache(staticHandler, cfg.Env.Mode == "development", nil))
 	mux.HandleFunc("GET /healthz", health.New(mainDB, logsDB, postgres.NewHealthPinger(cpPool), logger))
 	plugin.MountAll(reg, mux, in)
 	reg.Finalize()
