@@ -1,6 +1,6 @@
 module github.com/hayakawakaki/go-racp
 
-go 1.26.3
+go 1.26.4
 
 require (
 	github.com/Oudwins/tailwind-merge-go v0.2.1
