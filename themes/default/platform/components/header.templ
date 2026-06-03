@@ -19,6 +19,7 @@ templ Header(layout httpx.Layout) {
 	@ui.Navbar(ui.NavbarProps{
 		Brand:   headerBrand(layout),
 		Actions: headerActions(layout),
+		Attrs:   templ.Attributes{"id": "site-header", "hx-preserve": "true"},
 		Class:   "bg-body dark:bg-body border-b border-border bg-grain [&>div]:container [&>div]:mx-auto [&>div]:h-[var(--header-height)] [&_nav]:bg-surface [&_nav]:border-border [&_nav]:min-h-[calc(100dvh_-_var(--header-height))] [&_nav]:overflow-y-auto lg:[&_nav]:bg-transparent lg:[&_nav]:min-h-0 lg:[&_nav]:overflow-visible",
 	}) {
 		for _, item := range themecfg.Cfg.Navbar.Items {

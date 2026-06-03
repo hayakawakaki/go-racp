@@ -78,7 +78,7 @@ func Header(layout httpx.Layout) templ.Component {
 						var templ_7745c5c3_Var4 string
 						templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(item.Label)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/platform/components/header.templ`, Line: 29, Col: 17}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/platform/components/header.templ`, Line: 30, Col: 17}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 						if templ_7745c5c3_Err != nil {
@@ -105,6 +105,7 @@ func Header(layout httpx.Layout) templ.Component {
 		templ_7745c5c3_Err = ui.Navbar(ui.NavbarProps{
 			Brand:   headerBrand(layout),
 			Actions: headerActions(layout),
+			Attrs:   templ.Attributes{"id": "site-header", "hx-preserve": "true"},
 			Class:   "bg-body dark:bg-body border-b border-border bg-grain [&>div]:container [&>div]:mx-auto [&>div]:h-[var(--header-height)] [&_nav]:bg-surface [&_nav]:border-border [&_nav]:min-h-[calc(100dvh_-_var(--header-height))] [&_nav]:overflow-y-auto lg:[&_nav]:bg-transparent lg:[&_nav]:min-h-0 lg:[&_nav]:overflow-visible",
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
@@ -187,7 +188,7 @@ func headerLogo(src string) templ.Component {
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(src)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/platform/components/header.templ`, Line: 55, Col: 15}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/platform/components/header.templ`, Line: 56, Col: 15}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
@@ -275,7 +276,7 @@ func headerDropdown(item themecfg.NavbarItem) templ.Component {
 					var templ_7745c5c3_Var12 string
 					templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(item.Label)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/platform/components/header.templ`, Line: 66, Col: 17}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/platform/components/header.templ`, Line: 67, Col: 17}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 					if templ_7745c5c3_Err != nil {
@@ -329,7 +330,7 @@ func headerDropdown(item themecfg.NavbarItem) templ.Component {
 						var templ_7745c5c3_Var15 string
 						templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(child.Label)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/platform/components/header.templ`, Line: 73, Col: 19}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/platform/components/header.templ`, Line: 74, Col: 19}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 						if templ_7745c5c3_Err != nil {
@@ -407,7 +408,7 @@ func headerDropdown(item themecfg.NavbarItem) templ.Component {
 					var templ_7745c5c3_Var19 string
 					templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(item.Label)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/platform/components/header.templ`, Line: 87, Col: 18}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/platform/components/header.templ`, Line: 88, Col: 18}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 					if templ_7745c5c3_Err != nil {
@@ -451,7 +452,7 @@ func headerDropdown(item themecfg.NavbarItem) templ.Component {
 						var templ_7745c5c3_Var21 templ.SafeURL
 						templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinURLErrs(child.Href)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/platform/components/header.templ`, Line: 94, Col: 28}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/platform/components/header.templ`, Line: 95, Col: 28}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 						if templ_7745c5c3_Err != nil {
@@ -464,7 +465,7 @@ func headerDropdown(item themecfg.NavbarItem) templ.Component {
 						var templ_7745c5c3_Var22 string
 						templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(child.Label)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/platform/components/header.templ`, Line: 95, Col: 22}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `themes/default/platform/components/header.templ`, Line: 96, Col: 22}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 						if templ_7745c5c3_Err != nil {

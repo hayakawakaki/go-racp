@@ -126,6 +126,13 @@ document.addEventListener('alpine:init', () => {
 
     Alpine.data('nav', () => ({
         open: false,
+        init() {
+            this._closeOnNavigate = () => { this.open = false; };
+            window.addEventListener('htmx:afterSettle', this._closeOnNavigate);
+        },
+        destroy() {
+            window.removeEventListener('htmx:afterSettle', this._closeOnNavigate);
+        },
         toggle() {
             this.open = !this.open;
         },
