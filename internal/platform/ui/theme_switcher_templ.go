@@ -11,6 +11,7 @@ import templruntime "github.com/a-h/templ/runtime"
 type ThemeSwitcherProps struct {
 	Attrs templ.Attributes
 	Class string
+	Bare  bool
 }
 
 func themeSwitcherClasses(p ThemeSwitcherProps) string {
@@ -43,7 +44,17 @@ func ThemeSwitcher(p ThemeSwitcherProps) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div x-data=\"theme\" x-cloak class=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div x-data=\"theme\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if !p.Bare {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " x-cloak")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, " class=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -56,7 +67,7 @@ func ThemeSwitcher(p ThemeSwitcherProps) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -64,7 +75,7 @@ func ThemeSwitcher(p ThemeSwitcherProps) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, ">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, ">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -72,7 +83,7 @@ func ThemeSwitcher(p ThemeSwitcherProps) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -101,7 +112,7 @@ func ThemeSwitcherPreview() templ.Component {
 			templ_7745c5c3_Var4 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div class=\"space-y-8\"><section class=\"space-y-3\"><h2 class=\"text-lg font-semibold\">Functionality, not a single UI</h2><p class=\"text-sm text-slate-500 dark:text-slate-400\"><code class=\"font-mono text-xs px-1 rounded bg-slate-100 dark:bg-slate-800\">ThemeSwitcher</code> is a thin wrapper that exposes the <code class=\"font-mono text-xs px-1 rounded bg-slate-100 dark:bg-slate-800\">theme</code> Alpine factory (<code class=\"font-mono text-xs px-1 rounded bg-slate-100 dark:bg-slate-800\">dark</code>, <code class=\"font-mono text-xs px-1 rounded bg-slate-100 dark:bg-slate-800\">toggle()</code>) to whatever you put inside. Drop in any UI.</p></section><section class=\"space-y-4\"><h2 class=\"text-lg font-semibold\">Icon button (sun / moon)</h2>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<div class=\"space-y-8\"><section class=\"space-y-3\"><h2 class=\"text-lg font-semibold\">Functionality, not a single UI</h2><p class=\"text-sm text-slate-500 dark:text-slate-400\"><code class=\"font-mono text-xs px-1 rounded bg-slate-100 dark:bg-slate-800\">ThemeSwitcher</code> is a thin wrapper that exposes the <code class=\"font-mono text-xs px-1 rounded bg-slate-100 dark:bg-slate-800\">theme</code> Alpine factory (<code class=\"font-mono text-xs px-1 rounded bg-slate-100 dark:bg-slate-800\">dark</code>, <code class=\"font-mono text-xs px-1 rounded bg-slate-100 dark:bg-slate-800\">toggle()</code>) to whatever you put inside. Drop in any UI.</p></section><section class=\"space-y-4\"><h2 class=\"text-lg font-semibold\">Icon button (sun / moon)</h2>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -129,7 +140,7 @@ func ThemeSwitcherPreview() templ.Component {
 					}()
 				}
 				ctx = templ.InitializeContext(ctx)
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<span x-show=\"!dark\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<span x-show=\"!dark\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -137,7 +148,7 @@ func ThemeSwitcherPreview() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</span> <span x-show=\"dark\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</span> <span x-show=\"dark\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -145,7 +156,7 @@ func ThemeSwitcherPreview() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -165,7 +176,7 @@ func ThemeSwitcherPreview() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</section><section class=\"space-y-4\"><h2 class=\"text-lg font-semibold\">Switch + label</h2>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "</section><section class=\"space-y-4\"><h2 class=\"text-lg font-semibold\">Switch + label</h2>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -181,7 +192,7 @@ func ThemeSwitcherPreview() templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<span class=\"text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400\">Dark</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<span class=\"text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400\">Dark</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -203,7 +214,7 @@ func ThemeSwitcherPreview() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "</section><section class=\"space-y-4\"><h2 class=\"text-lg font-semibold\">Text button</h2>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</section><section class=\"space-y-4\"><h2 class=\"text-lg font-semibold\">Text button</h2>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -231,7 +242,7 @@ func ThemeSwitcherPreview() templ.Component {
 					}()
 				}
 				ctx = templ.InitializeContext(ctx)
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<span x-show=\"!dark\">Switch to dark</span> <span x-show=\"dark\">Switch to light</span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<span x-show=\"!dark\">Switch to dark</span> <span x-show=\"dark\">Switch to light</span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -251,7 +262,7 @@ func ThemeSwitcherPreview() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</section><section class=\"space-y-4\"><h2 class=\"text-lg font-semibold\">In a pill</h2>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</section><section class=\"space-y-4\"><h2 class=\"text-lg font-semibold\">In a pill</h2>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -267,7 +278,7 @@ func ThemeSwitcherPreview() templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<span class=\"text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400\">Dark</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<span class=\"text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400\">Dark</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -291,7 +302,7 @@ func ThemeSwitcherPreview() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</section><section class=\"space-y-4\"><h2 class=\"text-lg font-semibold\">In a header row</h2><div class=\"flex items-center justify-between gap-4 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3\"><div class=\"space-y-0.5\"><p class=\"font-semibold\">My App</p><p class=\"text-xs text-slate-500 dark:text-slate-400\">Header example</p></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</section><section class=\"space-y-4\"><h2 class=\"text-lg font-semibold\">In a header row</h2><div class=\"flex items-center justify-between gap-4 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3\"><div class=\"space-y-0.5\"><p class=\"font-semibold\">My App</p><p class=\"text-xs text-slate-500 dark:text-slate-400\">Header example</p></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -319,7 +330,7 @@ func ThemeSwitcherPreview() templ.Component {
 					}()
 				}
 				ctx = templ.InitializeContext(ctx)
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<span x-show=\"!dark\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "<span x-show=\"!dark\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -327,7 +338,7 @@ func ThemeSwitcherPreview() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</span> <span x-show=\"dark\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</span> <span x-show=\"dark\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -335,7 +346,7 @@ func ThemeSwitcherPreview() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "</span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -356,7 +367,7 @@ func ThemeSwitcherPreview() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</div></section></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "</div></section></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -3,6 +3,7 @@ package ui
 type ThemeSwitcherProps struct {
 	Attrs templ.Attributes
 	Class string
+	Bare  bool
 }
 
 func themeSwitcherClasses(p ThemeSwitcherProps) string {
@@ -10,7 +11,14 @@ func themeSwitcherClasses(p ThemeSwitcherProps) string {
 }
 
 templ ThemeSwitcher(p ThemeSwitcherProps) {
-	<div x-data="theme" x-cloak class={ themeSwitcherClasses(p) } { p.Attrs... }>
+	<div
+		x-data="theme"
+		if !p.Bare {
+			x-cloak
+		}
+		class={ themeSwitcherClasses(p) }
+		{ p.Attrs... }
+	>
 		{ children... }
 	</div>
 }

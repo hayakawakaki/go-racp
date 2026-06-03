@@ -107,10 +107,10 @@ templ headerDropdown(item themecfg.NavbarItem) {
 templ headerActions(layout httpx.Layout) {
 	<div class="hidden lg:flex items-center gap-2">
 		<div class="flex items-center">
-			@ui.ThemeSwitcher(ui.ThemeSwitcherProps{}) {
+			@ui.ThemeSwitcher(ui.ThemeSwitcherProps{Bare: true}) {
 				@ui.Button(ui.ButtonProps{Variant: ui.ButtonGhost, Size: ui.ButtonSizeLG, Rounded: ui.ButtonRoundedMD, Class: "px-4", Attrs: templ.Attributes{"@click": "toggle()"}}) {
-					<span x-show="!dark">@ui.Icon("moon", "h-5 w-5")</span>
-					<span x-show="dark">@ui.Icon("sun", "h-5 w-5")</span>
+					<span class="dark:hidden">@ui.Icon("moon", "h-5 w-5")</span>
+					<span class="hidden dark:inline">@ui.Icon("sun", "h-5 w-5")</span>
 				}
 			}
 			if themecfg.Cfg.Branding.Discord != "" {
@@ -178,10 +178,10 @@ templ headerActions(layout httpx.Layout) {
 templ headerMobileActions(layout httpx.Layout) {
 	<div class="lg:hidden mt-2 pt-3 border-t border-border flex flex-col gap-2">
 		<div class="flex items-center justify-center gap-2">
-			@ui.ThemeSwitcher(ui.ThemeSwitcherProps{}) {
+			@ui.ThemeSwitcher(ui.ThemeSwitcherProps{Bare: true}) {
 				@ui.Button(ui.ButtonProps{Variant: ui.ButtonGhost, Size: ui.ButtonSizeLG, Rounded: ui.ButtonRoundedMD, Class: "px-4", Attrs: templ.Attributes{"@click": "toggle()"}}) {
-					<span x-show="!dark">@ui.Icon("moon", "h-5 w-5")</span>
-					<span x-show="dark">@ui.Icon("sun", "h-5 w-5")</span>
+					<span class="dark:hidden">@ui.Icon("moon", "h-5 w-5")</span>
+					<span class="hidden dark:inline">@ui.Icon("sun", "h-5 w-5")</span>
 				}
 			}
 			if themecfg.Cfg.Branding.Discord != "" {
