@@ -90,6 +90,12 @@ type CurrencyConfig struct {
 	MaxCashpointPerTx     int           `yaml:"MaxCashpointPerTx"`
 }
 
+type NotificationConfig struct {
+	PruneInterval time.Duration `yaml:"PruneInterval"`
+	Retention     time.Duration `yaml:"Retention"`
+	RecentLimit   int           `yaml:"RecentLimit"`
+}
+
 type PurchasesConfig struct {
 	Currency  string          `yaml:"Currency"`
 	Packages  []PackageConfig `yaml:"Packages"`
@@ -201,6 +207,7 @@ type AppConfig struct {
 	MobDB            MobDBConfig            `yaml:"MobDB"`
 	Cooldown         CooldownConfig         `yaml:"Cooldown"`
 	Currency         CurrencyConfig         `yaml:"Currency"`
+	Notifications    NotificationConfig     `yaml:"Notifications"`
 	Purchases        PurchasesConfig        `yaml:"Purchases"`
 	Retention        RetentionConfig        `yaml:"Retention"`
 	TTL              TTLConfig              `yaml:"TTL"`
@@ -261,6 +268,11 @@ func appConfigDefaults() *AppConfig {
 			WithdrawDrainInterval: 30 * time.Second,
 			ReapAfter:             30 * time.Minute,
 		},
+		Notifications: NotificationConfig{
+			PruneInterval: time.Hour,
+			Retention:     30 * 24 * time.Hour,
+			RecentLimit:   20,
+		},
 		Retention: RetentionConfig{
 			LoginAttempts: 30 * 24 * time.Hour,
 			SweepInterval: 1 * time.Hour,
@@ -310,6 +322,7 @@ var appConfigFiles = []string{
 	"datasources.yml",
 	"polling.yml",
 	"purchases.yml",
+	"notifications.yml",
 	"apikeys.yml",
 }
 

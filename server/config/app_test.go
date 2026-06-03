@@ -126,6 +126,11 @@ Metrics:
       RatePerMinute: 600
       Burst: 600
 `,
+		"notifications.yml": `Notifications:
+  PruneInterval: 1h
+  Retention: 720h
+  RecentLimit: 20
+`,
 	}
 }
 
@@ -581,7 +586,7 @@ func TestLoadAppConfigFromDir_TolereratesEmptyFiles(t *testing.T) {
 		"app.yml": "", "auth.yml": "", "security.yml": "",
 		"roles.yml": "", "tickets.yml": "", "news.yml": "",
 		"datasources.yml": "", "polling.yml": "", "purchases.yml": "",
-		"apikeys.yml": "",
+		"apikeys.yml": "", "notifications.yml": "",
 	}
 	dir := writeConfDir(t, empty)
 

@@ -9,6 +9,7 @@ import (
 	apikeyapp "github.com/hayakawakaki/go-racp/internal/features/apikey/app"
 	actiontokenapp "github.com/hayakawakaki/go-racp/internal/platform/actiontoken/app"
 	"github.com/hayakawakaki/go-racp/internal/platform/metric"
+	notificationapp "github.com/hayakawakaki/go-racp/internal/platform/notification/app"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/hayakawakaki/go-racp/internal/infra/mailer"
@@ -16,15 +17,16 @@ import (
 )
 
 type Infra struct {
-	MainDB       *sql.DB
-	LogDB        *sql.DB
-	DB           *pgxpool.Pool
-	Logger       *slog.Logger
-	Mailer       *mailer.SMTPMailer
-	TokenManager *actiontokenapp.Manager
-	APIKeys      *apikeyapp.Service
-	Config       *config.Config
-	Roles        accdomain.RoleResolver
-	Metric       *metric.Reader
-	ShutdownCtx  context.Context
+	MainDB        *sql.DB
+	LogDB         *sql.DB
+	DB            *pgxpool.Pool
+	Logger        *slog.Logger
+	Mailer        *mailer.SMTPMailer
+	TokenManager  *actiontokenapp.Manager
+	APIKeys       *apikeyapp.Service
+	Notifications *notificationapp.Service
+	Config        *config.Config
+	Roles         accdomain.RoleResolver
+	Metric        *metric.Reader
+	ShutdownCtx   context.Context
 }
