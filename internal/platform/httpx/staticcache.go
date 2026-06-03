@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"io/fs"
 	"net/http"
 	"strings"
@@ -45,8 +46,51 @@ func StaticCache(next http.Handler, devMode bool, etags map[string]string) http.
 			}
 		}
 
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(&cacheableWriter{ResponseWriter: w}, r)
 	})
+}
+
+type cacheableWriter struct {
+	http.ResponseWriter
+	wroteHeader bool
+}
+
+func (c *cacheableWriter) WriteHeader(status int) {
+	if c.wroteHeader {
+		return
+	}
+
+	c.wroteHeader = true
+
+	if !cacheableStatus(status) {
+		c.Header().Del("Cache-Control")
+		c.Header().Del("Etag")
+	}
+
+	c.ResponseWriter.WriteHeader(status)
+}
+
+func (c *cacheableWriter) ReadFrom(src io.Reader) (int64, error) {
+	if !c.wroteHeader {
+		c.WriteHeader(http.StatusOK)
+	}
+
+	written, err := io.Copy(c.ResponseWriter, src)
+	if err != nil {
+		return written, fmt.Errorf("httpx.cacheableWriter.ReadFrom: %w", err)
+	}
+
+	return written, nil
+}
+
+func (c *cacheableWriter) Unwrap() http.ResponseWriter {
+	return c.ResponseWriter
+}
+
+func cacheableStatus(status int) bool {
+	return status == http.StatusOK ||
+		status == http.StatusPartialContent ||
+		status == http.StatusNotModified
 }
 
 func classifyStatic(path string) staticClass {
