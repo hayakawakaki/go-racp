@@ -195,6 +195,12 @@ func parseAccessConfig(data []byte) (AccessConfig, error) {
 	return cfg, nil
 }
 
+func panicIfCombinedRole(fullName, roleName, rationale string, roles RoleList) {
+	if slices.Contains(roles, roleName) && len(roles) > 1 {
+		panic(fmt.Errorf("access.yml: Action '%s' lists '%s' alongside other roles. %s", fullName, roleName, rationale))
+	}
+}
+
 //nolint:cyclop // splitting would obscure the flow
 func validateAccessConfig(cfg AccessConfig) {
 	knownTags := map[string]struct{}{RequireUnrestricted: {}, requireKeyTag: {}}
@@ -228,18 +234,14 @@ func validateAccessConfig(cfg AccessConfig) {
 				panic(fmt.Errorf("access.yml: Action '%s' has an empty roles list, would deny everyone. Use a non-empty list or remove the entry", fullName))
 			}
 
+			panicIfCombinedRole(fullName, publicRoleName, "Public bypasses auth and cannot be combined", entry.Roles)
 			for _, audience := range []string{MemberRoleName, VerifiedRoleName} {
-				if slices.Contains(entry.Roles, audience) && len(entry.Roles) > 1 {
-					panic(fmt.Errorf("access.yml: Action '%s' lists '%s' alongside other roles. '%s' is a standalone audience and cannot be combined", fullName, audience, audience))
-				}
+				panicIfCombinedRole(fullName, audience, "It is a standalone audience and cannot be combined", entry.Roles)
 			}
 
 			hasPublic := slices.Contains(entry.Roles, publicRoleName)
 			if entry.RequiresAPIKey() && !hasPublic {
 				panic(fmt.Errorf("access.yml: Action '%s' has Requires: ['APIKey'] but is not Public. The API key gate only applies to Public routes", fullName))
-			}
-			if hasPublic && len(entry.Roles) > 1 {
-				panic(fmt.Errorf("access.yml: Action '%s' lists 'Public' alongside other roles. Public bypasses auth and cannot be combined", fullName))
 			}
 			if hasPublic && entry.RequiresUnrestricted() {
 				panic(fmt.Errorf("access.yml: Action '%s' combines 'Public' with Requires: ['Unrestricted']. Public bypasses auth, there is no user to classify", fullName))
