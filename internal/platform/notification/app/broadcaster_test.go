@@ -44,7 +44,7 @@ func TestBroadcaster_PublishToOtherAccountNotDelivered(t *testing.T) {
 	select {
 	case got := <-events:
 		t.Errorf("received unexpected event %+v meant for another account", got)
-	case <-time.After(50 * time.Millisecond):
+	case <-time.After(150 * time.Millisecond):
 	}
 }
 
@@ -87,7 +87,7 @@ func TestBroadcaster_UnsubscribeStopsDeliveryAndCleansUp(t *testing.T) {
 	select {
 	case got := <-events:
 		t.Errorf("received event %+v after unsubscribe", got)
-	case <-time.After(50 * time.Millisecond):
+	case <-time.After(150 * time.Millisecond):
 	}
 
 	b.mu.RLock()

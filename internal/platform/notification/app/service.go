@@ -51,6 +51,16 @@ func WithRetention(d time.Duration) Option {
 }
 
 func NewService(repo domain.Repository, broadcaster *Broadcaster, logger *slog.Logger, opts ...Option) *Service {
+	if repo == nil {
+		panic("notification.NewService: repo must not be nil")
+	}
+	if broadcaster == nil {
+		broadcaster = NewBroadcaster()
+	}
+	if logger == nil {
+		logger = slog.Default()
+	}
+
 	s := &Service{
 		repo:        repo,
 		broadcaster: broadcaster,

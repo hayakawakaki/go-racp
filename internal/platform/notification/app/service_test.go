@@ -129,6 +129,30 @@ func TestNewService_Defaults(t *testing.T) {
 	}
 }
 
+func TestNewService_NilRepoPanics(t *testing.T) {
+	t.Parallel()
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("expected panic for nil repo, got none")
+		}
+	}()
+
+	NewService(nil, NewBroadcaster(), slog.New(slog.NewTextHandler(io.Discard, nil)))
+}
+
+func TestNewService_NilDependenciesGetDefaults(t *testing.T) {
+	t.Parallel()
+
+	svc := NewService(&fakeRepo{}, nil, nil)
+	if svc.broadcaster == nil {
+		t.Error("broadcaster is nil after NewService(nil broadcaster)")
+	}
+	if svc.logger == nil {
+		t.Error("logger is nil after NewService(nil logger)")
+	}
+}
+
 func TestWithRecentLimit(t *testing.T) {
 	t.Parallel()
 
