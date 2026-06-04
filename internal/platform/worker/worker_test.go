@@ -130,3 +130,60 @@ func TestRun_NoJobsReturnsImmediately(t *testing.T) {
 		t.Fatal("Run with no jobs should return immediately")
 	}
 }
+
+func TestRun_NonPositiveIntervalDisablesJob(t *testing.T) {
+	t.Parallel()
+
+	var calls atomic.Int32
+	done := make(chan struct{})
+	go func() {
+		Run(t.Context(), discardLogger(), Job{
+			Name:     "bad",
+			Interval: 0,
+			Fn: func(context.Context) (int64, error) {
+				calls.Add(1)
+				return 0, nil
+			},
+		})
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("Run did not return for a job with a non-positive interval")
+	}
+	if got := calls.Load(); got != 0 {
+		t.Errorf("disabled job Fn called %d times, want 0", got)
+	}
+}
+
+func TestRun_DisabledJobDoesNotStopValidJobs(t *testing.T) {
+	t.Parallel()
+
+	fired := make(chan struct{}, 1)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go Run(ctx, discardLogger(),
+		Job{Name: "bad", Interval: 0, Fn: func(context.Context) (int64, error) { return 0, nil }},
+		Job{
+			Name:     "good",
+			Interval: time.Hour,
+			Fn: func(context.Context) (int64, error) {
+				select {
+				case fired <- struct{}{}:
+				default:
+				}
+				return 0, nil
+			},
+		},
+	)
+
+	select {
+	case <-fired:
+	case <-time.After(time.Second):
+		t.Fatal("valid job did not fire alongside a disabled sibling job")
+	}
+	cancel()
+}
