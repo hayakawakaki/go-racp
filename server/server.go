@@ -34,6 +34,7 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/health"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
 	"github.com/hayakawakaki/go-racp/internal/platform/metric"
+	"github.com/hayakawakaki/go-racp/internal/platform/notification"
 	"github.com/hayakawakaki/go-racp/internal/platform/plugin"
 	"github.com/hayakawakaki/go-racp/internal/platform/routes"
 	"github.com/hayakawakaki/go-racp/internal/platform/security"
@@ -116,6 +117,8 @@ func Start() error {
 		Env:    cfg.Env,
 	})
 
+	in.Notifications = notification.Start(cpPool, cfg.App.Notifications, logger)
+
 	accessCfg := config.ProcessAccessConfig(theme.ActiveAccessYAML)
 	layout := httpx.Layout{GeneralConfig: cfg.App.General}
 
@@ -126,7 +129,15 @@ func Start() error {
 
 	sessionRepo := accinfra.NewSessionRepository(cpPool)
 	loginAttemptsRepo := accinfra.NewLoginAttemptsRepository(cpPool)
-	go worker.Run(ctx, logger, buildWorkerJobs(cfg.App.Retention, sessionRepo, loginAttemptsRepo)...)
+	jobs := buildWorkerJobs(cfg.App.Retention, sessionRepo, loginAttemptsRepo)
+	jobs = append(jobs, worker.Job{
+		Name:     "notification-prune",
+		Interval: cfg.App.Notifications.PruneInterval,
+		Fn: func(ctx context.Context) (int64, error) {
+			return in.Notifications.Prune(ctx)
+		},
+	})
+	go worker.Run(ctx, logger, jobs...)
 
 	sessSvc := app.NewSessionService(sessionRepo, cfg.App.TTL.Session)
 	secure := cfg.Env.Mode != "development"

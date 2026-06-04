@@ -1,0 +1,92 @@
+package transport
+
+import (
+	"strconv"
+
+	"github.com/hayakawakaki/go-racp/internal/platform/notification/domain"
+)
+
+templ Menu(items []domain.Notification) {
+	<div class="flex items-center justify-between px-4 py-3 border-b border-border">
+		<span class="text-sm font-semibold text-font">Notifications</span>
+		if len(items) > 0 {
+			<button
+				type="button"
+				hx-post="/notifications/read-all"
+				hx-target="#notification-menu"
+				hx-swap="innerHTML"
+				class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+			>
+				Mark all read
+			</button>
+		}
+	</div>
+	if len(items) == 0 {
+		<p class="px-4 py-6 text-sm text-muted text-center">You have no notifications.</p>
+	} else {
+		<ul class="max-h-96 overflow-y-auto divide-y divide-border">
+			for _, item := range items {
+				@menuRow(item)
+			}
+		</ul>
+	}
+	<a
+		href="/notifications"
+		class="block px-4 py-3 text-center text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline border-t border-border"
+	>
+		View all
+	</a>
+}
+
+templ menuRow(item domain.Notification) {
+	<li>
+		<a
+			href={ templ.SafeURL(rowHref(item)) }
+			hx-post={ "/notifications/" + strconv.FormatInt(item.ID, 10) + "/read" }
+			hx-trigger="click"
+			hx-swap="none"
+			class={ "block px-4 py-3 hover:bg-accent-wash transition-colors", templ.KV("bg-accent-wash/40", !item.IsRead()) }
+		>
+			<div class="flex items-center gap-2">
+				<div class="min-w-0 flex-1">
+					<p class="text-sm font-medium text-font truncate">{ item.Title }</p>
+					if item.Body != "" {
+						<p class="text-xs text-muted line-clamp-2">{ item.Body }</p>
+					}
+				</div>
+				if !item.IsRead() {
+					<span class="h-2 w-2 rounded-full bg-indigo-500 shrink-0"></span>
+				}
+			</div>
+		</a>
+	</li>
+}
+
+func rowHref(item domain.Notification) string {
+	if item.Link == "" {
+		return "#"
+	}
+
+	return item.Link
+}
+
+templ Count(unread int) {
+	if unread > 0 {
+		<span
+			id="notification-badge"
+			class="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-red-600 text-white text-[10px] leading-4 text-center font-semibold"
+		>
+			{ badgeLabel(unread) }
+		</span>
+	} else {
+		<span id="notification-badge" class="hidden"></span>
+	}
+}
+
+func badgeLabel(unread int) string {
+	if unread > 99 {
+		return "99+"
+	}
+
+	return strconv.Itoa(unread)
+}

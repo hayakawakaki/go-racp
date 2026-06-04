@@ -105,9 +105,13 @@ templ headerDropdown(item themecfg.NavbarItem) {
 }
 
 templ headerActions(layout httpx.Layout) {
-	<div class="hidden lg:flex items-center gap-2">
-		<div class="flex items-center">
-			@ui.ThemeSwitcher(ui.ThemeSwitcherProps{Bare: true}) {
+	<div class="flex items-center">
+		if _, ok := viewer.UserFromContext(ctx); ok {
+			@notificationBell()
+		}
+		<div class="hidden lg:flex items-center gap-2">
+			<div class="flex items-center">
+				@ui.ThemeSwitcher(ui.ThemeSwitcherProps{Bare: true}) {
 				@ui.Button(ui.ButtonProps{Variant: ui.ButtonGhost, Size: ui.ButtonSizeLG, Rounded: ui.ButtonRoundedMD, Class: "px-4", Attrs: templ.Attributes{"@click": "toggle()"}}) {
 					<span class="dark:hidden">@ui.Icon("moon", "h-5 w-5")</span>
 					<span class="hidden dark:inline">@ui.Icon("sun", "h-5 w-5")</span>
@@ -172,6 +176,7 @@ templ headerActions(layout httpx.Layout) {
 				Register
 			}
 		}
+	</div>
 	</div>
 }
 
@@ -238,5 +243,45 @@ templ headerMobileActions(layout httpx.Layout) {
 				Register
 			}
 		}
+	</div>
+}
+
+templ notificationBell() {
+	<div
+		class="relative"
+		x-data="notificationBell"
+		@click.outside="open = false"
+	>
+		@ui.Button(ui.ButtonProps{
+			Variant:   ui.ButtonGhost,
+			Size:      ui.ButtonSizeLG,
+			Rounded:   ui.ButtonRoundedMD,
+			Class:     "relative px-4",
+			AriaLabel: "Notifications",
+			Attrs:     templ.Attributes{"@click": "toggle()"},
+		}) {
+			@ui.Icon("bell", "h-5 w-5")
+			<span
+				x-show="count > 0"
+				x-text="count > 99 ? '99+' : count"
+				class="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-red-600 text-white text-[10px] leading-4 text-center font-semibold"
+				x-cloak
+			></span>
+		}
+		<div
+			x-show="open"
+			x-cloak
+			x-transition
+			class="absolute right-0 mt-2 w-96 max-w-[90vw] rounded-md border border-border bg-surface shadow-lg z-50"
+		>
+			<div
+				id="notification-menu"
+				hx-get="/notifications/menu"
+				hx-trigger="refresh-notifications from:body"
+				hx-swap="innerHTML"
+			>
+				<p class="px-4 py-6 text-sm text-muted text-center">Loading...</p>
+			</div>
+		</div>
 	</div>
 }

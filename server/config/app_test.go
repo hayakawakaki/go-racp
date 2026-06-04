@@ -126,6 +126,11 @@ Metrics:
       RatePerMinute: 600
       Burst: 600
 `,
+		"notifications.yml": `Notifications:
+  PruneInterval: 1h
+  Retention: 720h
+  RecentLimit: 20
+`,
 	}
 }
 
@@ -246,6 +251,64 @@ func TestValidateVendorConfig_Clamps(t *testing.T) {
 			validateVendorConfig(&cfg, &[]ClampAdjustment{})
 			if cfg.PollInterval != tt.want {
 				t.Errorf("PollInterval = %v, want %v", cfg.PollInterval, tt.want)
+			}
+		})
+	}
+}
+
+func TestValidateNotificationsConfig_Clamps(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name          string
+		in            NotificationConfig
+		wantPrune     time.Duration
+		wantRetention time.Duration
+		wantRecent    int
+	}{
+		{
+			name:          "zero values fall back to defaults",
+			in:            NotificationConfig{},
+			wantPrune:     time.Hour,
+			wantRetention: 30 * 24 * time.Hour,
+			wantRecent:    20,
+		},
+		{
+			name:          "in range stays",
+			in:            NotificationConfig{PruneInterval: 2 * time.Hour, Retention: 240 * time.Hour, RecentLimit: 50},
+			wantPrune:     2 * time.Hour,
+			wantRetention: 240 * time.Hour,
+			wantRecent:    50,
+		},
+		{
+			name:          "below minimums clamp up",
+			in:            NotificationConfig{PruneInterval: time.Second, Retention: time.Minute, RecentLimit: 0},
+			wantPrune:     time.Minute,
+			wantRetention: time.Hour,
+			wantRecent:    20,
+		},
+		{
+			name:          "above maximums clamp down",
+			in:            NotificationConfig{PruneInterval: 48 * time.Hour, Retention: 10000 * time.Hour, RecentLimit: 1000},
+			wantPrune:     24 * time.Hour,
+			wantRetention: 365 * 24 * time.Hour,
+			wantRecent:    100,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			cfg := tt.in
+			validateNotificationsConfig(&cfg, &[]ClampAdjustment{})
+			if cfg.PruneInterval != tt.wantPrune {
+				t.Errorf("PruneInterval = %v, want %v", cfg.PruneInterval, tt.wantPrune)
+			}
+			if cfg.Retention != tt.wantRetention {
+				t.Errorf("Retention = %v, want %v", cfg.Retention, tt.wantRetention)
+			}
+			if cfg.RecentLimit != tt.wantRecent {
+				t.Errorf("RecentLimit = %d, want %d", cfg.RecentLimit, tt.wantRecent)
 			}
 		})
 	}
@@ -581,7 +644,7 @@ func TestLoadAppConfigFromDir_TolereratesEmptyFiles(t *testing.T) {
 		"app.yml": "", "auth.yml": "", "security.yml": "",
 		"roles.yml": "", "tickets.yml": "", "news.yml": "",
 		"datasources.yml": "", "polling.yml": "", "purchases.yml": "",
-		"apikeys.yml": "",
+		"apikeys.yml": "", "notifications.yml": "",
 	}
 	dir := writeConfDir(t, empty)
 

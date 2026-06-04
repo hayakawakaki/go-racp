@@ -85,6 +85,10 @@ News:
     Roles: ["Moderator"]
     Requires: ["Unrestricted"]
 
+Notification:
+  View:
+    Roles: ["*"]
+
 Character:
   View:
     Roles: ["*"]

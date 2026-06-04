@@ -183,6 +183,47 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
+    Alpine.data('notificationBell', () => ({
+        open: false,
+        count: 0,
+        dirty: true,
+        source: null,
+        init() {
+            this.refreshCount();
+            this.connect();
+        },
+        toggle() {
+            this.open = !this.open;
+            if (this.open && this.dirty) {
+                this.dirty = false;
+                document.body.dispatchEvent(new CustomEvent('refresh-notifications'));
+            }
+        },
+        refreshCount() {
+            fetch('/notifications/unread-count', { headers: { 'Accept': 'application/json' } })
+                .then((response) => (response.ok ? response.json() : { count: 0 }))
+                .then((data) => { this.count = data.count || 0; })
+                .catch(() => {});
+        },
+        connect() {
+            this.source = new EventSource('/notifications/stream');
+            this.source.addEventListener('notification', (event) => {
+                const unread = parseInt(event.data, 10);
+                this.count = Number.isNaN(unread) ? this.count : unread;
+                if (this.open) {
+                    document.body.dispatchEvent(new CustomEvent('refresh-notifications'));
+                } else {
+                    this.dirty = true;
+                }
+            });
+        },
+        destroy() {
+            if (this.source) {
+                this.source.close();
+            }
+        },
+    }));
+
     Alpine.magic('toast', () => {
         return (type, message, duration, size) => {
             window.dispatchEvent(new CustomEvent('toast', {

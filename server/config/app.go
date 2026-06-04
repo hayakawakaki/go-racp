@@ -90,6 +90,12 @@ type CurrencyConfig struct {
 	MaxCashpointPerTx     int           `yaml:"MaxCashpointPerTx"`
 }
 
+type NotificationConfig struct {
+	PruneInterval time.Duration `yaml:"PruneInterval"`
+	Retention     time.Duration `yaml:"Retention"`
+	RecentLimit   int           `yaml:"RecentLimit"`
+}
+
 type PurchasesConfig struct {
 	Currency  string          `yaml:"Currency"`
 	Packages  []PackageConfig `yaml:"Packages"`
@@ -201,6 +207,7 @@ type AppConfig struct {
 	MobDB            MobDBConfig            `yaml:"MobDB"`
 	Cooldown         CooldownConfig         `yaml:"Cooldown"`
 	Currency         CurrencyConfig         `yaml:"Currency"`
+	Notifications    NotificationConfig     `yaml:"Notifications"`
 	Purchases        PurchasesConfig        `yaml:"Purchases"`
 	Retention        RetentionConfig        `yaml:"Retention"`
 	TTL              TTLConfig              `yaml:"TTL"`
@@ -261,6 +268,11 @@ func appConfigDefaults() *AppConfig {
 			WithdrawDrainInterval: 30 * time.Second,
 			ReapAfter:             30 * time.Minute,
 		},
+		Notifications: NotificationConfig{
+			PruneInterval: time.Hour,
+			Retention:     30 * 24 * time.Hour,
+			RecentLimit:   20,
+		},
 		Retention: RetentionConfig{
 			LoginAttempts: 30 * 24 * time.Hour,
 			SweepInterval: 1 * time.Hour,
@@ -310,6 +322,7 @@ var appConfigFiles = []string{
 	"datasources.yml",
 	"polling.yml",
 	"purchases.yml",
+	"notifications.yml",
 	"apikeys.yml",
 }
 
@@ -389,6 +402,7 @@ func validateAppConfig(cfg *AppConfig) {
 	validateNewsConfig(cfg.NewsCategories)
 	validateVendorConfig(&cfg.Vendor, &clamps)
 	validateMetricsConfig(&cfg.Metrics, &clamps)
+	validateNotificationsConfig(&cfg.Notifications, &clamps)
 	validateTrustedProxyCIDRs(cfg.Security.TrustedProxyCIDRs)
 	validateTheme(&cfg.General)
 	validateRatesConfig(&cfg.General.Rates)
@@ -557,6 +571,25 @@ func validateVendorConfig(cfg *VendorConfig, adjustments *[]ClampAdjustment) {
 		maxInterval = 10 * time.Minute
 	)
 	cfg.PollInterval = recordClamp(adjustments, "Vendor.PollInterval", cfg.PollInterval, 30*time.Second, minInterval, maxInterval)
+}
+
+func validateNotificationsConfig(cfg *NotificationConfig, adjustments *[]ClampAdjustment) {
+	const (
+		minPrune     = 1 * time.Minute
+		maxPrune     = 24 * time.Hour
+		minRetention = 1 * time.Hour
+		maxRetention = 365 * 24 * time.Hour
+		minRecent    = 1
+		maxRecent    = 100
+	)
+	cfg.PruneInterval = recordClamp(adjustments, "Notifications.PruneInterval", cfg.PruneInterval, time.Hour, minPrune, maxPrune)
+	cfg.Retention = recordClamp(adjustments, "Notifications.Retention", cfg.Retention, 30*24*time.Hour, minRetention, maxRetention)
+
+	if cfg.RecentLimit < minRecent {
+		cfg.RecentLimit = 20
+	} else if cfg.RecentLimit > maxRecent {
+		cfg.RecentLimit = maxRecent
+	}
 }
 
 func validateNewsConfig(categories NewsCategoriesConfig) {

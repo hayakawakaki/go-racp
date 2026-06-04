@@ -1,0 +1,99 @@
+package transport
+
+import (
+	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
+	"github.com/hayakawakaki/go-racp/internal/platform/notification/domain"
+	"github.com/hayakawakaki/go-racp/internal/platform/security"
+	"github.com/hayakawakaki/go-racp/internal/platform/ui"
+)
+
+type InboxState struct {
+	Items      []domain.Notification
+	Page       int
+	TotalPages int
+	Total      int
+	UnreadOnly bool
+}
+
+templ InboxPage(layout httpx.Layout, state InboxState) {
+	@httpx.ActiveBase(layout, "Notifications") {
+		<div class="space-y-4">
+			<div class="flex items-center justify-between gap-4">
+				<h2 class="text-2xl font-semibold text-font">Notifications</h2>
+				if state.Total > 0 {
+					@inboxMarkAllForm()
+				}
+			</div>
+			<div class="flex items-center gap-1 border-b border-border">
+				@inboxTab("All", "/notifications", !state.UnreadOnly)
+				@inboxTab("Unread", "/notifications?filter=unread", state.UnreadOnly)
+			</div>
+			@inboxList(state)
+			@inboxPager(state)
+		</div>
+	}
+}
+
+templ inboxMarkAllForm() {
+	<form method="post" action="/notifications/read-all">
+		@security.HiddenField()
+		@ui.Button(ui.ButtonProps{
+			Variant: ui.ButtonOutline,
+			Size:    ui.ButtonSizeMD,
+			Rounded: ui.ButtonRoundedMD,
+			Type:    ui.ButtonTypeSubmit,
+		}) {
+			Mark all read
+		}
+	</form>
+}
+
+templ inboxList(state InboxState) {
+	if len(state.Items) == 0 {
+		<p class="px-4 py-12 text-sm text-muted text-center">{ emptyInboxMessage(state.UnreadOnly) }</p>
+	} else {
+		<ul class="divide-y divide-border rounded-md border border-border bg-surface overflow-hidden">
+			for _, item := range state.Items {
+				@menuRow(item)
+			}
+		</ul>
+	}
+}
+
+templ inboxPager(state InboxState) {
+	if state.TotalPages > 1 {
+		<div class="flex justify-center pt-2">
+			@ui.Pagination(ui.PaginationProps{
+				Page:        state.Page,
+				TotalPages:  state.TotalPages,
+				Size:        ui.PaginationSizeMD,
+				HrefPattern: inboxHrefPattern(state.UnreadOnly),
+			})
+		</div>
+	}
+}
+
+templ inboxTab(label string, href string, active bool) {
+	<a
+		href={ href }
+		class={ "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors", templ.KV("border-indigo-500 text-font", active), templ.KV("border-transparent text-muted hover:text-font", !active) }
+	>
+		{ label }
+	</a>
+}
+
+func inboxHrefPattern(unreadOnly bool) string {
+	if unreadOnly {
+		return "/notifications?filter=unread&page=__PAGE__"
+	}
+
+	return "/notifications?page=__PAGE__"
+}
+
+func emptyInboxMessage(unreadOnly bool) string {
+	if unreadOnly {
+		return "You are all caught up."
+	}
+
+	return "You have no notifications."
+}
