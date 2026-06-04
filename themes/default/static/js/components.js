@@ -186,10 +186,18 @@ document.addEventListener('alpine:init', () => {
     Alpine.data('notificationBell', () => ({
         open: false,
         count: 0,
+        dirty: true,
         source: null,
         init() {
             this.refreshCount();
             this.connect();
+        },
+        toggle() {
+            this.open = !this.open;
+            if (this.open && this.dirty) {
+                this.dirty = false;
+                document.body.dispatchEvent(new CustomEvent('refresh-notifications'));
+            }
         },
         refreshCount() {
             fetch('/notifications/unread-count', { headers: { 'Accept': 'application/json' } })
@@ -202,7 +210,11 @@ document.addEventListener('alpine:init', () => {
             this.source.addEventListener('notification', (event) => {
                 const unread = parseInt(event.data, 10);
                 this.count = Number.isNaN(unread) ? this.count : unread;
-                document.body.dispatchEvent(new CustomEvent('refresh-notifications'));
+                if (this.open) {
+                    document.body.dispatchEvent(new CustomEvent('refresh-notifications'));
+                } else {
+                    this.dirty = true;
+                }
             });
         },
         destroy() {

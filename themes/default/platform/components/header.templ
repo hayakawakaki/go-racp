@@ -258,7 +258,7 @@ templ notificationBell() {
 			Rounded:   ui.ButtonRoundedMD,
 			Class:     "relative px-4",
 			AriaLabel: "Notifications",
-			Attrs:     templ.Attributes{"@click": "open = !open"},
+			Attrs:     templ.Attributes{"@click": "toggle()"},
 		}) {
 			@ui.Icon("bell", "h-5 w-5")
 			<span
@@ -277,7 +277,7 @@ templ notificationBell() {
 			<div
 				id="notification-menu"
 				hx-get="/notifications/menu"
-				hx-trigger="load, refresh-notifications from:body"
+				hx-trigger="refresh-notifications from:body"
 				hx-swap="innerHTML"
 			>
 				<p class="px-4 py-6 text-sm text-muted text-center">Loading...</p>

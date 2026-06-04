@@ -35,6 +35,8 @@ func (h *Handler) stream(w http.ResponseWriter, r *http.Request) {
 	events, unsubscribe := h.svc.Subscribe(accountID)
 	defer unsubscribe()
 
+	h.svc.PublishUnread(r.Context(), accountID)
+
 	ping := time.NewTicker(ssePingInterval)
 	defer ping.Stop()
 

@@ -24,6 +24,11 @@ func Run(ctx context.Context, logger *slog.Logger, jobs ...Job) {
 }
 
 func runJob(ctx context.Context, logger *slog.Logger, job Job) {
+	if job.Interval <= 0 {
+		logger.Error("worker job disabled: non-positive interval", "job", job.Name, "interval", job.Interval)
+		return
+	}
+
 	tick := func() {
 		count, err := job.Fn(ctx)
 		if err != nil {

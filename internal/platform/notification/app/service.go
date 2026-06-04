@@ -105,7 +105,7 @@ func (s *Service) MarkRead(ctx context.Context, accountID int, id int64) (string
 		return "", fmt.Errorf("notification.Service.MarkRead: %w", err)
 	}
 
-	s.publishUnread(ctx, accountID)
+	s.PublishUnread(ctx, accountID)
 
 	return link, nil
 }
@@ -115,12 +115,12 @@ func (s *Service) MarkAllRead(ctx context.Context, accountID int) error {
 		return fmt.Errorf("notification.Service.MarkAllRead: %w", err)
 	}
 
-	s.publishUnread(ctx, accountID)
+	s.PublishUnread(ctx, accountID)
 
 	return nil
 }
 
-func (s *Service) publishUnread(ctx context.Context, accountID int) {
+func (s *Service) PublishUnread(ctx context.Context, accountID int) {
 	unread, err := s.repo.UnreadCount(ctx, accountID)
 	if err != nil {
 		s.logger.Warn("notification: publish unread", "err", err)
