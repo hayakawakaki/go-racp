@@ -112,6 +112,16 @@ func (s *Service) Inbox(ctx context.Context, accountID int, unreadOnly bool, pag
 
 	totalPages := max((total+inboxPageSize-1)/inboxPageSize, 1)
 
+	if page > totalPages {
+		page = totalPages
+		offset = (page - 1) * inboxPageSize
+
+		items, _, err = s.repo.ListPage(ctx, accountID, unreadOnly, inboxPageSize, offset)
+		if err != nil {
+			return Page{}, fmt.Errorf("notification.Service.Inbox: %w", err)
+		}
+	}
+
 	return Page{
 		Items:      items,
 		Total:      total,
