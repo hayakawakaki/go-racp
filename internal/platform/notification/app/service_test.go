@@ -16,20 +16,26 @@ var errBoom = errors.New("boom")
 var _ domain.Repository = (*fakeRepo)(nil)
 
 type fakeRepo struct {
-	pruneCutoff time.Time
-	markReadNow time.Time
-	createErr   error
-	recentErr   error
-	unreadErr   error
-	markReadErr error
-	markAllErr  error
-	pruneErr    error
-	link        string
-	created     []domain.Notification
-	nextID      int64
-	pruned      int64
-	unread      int
-	recentLimit int
+	pruneCutoff    time.Time
+	markReadNow    time.Time
+	createErr      error
+	recentErr      error
+	unreadErr      error
+	markReadErr    error
+	markAllErr     error
+	pruneErr       error
+	listPageErr    error
+	link           string
+	created        []domain.Notification
+	listPageItems  []domain.Notification
+	nextID         int64
+	pruned         int64
+	unread         int
+	recentLimit    int
+	listPageTotal  int
+	listPageLimit  int
+	listPageOffset int
+	listPageUnread bool
 }
 
 func (r *fakeRepo) Create(_ context.Context, n domain.Notification) (domain.Notification, error) {
@@ -54,6 +60,17 @@ func (r *fakeRepo) RecentByAccount(_ context.Context, _, limit int) ([]domain.No
 	}
 
 	return r.created, nil
+}
+
+func (r *fakeRepo) ListPage(_ context.Context, _ int, unreadOnly bool, limit, offset int) ([]domain.Notification, int, error) {
+	r.listPageUnread = unreadOnly
+	r.listPageLimit = limit
+	r.listPageOffset = offset
+	if r.listPageErr != nil {
+		return nil, 0, r.listPageErr
+	}
+
+	return r.listPageItems, r.listPageTotal, nil
 }
 
 func (r *fakeRepo) UnreadCount(_ context.Context, _ int) (int, error) {
@@ -398,5 +415,83 @@ func TestService_PublishUnread_RepoErrorDoesNotPublish(t *testing.T) {
 	case got := <-events:
 		t.Errorf("published event %+v despite repo error", got)
 	case <-time.After(50 * time.Millisecond):
+	}
+}
+
+func TestService_Inbox_ComputesOffsetAndPages(t *testing.T) {
+	t.Parallel()
+
+	repo := &fakeRepo{listPageTotal: 130, listPageItems: []domain.Notification{{ID: 1}}}
+	svc := newService(repo)
+
+	result, err := svc.Inbox(context.Background(), 7, false, 3)
+	if err != nil {
+		t.Fatalf("Inbox: %v", err)
+	}
+	if repo.listPageLimit != 50 {
+		t.Errorf("limit = %d, want 50", repo.listPageLimit)
+	}
+	if repo.listPageOffset != 100 {
+		t.Errorf("offset = %d, want 100", repo.listPageOffset)
+	}
+	if result.Page != 3 || result.PerPage != 50 || result.Total != 130 {
+		t.Errorf("page result = %+v", result)
+	}
+	if result.TotalPages != 3 {
+		t.Errorf("TotalPages = %d, want 3", result.TotalPages)
+	}
+}
+
+func TestService_Inbox_ClampsPageAndPassesFilter(t *testing.T) {
+	t.Parallel()
+
+	repo := &fakeRepo{}
+	svc := newService(repo)
+
+	result, err := svc.Inbox(context.Background(), 7, true, 0)
+	if err != nil {
+		t.Fatalf("Inbox: %v", err)
+	}
+	if result.Page != 1 {
+		t.Errorf("Page = %d, want 1 (clamped)", result.Page)
+	}
+	if repo.listPageOffset != 0 {
+		t.Errorf("offset = %d, want 0", repo.listPageOffset)
+	}
+	if !repo.listPageUnread {
+		t.Errorf("unreadOnly not passed through to repo")
+	}
+	if result.TotalPages != 1 {
+		t.Errorf("TotalPages = %d, want 1 for empty result", result.TotalPages)
+	}
+}
+
+func TestService_Inbox_PropagatesError(t *testing.T) {
+	t.Parallel()
+
+	svc := newService(&fakeRepo{listPageErr: errBoom})
+	if _, err := svc.Inbox(context.Background(), 7, false, 1); !errors.Is(err, errBoom) {
+		t.Errorf("Inbox err = %v, want errBoom", err)
+	}
+}
+
+func TestService_Inbox_ClampsPageToLastWhenOutOfRange(t *testing.T) {
+	t.Parallel()
+
+	repo := &fakeRepo{listPageTotal: 120, listPageItems: []domain.Notification{{ID: 1}}}
+	svc := newService(repo)
+
+	result, err := svc.Inbox(context.Background(), 7, false, 99)
+	if err != nil {
+		t.Fatalf("Inbox: %v", err)
+	}
+	if result.Page != 3 {
+		t.Errorf("Page = %d, want 3 (clamped to last page)", result.Page)
+	}
+	if repo.listPageOffset != 100 {
+		t.Errorf("final offset = %d, want 100 (last page)", repo.listPageOffset)
+	}
+	if len(result.Items) != 1 {
+		t.Errorf("len(Items) = %d, want 1 (re-fetched last page)", len(result.Items))
 	}
 }

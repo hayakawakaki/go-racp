@@ -251,3 +251,59 @@ func TestRepository_PruneOlderThan(t *testing.T) {
 		t.Errorf("unread after prune = %d, want 0", count)
 	}
 }
+
+func TestRepository_ListPage(t *testing.T) {
+	repo := setupRepo(t)
+	ctx := context.Background()
+
+	for range 3 {
+		if _, err := repo.Create(ctx, fixture(7, "")); err != nil {
+			t.Fatalf("Create owner: %v", err)
+		}
+	}
+	read, err := repo.Create(ctx, fixture(7, ""))
+	if err != nil {
+		t.Fatalf("Create read: %v", err)
+	}
+	if _, err := repo.Create(ctx, fixture(8, "")); err != nil {
+		t.Fatalf("Create other: %v", err)
+	}
+	if _, err := repo.MarkRead(ctx, 7, read.ID, time.Now()); err != nil {
+		t.Fatalf("MarkRead: %v", err)
+	}
+
+	all, total, err := repo.ListPage(ctx, 7, false, 2, 0)
+	if err != nil {
+		t.Fatalf("ListPage all: %v", err)
+	}
+	if total != 4 {
+		t.Errorf("all total = %d, want 4", total)
+	}
+	if len(all) != 2 {
+		t.Errorf("all page len = %d, want 2 (limit)", len(all))
+	}
+
+	page2, _, err := repo.ListPage(ctx, 7, false, 2, 2)
+	if err != nil {
+		t.Fatalf("ListPage all page2: %v", err)
+	}
+	if len(page2) != 2 {
+		t.Errorf("page2 len = %d, want 2", len(page2))
+	}
+	if page2[0].ID == all[0].ID {
+		t.Errorf("page2 overlaps page1 (offset not applied)")
+	}
+
+	unread, unreadTotal, err := repo.ListPage(ctx, 7, true, 50, 0)
+	if err != nil {
+		t.Fatalf("ListPage unread: %v", err)
+	}
+	if unreadTotal != 3 {
+		t.Errorf("unread total = %d, want 3", unreadTotal)
+	}
+	for _, item := range unread {
+		if item.IsRead() {
+			t.Errorf("unread filter returned a read notification: %+v", item)
+		}
+	}
+}
