@@ -1,35 +1,37 @@
 # Every registered route must have an entry here. Missing entries panic at startup.
-# Admin is implicit on every gated entry. It may only be listed by itself
-# (Roles: ["Admin"]) to mark a non-Admin.*-tagged route as admin-only-hidden;
-# it cannot be combined with other roles or with Requires: ["Unrestricted"].
-# * means any authenticated user.
-# Public means no auth at all (anonymous) - cannot be combined with other roles or with Requires: [Unrestricted].
 #
-# Valid Roles: ["Public", "*", "Admin", "Event", "Moderator", "Enforcer"]
+# The Roles token is the verification stance:
+#   Public:   no auth at all (anonymous). Cannot combine with other roles or Requires: [Unrestricted].
+#   Member:   any authenticated user, verified or not.
+#   Verified: any authenticated user who has verified their email.
+#   <role>:   a specific operator-defined role (implies verified). e.g. Moderator, Enforcer, Event.
+#   Admin:    listed alone, marks an admin-only-hidden route.
+#
+# Valid Roles: ["Public", "Member", "Verified", "Admin", "Event", "Moderator", "Enforcer"]
 # Valid Requires:
-#  Unrestricted: Not permanently banned, Not temporarily banned, Email Verified and Exists in Database
+#  Unrestricted: Not permanently banned and not temporarily banned.
 #  APIKey: Requires generated api key to access. (Public Routes)
 #
 # Entry shape: either a bare role list, or an object with:
-#   Roles:     required, list of role names (or ["Public"] / ["Admin"] / ["*"])
-#   Requires:  optional, list of policy tags. Currently only "Unrestricted".
-#   RateLimit: optional, { RatePerMinute, Burst }. When set, all routes under the tag
-#              share one token bucket. The bucket keys by session.UserID when Roles
-#              excludes "Public", otherwise by client IP.
+#   Roles: Valid Roles. (Required)
+#   Requires:  Currently only "Unrestricted". (Optional)
+#   RateLimit: Rate limit setting. (Optional)
+#     RatePerMinute: 6
+#     Burst: 3
 #
-# Declare Custom Roles in roles.yml under UserRoles:
+# Custom Roles in conf/roles.yml
 
 Account:
   View:
-    Roles: ["*"]
+    Roles: ["Verified"]
   ChangePassword:
-    Roles: ["*"]
+    Roles: ["Verified"]
     Requires: ["Unrestricted"]
   ChangeEmail:
-    Roles: ["*"]
+    Roles: ["Verified"]
     Requires: ["Unrestricted"]
   Withdraw:
-    Roles: ["*"]
+    Roles: ["Verified"]
     Requires: ["Unrestricted"]
     RateLimit:
       RatePerMinute: 6
@@ -66,14 +68,14 @@ Account:
 
 Tickets:
   View:
-    Roles: ["*"]
+    Roles: ["Verified"]
   Open:
-    Roles: ["*"]
+    Roles: ["Verified"]
     RateLimit:
       RatePerMinute: 5
       Burst: 3
   Reply:
-    Roles: ["*"]
+    Roles: ["Verified"]
   Manage:
     Roles: ["Moderator", "Enforcer"]
     Requires: ["Unrestricted"]
@@ -87,13 +89,13 @@ News:
 
 Notification:
   View:
-    Roles: ["*"]
+    Roles: ["Member"]
 
 Character:
   View:
-    Roles: ["*"]
+    Roles: ["Verified"]
   Reset:
-    Roles: ["*"]
+    Roles: ["Verified"]
     Requires: ["Unrestricted"]
 
 Guild:
@@ -102,14 +104,14 @@ Guild:
 
 Item:
   View:
-    Roles: ["*"]
+    Roles: ["Verified"]
   API:
     Roles: ["Public"]
     Requires: ["APIKey"]
 
 Mob:
   View:
-    Roles: ["*"]
+    Roles: ["Verified"]
   API:
     Roles: ["Public"]
     Requires: ["APIKey"]
@@ -128,7 +130,7 @@ Users:
 
 Vendor:
   View:
-    Roles: ["*"]
+    Roles: ["Verified"]
     Requires: ["Unrestricted"]
 
 Metric:
@@ -138,16 +140,16 @@ Metric:
 
 Store:
   View:
-    Roles: ["*"]
+    Roles: ["Verified"]
     Requires: ["Unrestricted"]
   Checkout:
-    Roles: ["*"]
+    Roles: ["Verified"]
     Requires: ["Unrestricted"]
     RateLimit:
       RatePerMinute: 6
       Burst: 3
   History:
-    Roles: ["*"]
+    Roles: ["Verified"]
     Requires: ["Unrestricted"]
 
 Webhooks:

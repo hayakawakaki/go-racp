@@ -55,6 +55,9 @@ func (r RoleResolver) GetRole(name string) (Role, bool) {
 	if name == RolePublic.Name {
 		return RolePublic, true
 	}
+	if name == config.MemberRoleName || name == config.VerifiedRoleName {
+		return RoleAuthenticated, true
+	}
 	role, ok := r.byName[name]
 
 	return role, ok

@@ -95,7 +95,7 @@ func (r *Registry) wrap(mux *http.ServeMux, tag, pattern string, handler http.Ha
 	entry, configured := r.lookup(group, action)
 	if !configured {
 		r.ungated = append(r.ungated, ungatedRoute{tag: tag, pattern: pattern})
-		policy := middleware.AuthPolicy{AllowTempBannedLogin: r.allowTempBannedLogin}
+		policy := middleware.AuthPolicy{AllowTempBannedLogin: r.allowTempBannedLogin, RequireVerified: true}
 		mux.Handle(pattern, middleware.RequireRole(r.sessSvc, r.users, r.resolver, r.logger, r.secure, policy, domain.RoleAuthenticated)(handler))
 		return
 	}
@@ -110,7 +110,7 @@ func (r *Registry) wrap(mux *http.ServeMux, tag, pattern string, handler http.Ha
 		return
 	}
 
-	policy := middleware.AuthPolicy{AllowTempBannedLogin: r.allowTempBannedLogin, Unrestricted: entry.unrestricted}
+	policy := middleware.AuthPolicy{AllowTempBannedLogin: r.allowTempBannedLogin, Unrestricted: entry.unrestricted, RequireVerified: entry.requireVerified}
 	if hidden {
 		mux.Handle(pattern, middleware.RequireRoleHidden(r.sessSvc, r.users, r.resolver, r.logger, r.secure, r.hiddenLayout, policy, entry.roles...)(handler))
 		return
@@ -120,7 +120,7 @@ func (r *Registry) wrap(mux *http.ServeMux, tag, pattern string, handler http.Ha
 }
 
 func (r *Registry) mountAdminOnly(mux *http.ServeMux, pattern string, handler http.Handler) {
-	policy := middleware.AuthPolicy{AllowTempBannedLogin: r.allowTempBannedLogin, Unrestricted: true}
+	policy := middleware.AuthPolicy{AllowTempBannedLogin: r.allowTempBannedLogin, Unrestricted: true, RequireVerified: true}
 	mux.Handle(pattern, middleware.RequireRoleHidden(r.sessSvc, r.users, r.resolver, r.logger, r.secure, r.hiddenLayout, policy)(handler))
 }
 
@@ -138,9 +138,10 @@ func (r *Registry) mountPublic(mux *http.ServeMux, tag, pattern string, handler 
 }
 
 type resolvedEntry struct {
-	roles          []domain.Role
-	unrestricted   bool
-	requiresAPIKey bool
+	roles           []domain.Role
+	unrestricted    bool
+	requiresAPIKey  bool
+	requireVerified bool
 }
 
 func (r *Registry) lookup(group, action string) (resolvedEntry, bool) {
@@ -164,7 +165,7 @@ func (r *Registry) lookup(group, action string) (resolvedEntry, bool) {
 		roles = append(roles, role)
 	}
 
-	return resolvedEntry{roles: roles, unrestricted: cfgEntry.RequiresUnrestricted(), requiresAPIKey: cfgEntry.RequiresAPIKey()}, true
+	return resolvedEntry{roles: roles, unrestricted: cfgEntry.RequiresUnrestricted(), requiresAPIKey: cfgEntry.RequiresAPIKey(), requireVerified: cfgEntry.RequiresVerified()}, true
 }
 
 func parseTag(tag string) (group, action string) {

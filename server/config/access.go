@@ -19,6 +19,10 @@ const requireKeyTag = "APIKey"
 
 const publicRoleName = "Public"
 
+const MemberRoleName = "Member"
+
+const VerifiedRoleName = "Verified"
+
 type Entry struct {
 	Roles     RoleList
 	RateLimit *RateLimitRule
@@ -40,6 +44,16 @@ func (e Entry) RequiresUnrestricted() bool {
 
 func (e Entry) RequiresAPIKey() bool {
 	return slices.Contains(e.Requires, requireKeyTag)
+}
+
+func (e Entry) RequiresVerified() bool {
+	for _, role := range e.Roles {
+		if role == publicRoleName || role == MemberRoleName {
+			return false
+		}
+	}
+
+	return true
 }
 
 var entryAllowedKeys = map[string]struct{}{

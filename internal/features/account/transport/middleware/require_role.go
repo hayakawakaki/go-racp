@@ -103,8 +103,10 @@ func requireRoleCore(
 				rejectBanned(w, r, logger, secure, hidden, layout, NoticeBanned, tier, snap, cookie.Value, sessSvc)
 				return
 			case app.TierUnverified:
-				rejectRedirect(w, r, logger, hidden, layout, "/verify-account")
-				return
+				if policy.RequireVerified {
+					rejectRedirect(w, r, logger, hidden, layout, "/verify-account")
+					return
+				}
 			case app.TierTempBanned:
 				if !policy.AllowTempBannedLogin {
 					rejectBanned(w, r, logger, secure, hidden, layout, NoticeBanned, tier, snap, cookie.Value, sessSvc)
