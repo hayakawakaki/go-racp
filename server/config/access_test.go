@@ -29,7 +29,7 @@ News:
   Edit:   ["Moderator", "Enforcer"]
 
 Events:
-  View:   ["*"]
+  View:   ["Verified"]
   Manage: ["Event", "Moderator"]
 `
 	cfg, err := parseAccessConfig([]byte(body))
@@ -44,7 +44,7 @@ Events:
 			"Edit":   Entry{Roles: RoleList{"Moderator", "Enforcer"}},
 		},
 		"Events": ActionRoles{
-			"View":   Entry{Roles: RoleList{"*"}},
+			"View":   Entry{Roles: RoleList{"Verified"}},
 			"Manage": Entry{Roles: RoleList{"Event", "Moderator"}},
 		},
 	}
@@ -131,6 +131,16 @@ func TestValidateAccessConfig_RejectsInvalid(t *testing.T) {
 			wantContain: "Public",
 			cfg:         AccessConfig{"News": ActionRoles{"View": Entry{Roles: RoleList{"Public"}, Requires: []string{"Unrestricted"}}}},
 		},
+		{
+			name:        "member combined with other role",
+			wantContain: "standalone audience",
+			cfg:         AccessConfig{"News": ActionRoles{"View": Entry{Roles: RoleList{"Member", "Moderator"}}}},
+		},
+		{
+			name:        "verified combined with other role",
+			wantContain: "standalone audience",
+			cfg:         AccessConfig{"News": ActionRoles{"View": Entry{Roles: RoleList{"Verified", "Moderator"}}}},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -150,7 +160,7 @@ func TestValidateAccessConfig_AcceptsHappyPath(t *testing.T) {
 		"News": ActionRoles{
 			"View":   Entry{},
 			"Create": Entry{Roles: RoleList{"Moderator"}},
-			"Edit":   Entry{Roles: RoleList{"*"}},
+			"Edit":   Entry{Roles: RoleList{"Verified"}},
 		},
 		"Home": ActionRoles{
 			"View": Entry{Roles: RoleList{"Public"}},
@@ -158,6 +168,17 @@ func TestValidateAccessConfig_AcceptsHappyPath(t *testing.T) {
 		"Users": ActionRoles{
 			"List": Entry{Roles: RoleList{"Admin"}},
 			"Ban":  Entry{Roles: RoleList{"Moderator", "Enforcer"}, Requires: []string{"Unrestricted"}},
+		},
+	}
+	validateAccessConfig(cfg)
+}
+
+func TestValidateAccessConfig_AcceptsMemberAndVerified(t *testing.T) {
+	t.Parallel()
+	cfg := AccessConfig{
+		"Account": ActionRoles{
+			"View":        Entry{Roles: RoleList{"Member"}},
+			"ChangeEmail": Entry{Roles: RoleList{"Verified"}, Requires: []string{"Unrestricted"}},
 		},
 	}
 	validateAccessConfig(cfg)
@@ -181,9 +202,9 @@ func TestParseAccessConfig_StructFormDecodesIntoEntry(t *testing.T) {
 
 	body := `
 Account:
-  View: ["*"]
+  View: ["Member"]
   ChangeEmail:
-    Roles: ["*"]
+    Roles: ["Verified"]
     Requires: ["Unrestricted"]
   ChangePassword:
     Roles: ["Moderator", "Enforcer"]
@@ -196,8 +217,8 @@ Account:
 
 	want := AccessConfig{
 		"Account": ActionRoles{
-			"View":           Entry{Roles: RoleList{"*"}},
-			"ChangeEmail":    Entry{Roles: RoleList{"*"}, Requires: []string{"Unrestricted"}},
+			"View":           Entry{Roles: RoleList{"Member"}},
+			"ChangeEmail":    Entry{Roles: RoleList{"Verified"}, Requires: []string{"Unrestricted"}},
 			"ChangePassword": Entry{Roles: RoleList{"Moderator", "Enforcer"}, Requires: []string{"Unrestricted"}},
 		},
 	}
@@ -210,11 +231,11 @@ func TestParseAccessConfig_ShorthandAndStructProduceSameEntry(t *testing.T) {
 	t.Parallel()
 
 	shorthandBody := []byte(`Account:
-  View: ["*"]
+  View: ["Member"]
 `)
 	structBody := []byte(`Account:
   View:
-    Roles: ["*"]
+    Roles: ["Member"]
 `)
 	shorthand, err := parseAccessConfig(shorthandBody)
 	if err != nil {
@@ -234,7 +255,7 @@ func TestValidateAccessConfig_UnknownRequiresTagPanics(t *testing.T) {
 
 	cfg := AccessConfig{
 		"Account": ActionRoles{
-			"ChangePassword": Entry{Roles: RoleList{"*"}, Requires: []string{"Mystery"}},
+			"ChangePassword": Entry{Roles: RoleList{"Verified"}, Requires: []string{"Mystery"}},
 		},
 	}
 	msg := mustPanicMessage(t, func() { validateAccessConfig(cfg) })
@@ -268,7 +289,7 @@ func TestValidateAccessConfig_KnownRequiresTagAccepted(t *testing.T) {
 
 	cfg := AccessConfig{
 		"Account": ActionRoles{
-			"ChangePassword": Entry{Roles: RoleList{"*"}, Requires: []string{RequireUnrestricted}},
+			"ChangePassword": Entry{Roles: RoleList{"Verified"}, Requires: []string{RequireUnrestricted}},
 		},
 	}
 	validateAccessConfig(cfg)
@@ -282,16 +303,39 @@ func TestEntry_RequiresUnrestricted(t *testing.T) {
 		entry Entry
 		want  bool
 	}{
-		{name: "no requires", entry: Entry{Roles: RoleList{"*"}}, want: false},
-		{name: "empty requires", entry: Entry{Roles: RoleList{"*"}, Requires: []string{}}, want: false},
-		{name: "unrestricted tag", entry: Entry{Roles: RoleList{"*"}, Requires: []string{"Unrestricted"}}, want: true},
-		{name: "unrestricted among others", entry: Entry{Roles: RoleList{"*"}, Requires: []string{"Other", "Unrestricted"}}, want: true},
+		{name: "no requires", entry: Entry{Roles: RoleList{"Verified"}}, want: false},
+		{name: "empty requires", entry: Entry{Roles: RoleList{"Verified"}, Requires: []string{}}, want: false},
+		{name: "unrestricted tag", entry: Entry{Roles: RoleList{"Verified"}, Requires: []string{"Unrestricted"}}, want: true},
+		{name: "unrestricted among others", entry: Entry{Roles: RoleList{"Verified"}, Requires: []string{"Other", "Unrestricted"}}, want: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			if got := tt.entry.RequiresUnrestricted(); got != tt.want {
 				t.Errorf("RequiresUnrestricted() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestEntry_RequiresVerified(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		entry Entry
+		want  bool
+	}{
+		{name: "public is not verified", entry: Entry{Roles: RoleList{"Public"}}, want: false},
+		{name: "member is not verified", entry: Entry{Roles: RoleList{"Member"}}, want: false},
+		{name: "verified requires verification", entry: Entry{Roles: RoleList{"Verified"}}, want: true},
+		{name: "specific role implies verified", entry: Entry{Roles: RoleList{"Moderator"}}, want: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := tt.entry.RequiresVerified(); got != tt.want {
+				t.Errorf("RequiresVerified() = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -16,6 +16,7 @@ const (
 type AuthPolicy struct {
 	AllowTempBannedLogin bool
 	Unrestricted         bool
+	RequireVerified      bool
 }
 
 type UserLookup interface {

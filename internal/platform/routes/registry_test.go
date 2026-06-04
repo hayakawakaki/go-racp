@@ -108,11 +108,11 @@ func TestRegistry_Wrap_TaggedWithConfigGatesRequest(t *testing.T) {
 	}
 }
 
-func TestRegistry_Wrap_StarMeansAuthenticated(t *testing.T) {
+func TestRegistry_Wrap_MemberMeansAuthenticated(t *testing.T) {
 	t.Parallel()
 	mux := http.NewServeMux()
 	reg, _ := newRegistry(t, config.AccessConfig{
-		"Account": config.ActionRoles{"View": config.Entry{Roles: config.RoleList{"*"}}},
+		"Account": config.ActionRoles{"View": config.Entry{Roles: config.RoleList{"Member"}}},
 	})
 
 	reg.Wrap(mux, "Account.View", "GET /account", okHandler())
@@ -121,7 +121,7 @@ func TestRegistry_Wrap_StarMeansAuthenticated(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/account", http.NoBody)
 	mux.ServeHTTP(rr, req)
 	if rr.Code != http.StatusSeeOther {
-		t.Errorf("anonymous on * route must redirect; status = %d, want 303", rr.Code)
+		t.Errorf("anonymous on Member route must redirect; status = %d, want 303", rr.Code)
 	}
 }
 
@@ -237,7 +237,7 @@ func TestRegistry_Wrap_UnrestrictedRouteSoftBlocksTempBanned(t *testing.T) {
 	}
 	cfg := config.AccessConfig{
 		"Account": config.ActionRoles{
-			"ChangePassword": config.Entry{Roles: config.RoleList{"*"}, Requires: []string{"Unrestricted"}},
+			"ChangePassword": config.Entry{Roles: config.RoleList{"Verified"}, Requires: []string{"Unrestricted"}},
 		},
 	}
 	reg := NewRegistry(cfg, nil, resolver, sess, users, logger, false, true, httpx.Layout{}, nil)
@@ -275,7 +275,7 @@ func TestRegistry_Wrap_NonUnrestrictedRouteAllowsTempBanned(t *testing.T) {
 	}
 	cfg := config.AccessConfig{
 		"Account": config.ActionRoles{
-			"View": config.Entry{Roles: config.RoleList{"*"}},
+			"View": config.Entry{Roles: config.RoleList{"Member"}},
 		},
 	}
 	reg := NewRegistry(cfg, nil, resolver, sess, users, logger, false, true, httpx.Layout{}, nil)
@@ -289,6 +289,79 @@ func TestRegistry_Wrap_NonUnrestrictedRouteAllowsTempBanned(t *testing.T) {
 
 	if rr.Code != http.StatusOK {
 		t.Errorf("temp-banned user on non-Unrestricted route must pass through; got %d body=%q", rr.Code, rr.Body.String())
+	}
+}
+
+func TestRegistry_Wrap_MemberRouteAdmitsUnverified(t *testing.T) {
+	t.Parallel()
+	mux := http.NewServeMux()
+	buf := &bytes.Buffer{}
+	resolver := accdomain.NewRoleResolver(config.RolesConfig{"Moderator": 20})
+	logger := slog.New(slog.NewTextHandler(buf, nil))
+	sess := &stubSession{
+		validateFn: func(context.Context, string) (*accdomain.Session, error) {
+			return &accdomain.Session{UserID: 1}, nil
+		},
+	}
+	users := &stubUsers{
+		getFn: func(context.Context, int) (*accdomain.User, error) {
+			return &accdomain.User{ID: 1, GroupID: 0, State: 1}, nil
+		},
+	}
+	cfg := config.AccessConfig{
+		"Notification": config.ActionRoles{
+			"View": config.Entry{Roles: config.RoleList{"Member"}},
+		},
+	}
+	reg := NewRegistry(cfg, nil, resolver, sess, users, logger, false, true, httpx.Layout{}, nil)
+
+	reg.Wrap(mux, "Notification.View", "GET /notifications", okHandler())
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/notifications", http.NoBody)
+	req.AddCookie(&http.Cookie{Name: "racp_session", Value: "valid"})
+	mux.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("unverified user on Member route must pass through; got %d body=%q", rr.Code, rr.Body.String())
+	}
+}
+
+func TestRegistry_Wrap_VerifiedRouteRedirectsUnverified(t *testing.T) {
+	t.Parallel()
+	mux := http.NewServeMux()
+	buf := &bytes.Buffer{}
+	resolver := accdomain.NewRoleResolver(config.RolesConfig{"Moderator": 20})
+	logger := slog.New(slog.NewTextHandler(buf, nil))
+	sess := &stubSession{
+		validateFn: func(context.Context, string) (*accdomain.Session, error) {
+			return &accdomain.Session{UserID: 1}, nil
+		},
+	}
+	users := &stubUsers{
+		getFn: func(context.Context, int) (*accdomain.User, error) {
+			return &accdomain.User{ID: 1, GroupID: 0, State: 1}, nil
+		},
+	}
+	cfg := config.AccessConfig{
+		"Account": config.ActionRoles{
+			"ChangeEmail": config.Entry{Roles: config.RoleList{"Verified"}, Requires: []string{"Unrestricted"}},
+		},
+	}
+	reg := NewRegistry(cfg, nil, resolver, sess, users, logger, false, true, httpx.Layout{}, nil)
+
+	reg.Wrap(mux, "Account.ChangeEmail", "POST /account/email", okHandler())
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/account/email", http.NoBody)
+	req.AddCookie(&http.Cookie{Name: "racp_session", Value: "valid"})
+	mux.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusSeeOther {
+		t.Errorf("unverified user on Verified route must redirect; got %d", rr.Code)
+	}
+	if got := rr.Header().Get("Location"); got != "/verify-account" {
+		t.Errorf("Location = %q, want /verify-account", got)
 	}
 }
 
@@ -502,7 +575,7 @@ func TestRegistry_RoutesSnapshot_RecordsEveryWrapCall(t *testing.T) {
 
 	cfg := config.AccessConfig{
 		"Home":       config.ActionRoles{"View": config.Entry{Roles: config.RoleList{"Public"}}},
-		"Account":    config.ActionRoles{"View": config.Entry{Roles: config.RoleList{"*"}}},
+		"Account":    config.ActionRoles{"View": config.Entry{Roles: config.RoleList{"Member"}}},
 		"ThemePages": config.ActionRoles{"Rates": config.Entry{Roles: config.RoleList{"Public"}}},
 	}
 

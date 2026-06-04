@@ -103,9 +103,9 @@ func TestRequireRole_TierMatrix(t *testing.T) {
 			},
 		},
 		{
-			name:    "unverified redirects to verify-account and preserves session",
+			name:    "unverified on verified route redirects to verify-account and preserves session",
 			userFn:  userWithState(1, 0, time.Time{}),
-			policy:  AuthPolicy{AllowTempBannedLogin: true},
+			policy:  AuthPolicy{AllowTempBannedLogin: true, RequireVerified: true},
 			allowed: []domain.Role{domain.RoleAuthenticated},
 			want: want{
 				status:    http.StatusSeeOther,
@@ -114,14 +114,25 @@ func TestRequireRole_TierMatrix(t *testing.T) {
 			},
 		},
 		{
-			name:    "unverified hidden returns 404",
+			name:    "unverified on verified route hidden returns 404",
 			userFn:  userWithState(1, 0, time.Time{}),
-			policy:  AuthPolicy{AllowTempBannedLogin: true},
+			policy:  AuthPolicy{AllowTempBannedLogin: true, RequireVerified: true},
 			allowed: []domain.Role{domain.RoleAdmin},
 			hidden:  true,
 			want: want{
 				status:    http.StatusNotFound,
 				destroyed: false,
+			},
+		},
+		{
+			name:    "unverified on member route passes through with snapshot",
+			userFn:  userWithState(1, 0, time.Time{}),
+			policy:  AuthPolicy{AllowTempBannedLogin: true, RequireVerified: false},
+			allowed: []domain.Role{domain.RoleAuthenticated},
+			want: want{
+				status:   http.StatusOK,
+				called:   true,
+				snapshot: true,
 			},
 		},
 		{
