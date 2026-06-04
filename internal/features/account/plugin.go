@@ -59,6 +59,7 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 		Users:                userRepo,
 		Characters:           charSvc,
 		Currency:             currencySvc,
+		Notifications:        in.Notifications,
 		Theme:                theme.Active,
 		Secure:               secure,
 		General:              in.Config.App.General,

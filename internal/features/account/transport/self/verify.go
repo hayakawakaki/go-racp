@@ -29,26 +29,35 @@ var resendNoticeText = map[string]string{
 	resendNoticeFailed: "Couldn't send verification email. Please try again in a moment.",
 }
 
-func (h *Handler) showVerifyAccount(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) requireUnverifiedSession(w http.ResponseWriter, r *http.Request) (*domain.User, bool) {
 	cookie, err := r.Cookie(middleware.SessionCookieName)
 	if err != nil || cookie.Value == "" {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
+		httpx.Redirect(w, r, "/login")
+		return nil, false
 	}
 
 	sess, err := h.sessSvc.Validate(r.Context(), cookie.Value)
 	if err != nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
+		httpx.Redirect(w, r, "/login")
+		return nil, false
 	}
 
 	user, err := h.users.GetByID(r.Context(), sess.UserID)
 	if err != nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
+		httpx.Redirect(w, r, "/login")
+		return nil, false
 	}
 	if user.State != app.StateUnverified {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		httpx.Redirect(w, r, "/")
+		return nil, false
+	}
+
+	return user, true
+}
+
+func (h *Handler) showVerifyAccount(w http.ResponseWriter, r *http.Request) {
+	user, ok := h.requireUnverifiedSession(w, r)
+	if !ok {
 		return
 	}
 
@@ -60,6 +69,10 @@ func (h *Handler) showVerifyAccount(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) showVerify(w http.ResponseWriter, r *http.Request) {
+	if _, ok := h.requireUnverifiedSession(w, r); !ok {
+		return
+	}
+
 	expired := h.theme.AccountVerifyResultPage(h.layout(), selfstate.VerifyResultState{Kind: selfstate.VerifyResultExpired})
 	token, ok := h.validateTokenLink(w, r, actiontokendomain.EmailVerification, "verify peek", expired)
 	if !ok {
@@ -85,7 +98,7 @@ func (h *Handler) doVerify(w http.ResponseWriter, r *http.Request) {
 
 	err := h.svc.ConsumeVerification(r.Context(), token)
 	if (err == nil || errors.Is(err, actiontokendomain.ErrTokenAlreadyUsed)) && h.hasActiveSession(r) {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		httpx.Redirect(w, r, "/")
 		return
 	}
 
@@ -118,13 +131,13 @@ func (h *Handler) hasActiveSession(r *http.Request) bool {
 func (h *Handler) doResendVerification(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(middleware.SessionCookieName)
 	if err != nil || cookie.Value == "" {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		httpx.Redirect(w, r, "/login")
 		return
 	}
 
 	sess, err := h.sessSvc.Validate(r.Context(), cookie.Value)
 	if err != nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		httpx.Redirect(w, r, "/login")
 		return
 	}
 

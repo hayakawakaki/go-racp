@@ -211,6 +211,119 @@ func TestShowVerifyAccount_NoticeQueryParam(t *testing.T) {
 	}
 }
 
+func TestShowVerify_NoCookie_RedirectsToLogin(t *testing.T) {
+	t.Parallel()
+	h := newVerifyHandler(&stubUserLookup{}, &stubSessionService{}, &stubAccountService{}, nil)
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/verify?token=abc", http.NoBody)
+	h.showVerify(rr, req)
+
+	if rr.Code != http.StatusSeeOther {
+		t.Errorf("status = %d, want %d", rr.Code, http.StatusSeeOther)
+	}
+	if rr.Header().Get("Location") != "/login" {
+		t.Errorf("Location = %q, want /login", rr.Header().Get("Location"))
+	}
+}
+
+func TestShowVerify_InvalidSession_RedirectsToLogin(t *testing.T) {
+	t.Parallel()
+	sess := &stubSessionService{
+		validateFn: func(context.Context, string) (*domain.Session, error) {
+			return nil, domain.ErrSessionExpired
+		},
+	}
+	h := newVerifyHandler(&stubUserLookup{}, sess, &stubAccountService{}, nil)
+
+	rr := httptest.NewRecorder()
+	req := withSessionCookie(httptest.NewRequest(http.MethodGet, "/verify?token=abc", http.NoBody), "stale")
+	h.showVerify(rr, req)
+
+	if rr.Header().Get("Location") != "/login" {
+		t.Errorf("Location = %q, want /login", rr.Header().Get("Location"))
+	}
+}
+
+func TestShowVerify_AlreadyVerified_RedirectsToHome(t *testing.T) {
+	t.Parallel()
+	sess := &stubSessionService{
+		validateFn: func(context.Context, string) (*domain.Session, error) {
+			return &domain.Session{UserID: 1}, nil
+		},
+	}
+	users := &stubUserLookup{
+		getByIDFn: func(_ context.Context, id int) (*domain.User, error) {
+			return &domain.User{ID: id, State: 0}, nil
+		},
+	}
+	h := newVerifyHandler(users, sess, &stubAccountService{}, nil)
+
+	rr := httptest.NewRecorder()
+	req := withSessionCookie(httptest.NewRequest(http.MethodGet, "/verify?token=abc", http.NoBody), "ok")
+	h.showVerify(rr, req)
+
+	if rr.Code != http.StatusSeeOther {
+		t.Errorf("status = %d, want %d", rr.Code, http.StatusSeeOther)
+	}
+	if rr.Header().Get("Location") != "/" {
+		t.Errorf("Location = %q, want /", rr.Header().Get("Location"))
+	}
+}
+
+func TestShowVerify_Unverified_RendersConfirm(t *testing.T) {
+	t.Parallel()
+	sess := &stubSessionService{
+		validateFn: func(context.Context, string) (*domain.Session, error) {
+			return &domain.Session{UserID: 1}, nil
+		},
+	}
+	users := &stubUserLookup{
+		getByIDFn: func(_ context.Context, id int) (*domain.User, error) {
+			return &domain.User{ID: id, State: 1}, nil
+		},
+	}
+	h := newVerifyHandler(users, sess, &stubAccountService{}, nil)
+
+	rr := httptest.NewRecorder()
+	req := withSessionCookie(httptest.NewRequest(http.MethodGet, "/verify?token=abc", http.NoBody), "ok")
+	h.showVerify(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("status = %d, want 200 (unverified session must reach confirm page)", rr.Code)
+	}
+	if rr.Header().Get("Location") != "" {
+		t.Errorf("should not redirect; got Location %q", rr.Header().Get("Location"))
+	}
+}
+
+func TestShowVerify_AlreadyVerified_Boosted_HXRedirectsHome(t *testing.T) {
+	t.Parallel()
+	sess := &stubSessionService{
+		validateFn: func(context.Context, string) (*domain.Session, error) {
+			return &domain.Session{UserID: 1}, nil
+		},
+	}
+	users := &stubUserLookup{
+		getByIDFn: func(_ context.Context, id int) (*domain.User, error) {
+			return &domain.User{ID: id, State: 0}, nil
+		},
+	}
+	h := newVerifyHandler(users, sess, &stubAccountService{}, nil)
+
+	rr := httptest.NewRecorder()
+	req := withSessionCookie(httptest.NewRequest(http.MethodGet, "/verify?token=abc", http.NoBody), "ok")
+	req.Header.Set("HX-Boosted", "true")
+	h.showVerify(rr, req)
+
+	if rr.Code != http.StatusNoContent {
+		t.Errorf("status = %d, want %d (boosted nav must use HX-Redirect)", rr.Code, http.StatusNoContent)
+	}
+	if rr.Header().Get("HX-Redirect") != "/" {
+		t.Errorf("HX-Redirect = %q, want /", rr.Header().Get("HX-Redirect"))
+	}
+}
+
 func TestDoVerify_EmptyToken_RendersInvalid(t *testing.T) {
 	t.Parallel()
 	consumeCalled := false
@@ -274,6 +387,31 @@ func TestDoVerify_Success_ActiveSession_RedirectsHome(t *testing.T) {
 	}
 	if rr.Header().Get("Location") != "/" {
 		t.Errorf("Location = %q, want /", rr.Header().Get("Location"))
+	}
+}
+
+func TestDoVerify_Success_Boosted_HXRedirectsHome(t *testing.T) {
+	t.Parallel()
+	sess := &stubSessionService{
+		validateFn: func(context.Context, string) (*domain.Session, error) {
+			return &domain.Session{UserID: 1}, nil
+		},
+	}
+	verify := &stubAccountService{
+		consumeVerificationFn: func(context.Context, string) error { return nil },
+	}
+	h := newVerifyHandler(&stubUserLookup{}, sess, verify, nil)
+
+	rr := httptest.NewRecorder()
+	req := withSessionCookie(postForm("/verify", map[string]string{"token": "abc"}), "ok")
+	req.Header.Set("HX-Boosted", "true")
+	h.doVerify(rr, req)
+
+	if rr.Code != http.StatusNoContent {
+		t.Errorf("status = %d, want %d (boosted submit must navigate via HX-Redirect)", rr.Code, http.StatusNoContent)
+	}
+	if rr.Header().Get("HX-Redirect") != "/" {
+		t.Errorf("HX-Redirect = %q, want /", rr.Header().Get("HX-Redirect"))
 	}
 }
 

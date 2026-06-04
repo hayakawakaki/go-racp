@@ -26,11 +26,12 @@ func findSetCookie(rr *httptest.ResponseRecorder, name string) *http.Cookie {
 
 func newAuthHandler(auth *stubAccountService, sess *stubSessionService) *Handler {
 	return &Handler{
-		svc:     auth,
-		sessSvc: sess,
-		theme:   stubTheme{},
-		logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
-		secure:  false,
+		svc:           auth,
+		sessSvc:       sess,
+		theme:         stubTheme{},
+		logger:        slog.New(slog.NewTextHandler(io.Discard, nil)),
+		secure:        false,
+		notifications: &stubNotifier{},
 	}
 }
 
@@ -73,7 +74,10 @@ func TestShowLogin_Renders(t *testing.T) {
 func TestDoRegister_Happy(t *testing.T) {
 	t.Parallel()
 	auth := &stubAccountService{}
-	h := newAuthHandler(auth, &stubSessionService{})
+	sess := &stubSessionService{}
+	notify := &stubNotifier{}
+	h := newAuthHandler(auth, sess)
+	h.notifications = notify
 
 	rr := httptest.NewRecorder()
 	req := postForm("/register", map[string]string{
@@ -88,8 +92,20 @@ func TestDoRegister_Happy(t *testing.T) {
 	if rr.Code != http.StatusSeeOther {
 		t.Errorf("status = %d, want 303", rr.Code)
 	}
-	if rr.Header().Get("Location") != "/login" {
-		t.Errorf("Location = %q", rr.Header().Get("Location"))
+	if rr.Header().Get("Location") != "/" {
+		t.Errorf("Location = %q, want /", rr.Header().Get("Location"))
+	}
+	if len(sess.createCalls) != 1 || sess.createCalls[0] != 1 {
+		t.Errorf("session createCalls = %v, want exactly [1] (auto-login of new account)", sess.createCalls)
+	}
+	if findSetCookie(rr, middleware.SessionCookieName) == nil {
+		t.Errorf("expected session cookie set on auto-login")
+	}
+	if len(notify.emitCalls) != 1 {
+		t.Fatalf("notifier Emit calls = %d, want 1", len(notify.emitCalls))
+	}
+	if got := notify.emitCalls[0]; got.AccountID != 1 || got.Category != "account.welcome" || got.Link != "/account" {
+		t.Errorf("welcome notification = %+v, want accountID 1, category account.welcome, link /account", got)
 	}
 }
 
@@ -111,8 +127,38 @@ func TestDoRegister_HTMX_Happy(t *testing.T) {
 	if rr.Code != http.StatusNoContent {
 		t.Errorf("status = %d, want 204", rr.Code)
 	}
-	if rr.Header().Get("HX-Redirect") != "/login" {
-		t.Errorf("HX-Redirect = %q", rr.Header().Get("HX-Redirect"))
+	if rr.Header().Get("HX-Redirect") != "/" {
+		t.Errorf("HX-Redirect = %q, want /", rr.Header().Get("HX-Redirect"))
+	}
+}
+
+func TestDoRegister_WelcomeNotificationFailureIsNonFatal(t *testing.T) {
+	t.Parallel()
+	auth := &stubAccountService{}
+	sess := &stubSessionService{}
+	notify := &stubNotifier{
+		emitFn: func(context.Context, int, string, string, string, string) error {
+			return errors.New("notify boom")
+		},
+	}
+	h := newAuthHandler(auth, sess)
+	h.notifications = notify
+
+	rr := httptest.NewRecorder()
+	req := postForm("/register", map[string]string{
+		"username":         "testuser",
+		"email":            "test@x",
+		"password":         "Test1234!",
+		"password_confirm": "Test1234!",
+		"gender":           "F",
+	})
+	h.doRegister(rr, req)
+
+	if rr.Code != http.StatusSeeOther {
+		t.Errorf("status = %d, want 303 (emit failure must not block registration)", rr.Code)
+	}
+	if rr.Header().Get("Location") != "/" {
+		t.Errorf("Location = %q, want / despite notify failure", rr.Header().Get("Location"))
 	}
 }
 

@@ -31,6 +31,9 @@ const (
 	genericErrorMessage = "Something went wrong. Please try again."
 	invalidFormDataMsg  = "Invalid form data."
 
+	welcomeNotificationCategory = "account.welcome"
+	welcomeNotificationBody     = "Welcome! Please verify your email to unlock the full control panel."
+
 	fieldUsername           = "username"
 	fieldEmail              = "email"
 	fieldPassword           = "password"
@@ -78,6 +81,10 @@ type currencyService interface {
 	WithdrawHistoryByAccount(ctx context.Context, accountID, page, perPage int) (currency.WithdrawHistoryPage, error)
 }
 
+type notifier interface {
+	Emit(ctx context.Context, accountID int, category, title, body, link string) error
+}
+
 type Renderer interface {
 	AccountPage(layout httpx.Layout, state selfstate.AccountState) templ.Component
 	AccountChangeEmailModal(state selfstate.ChangeEmailState) templ.Component
@@ -112,6 +119,7 @@ type HandlerConfig struct {
 	Users                userLookup
 	Characters           characterLister
 	Currency             currencyService
+	Notifications        notifier
 	Theme                Renderer
 	TrustedProxies       []*net.IPNet
 	General              config.GeneralConfig
@@ -126,6 +134,7 @@ type Handler struct {
 	users                userLookup
 	characters           characterLister
 	currency             currencyService
+	notifications        notifier
 	theme                Renderer
 	logger               *slog.Logger
 	trustedProxies       []*net.IPNet
@@ -146,6 +155,7 @@ func NewHandler(svc accountService, sessSvc sessionService, cfg HandlerConfig) *
 		users:                cfg.Users,
 		characters:           cfg.Characters,
 		currency:             cfg.Currency,
+		notifications:        cfg.Notifications,
 		theme:                cfg.Theme,
 		logger:               logger,
 		trustedProxies:       cfg.TrustedProxies,
@@ -228,7 +238,7 @@ func (h *Handler) doRegister(w http.ResponseWriter, r *http.Request) {
 		Birthdate:       r.PostFormValue(fieldBirthdate),
 	}
 
-	_, err := h.svc.Create(r.Context(), cmd)
+	created, err := h.svc.Create(r.Context(), cmd)
 	if err != nil {
 		state := selfstate.RegisterFormState{
 			Username:     cmd.Username,
@@ -249,7 +259,19 @@ func (h *Handler) doRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.Redirect(w, r, "/login")
+	token, _, err := h.sessSvc.Create(r.Context(), created.ID)
+	if err != nil {
+		h.logger.Error("register: session create", "err", err)
+		httpx.Redirect(w, r, "/login")
+		return
+	}
+	setSessionCookie(w, token, h.sessSvc.TTL(), h.secure)
+
+	if err := h.notifications.Emit(r.Context(), created.ID, welcomeNotificationCategory, "Welcome to "+h.general.ServerName, welcomeNotificationBody, "/account"); err != nil {
+		h.logger.Warn("register: welcome notification", "err", err, "account_id", created.ID)
+	}
+
+	httpx.Redirect(w, r, "/")
 }
 
 func (h *Handler) renderRegister(w http.ResponseWriter, r *http.Request, state selfstate.RegisterFormState) {

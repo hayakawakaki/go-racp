@@ -363,3 +363,31 @@ func (s *stubCurrencyService) WithdrawHistoryByAccount(ctx context.Context, acco
 	}
 	return currency.WithdrawHistoryPage{}, nil
 }
+
+type notifyCall struct {
+	Category  string
+	Title     string
+	Body      string
+	Link      string
+	AccountID int
+}
+
+type stubNotifier struct {
+	emitFn    func(context.Context, int, string, string, string, string) error
+	emitCalls []notifyCall
+}
+
+func (s *stubNotifier) Emit(ctx context.Context, accountID int, category, title, body, link string) error {
+	s.emitCalls = append(s.emitCalls, notifyCall{
+		AccountID: accountID,
+		Category:  category,
+		Title:     title,
+		Body:      body,
+		Link:      link,
+	})
+	if s.emitFn != nil {
+		return s.emitFn(ctx, accountID, category, title, body, link)
+	}
+
+	return nil
+}
