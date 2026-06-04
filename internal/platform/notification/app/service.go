@@ -9,6 +9,16 @@ import (
 	"github.com/hayakawakaki/go-racp/internal/platform/notification/domain"
 )
 
+const inboxPageSize = 50
+
+type Page struct {
+	Items      []domain.Notification
+	Total      int
+	Page       int
+	PerPage    int
+	TotalPages int
+}
+
 type Service struct {
 	repo        domain.Repository
 	broadcaster *Broadcaster
@@ -88,6 +98,27 @@ func (s *Service) Recent(ctx context.Context, accountID int) ([]domain.Notificat
 	}
 
 	return items, nil
+}
+
+func (s *Service) Inbox(ctx context.Context, accountID int, unreadOnly bool, page int) (Page, error) {
+	page = max(page, 1)
+
+	offset := (page - 1) * inboxPageSize
+
+	items, total, err := s.repo.ListPage(ctx, accountID, unreadOnly, inboxPageSize, offset)
+	if err != nil {
+		return Page{}, fmt.Errorf("notification.Service.Inbox: %w", err)
+	}
+
+	totalPages := max((total+inboxPageSize-1)/inboxPageSize, 1)
+
+	return Page{
+		Items:      items,
+		Total:      total,
+		Page:       page,
+		PerPage:    inboxPageSize,
+		TotalPages: totalPages,
+	}, nil
 }
 
 func (s *Service) UnreadCount(ctx context.Context, accountID int) (int, error) {

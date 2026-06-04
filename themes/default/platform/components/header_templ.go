@@ -1110,7 +1110,7 @@ func notificationBell() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "<div x-show=\"open\" x-cloak x-transition class=\"absolute right-0 mt-2 w-80 rounded-md border border-border bg-surface shadow-lg z-50\"><div id=\"notification-menu\" hx-get=\"/notifications/menu\" hx-trigger=\"refresh-notifications from:body\" hx-swap=\"innerHTML\"><p class=\"px-4 py-6 text-sm text-muted text-center\">Loading...</p></div></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "<div x-show=\"open\" x-cloak x-transition class=\"absolute right-0 mt-2 w-96 max-w-[90vw] rounded-md border border-border bg-surface shadow-lg z-50\"><div id=\"notification-menu\" hx-get=\"/notifications/menu\" hx-trigger=\"refresh-notifications from:body\" hx-swap=\"innerHTML\"><p class=\"px-4 py-6 text-sm text-muted text-center\">Loading...</p></div></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

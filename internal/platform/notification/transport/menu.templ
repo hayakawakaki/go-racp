@@ -30,6 +30,12 @@ templ Menu(items []domain.Notification) {
 			}
 		</ul>
 	}
+	<a
+		href="/notifications"
+		class="block px-4 py-3 text-center text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline border-t border-border"
+	>
+		View all
+	</a>
 }
 
 templ menuRow(item domain.Notification) {
@@ -41,16 +47,16 @@ templ menuRow(item domain.Notification) {
 			hx-swap="none"
 			class={ "block px-4 py-3 hover:bg-accent-wash transition-colors", templ.KV("bg-accent-wash/40", !item.IsRead()) }
 		>
-			<div class="flex items-start gap-2">
-				if !item.IsRead() {
-					<span class="mt-1 h-2 w-2 rounded-full bg-indigo-500 shrink-0"></span>
-				}
-				<div class="min-w-0">
+			<div class="flex items-center gap-2">
+				<div class="min-w-0 flex-1">
 					<p class="text-sm font-medium text-font truncate">{ item.Title }</p>
 					if item.Body != "" {
 						<p class="text-xs text-muted line-clamp-2">{ item.Body }</p>
 					}
 				</div>
+				if !item.IsRead() {
+					<span class="h-2 w-2 rounded-full bg-indigo-500 shrink-0"></span>
+				}
 			</div>
 		</a>
 	</li>

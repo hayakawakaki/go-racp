@@ -59,6 +59,41 @@ func (r *Repository) RecentByAccount(ctx context.Context, accountID, limit int) 
 	return out, nil
 }
 
+func (r *Repository) ListPage(ctx context.Context, accountID int, unreadOnly bool, limit, offset int) ([]domain.Notification, int, error) {
+	countQuery := `SELECT COUNT(*) FROM cp_notification WHERE account_id = $1`
+	listQuery := `SELECT ` + notificationColumns + `
+		 FROM cp_notification
+		 WHERE account_id = $1
+		 ORDER BY created_at DESC, id DESC
+		 LIMIT $2 OFFSET $3`
+	if unreadOnly {
+		countQuery = `SELECT COUNT(*) FROM cp_notification WHERE account_id = $1 AND read_at IS NULL`
+		listQuery = `SELECT ` + notificationColumns + `
+		 FROM cp_notification
+		 WHERE account_id = $1 AND read_at IS NULL
+		 ORDER BY created_at DESC, id DESC
+		 LIMIT $2 OFFSET $3`
+	}
+
+	var total int
+	if err := r.Pool.QueryRow(ctx, countQuery, accountID).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("infra.Repository.ListPage: %w", err)
+	}
+
+	rows, err := r.Pool.Query(ctx, listQuery, accountID, limit, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("infra.Repository.ListPage: %w", err)
+	}
+	defer rows.Close()
+
+	out, err := collectNotifications(rows)
+	if err != nil {
+		return nil, 0, fmt.Errorf("infra.Repository.ListPage: %w", err)
+	}
+
+	return out, total, nil
+}
+
 func (r *Repository) UnreadCount(ctx context.Context, accountID int) (int, error) {
 	var count int
 	err := r.Pool.QueryRow(ctx,

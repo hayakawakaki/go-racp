@@ -15,13 +15,15 @@ import (
 type Handler struct {
 	svc    *notificationapp.Service
 	logger *slog.Logger
+	layout httpx.Layout
 }
 
-func NewHandler(svc *notificationapp.Service, logger *slog.Logger) *Handler {
-	return &Handler{svc: svc, logger: logger}
+func NewHandler(svc *notificationapp.Service, logger *slog.Logger, layout httpx.Layout) *Handler {
+	return &Handler{svc: svc, logger: logger, layout: layout}
 }
 
 func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
+	reg.Wrap(mux, "Notification.View", "GET /notifications", http.HandlerFunc(h.inbox))
 	reg.Wrap(mux, "Notification.View", "GET /notifications/menu", http.HandlerFunc(h.menu))
 	reg.Wrap(mux, "Notification.View", "GET /notifications/unread-count", http.HandlerFunc(h.unreadCount))
 	reg.Wrap(mux, "Notification.View", "GET /notifications/stream", http.HandlerFunc(h.stream))
@@ -53,6 +55,34 @@ func (h *Handler) menu(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpx.RenderHTML(w, r, h.logger, Menu(items))
+}
+
+func (h *Handler) inbox(w http.ResponseWriter, r *http.Request) {
+	accountID, ok := h.accountID(r)
+	if !ok {
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
+
+	unreadOnly := r.URL.Query().Get("filter") == "unread"
+	page := httpx.ParsePositiveInt(r.URL.Query().Get("page"), 1)
+
+	result, err := h.svc.Inbox(r.Context(), accountID, unreadOnly, page)
+	if err != nil {
+		h.logger.Error("notification: inbox", "err", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	state := InboxState{
+		Items:      result.Items,
+		Page:       result.Page,
+		TotalPages: result.TotalPages,
+		Total:      result.Total,
+		UnreadOnly: unreadOnly,
+	}
+
+	httpx.RenderHTML(w, r, h.logger, InboxPage(h.layout, state))
 }
 
 func (h *Handler) unreadCount(w http.ResponseWriter, r *http.Request) {
@@ -111,6 +141,11 @@ func (h *Handler) markAllRead(w http.ResponseWriter, r *http.Request) {
 	if err := h.svc.MarkAllRead(r.Context(), accountID); err != nil {
 		h.logger.Error("notification: mark all read", "err", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	if !httpx.IsHTMX(r) {
+		httpx.Redirect(w, r, "/notifications")
 		return
 	}
 
