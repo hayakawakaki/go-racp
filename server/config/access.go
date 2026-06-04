@@ -230,7 +230,7 @@ func validateAccessConfig(cfg AccessConfig) {
 
 			for _, audience := range []string{MemberRoleName, VerifiedRoleName} {
 				if slices.Contains(entry.Roles, audience) && len(entry.Roles) > 1 {
-					panic(fmt.Errorf("access.yml: Action '%s' lists '%s' is combined with other roles. '%s' cannot be combined", fullName, audience, audience))
+					panic(fmt.Errorf("access.yml: Action '%s' lists '%s' alongside other roles. '%s' is a standalone audience and cannot be combined", fullName, audience, audience))
 				}
 			}
 

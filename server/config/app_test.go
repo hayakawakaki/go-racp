@@ -195,11 +195,6 @@ func TestValidateRolesConfig_RejectsInvalidValues(t *testing.T) {
 			wantContain: "UserRoles.Admin is reserved",
 		},
 		{
-			name:        "reserved name star",
-			cfg:         RolesConfig{"*": 50},
-			wantContain: "UserRoles.* is reserved",
-		},
-		{
 			name:        "reserved name Player",
 			cfg:         RolesConfig{"Player": 50},
 			wantContain: "UserRoles.Player is reserved",
@@ -208,6 +203,16 @@ func TestValidateRolesConfig_RejectsInvalidValues(t *testing.T) {
 			name:        "reserved name Public",
 			cfg:         RolesConfig{"Public": 50},
 			wantContain: "UserRoles.Public is reserved",
+		},
+		{
+			name:        "reserved name Member",
+			cfg:         RolesConfig{"Member": 50},
+			wantContain: "UserRoles.Member is reserved",
+		},
+		{
+			name:        "reserved name Verified",
+			cfg:         RolesConfig{"Verified": 50},
+			wantContain: "UserRoles.Verified is reserved",
 		},
 		{
 			name:        "duplicate group_id",
