@@ -402,6 +402,7 @@ func validateAppConfig(cfg *AppConfig) {
 	validateNewsConfig(cfg.NewsCategories)
 	validateVendorConfig(&cfg.Vendor, &clamps)
 	validateMetricsConfig(&cfg.Metrics, &clamps)
+	validateNotificationsConfig(&cfg.Notifications, &clamps)
 	validateTrustedProxyCIDRs(cfg.Security.TrustedProxyCIDRs)
 	validateTheme(&cfg.General)
 	validateRatesConfig(&cfg.General.Rates)
@@ -570,6 +571,14 @@ func validateVendorConfig(cfg *VendorConfig, adjustments *[]ClampAdjustment) {
 		maxInterval = 10 * time.Minute
 	)
 	cfg.PollInterval = recordClamp(adjustments, "Vendor.PollInterval", cfg.PollInterval, 30*time.Second, minInterval, maxInterval)
+}
+
+func validateNotificationsConfig(cfg *NotificationConfig, adjustments *[]ClampAdjustment) {
+	const (
+		minPrune = 1 * time.Minute
+		maxPrune = 24 * time.Hour
+	)
+	cfg.PruneInterval = recordClamp(adjustments, "Notifications.PruneInterval", cfg.PruneInterval, time.Hour, minPrune, maxPrune)
 }
 
 func validateNewsConfig(categories NewsCategoriesConfig) {
