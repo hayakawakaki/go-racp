@@ -2,6 +2,7 @@ package infra
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -71,17 +72,22 @@ func (r *Repository) UnreadCount(ctx context.Context, accountID int) (int, error
 	return count, nil
 }
 
-func (r *Repository) MarkRead(ctx context.Context, accountID int, id int64, now time.Time) (bool, error) {
-	tag, err := r.Pool.Exec(ctx,
-		`UPDATE cp_notification SET read_at = $1
-		 WHERE id = $2 AND account_id = $3 AND read_at IS NULL`,
+func (r *Repository) MarkRead(ctx context.Context, accountID int, id int64, now time.Time) (string, error) {
+	var link string
+	err := r.Pool.QueryRow(ctx,
+		`UPDATE cp_notification SET read_at = COALESCE(read_at, $1)
+		 WHERE id = $2 AND account_id = $3
+		 RETURNING link`,
 		now, id, accountID,
-	)
+	).Scan(&link)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", nil
+	}
 	if err != nil {
-		return false, fmt.Errorf("infra.Repository.MarkRead: %w", err)
+		return "", fmt.Errorf("infra.Repository.MarkRead: %w", err)
 	}
 
-	return tag.RowsAffected() > 0, nil
+	return link, nil
 }
 
 func (r *Repository) MarkAllRead(ctx context.Context, accountID int, now time.Time) (int64, error) {

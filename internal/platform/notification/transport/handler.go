@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/hayakawakaki/go-racp/internal/features/account/transport/middleware"
 	"github.com/hayakawakaki/go-racp/internal/platform/httpx"
@@ -86,10 +87,15 @@ func (h *Handler) markRead(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.svc.MarkRead(r.Context(), accountID, id); err != nil {
+	link, err := h.svc.MarkRead(r.Context(), accountID, id)
+	if err != nil {
 		h.logger.Error("notification: mark read", "err", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
+	}
+
+	if strings.HasPrefix(link, "/") && !strings.HasPrefix(link, "//") {
+		w.Header().Set("HX-Redirect", link)
 	}
 
 	w.WriteHeader(http.StatusNoContent)

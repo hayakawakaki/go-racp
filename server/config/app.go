@@ -575,10 +575,21 @@ func validateVendorConfig(cfg *VendorConfig, adjustments *[]ClampAdjustment) {
 
 func validateNotificationsConfig(cfg *NotificationConfig, adjustments *[]ClampAdjustment) {
 	const (
-		minPrune = 1 * time.Minute
-		maxPrune = 24 * time.Hour
+		minPrune     = 1 * time.Minute
+		maxPrune     = 24 * time.Hour
+		minRetention = 1 * time.Hour
+		maxRetention = 365 * 24 * time.Hour
+		minRecent    = 1
+		maxRecent    = 100
 	)
 	cfg.PruneInterval = recordClamp(adjustments, "Notifications.PruneInterval", cfg.PruneInterval, time.Hour, minPrune, maxPrune)
+	cfg.Retention = recordClamp(adjustments, "Notifications.Retention", cfg.Retention, 30*24*time.Hour, minRetention, maxRetention)
+
+	if cfg.RecentLimit < minRecent {
+		cfg.RecentLimit = 20
+	} else if cfg.RecentLimit > maxRecent {
+		cfg.RecentLimit = maxRecent
+	}
 }
 
 func validateNewsConfig(categories NewsCategoriesConfig) {
