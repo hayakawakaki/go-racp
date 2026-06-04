@@ -223,9 +223,17 @@ func validateAccessConfig(cfg AccessConfig) {
 			if entry.Roles == nil {
 				continue
 			}
+
 			if len(entry.Roles) == 0 {
 				panic(fmt.Errorf("access.yml: Action '%s' has an empty roles list, would deny everyone. Use a non-empty list or remove the entry", fullName))
 			}
+
+			for _, audience := range []string{MemberRoleName, VerifiedRoleName} {
+				if slices.Contains(entry.Roles, audience) && len(entry.Roles) > 1 {
+					panic(fmt.Errorf("access.yml: Action '%s' lists '%s' is combined with other roles. '%s' cannot be combined", fullName, audience, audience))
+				}
+			}
+
 			hasPublic := slices.Contains(entry.Roles, publicRoleName)
 			if entry.RequiresAPIKey() && !hasPublic {
 				panic(fmt.Errorf("access.yml: Action '%s' has Requires: ['APIKey'] but is not Public. The API key gate only applies to Public routes", fullName))
@@ -236,6 +244,7 @@ func validateAccessConfig(cfg AccessConfig) {
 			if hasPublic && entry.RequiresUnrestricted() {
 				panic(fmt.Errorf("access.yml: Action '%s' combines 'Public' with Requires: ['Unrestricted']. Public bypasses auth, there is no user to classify", fullName))
 			}
+
 			soleAdmin := len(entry.Roles) == 1 && entry.Roles[0] == adminRoleName
 			for _, role := range entry.Roles {
 				if role == adminRoleName && !soleAdmin {
