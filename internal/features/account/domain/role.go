@@ -8,7 +8,7 @@ type Role struct {
 }
 
 var (
-	RoleAuthenticated = Role{Name: "Member", GroupID: -1}
+	RoleAuthenticated = Role{Name: config.MemberRoleName, GroupID: -1}
 	RolePublic        = Role{Name: "Public", GroupID: -2}
 	RolePlayer        = Role{Name: "Player", GroupID: 0}
 	RoleAdmin         = Role{Name: "Admin", GroupID: 99}
