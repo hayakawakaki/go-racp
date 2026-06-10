@@ -59,9 +59,10 @@ jobs:
         run: |
           mysql -h 127.0.0.1 -P 3306 -uroot -ptestpassword main < docker/mariadb/init/ra-main.sql
           mysql -h 127.0.0.1 -P 3306 -uroot -ptestpassword log < docker/mariadb/init/ra-log.sql
-      - name: Load currency tables
+      - name: Load bridge tables
         run: |
           mysql -h 127.0.0.1 -P 3306 -uroot -ptestpassword main < docker/mariadb/init/01_cp_bridge.sql
+          mysql -h 127.0.0.1 -P 3306 -uroot -ptestpassword main < docker/mariadb/init/02_cp_market_bridge.sql
       - name: Create CP's test database
         env:
           PGPASSWORD: testpassword
