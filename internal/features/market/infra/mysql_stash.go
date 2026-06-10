@@ -18,6 +18,15 @@ const itemColumns = `id, account_id, nameid, amount, equip, identify, refine, at
 	option_id4, option_val4, option_parm4,
 	expire_time, bound, unique_id, enchantgrade`
 
+const stackableMatchWhere = `account_id = ? AND nameid = ? AND identify = ? AND expire_time = ?
+	AND refine = 0 AND enchantgrade = 0 AND bound = 0 AND equip = 0 AND attribute = 0 AND unique_id = 0
+	AND card0 = 0 AND card1 = 0 AND card2 = 0 AND card3 = 0
+	AND option_id0 = 0 AND option_val0 = 0 AND option_parm0 = 0
+	AND option_id1 = 0 AND option_val1 = 0 AND option_parm1 = 0
+	AND option_id2 = 0 AND option_val2 = 0 AND option_parm2 = 0
+	AND option_id3 = 0 AND option_val3 = 0 AND option_parm3 = 0
+	AND option_id4 = 0 AND option_val4 = 0 AND option_parm4 = 0`
+
 type StashRepository struct {
 	Client *sql.DB
 }
@@ -94,12 +103,7 @@ func (r *StashRepository) MergeableAmount(ctx context.Context, accountID int, it
 	}
 
 	err = r.Client.QueryRowContext(ctx,
-		`SELECT amount FROM cp_storage
-		 WHERE account_id = ? AND nameid = ? AND identify = ? AND expire_time = ?
-		   AND refine = 0 AND enchantgrade = 0 AND bound = 0 AND equip = 0
-		   AND card0 = 0 AND card1 = 0 AND card2 = 0 AND card3 = 0
-		   AND option_id0 = 0 AND option_id1 = 0 AND option_id2 = 0 AND option_id3 = 0 AND option_id4 = 0
-		 LIMIT 1`,
+		"SELECT amount FROM cp_storage WHERE "+stackableMatchWhere+" LIMIT 1",
 		accountID, item.NameID, item.Identify, item.ExpireTime,
 	).Scan(&existingAmount)
 	if errors.Is(err, sql.ErrNoRows) {

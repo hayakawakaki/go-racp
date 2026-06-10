@@ -29,8 +29,12 @@ type StashItem struct {
 	OptionParm [5]int
 }
 
+func (i StashItem) IsTradable() bool {
+	return i.Bound == 0 && i.ExpireTime == 0
+}
+
 func (i StashItem) IsStackable() bool {
-	if i.Equip != 0 || i.Refine != 0 || i.Grade != 0 || i.Bound != 0 {
+	if i.Equip != 0 || i.Refine != 0 || i.Grade != 0 || i.Bound != 0 || i.Attribute != 0 || i.UniqueID != 0 {
 		return false
 	}
 

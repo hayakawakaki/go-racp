@@ -20,7 +20,7 @@ func NewEscrowRepository(client *sql.DB, maxSlots, maxStack int) *EscrowReposito
 	if maxSlots <= 0 {
 		maxSlots = domain.DefaultMaxStorageSlots
 	}
-	if maxStack <= 0 {
+	if maxStack <= 0 || maxStack > domain.DefaultMaxStackAmount {
 		maxStack = domain.DefaultMaxStackAmount
 	}
 
@@ -93,10 +93,6 @@ func insertEscrowRow(ctx context.Context, tx *sql.Tx, listingRef int64, item dom
 }
 
 func upsertStashStack(ctx context.Context, tx *sql.Tx, toAccountID int, item domain.StashItem, amount, maxSlots, maxStack int) error {
-	if maxStack <= 0 {
-		maxStack = domain.DefaultMaxStackAmount
-	}
-
 	remaining, err := mergeIntoExistingStack(ctx, tx, toAccountID, item, amount, maxStack)
 	if err != nil {
 		return err
@@ -113,13 +109,7 @@ func mergeIntoExistingStack(ctx context.Context, tx *sql.Tx, toAccountID int, it
 	var rowID int64
 	var existing int
 	err := tx.QueryRowContext(ctx,
-		`SELECT id, amount FROM cp_storage
-		 WHERE account_id = ? AND nameid = ? AND identify = ? AND expire_time = ?
-		   AND refine = 0 AND enchantgrade = 0 AND bound = 0 AND equip = 0
-		   AND card0 = 0 AND card1 = 0 AND card2 = 0 AND card3 = 0
-		   AND option_id0 = 0 AND option_id1 = 0 AND option_id2 = 0 AND option_id3 = 0 AND option_id4 = 0
-		   AND amount < ?
-		 ORDER BY id LIMIT 1 FOR UPDATE`,
+		"SELECT id, amount FROM cp_storage WHERE "+stackableMatchWhere+" AND amount < ? ORDER BY id LIMIT 1 FOR UPDATE",
 		toAccountID, item.NameID, item.Identify, item.ExpireTime, maxStack,
 	).Scan(&rowID, &existing)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -139,14 +129,12 @@ func mergeIntoExistingStack(ctx context.Context, tx *sql.Tx, toAccountID int, it
 
 func insertStashChunks(ctx context.Context, tx *sql.Tx, toAccountID int, item domain.StashItem, amount, maxSlots, maxStack int) error {
 	for amount > 0 {
-		if maxSlots > 0 {
-			var used int
-			if err := tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM cp_storage WHERE account_id = ?", toAccountID).Scan(&used); err != nil {
-				return fmt.Errorf("infra.insertStashChunks count: %w", err)
-			}
-			if used >= maxSlots {
-				return domain.ErrStorageFull
-			}
+		var used int
+		if err := tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM cp_storage WHERE account_id = ?", toAccountID).Scan(&used); err != nil {
+			return fmt.Errorf("infra.insertStashChunks count: %w", err)
+		}
+		if used >= maxSlots {
+			return domain.ErrStorageFull
 		}
 
 		chunk := amount
@@ -216,13 +204,27 @@ func (r *EscrowRepository) MoveToEscrow(ctx context.Context, accountID int, list
 	return nil
 }
 
+func validateEscrowMove(item domain.StashItem, move domain.EscrowMove) error {
+	if !item.IsTradable() {
+		return domain.ErrNotTradable
+	}
+	if move.Amount != item.Amount && !item.IsStackable() {
+		return domain.ErrNonStackable
+	}
+	if move.Amount <= 0 || move.Amount > item.Amount {
+		return domain.ErrInsufficientStack
+	}
+
+	return nil
+}
+
 func moveOneToEscrow(ctx context.Context, tx *sql.Tx, accountID int, listingRef int64, move domain.EscrowMove) error {
 	item, err := loadStashItemTx(ctx, tx, accountID, move.StashItemID)
 	if err != nil {
 		return fmt.Errorf("infra.moveOneToEscrow load: %w", err)
 	}
-	if move.Amount <= 0 || move.Amount > item.Amount {
-		return domain.ErrInsufficientStack
+	if err := validateEscrowMove(item, move); err != nil {
+		return err
 	}
 
 	if err := insertEscrowRow(ctx, tx, listingRef, item, move.Amount); err != nil {
@@ -318,6 +320,9 @@ func claimDelivery(ctx context.Context, tx *sql.Tx, legID int64) (alreadyApplied
 
 func (r *EscrowRepository) ReturnToStash(ctx context.Context, listingRef int64) error {
 	owner, err := r.escrowOwner(ctx, listingRef)
+	if errors.Is(err, domain.ErrStashItemNotFound) {
+		return nil
+	}
 	if err != nil {
 		return err
 	}
@@ -362,7 +367,7 @@ func (r *EscrowRepository) ByListing(ctx context.Context, listingRef int64) ([]d
 
 func (r *EscrowRepository) OrphanRefs(ctx context.Context, before time.Time) ([]int64, error) {
 	rows, err := r.Client.QueryContext(ctx,
-		"SELECT listing_ref FROM cp_storage_escrow GROUP BY listing_ref HAVING MAX(created_at) < ?", before,
+		"SELECT listing_ref FROM cp_storage_escrow GROUP BY listing_ref HAVING UNIX_TIMESTAMP(MAX(created_at)) < ?", before.Unix(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("infra.EscrowRepository.OrphanRefs: %w", err)

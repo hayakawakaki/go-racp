@@ -51,16 +51,18 @@ func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
 }
 
 func (h *Handler) stashJSON(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-store")
+
 	session, ok := middleware.SessionFromContext(r.Context())
 	if !ok {
-		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		_ = httpx.WriteJSONError(w, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
 		return
 	}
 
 	view, err := h.stash.View(r.Context(), session.UserID)
 	if err != nil {
 		h.logger.Error("market: stash view", "err", err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		_ = httpx.WriteJSONError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
 	}
 
