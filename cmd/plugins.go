@@ -11,6 +11,7 @@ import (
 	_ "github.com/hayakawakaki/go-racp/internal/features/character"
 	_ "github.com/hayakawakaki/go-racp/internal/features/guild"
 	_ "github.com/hayakawakaki/go-racp/internal/features/item"
+	_ "github.com/hayakawakaki/go-racp/internal/features/market"
 	_ "github.com/hayakawakaki/go-racp/internal/features/metric"
 	_ "github.com/hayakawakaki/go-racp/internal/features/mob"
 	_ "github.com/hayakawakaki/go-racp/internal/features/news"
