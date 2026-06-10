@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS cp_storage (
     unique_id    BIGINT    UNSIGNED NOT NULL DEFAULT 0,
     enchantgrade TINYINT   UNSIGNED NOT NULL DEFAULT 0,
     PRIMARY KEY (id),
-    KEY idx_cp_storage_account (account_id)
+    KEY idx_cp_storage_account_nameid (account_id, nameid)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS cp_storage_escrow (
