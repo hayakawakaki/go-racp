@@ -116,6 +116,11 @@ Mob:
     Roles: ["Public"]
     Requires: ["APIKey"]
 
+Market:
+  View:
+    Roles: ["Verified"]
+    Requires: ["Unrestricted"]
+
 Users:
   View:
     Roles: ["Enforcer"]
