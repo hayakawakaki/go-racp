@@ -389,3 +389,75 @@ func scanListingRef(rows *sql.Rows) (int64, error) {
 
 	return ref, nil
 }
+
+func (r *EscrowRepository) DeliverPartial(ctx context.Context, listingRef int64, toAccountID, amount int, legID int64) error {
+	tx, err := r.Client.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("infra.EscrowRepository.DeliverPartial begin: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	applied, err := claimDelivery(ctx, tx, legID)
+	if err != nil {
+		return fmt.Errorf("infra.EscrowRepository.DeliverPartial claim: %w", err)
+	}
+	if !applied {
+		if err := deliverPartialTx(ctx, tx, listingRef, toAccountID, amount, r.MaxSlots, r.MaxStack); err != nil {
+			return err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("infra.EscrowRepository.DeliverPartial commit: %w", err)
+	}
+
+	return nil
+}
+
+func deliverPartialTx(ctx context.Context, tx *sql.Tx, listingRef int64, toAccountID, amount, maxSlots, maxStack int) error {
+	if err := requireLocked(ctx, tx, toAccountID); err != nil {
+		return err
+	}
+
+	rows, err := tx.QueryContext(ctx,
+		"SELECT "+itemColumns+" FROM cp_storage_escrow WHERE listing_ref = ? ORDER BY id LIMIT 1 FOR UPDATE", listingRef,
+	)
+	if err != nil {
+		return fmt.Errorf("infra.deliverPartialTx query: %w", err)
+	}
+
+	items, err := collectRows(rows, scanStashItem)
+	if err != nil {
+		return fmt.Errorf("infra.deliverPartialTx collect: %w", err)
+	}
+	if len(items) == 0 {
+		return domain.ErrStashItemNotFound
+	}
+
+	item := items[0]
+	if amount <= 0 || amount > item.Amount {
+		return domain.ErrInsufficientStack
+	}
+
+	if err := upsertStashStack(ctx, tx, toAccountID, item, amount, maxSlots, maxStack); err != nil {
+		return fmt.Errorf("infra.deliverPartialTx deliver: %w", err)
+	}
+
+	return reduceEscrowRow(ctx, tx, item, amount)
+}
+
+func reduceEscrowRow(ctx context.Context, tx *sql.Tx, item domain.StashItem, amount int) error {
+	if amount == item.Amount {
+		if _, err := tx.ExecContext(ctx, "DELETE FROM cp_storage_escrow WHERE id = ?", item.ID); err != nil {
+			return fmt.Errorf("infra.reduceEscrowRow delete: %w", err)
+		}
+
+		return nil
+	}
+
+	if _, err := tx.ExecContext(ctx, "UPDATE cp_storage_escrow SET amount = amount - ? WHERE id = ?", amount, item.ID); err != nil {
+		return fmt.Errorf("infra.reduceEscrowRow reduce: %w", err)
+	}
+
+	return nil
+}

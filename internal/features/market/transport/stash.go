@@ -39,15 +39,17 @@ type stashResponse struct {
 
 type Handler struct {
 	stash  *app.StashService
+	offers *app.OfferService
 	logger *slog.Logger
 }
 
-func NewHandler(stash *app.StashService, logger *slog.Logger) *Handler {
-	return &Handler{stash: stash, logger: logger}
+func NewHandler(stash *app.StashService, offers *app.OfferService, logger *slog.Logger) *Handler {
+	return &Handler{stash: stash, offers: offers, logger: logger}
 }
 
 func (h *Handler) RegisterRoutes(reg *routes.Registry, mux *http.ServeMux) {
 	reg.Wrap(mux, "Market.View", "GET /market/stash", http.HandlerFunc(h.stashJSON))
+	h.registerOfferRoutes(reg, mux)
 }
 
 func (h *Handler) stashJSON(w http.ResponseWriter, r *http.Request) {

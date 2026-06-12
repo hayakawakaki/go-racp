@@ -11,10 +11,12 @@ import (
 var errStashTest = errors.New("app: stash test error")
 
 type fakeStashRepository struct {
-	listErr   error
-	lockedErr error
-	items     []domain.StashItem
-	locked    bool
+	listErr       error
+	lockedErr     error
+	items         []domain.StashItem
+	mergeExisting int
+	locked        bool
+	mergeFound    bool
 }
 
 func (f *fakeStashRepository) ListByAccount(_ context.Context, _ int) ([]domain.StashItem, error) {
@@ -30,7 +32,7 @@ func (f *fakeStashRepository) SlotsUsed(_ context.Context, _ int) (int, error) {
 }
 
 func (f *fakeStashRepository) MergeableAmount(_ context.Context, _ int, _ domain.StashItem) (existingAmount int, found bool, err error) {
-	return 0, false, nil
+	return f.mergeExisting, f.mergeFound, nil
 }
 
 func TestStashService_View(t *testing.T) {

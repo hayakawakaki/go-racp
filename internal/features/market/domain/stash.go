@@ -83,6 +83,7 @@ type EscrowRepository interface {
 	MoveToEscrow(ctx context.Context, accountID int, listingRef int64, moves []EscrowMove) error
 	ReturnToStash(ctx context.Context, listingRef int64) error
 	Deliver(ctx context.Context, listingRef int64, toAccountID int, legID int64) error
+	DeliverPartial(ctx context.Context, listingRef int64, toAccountID, amount int, legID int64) error
 	ByListing(ctx context.Context, listingRef int64) ([]StashItem, error)
 	OrphanRefs(ctx context.Context, before time.Time) ([]int64, error)
 }

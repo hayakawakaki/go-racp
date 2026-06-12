@@ -43,7 +43,7 @@ func (f *fakeStashRepository) MergeableAmount(_ context.Context, _ int, _ domain
 
 func newTestHandler(repo domain.StashRepository) *Handler {
 	service := app.NewStashService(repo, 600)
-	return NewHandler(service, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	return NewHandler(service, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 }
 
 func TestStashJSON_Unauthorized(t *testing.T) {
