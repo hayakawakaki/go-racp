@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 
 	accdomain "github.com/hayakawakaki/go-racp/internal/features/account/domain"
 	"github.com/hayakawakaki/go-racp/internal/features/market/domain"
@@ -20,7 +21,7 @@ func NewWalletRepository(pool *pgxpool.Pool) *WalletRepository {
 }
 
 func amountsValid(zeny int64, cashpoint int) bool {
-	return zeny >= 0 && cashpoint >= 0
+	return zeny >= 0 && zeny <= domain.MaxTransferZeny && cashpoint >= 0 && cashpoint <= math.MaxInt32
 }
 
 func (r *WalletRepository) Balance(ctx context.Context, accountID int) (domain.Wallet, error) {
@@ -54,6 +55,55 @@ func lockBalance(ctx context.Context, tx pgx.Tx, accountID int) (zeny int64, cas
 	return zeny, cashpoint, nil
 }
 
+func applyDebit(ctx context.Context, tx pgx.Tx, accountID int, currentZeny int64, currentCashpoint int, zeny int64, cashpoint int) error {
+	if currentZeny < zeny || currentCashpoint < cashpoint {
+		return domain.ErrInsufficientFunds
+	}
+
+	if _, err := tx.Exec(ctx,
+		`UPDATE cp_currency SET zeny = zeny - $1, cashpoint = cashpoint - $2 WHERE account_id = $3`,
+		zeny, cashpoint, accountID,
+	); err != nil {
+		return fmt.Errorf("infra.applyDebit: %w", err)
+	}
+
+	return nil
+}
+
+func applyCredit(ctx context.Context, tx pgx.Tx, accountID int, currentZeny int64, currentCashpoint int, zeny int64, cashpoint int) error {
+	newZeny, newCashpoint, err := accdomain.AddBalance(currentZeny, zeny, currentCashpoint, cashpoint)
+	if err != nil {
+		return fmt.Errorf("infra.applyCredit: %w", err)
+	}
+
+	if _, err := tx.Exec(ctx,
+		`UPDATE cp_currency SET zeny = $1, cashpoint = $2 WHERE account_id = $3`,
+		newZeny, newCashpoint, accountID,
+	); err != nil {
+		return fmt.Errorf("infra.applyCredit: %w", err)
+	}
+
+	return nil
+}
+
+func debitBalance(ctx context.Context, tx pgx.Tx, accountID int, zeny int64, cashpoint int) error {
+	currentZeny, currentCashpoint, err := lockBalance(ctx, tx, accountID)
+	if err != nil {
+		return err
+	}
+
+	return applyDebit(ctx, tx, accountID, currentZeny, currentCashpoint, zeny, cashpoint)
+}
+
+func creditBalance(ctx context.Context, tx pgx.Tx, accountID int, zeny int64, cashpoint int) error {
+	currentZeny, currentCashpoint, err := lockBalance(ctx, tx, accountID)
+	if err != nil {
+		return err
+	}
+
+	return applyCredit(ctx, tx, accountID, currentZeny, currentCashpoint, zeny, cashpoint)
+}
+
 func (r *WalletRepository) Hold(ctx context.Context, accountID int, zeny int64, cashpoint int) (int64, error) {
 	if !amountsValid(zeny, cashpoint) {
 		return 0, domain.ErrInvalidAmount
@@ -65,18 +115,7 @@ func (r *WalletRepository) Hold(ctx context.Context, accountID int, zeny int64, 
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
-	currentZeny, currentCashpoint, err := lockBalance(ctx, tx, accountID)
-	if err != nil {
-		return 0, fmt.Errorf("infra.WalletRepository.Hold lock: %w", err)
-	}
-	if currentZeny < zeny || currentCashpoint < cashpoint {
-		return 0, domain.ErrInsufficientFunds
-	}
-
-	if _, err = tx.Exec(ctx,
-		`UPDATE cp_currency SET zeny = zeny - $1, cashpoint = cashpoint - $2 WHERE account_id = $3`,
-		zeny, cashpoint, accountID,
-	); err != nil {
+	if err = debitBalance(ctx, tx, accountID, zeny, cashpoint); err != nil {
 		return 0, fmt.Errorf("infra.WalletRepository.Hold debit: %w", err)
 	}
 
@@ -106,25 +145,6 @@ func readHold(ctx context.Context, tx pgx.Tx, holdID int64) (accountID int, zeny
 	}
 
 	return accountID, zeny, cashpoint, nil
-}
-
-func creditBalance(ctx context.Context, tx pgx.Tx, accountID int, zeny int64, cashpoint int) error {
-	currentZeny, currentCashpoint, err := lockBalance(ctx, tx, accountID)
-	if err != nil {
-		return err
-	}
-
-	newZeny := accdomain.AddZenyCapped(currentZeny, zeny)
-	newCashpoint := accdomain.AddCashpointCapped(currentCashpoint, cashpoint)
-
-	if _, err := tx.Exec(ctx,
-		`UPDATE cp_currency SET zeny = $1, cashpoint = $2 WHERE account_id = $3`,
-		newZeny, newCashpoint, accountID,
-	); err != nil {
-		return fmt.Errorf("infra.creditBalance: %w", err)
-	}
-
-	return nil
 }
 
 func (r *WalletRepository) Release(ctx context.Context, holdID int64) error {
@@ -200,26 +220,27 @@ func validateCharge(payerAccountID, payeeAccountID int, payZeny int64, payCashpo
 	return nil
 }
 
-func debitLocked(ctx context.Context, tx pgx.Tx, accountID int, zeny int64, cashpoint int) error {
-	var currentZeny int64
-	var currentCashpoint int
-	if err := tx.QueryRow(ctx,
-		`SELECT zeny, cashpoint FROM cp_currency WHERE account_id = $1`, accountID,
-	).Scan(&currentZeny, &currentCashpoint); err != nil {
-		return fmt.Errorf("infra.debitLocked read: %w", err)
-	}
-	if currentZeny < zeny || currentCashpoint < cashpoint {
-		return domain.ErrInsufficientFunds
+func lockPair(ctx context.Context, tx pgx.Tx, payerAccountID, payeeAccountID int) (payerZeny int64, payerCashpoint int, payeeZeny int64, payeeCashpoint int, err error) {
+	first, second := payerAccountID, payeeAccountID
+	if second < first {
+		first, second = second, first
 	}
 
-	if _, err := tx.Exec(ctx,
-		`UPDATE cp_currency SET zeny = zeny - $1, cashpoint = cashpoint - $2 WHERE account_id = $3`,
-		zeny, cashpoint, accountID,
-	); err != nil {
-		return fmt.Errorf("infra.debitLocked update: %w", err)
+	firstZeny, firstCashpoint, err := lockBalance(ctx, tx, first)
+	if err != nil {
+		return 0, 0, 0, 0, err
 	}
 
-	return nil
+	secondZeny, secondCashpoint, err := lockBalance(ctx, tx, second)
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+
+	if payeeAccountID == first {
+		return secondZeny, secondCashpoint, firstZeny, firstCashpoint, nil
+	}
+
+	return firstZeny, firstCashpoint, secondZeny, secondCashpoint, nil
 }
 
 func (r *WalletRepository) Charge(ctx context.Context, payerAccountID, payeeAccountID int, payZeny int64, payCashpoint int, payeeZeny int64, payeeCashpoint int) error {
@@ -233,22 +254,16 @@ func (r *WalletRepository) Charge(ctx context.Context, payerAccountID, payeeAcco
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
-	first, second := payerAccountID, payeeAccountID
-	if second < first {
-		first, second = second, first
-	}
-	if _, _, err = lockBalance(ctx, tx, first); err != nil {
-		return fmt.Errorf("infra.WalletRepository.Charge lock first: %w", err)
-	}
-	if _, _, err = lockBalance(ctx, tx, second); err != nil {
-		return fmt.Errorf("infra.WalletRepository.Charge lock second: %w", err)
+	payerZeny, payerCashpoint, payeeBalanceZeny, payeeBalanceCashpoint, err := lockPair(ctx, tx, payerAccountID, payeeAccountID)
+	if err != nil {
+		return fmt.Errorf("infra.WalletRepository.Charge lock: %w", err)
 	}
 
-	if err = debitLocked(ctx, tx, payerAccountID, payZeny, payCashpoint); err != nil {
+	if err = applyDebit(ctx, tx, payerAccountID, payerZeny, payerCashpoint, payZeny, payCashpoint); err != nil {
 		return fmt.Errorf("infra.WalletRepository.Charge debit: %w", err)
 	}
 
-	if err = creditBalance(ctx, tx, payeeAccountID, payeeZeny, payeeCashpoint); err != nil {
+	if err = applyCredit(ctx, tx, payeeAccountID, payeeBalanceZeny, payeeBalanceCashpoint, payeeZeny, payeeCashpoint); err != nil {
 		return fmt.Errorf("infra.WalletRepository.Charge credit: %w", err)
 	}
 	if err = tx.Commit(ctx); err != nil {
@@ -269,18 +284,7 @@ func (r *WalletRepository) Burn(ctx context.Context, accountID int, zeny int64, 
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
-	currentZeny, currentCashpoint, err := lockBalance(ctx, tx, accountID)
-	if err != nil {
-		return fmt.Errorf("infra.WalletRepository.Burn lock: %w", err)
-	}
-	if currentZeny < zeny || currentCashpoint < cashpoint {
-		return domain.ErrInsufficientFunds
-	}
-
-	if _, err = tx.Exec(ctx,
-		`UPDATE cp_currency SET zeny = zeny - $1, cashpoint = cashpoint - $2 WHERE account_id = $3`,
-		zeny, cashpoint, accountID,
-	); err != nil {
+	if err = debitBalance(ctx, tx, accountID, zeny, cashpoint); err != nil {
 		return fmt.Errorf("infra.WalletRepository.Burn debit: %w", err)
 	}
 	if err = tx.Commit(ctx); err != nil {

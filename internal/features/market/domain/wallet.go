@@ -2,6 +2,8 @@ package domain
 
 import "context"
 
+const MaxTransferZeny int64 = 1_000_000_000_000
+
 type Wallet struct {
 	Zeny      int64
 	Cashpoint int
