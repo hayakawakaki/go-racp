@@ -25,7 +25,7 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 	settlementRepo := infra.NewSettlementRepository(in.DB)
 
 	stashService := app.NewStashService(stashRepo, 0)
-	offerService := app.NewOfferService(listingRepo, stashRepo, escrowRepo, walletRepo, settlementRepo, in.Logger)
+	offerService := app.NewOfferService(listingRepo, stashRepo, escrowRepo, walletRepo, settlementRepo, in.DB, in.Logger)
 
 	handler := transport.NewHandler(stashService, offerService, in.Logger)
 	handler.RegisterRoutes(reg, mux)

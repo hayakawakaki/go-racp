@@ -111,6 +111,7 @@ type ListingRepository interface {
 	Browse(ctx context.Context, kind, limit, offset int) ([]Listing, int, error)
 	BySeller(ctx context.Context, accountID, limit, offset int) ([]Listing, int, error)
 	TakeUnits(ctx context.Context, id int64, units int) (Listing, bool, error)
+	TakeUnitsTx(ctx context.Context, q DBTX, id int64, units int) (Listing, bool, error)
 	SetStatus(ctx context.Context, id int64, status int) error
 	DueForExpiry(ctx context.Context, now time.Time, limit int) ([]Listing, error)
 	AllRefs(ctx context.Context) ([]int64, error)
@@ -127,6 +128,7 @@ type SettlementLeg struct {
 
 type SettlementRepository interface {
 	Enqueue(ctx context.Context, leg SettlementLeg) error
+	EnqueueTx(ctx context.Context, q DBTX, leg SettlementLeg) error
 	Pending(ctx context.Context, limit int) ([]SettlementLeg, error)
 	PendingRefs(ctx context.Context) ([]int64, error)
 	MarkDone(ctx context.Context, id int64) error

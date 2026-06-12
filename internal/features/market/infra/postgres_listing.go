@@ -119,19 +119,13 @@ func (r *ListingRepository) listPage(ctx context.Context, where string, whereArg
 	return out, total, nil
 }
 
-func (r *ListingRepository) TakeUnits(ctx context.Context, id int64, units int) (domain.Listing, bool, error) {
-	tx, err := r.Pool.Begin(ctx)
-	if err != nil {
-		return domain.Listing{}, false, fmt.Errorf("infra.ListingRepository.TakeUnits begin: %w", err)
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
-
-	listing, err := scanListing(tx.QueryRow(ctx, `SELECT `+listingColumns+` FROM cp_listing WHERE id = $1 FOR UPDATE`, id))
+func (r *ListingRepository) TakeUnitsTx(ctx context.Context, q domain.DBTX, id int64, units int) (domain.Listing, bool, error) {
+	listing, err := scanListing(q.QueryRow(ctx, `SELECT `+listingColumns+` FROM cp_listing WHERE id = $1 FOR UPDATE`, id))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return domain.Listing{}, false, domain.ErrListingNotFound
 	}
 	if err != nil {
-		return domain.Listing{}, false, fmt.Errorf("infra.ListingRepository.TakeUnits read: %w", err)
+		return domain.Listing{}, false, fmt.Errorf("infra.ListingRepository.TakeUnitsTx read: %w", err)
 	}
 	if listing.Status != domain.StatusActive {
 		return domain.Listing{}, false, domain.ErrListingInactive
@@ -147,18 +141,33 @@ func (r *ListingRepository) TakeUnits(ctx context.Context, id int64, units int) 
 		status = domain.StatusTaken
 	}
 
-	if _, err = tx.Exec(ctx,
+	if _, err = q.Exec(ctx,
 		`UPDATE cp_listing SET remaining_quantity = $1, status = $2 WHERE id = $3`,
 		remaining, status, id,
 	); err != nil {
-		return domain.Listing{}, false, fmt.Errorf("infra.ListingRepository.TakeUnits update: %w", err)
-	}
-	if err = tx.Commit(ctx); err != nil {
-		return domain.Listing{}, false, fmt.Errorf("infra.ListingRepository.TakeUnits commit: %w", err)
+		return domain.Listing{}, false, fmt.Errorf("infra.ListingRepository.TakeUnitsTx update: %w", err)
 	}
 
 	listing.RemainingQuantity = remaining
 	listing.Status = status
+
+	return listing, depleted, nil
+}
+
+func (r *ListingRepository) TakeUnits(ctx context.Context, id int64, units int) (domain.Listing, bool, error) {
+	tx, err := r.Pool.Begin(ctx)
+	if err != nil {
+		return domain.Listing{}, false, fmt.Errorf("infra.ListingRepository.TakeUnits begin: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	listing, depleted, err := r.TakeUnitsTx(ctx, tx, id, units)
+	if err != nil {
+		return domain.Listing{}, false, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return domain.Listing{}, false, fmt.Errorf("infra.ListingRepository.TakeUnits commit: %w", err)
+	}
 
 	return listing, depleted, nil
 }

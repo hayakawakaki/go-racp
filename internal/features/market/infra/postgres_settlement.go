@@ -16,17 +16,21 @@ func NewSettlementRepository(pool *pgxpool.Pool) *SettlementRepository {
 	return &SettlementRepository{Pool: pool}
 }
 
-func (r *SettlementRepository) Enqueue(ctx context.Context, leg domain.SettlementLeg) error {
-	_, err := r.Pool.Exec(ctx,
+func (r *SettlementRepository) EnqueueTx(ctx context.Context, q domain.DBTX, leg domain.SettlementLeg) error {
+	_, err := q.Exec(ctx,
 		`INSERT INTO cp_settlement (listing_id, escrow_ref, recipient_account_id, deliver_amount, whole, status)
 		 VALUES ($1, $2, $3, $4, $5, 1)`,
 		leg.ListingID, leg.EscrowRef, leg.RecipientAccountID, leg.DeliverAmount, leg.Whole,
 	)
 	if err != nil {
-		return fmt.Errorf("infra.SettlementRepository.Enqueue: %w", err)
+		return fmt.Errorf("infra.SettlementRepository.EnqueueTx: %w", err)
 	}
 
 	return nil
+}
+
+func (r *SettlementRepository) Enqueue(ctx context.Context, leg domain.SettlementLeg) error {
+	return r.EnqueueTx(ctx, r.Pool, leg)
 }
 
 func (r *SettlementRepository) Pending(ctx context.Context, limit int) ([]domain.SettlementLeg, error) {

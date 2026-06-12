@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/hayakawakaki/go-racp/internal/features/market/domain"
+	"github.com/jackc/pgx/v5"
 )
 
 type Blacklist interface {
@@ -17,12 +18,17 @@ type emptyBlacklist struct{}
 
 func (emptyBlacklist) Blocked(int) bool { return false }
 
+type txBeginner interface {
+	Begin(ctx context.Context) (pgx.Tx, error)
+}
+
 type OfferService struct {
 	listings   domain.ListingRepository
 	stash      domain.StashRepository
 	escrow     domain.EscrowRepository
 	wallet     domain.WalletRepository
 	settlement domain.SettlementRepository
+	db         txBeginner
 	blacklist  Blacklist
 	logger     *slog.Logger
 	now        func() time.Time
@@ -79,6 +85,7 @@ func NewOfferService(
 	escrow domain.EscrowRepository,
 	wallet domain.WalletRepository,
 	settlement domain.SettlementRepository,
+	db txBeginner,
 	logger *slog.Logger,
 	opts ...Option,
 ) *OfferService {
@@ -88,6 +95,7 @@ func NewOfferService(
 		escrow:     escrow,
 		wallet:     wallet,
 		settlement: settlement,
+		db:         db,
 		blacklist:  emptyBlacklist{},
 		logger:     logger,
 		now:        time.Now,
@@ -311,16 +319,30 @@ func (s *OfferService) Take(ctx context.Context, in TakeInput) error {
 		return err
 	}
 
-	takenListing, _, err := s.listings.TakeUnits(ctx, in.ListingID, in.Units)
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("app.OfferService.Take begin: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	takenListing, _, err := s.listings.TakeUnitsTx(ctx, tx, in.ListingID, in.Units)
 	if err != nil {
 		return fmt.Errorf("app.OfferService.Take units: %w", err)
 	}
 
-	if settleErr := s.settleCurrency(ctx, takenListing, in); settleErr != nil {
+	if settleErr := s.settleCurrencyTx(ctx, tx, takenListing, in); settleErr != nil {
 		return fmt.Errorf("app.OfferService.Take settle: %w", settleErr)
 	}
 
-	return s.enqueueLegs(ctx, listing, in, wantEscrowRef)
+	if enqueueErr := s.enqueueLegsTx(ctx, tx, listing, in, wantEscrowRef); enqueueErr != nil {
+		return enqueueErr
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("app.OfferService.Take commit: %w", err)
+	}
+
+	return nil
 }
 
 func validateTake(listing domain.Listing, in TakeInput) error {
@@ -400,7 +422,7 @@ func (s *OfferService) escrowTakerWant(ctx context.Context, listing domain.Listi
 	return ref, nil
 }
 
-func (s *OfferService) settleCurrency(ctx context.Context, listing domain.Listing, in TakeInput) error {
+func (s *OfferService) settleCurrencyTx(ctx context.Context, tx pgx.Tx, listing domain.Listing, in TakeInput) error {
 	units := int64(in.Units)
 
 	switch listing.Kind {
@@ -411,9 +433,9 @@ func (s *OfferService) settleCurrency(ctx context.Context, listing domain.Listin
 			return nil
 		}
 
-		if err := s.wallet.Charge(ctx, in.TakerAccountID, listing.SellerAccountID,
+		if err := s.wallet.ChargeTx(ctx, tx, in.TakerAccountID, listing.SellerAccountID,
 			grossZeny, grossCashpoint, s.fee.NetZeny(grossZeny), s.fee.NetCashpoint(grossCashpoint)); err != nil {
-			return fmt.Errorf("app.OfferService.settleCurrency charge: %w", err)
+			return fmt.Errorf("app.OfferService.settleCurrencyTx charge: %w", err)
 		}
 
 		return nil
@@ -425,9 +447,9 @@ func (s *OfferService) settleCurrency(ctx context.Context, listing domain.Listin
 		grossZeny := listing.GiveZeny * units
 		grossCashpoint := listing.GiveCashpoint * in.Units
 
-		if err := s.wallet.SettleHoldPartial(ctx, *listing.GiveHoldID, in.TakerAccountID,
+		if err := s.wallet.SettleHoldPartialTx(ctx, tx, *listing.GiveHoldID, in.TakerAccountID,
 			grossZeny, grossCashpoint, s.fee.NetZeny(grossZeny), s.fee.NetCashpoint(grossCashpoint)); err != nil {
-			return fmt.Errorf("app.OfferService.settleCurrency settle: %w", err)
+			return fmt.Errorf("app.OfferService.settleCurrencyTx settle: %w", err)
 		}
 
 		return nil
@@ -459,9 +481,9 @@ func (s *OfferService) ensureCapacity(ctx context.Context, accountID int, snapsh
 	return nil
 }
 
-func (s *OfferService) enqueueLegs(ctx context.Context, listing domain.Listing, in TakeInput, wantEscrowRef int64) error {
+func (s *OfferService) enqueueLegsTx(ctx context.Context, tx pgx.Tx, listing domain.Listing, in TakeInput, wantEscrowRef int64) error {
 	if listing.GiveItem {
-		if err := s.settlement.Enqueue(ctx, domain.SettlementLeg{
+		if err := s.settlement.EnqueueTx(ctx, tx, domain.SettlementLeg{
 			ListingID:          listing.ID,
 			EscrowRef:          listing.ID,
 			RecipientAccountID: in.TakerAccountID,
@@ -473,7 +495,7 @@ func (s *OfferService) enqueueLegs(ctx context.Context, listing domain.Listing, 
 	}
 
 	if listing.WantNameID != 0 {
-		if err := s.settlement.Enqueue(ctx, domain.SettlementLeg{
+		if err := s.settlement.EnqueueTx(ctx, tx, domain.SettlementLeg{
 			ListingID:          listing.ID,
 			EscrowRef:          wantEscrowRef,
 			RecipientAccountID: listing.SellerAccountID,
