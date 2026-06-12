@@ -33,10 +33,8 @@ func seedWallet(t *testing.T, pool *pgxpool.Pool, accountID int, zeny int64, cas
 	}
 }
 
-func walletBalance(t *testing.T, pool *pgxpool.Pool, accountID int) (int64, int) {
+func walletBalance(t *testing.T, pool *pgxpool.Pool, accountID int) (zeny int64, cashpoint int) {
 	t.Helper()
-	var zeny int64
-	var cashpoint int
 	if err := pool.QueryRow(context.Background(),
 		`SELECT zeny, cashpoint FROM cp_currency WHERE account_id = $1`, accountID,
 	).Scan(&zeny, &cashpoint); err != nil {
