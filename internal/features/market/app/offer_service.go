@@ -523,3 +523,21 @@ func (s *OfferService) Cancel(ctx context.Context, listingID int64, byAccountID 
 
 	return nil
 }
+
+func (s *OfferService) Browse(ctx context.Context, kind, limit, offset int) ([]domain.Listing, int, error) {
+	listings, total, err := s.listings.Browse(ctx, kind, limit, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("app.OfferService.Browse: %w", err)
+	}
+
+	return listings, total, nil
+}
+
+func (s *OfferService) BySeller(ctx context.Context, accountID, limit, offset int) ([]domain.Listing, int, error) {
+	listings, total, err := s.listings.BySeller(ctx, accountID, limit, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("app.OfferService.BySeller: %w", err)
+	}
+
+	return listings, total, nil
+}

@@ -120,6 +120,9 @@ Market:
   View:
     Roles: ["Verified"]
     Requires: ["Unrestricted"]
+  Trade:
+    Roles: ["Verified"]
+    Requires: ["Unrestricted"]
 
 Users:
   View:
