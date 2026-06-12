@@ -293,3 +293,66 @@ func (r *WalletRepository) Burn(ctx context.Context, accountID int, zeny int64, 
 
 	return nil
 }
+
+func validatePartialSettle(grossZeny int64, grossCashpoint int, payeeZeny int64, payeeCashpoint int) error {
+	if !amountsValid(grossZeny, grossCashpoint) || !amountsValid(payeeZeny, payeeCashpoint) {
+		return domain.ErrInvalidAmount
+	}
+	if payeeZeny > grossZeny || payeeCashpoint > grossCashpoint {
+		return domain.ErrInvalidSettlement
+	}
+
+	return nil
+}
+
+func reduceHold(ctx context.Context, tx pgx.Tx, holdID, remainingZeny int64, remainingCashpoint int) error {
+	if remainingZeny == 0 && remainingCashpoint == 0 {
+		if _, err := tx.Exec(ctx, `DELETE FROM cp_currency_hold WHERE id = $1`, holdID); err != nil {
+			return fmt.Errorf("infra.reduceHold delete: %w", err)
+		}
+
+		return nil
+	}
+
+	if _, err := tx.Exec(ctx,
+		`UPDATE cp_currency_hold SET zeny = $1, cashpoint = $2 WHERE id = $3`,
+		remainingZeny, remainingCashpoint, holdID,
+	); err != nil {
+		return fmt.Errorf("infra.reduceHold update: %w", err)
+	}
+
+	return nil
+}
+
+func (r *WalletRepository) SettleHoldPartial(ctx context.Context, holdID int64, payeeAccountID int, grossZeny int64, grossCashpoint int, payeeZeny int64, payeeCashpoint int) error {
+	if err := validatePartialSettle(grossZeny, grossCashpoint, payeeZeny, payeeCashpoint); err != nil {
+		return err
+	}
+
+	tx, err := r.Pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("infra.WalletRepository.SettleHoldPartial begin: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	_, heldZeny, heldCashpoint, err := readHold(ctx, tx, holdID)
+	if err != nil {
+		return err
+	}
+	if grossZeny > heldZeny || grossCashpoint > heldCashpoint {
+		return domain.ErrInvalidSettlement
+	}
+
+	if err = creditBalance(ctx, tx, payeeAccountID, payeeZeny, payeeCashpoint); err != nil {
+		return fmt.Errorf("infra.WalletRepository.SettleHoldPartial credit: %w", err)
+	}
+
+	if err = reduceHold(ctx, tx, holdID, heldZeny-grossZeny, heldCashpoint-grossCashpoint); err != nil {
+		return fmt.Errorf("infra.WalletRepository.SettleHoldPartial reduce: %w", err)
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return fmt.Errorf("infra.WalletRepository.SettleHoldPartial commit: %w", err)
+	}
+
+	return nil
+}
