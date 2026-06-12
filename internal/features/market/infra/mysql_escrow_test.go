@@ -22,6 +22,16 @@ func TestEscrowRepository_DeliverPartial(t *testing.T) {
 	cleanupRefs(t, db, ref)
 	cleanupLegs(t, db, 1, 2)
 
+	if _, err := db.Exec("DELETE FROM cp_delivery_applied WHERE leg_id IN (1, 2)"); err != nil {
+		t.Fatalf("pre-clean cp_delivery_applied: %v", err)
+	}
+	if _, err := db.Exec("DELETE FROM cp_storage WHERE account_id IN (?, ?)", seller, recipient); err != nil {
+		t.Fatalf("pre-clean cp_storage: %v", err)
+	}
+	if _, err := db.Exec("DELETE FROM cp_storage_escrow WHERE listing_ref = ?", ref); err != nil {
+		t.Fatalf("pre-clean cp_storage_escrow: %v", err)
+	}
+
 	setLock(t, db, seller, true)
 	setLock(t, db, recipient, true)
 	stashID := insertStashRowForTest(t, db, seller, 501, 100)

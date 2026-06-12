@@ -1,5 +1,8 @@
 USE `main`;
 
+DELETE FROM cp_storage WHERE account_id IN (2000005, 2000006, 2000007, 2000008, 2000010, 2000026);
+DELETE FROM cp_storage_escrow WHERE account_id IN (2000005, 2000006, 2000007, 2000008, 2000010, 2000026);
+
 INSERT INTO cp_storage_lock (account_id, is_locked) VALUES
   (2000005, 1),
   (2000006, 0),

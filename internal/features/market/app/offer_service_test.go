@@ -82,14 +82,20 @@ type escrowCall struct {
 	accountID  int
 }
 
+type partialDelivery struct {
+	ref    int64
+	amount int
+}
+
 type stubEscrow struct {
-	moveErr     error
-	returnErr   error
-	deliverErrs map[int64]error
-	calls       []escrowCall
-	delivered   []int64
-	returned    []int64
-	orphanRefs  []int64
+	moveErr          error
+	returnErr        error
+	deliverErrs      map[int64]error
+	calls            []escrowCall
+	wholeDelivered   []int64
+	partialDelivered []partialDelivery
+	returned         []int64
+	orphanRefs       []int64
 }
 
 func (s *stubEscrow) MoveToEscrow(_ context.Context, accountID int, listingRef int64, moves []domain.EscrowMove) error {
@@ -105,13 +111,13 @@ func (s *stubEscrow) ReturnToStash(_ context.Context, ref int64) error {
 }
 
 func (s *stubEscrow) Deliver(_ context.Context, ref int64, _ int, _ int64) error {
-	s.delivered = append(s.delivered, ref)
+	s.wholeDelivered = append(s.wholeDelivered, ref)
 
 	return s.deliverErrs[ref]
 }
 
-func (s *stubEscrow) DeliverPartial(_ context.Context, ref int64, _, _ int, _ int64) error {
-	s.delivered = append(s.delivered, ref)
+func (s *stubEscrow) DeliverPartial(_ context.Context, ref int64, _, amount int, _ int64) error {
+	s.partialDelivered = append(s.partialDelivered, partialDelivery{ref: ref, amount: amount})
 
 	return s.deliverErrs[ref]
 }
@@ -125,22 +131,24 @@ func (s *stubEscrow) OrphanRefs(context.Context, time.Time) ([]int64, error) {
 }
 
 type stubWallet struct {
-	holdErr    error
-	burnErr    error
-	releaseErr error
-	holdID     int64
-	holdZeny   int64
-	burnZeny   int64
-	released   int64
-	burnCalled bool
+	holdErr       error
+	burnErr       error
+	releaseErr    error
+	holdID        int64
+	holdZeny      int64
+	burnZeny      int64
+	released      int64
+	holdCashpoint int
+	burnCalled    bool
 }
 
 func (s *stubWallet) Balance(context.Context, int) (domain.Wallet, error) {
 	return domain.Wallet{}, nil
 }
 
-func (s *stubWallet) Hold(_ context.Context, _ int, zeny int64, _ int) (int64, error) {
+func (s *stubWallet) Hold(_ context.Context, _ int, zeny int64, cashpoint int) (int64, error) {
 	s.holdZeny = zeny
+	s.holdCashpoint = cashpoint
 
 	return s.holdID, s.holdErr
 }
@@ -306,7 +314,7 @@ func TestOfferService_Create_SellEscrowsAndBurnsFee(t *testing.T) {
 	service := buildOffer(listings, stash, escrow, wallet, &stubSettlement{})
 
 	ref, err := service.Create(context.Background(), CreateInput{
-		Kind: domain.KindSell, GiveStashItemID: 10, GiveUnitAmount: 2, Quantity: 5, WantZeny: 1000,
+		SellerAccountID: 1, Kind: domain.KindSell, GiveStashItemID: 10, GiveUnitAmount: 2, Quantity: 5, WantZeny: 1000,
 	})
 	if err != nil {
 		t.Fatalf("Create: %v", err)
@@ -314,8 +322,8 @@ func TestOfferService_Create_SellEscrowsAndBurnsFee(t *testing.T) {
 	if ref != 77 {
 		t.Errorf("ref = %d, want 77", ref)
 	}
-	if len(escrow.calls) != 1 || escrow.calls[0].listingRef != 77 || escrow.calls[0].moves[0].Amount != 10 {
-		t.Errorf("escrow call = %+v, want listingRef 77 amount 10 (give_unit_amount * quantity)", escrow.calls)
+	if len(escrow.calls) != 1 || escrow.calls[0].accountID != 1 || escrow.calls[0].listingRef != 77 || escrow.calls[0].moves[0].Amount != 10 {
+		t.Errorf("escrow call = %+v, want account 1 listingRef 77 amount 10 (give_unit_amount * quantity)", escrow.calls)
 	}
 	if listings.created == nil || !listings.created.GiveItem || !listings.created.Stackable {
 		t.Errorf("created listing = %+v, want GiveItem and Stackable true", listings.created)
@@ -351,13 +359,16 @@ func TestOfferService_Create_BuyHoldsCurrency(t *testing.T) {
 	service := buildOffer(listings, &fakeStashRepository{}, &stubEscrow{}, wallet, &stubSettlement{})
 
 	_, err := service.Create(context.Background(), CreateInput{
-		Kind: domain.KindBuy, WantNameID: 501, WantUnitAmount: 1, GiveZeny: 500, Quantity: 4,
+		Kind: domain.KindBuy, WantNameID: 501, WantUnitAmount: 1, GiveZeny: 500, GiveCashpoint: 50, Quantity: 4,
 	})
 	if err != nil {
 		t.Fatalf("Create: %v", err)
 	}
 	if wallet.holdZeny != 2000 {
 		t.Errorf("held zeny = %d, want 2000 (give_zeny * quantity)", wallet.holdZeny)
+	}
+	if wallet.holdCashpoint != 200 {
+		t.Errorf("held cashpoint = %d, want 200 (give_cashpoint * quantity)", wallet.holdCashpoint)
 	}
 	if listings.created == nil || listings.created.GiveHoldID == nil || *listings.created.GiveHoldID != 99 {
 		t.Errorf("created.GiveHoldID = %v, want 99", listings.created)
@@ -520,5 +531,77 @@ func TestOfferService_Take_Guards(t *testing.T) {
 				t.Errorf("Take() err = %v, want %v", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestOfferService_ensureCapacity(t *testing.T) {
+	t.Parallel()
+
+	stackable := domain.StashItem{NameID: 501, Amount: 5}
+
+	tests := []struct {
+		wantErr  error
+		stash    *fakeStashRepository
+		name     string
+		snapshot domain.StashItem
+		deliver  int
+		slotsCap int
+		stackCap int
+	}{
+		{name: "merge fast-path skips slot check", stash: &fakeStashRepository{items: []domain.StashItem{{ID: 1}}, mergeFound: true, mergeExisting: 10}, snapshot: stackable, deliver: 5, slotsCap: 1, stackCap: 100, wantErr: nil},
+		{name: "merge over cap falls through to full slot check", stash: &fakeStashRepository{items: []domain.StashItem{{ID: 1}}, mergeFound: true, mergeExisting: 99}, snapshot: stackable, deliver: 5, slotsCap: 1, stackCap: 100, wantErr: domain.ErrStorageFull},
+		{name: "non stackable uses slot check", stash: &fakeStashRepository{items: []domain.StashItem{{ID: 1}}}, snapshot: domain.StashItem{NameID: 1201, Refine: 7}, deliver: 1, slotsCap: 1, stackCap: 100, wantErr: domain.ErrStorageFull},
+		{name: "free slot available", stash: &fakeStashRepository{}, snapshot: stackable, deliver: 5, slotsCap: 600, stackCap: 100, wantErr: nil},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			service := buildOffer(&stubListings{}, tt.stash, &stubEscrow{}, &stubWallet{}, &stubSettlement{}, WithCapacity(tt.slotsCap, tt.stackCap))
+
+			err := service.ensureCapacity(context.Background(), 1, tt.snapshot, tt.deliver)
+			if !errors.Is(err, tt.wantErr) {
+				t.Errorf("ensureCapacity() err = %v, want %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestOfferService_Create_HoldFailure(t *testing.T) {
+	t.Parallel()
+
+	wallet := &stubWallet{holdErr: errOfferTest}
+	service := buildOffer(&stubListings{}, &fakeStashRepository{}, &stubEscrow{}, wallet, &stubSettlement{})
+
+	_, err := service.Create(context.Background(), CreateInput{
+		Kind: domain.KindBuy, WantNameID: 501, WantUnitAmount: 1, GiveZeny: 500, Quantity: 1,
+	})
+	if !errors.Is(err, errOfferTest) {
+		t.Errorf("Create() err = %v, want propagated hold error", err)
+	}
+}
+
+func TestOfferService_Cancel_GetFailure(t *testing.T) {
+	t.Parallel()
+
+	service := buildOffer(&stubListings{getErr: errOfferTest}, &fakeStashRepository{}, &stubEscrow{}, &stubWallet{}, &stubSettlement{})
+
+	err := service.Cancel(context.Background(), 1, 5)
+	if !errors.Is(err, errOfferTest) {
+		t.Errorf("Cancel() err = %v, want propagated get error", err)
+	}
+}
+
+func TestOfferService_Cancel_ReleaseFailure(t *testing.T) {
+	t.Parallel()
+
+	holdID := int64(55)
+	listings := &stubListings{getListing: domain.Listing{ID: 9, SellerAccountID: 5, Status: domain.StatusActive, GiveHoldID: &holdID}}
+	wallet := &stubWallet{releaseErr: errOfferTest}
+	service := buildOffer(listings, &fakeStashRepository{}, &stubEscrow{}, wallet, &stubSettlement{})
+
+	err := service.Cancel(context.Background(), 9, 5)
+	if !errors.Is(err, errOfferTest) {
+		t.Errorf("Cancel() err = %v, want propagated release error", err)
 	}
 }

@@ -40,8 +40,14 @@ func TestWorkers_Deliver(t *testing.T) {
 	if count != 2 {
 		t.Errorf("delivered count = %d, want 2 (leg 3 left pending on locked storage)", count)
 	}
-	if !slices.Contains(escrow.delivered, 10) || !slices.Contains(escrow.delivered, 11) {
-		t.Errorf("delivered refs = %v, want both 10 (whole) and 11 (partial) attempted", escrow.delivered)
+	if !slices.Contains(escrow.wholeDelivered, 10) {
+		t.Errorf("whole-delivered = %v, want ref 10 (leg 1, Whole)", escrow.wholeDelivered)
+	}
+	if len(escrow.partialDelivered) != 1 || escrow.partialDelivered[0].ref != 11 || escrow.partialDelivered[0].amount != 5 {
+		t.Errorf("partial-delivered = %v, want one {ref 11, amount 5} (leg 2, DeliverPartial)", escrow.partialDelivered)
+	}
+	if !slices.Contains(escrow.wholeDelivered, 12) {
+		t.Errorf("whole-delivered = %v, want ref 12 attempted (leg 3, Whole) before the locked-storage skip", escrow.wholeDelivered)
 	}
 	if len(settlement.doneIDs) != 2 || slices.Contains(settlement.doneIDs, 3) {
 		t.Errorf("doneIDs = %v, want exactly legs 1 and 2 (leg 3 not marked done)", settlement.doneIDs)
@@ -119,5 +125,23 @@ func TestWorkers_Expire(t *testing.T) {
 	}
 	if wallet.released != 55 {
 		t.Errorf("released hold = %d, want 55", wallet.released)
+	}
+}
+
+func TestWorkers_Reconcile_SkipsOnStorageUnlocked(t *testing.T) {
+	t.Parallel()
+
+	escrow := &stubEscrow{orphanRefs: []int64{12}, returnErr: domain.ErrStorageUnlocked}
+	workers := buildWorkers(&stubListings{}, escrow, &stubWallet{}, &stubSettlement{})
+
+	count, err := workers.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile: %v", err)
+	}
+	if count != 0 {
+		t.Errorf("returned count = %d, want 0 (return skipped when recipient storage is locked)", count)
+	}
+	if !slices.Contains(escrow.returned, 12) {
+		t.Errorf("returned = %v, want ref 12 attempted", escrow.returned)
 	}
 }
