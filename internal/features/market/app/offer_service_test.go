@@ -11,6 +11,7 @@ import (
 
 	"github.com/hayakawakaki/go-racp/internal/features/market/domain"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 var errOfferTest = errors.New("app: offer test error")
@@ -65,6 +66,12 @@ func (s *stubListings) TakeUnitsTx(context.Context, domain.DBTX, int64, int) (do
 }
 
 func (s *stubListings) SetStatus(_ context.Context, _ int64, status int) error {
+	s.statusSet = status
+
+	return s.setStatusErr
+}
+
+func (s *stubListings) SetStatusTx(_ context.Context, _ domain.DBTX, _ int64, status int) error {
 	s.statusSet = status
 
 	return s.setStatusErr
@@ -159,6 +166,12 @@ func (s *stubWallet) Release(_ context.Context, holdID int64) error {
 	return s.releaseErr
 }
 
+func (s *stubWallet) ReleaseTx(_ context.Context, _ domain.DBTX, holdID int64) error {
+	s.released = holdID
+
+	return s.releaseErr
+}
+
 func (s *stubWallet) SettleHold(context.Context, int64, int, int64, int) error { return nil }
 
 func (s *stubWallet) SettleHoldPartial(context.Context, int64, int, int64, int, int64, int) error {
@@ -216,7 +229,32 @@ func (s *stubSettlement) MarkDone(_ context.Context, id int64) error {
 
 type stubTx struct{}
 
-func (stubTx) Begin(context.Context) (pgx.Tx, error) { return nil, errOfferTest }
+func (stubTx) Begin(context.Context) (pgx.Tx, error) { return stubTx{}, nil }
+
+func (stubTx) Commit(context.Context) error   { return nil }
+func (stubTx) Rollback(context.Context) error { return nil }
+
+func (stubTx) CopyFrom(context.Context, pgx.Identifier, []string, pgx.CopyFromSource) (int64, error) {
+	return 0, nil
+}
+
+func (stubTx) SendBatch(context.Context, *pgx.Batch) pgx.BatchResults { return nil }
+
+func (stubTx) LargeObjects() pgx.LargeObjects { return pgx.LargeObjects{} }
+
+func (stubTx) Prepare(context.Context, string, string) (*pgconn.StatementDescription, error) {
+	return nil, nil
+}
+
+func (stubTx) Exec(context.Context, string, ...any) (pgconn.CommandTag, error) {
+	return pgconn.CommandTag{}, nil
+}
+
+func (stubTx) Query(context.Context, string, ...any) (pgx.Rows, error) { return nil, nil }
+
+func (stubTx) QueryRow(context.Context, string, ...any) pgx.Row { return nil }
+
+func (stubTx) Conn() *pgx.Conn { return nil }
 
 type stubBlacklist struct{ blocked map[int]bool }
 

@@ -14,30 +14,38 @@ func discardOfferHandler() *Handler {
 	return NewHandler(nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 }
 
-func TestAtoiForm(t *testing.T) {
+func TestFormReader_IntField(t *testing.T) {
 	t.Parallel()
 
 	req := httptest.NewRequest(http.MethodGet, "/?num=5&bad=abc", http.NoBody)
-	if got := atoiForm(req, "num"); got != 5 {
-		t.Errorf("atoiForm(num) = %d, want 5", got)
+	form := formReader{r: req}
+	if got := form.intField("num"); got != 5 {
+		t.Errorf("intField(num) = %d, want 5", got)
 	}
-	if got := atoiForm(req, "bad"); got != 0 {
-		t.Errorf("atoiForm(bad) = %d, want 0 on parse failure", got)
+	if got := form.intField("missing"); got != 0 || form.err != nil {
+		t.Errorf("intField(missing) = %d err %v, want 0 and no error for an empty field", got, form.err)
 	}
-	if got := atoiForm(req, "missing"); got != 0 {
-		t.Errorf("atoiForm(missing) = %d, want 0", got)
+	if got := form.intField("bad"); got != 0 {
+		t.Errorf("intField(bad) = %d, want 0", got)
+	}
+	if form.err == nil {
+		t.Error("intField(bad) did not record a parse error, want malformed input rejected")
 	}
 }
 
-func TestAtoi64Form(t *testing.T) {
+func TestFormReader_Int64Field(t *testing.T) {
 	t.Parallel()
 
 	req := httptest.NewRequest(http.MethodGet, "/?id=9007199254740993&bad=x", http.NoBody)
-	if got := atoi64Form(req, "id"); got != 9007199254740993 {
-		t.Errorf("atoi64Form(id) = %d, want 9007199254740993", got)
+	form := formReader{r: req}
+	if got := form.int64Field("id"); got != 9007199254740993 {
+		t.Errorf("int64Field(id) = %d, want 9007199254740993", got)
 	}
-	if got := atoi64Form(req, "bad"); got != 0 {
-		t.Errorf("atoi64Form(bad) = %d, want 0 on parse failure", got)
+	if form.err != nil {
+		t.Errorf("int64Field(id) recorded error %v, want none", form.err)
+	}
+	if got := form.int64Field("bad"); got != 0 || form.err == nil {
+		t.Errorf("int64Field(bad) = %d err %v, want 0 and a recorded parse error", got, form.err)
 	}
 }
 

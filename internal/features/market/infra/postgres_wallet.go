@@ -147,6 +147,23 @@ func readHold(ctx context.Context, q domain.DBTX, holdID int64) (accountID int, 
 	return accountID, zeny, cashpoint, nil
 }
 
+func (r *WalletRepository) ReleaseTx(ctx context.Context, q domain.DBTX, holdID int64) error {
+	accountID, zeny, cashpoint, err := readHold(ctx, q, holdID)
+	if err != nil {
+		return err
+	}
+
+	if creditErr := creditBalance(ctx, q, accountID, zeny, cashpoint); creditErr != nil {
+		return fmt.Errorf("infra.WalletRepository.ReleaseTx credit: %w", creditErr)
+	}
+
+	if _, execErr := q.Exec(ctx, `DELETE FROM cp_currency_hold WHERE id = $1`, holdID); execErr != nil {
+		return fmt.Errorf("infra.WalletRepository.ReleaseTx clear: %w", execErr)
+	}
+
+	return nil
+}
+
 func (r *WalletRepository) Release(ctx context.Context, holdID int64) error {
 	tx, err := r.Pool.Begin(ctx)
 	if err != nil {
@@ -154,17 +171,8 @@ func (r *WalletRepository) Release(ctx context.Context, holdID int64) error {
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
-	accountID, zeny, cashpoint, err := readHold(ctx, tx, holdID)
-	if err != nil {
-		return err
-	}
-
-	if err = creditBalance(ctx, tx, accountID, zeny, cashpoint); err != nil {
-		return fmt.Errorf("infra.WalletRepository.Release credit: %w", err)
-	}
-
-	if _, err = tx.Exec(ctx, `DELETE FROM cp_currency_hold WHERE id = $1`, holdID); err != nil {
-		return fmt.Errorf("infra.WalletRepository.Release clear: %w", err)
+	if releaseErr := r.ReleaseTx(ctx, tx, holdID); releaseErr != nil {
+		return releaseErr
 	}
 	if err = tx.Commit(ctx); err != nil {
 		return fmt.Errorf("infra.WalletRepository.Release commit: %w", err)

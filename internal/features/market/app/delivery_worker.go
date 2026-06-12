@@ -21,6 +21,7 @@ type Workers struct {
 	escrow     domain.EscrowRepository
 	wallet     domain.WalletRepository
 	settlement domain.SettlementRepository
+	db         txBeginner
 	logger     *slog.Logger
 	now        func() time.Time
 	extraRefs  []RefSource
@@ -38,6 +39,7 @@ func NewWorkers(
 	escrow domain.EscrowRepository,
 	wallet domain.WalletRepository,
 	settlement domain.SettlementRepository,
+	db txBeginner,
 	logger *slog.Logger,
 	opts ...WorkerOption,
 ) *Workers {
@@ -46,6 +48,7 @@ func NewWorkers(
 		escrow:     escrow,
 		wallet:     wallet,
 		settlement: settlement,
+		db:         db,
 		logger:     logger,
 		now:        time.Now,
 		batch:      100,
@@ -170,28 +173,30 @@ func (w *Workers) Expire(ctx context.Context) (int64, error) {
 
 	var expired int64
 	for _, listing := range due {
-		if statusErr := w.listings.SetStatus(ctx, listing.ID, domain.StatusExpired); statusErr != nil {
-			w.logger.Error("market: expire status", "listing", listing.ID, "err", statusErr)
+		if err := w.expireListing(ctx, listing); err != nil {
+			w.logger.Error("market: expire listing", "listing", listing.ID, "err", err)
 			continue
-		}
-		if listing.GiveItem {
-			if enqueueErr := w.settlement.Enqueue(ctx, domain.SettlementLeg{
-				ListingID:          listing.ID,
-				EscrowRef:          listing.ID,
-				RecipientAccountID: listing.SellerAccountID,
-				DeliverAmount:      listing.GiveUnitAmount * listing.RemainingQuantity,
-				Whole:              !listing.Stackable,
-			}); enqueueErr != nil {
-				w.logger.Error("market: expire enqueue", "listing", listing.ID, "err", enqueueErr)
-			}
-		}
-		if listing.GiveHoldID != nil {
-			if releaseErr := w.wallet.Release(ctx, *listing.GiveHoldID); releaseErr != nil {
-				w.logger.Error("market: expire release", "listing", listing.ID, "err", releaseErr)
-			}
 		}
 		expired++
 	}
 
 	return expired, nil
+}
+
+func (w *Workers) expireListing(ctx context.Context, listing domain.Listing) error {
+	tx, err := w.db.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("app.Workers.expireListing begin: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	if closeErr := closeListingTx(ctx, tx, w.listings, w.settlement, w.wallet, listing, domain.StatusExpired); closeErr != nil {
+		return closeErr
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("app.Workers.expireListing commit: %w", err)
+	}
+
+	return nil
 }

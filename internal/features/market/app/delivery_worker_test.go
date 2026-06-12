@@ -19,7 +19,7 @@ func buildWorkers(
 ) *Workers {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 
-	return NewWorkers(listings, escrow, wallet, settlement, logger, opts...)
+	return NewWorkers(listings, escrow, wallet, settlement, stubTx{}, logger, opts...)
 }
 
 func TestWorkers_Deliver(t *testing.T) {

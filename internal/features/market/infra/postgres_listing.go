@@ -172,12 +172,16 @@ func (r *ListingRepository) TakeUnits(ctx context.Context, id int64, units int) 
 	return listing, depleted, nil
 }
 
-func (r *ListingRepository) SetStatus(ctx context.Context, id int64, status int) error {
-	if _, err := r.Pool.Exec(ctx, `UPDATE cp_listing SET status = $1 WHERE id = $2`, status, id); err != nil {
-		return fmt.Errorf("infra.ListingRepository.SetStatus: %w", err)
+func (r *ListingRepository) SetStatusTx(ctx context.Context, q domain.DBTX, id int64, status int) error {
+	if _, err := q.Exec(ctx, `UPDATE cp_listing SET status = $1 WHERE id = $2`, status, id); err != nil {
+		return fmt.Errorf("infra.ListingRepository.SetStatusTx: %w", err)
 	}
 
 	return nil
+}
+
+func (r *ListingRepository) SetStatus(ctx context.Context, id int64, status int) error {
+	return r.SetStatusTx(ctx, r.Pool, id, status)
 }
 
 func (r *ListingRepository) DueForExpiry(ctx context.Context, now time.Time, limit int) ([]domain.Listing, error) {

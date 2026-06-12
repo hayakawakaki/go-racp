@@ -76,18 +76,23 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	form := formReader{r: r}
 	in := app.CreateInput{
 		SellerAccountID: session.UserID,
-		Kind:            atoiForm(r, "kind"),
-		GiveStashItemID: atoi64Form(r, "give_stash_item_id"),
-		GiveUnitAmount:  atoiForm(r, "give_unit_amount"),
-		GiveZeny:        atoi64Form(r, "give_zeny"),
-		GiveCashpoint:   atoiForm(r, "give_cashpoint"),
-		WantNameID:      atoiForm(r, "want_nameid"),
-		WantUnitAmount:  atoiForm(r, "want_unit_amount"),
-		WantZeny:        atoi64Form(r, "want_zeny"),
-		WantCashpoint:   atoiForm(r, "want_cashpoint"),
-		Quantity:        atoiForm(r, "quantity"),
+		Kind:            form.intField("kind"),
+		GiveStashItemID: form.int64Field("give_stash_item_id"),
+		GiveUnitAmount:  form.intField("give_unit_amount"),
+		GiveZeny:        form.int64Field("give_zeny"),
+		GiveCashpoint:   form.intField("give_cashpoint"),
+		WantNameID:      form.intField("want_nameid"),
+		WantUnitAmount:  form.intField("want_unit_amount"),
+		WantZeny:        form.int64Field("want_zeny"),
+		WantCashpoint:   form.intField("want_cashpoint"),
+		Quantity:        form.intField("quantity"),
+	}
+	if form.err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
 	}
 
 	id, err := h.offers.Create(r.Context(), in)
@@ -117,13 +122,19 @@ func (h *Handler) take(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	takeErr := h.offers.Take(r.Context(), app.TakeInput{
+	form := formReader{r: r}
+	input := app.TakeInput{
 		ListingID:        id,
 		TakerAccountID:   session.UserID,
-		Units:            atoiForm(r, "units"),
-		TakerStashItemID: atoi64Form(r, "taker_stash_item_id"),
-	})
-	if takeErr != nil {
+		Units:            form.intField("units"),
+		TakerStashItemID: form.int64Field("taker_stash_item_id"),
+	}
+	if form.err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	if takeErr := h.offers.Take(r.Context(), input); takeErr != nil {
 		h.writeOfferError(w, r, takeErr)
 		return
 	}
@@ -151,24 +162,78 @@ func (h *Handler) cancel(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *Handler) writeOfferError(w http.ResponseWriter, r *http.Request, err error) {
-	status := http.StatusBadRequest
-	switch {
-	case errors.Is(err, domain.ErrListingNotFound):
-		status = http.StatusNotFound
-	case errors.Is(err, domain.ErrStorageUnlocked), errors.Is(err, domain.ErrInsufficientFunds), errors.Is(err, domain.ErrStorageFull):
-		status = http.StatusConflict
-	}
-	h.logger.Warn("market: offer rejected", "err", err, "path", r.URL.Path)
-	_ = httpx.WriteJSONError(w, status, err.Error())
+var offerErrorStatuses = []struct {
+	err    error
+	status int
+}{
+	{domain.ErrListingNotFound, http.StatusNotFound},
+	{domain.ErrStashItemNotFound, http.StatusNotFound},
+	{domain.ErrStorageUnlocked, http.StatusConflict},
+	{domain.ErrStorageFull, http.StatusConflict},
+	{domain.ErrInsufficientFunds, http.StatusConflict},
+	{domain.ErrListingInactive, http.StatusConflict},
+	{domain.ErrInsufficientUnits, http.StatusConflict},
+	{domain.ErrInvalidOffer, http.StatusBadRequest},
+	{domain.ErrWantMismatch, http.StatusBadRequest},
+	{domain.ErrItemBlacklisted, http.StatusBadRequest},
+	{domain.ErrSelfTrade, http.StatusBadRequest},
 }
 
-func atoiForm(r *http.Request, key string) int {
-	value, _ := strconv.Atoi(r.FormValue(key))
+func (h *Handler) writeOfferError(w http.ResponseWriter, r *http.Request, err error) {
+	for _, mapping := range offerErrorStatuses {
+		if errors.Is(err, mapping.err) {
+			h.logger.Warn("market: offer rejected", "err", err, "path", r.URL.Path)
+			_ = httpx.WriteJSONError(w, mapping.status, mapping.err.Error())
+
+			return
+		}
+	}
+
+	h.logger.Error("market: offer failed", "err", err, "path", r.URL.Path)
+	_ = httpx.WriteJSONError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+}
+
+type formReader struct {
+	err error
+	r   *http.Request
+}
+
+func (f *formReader) intField(key string) int {
+	if f.err != nil {
+		return 0
+	}
+
+	raw := f.r.FormValue(key)
+	if raw == "" {
+		return 0
+	}
+
+	value, err := strconv.Atoi(raw)
+	if err != nil {
+		f.err = err
+
+		return 0
+	}
+
 	return value
 }
 
-func atoi64Form(r *http.Request, key string) int64 {
-	value, _ := strconv.ParseInt(r.FormValue(key), 10, 64)
+func (f *formReader) int64Field(key string) int64 {
+	if f.err != nil {
+		return 0
+	}
+
+	raw := f.r.FormValue(key)
+	if raw == "" {
+		return 0
+	}
+
+	value, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil {
+		f.err = err
+
+		return 0
+	}
+
 	return value
 }

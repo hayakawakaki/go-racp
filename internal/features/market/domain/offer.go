@@ -113,6 +113,7 @@ type ListingRepository interface {
 	TakeUnits(ctx context.Context, id int64, units int) (Listing, bool, error)
 	TakeUnitsTx(ctx context.Context, q DBTX, id int64, units int) (Listing, bool, error)
 	SetStatus(ctx context.Context, id int64, status int) error
+	SetStatusTx(ctx context.Context, q DBTX, id int64, status int) error
 	DueForExpiry(ctx context.Context, now time.Time, limit int) ([]Listing, error)
 	AllRefs(ctx context.Context) ([]int64, error)
 }

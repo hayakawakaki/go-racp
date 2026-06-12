@@ -521,25 +521,51 @@ func (s *OfferService) Cancel(ctx context.Context, listingID int64, byAccountID 
 		return domain.ErrListingInactive
 	}
 
-	if err := s.listings.SetStatus(ctx, listingID, domain.StatusCancelled); err != nil {
-		return fmt.Errorf("app.OfferService.Cancel status: %w", err)
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("app.OfferService.Cancel begin: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	if closeErr := closeListingTx(ctx, tx, s.listings, s.settlement, s.wallet, listing, domain.StatusCancelled); closeErr != nil {
+		return closeErr
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("app.OfferService.Cancel commit: %w", err)
+	}
+
+	return nil
+}
+
+func closeListingTx(
+	ctx context.Context,
+	tx domain.DBTX,
+	listings domain.ListingRepository,
+	settlement domain.SettlementRepository,
+	wallet domain.WalletRepository,
+	listing domain.Listing,
+	status int,
+) error {
+	if err := listings.SetStatusTx(ctx, tx, listing.ID, status); err != nil {
+		return fmt.Errorf("app.closeListingTx status: %w", err)
 	}
 
 	if listing.GiveItem {
-		if err := s.settlement.Enqueue(ctx, domain.SettlementLeg{
+		if err := settlement.EnqueueTx(ctx, tx, domain.SettlementLeg{
 			ListingID:          listing.ID,
 			EscrowRef:          listing.ID,
 			RecipientAccountID: listing.SellerAccountID,
 			DeliverAmount:      listing.GiveUnitAmount * listing.RemainingQuantity,
 			Whole:              !listing.Stackable,
 		}); err != nil {
-			return fmt.Errorf("app.OfferService.Cancel enqueue: %w", err)
+			return fmt.Errorf("app.closeListingTx enqueue: %w", err)
 		}
 	}
 
 	if listing.GiveHoldID != nil {
-		if err := s.wallet.Release(ctx, *listing.GiveHoldID); err != nil {
-			return fmt.Errorf("app.OfferService.Cancel release: %w", err)
+		if err := wallet.ReleaseTx(ctx, tx, *listing.GiveHoldID); err != nil {
+			return fmt.Errorf("app.closeListingTx release: %w", err)
 		}
 	}
 

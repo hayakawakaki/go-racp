@@ -30,7 +30,7 @@ func mount(reg *routes.Registry, mux *http.ServeMux, in *coreinfra.Infra) {
 	handler := transport.NewHandler(stashService, offerService, in.Logger)
 	handler.RegisterRoutes(reg, mux)
 
-	workers := app.NewWorkers(listingRepo, escrowRepo, walletRepo, settlementRepo, in.Logger)
+	workers := app.NewWorkers(listingRepo, escrowRepo, walletRepo, settlementRepo, in.DB, in.Logger)
 	go worker.Run(in.ShutdownCtx, in.Logger,
 		worker.Job{Name: "market-deliver", Interval: 5 * time.Second, Fn: workers.Deliver},
 		worker.Job{Name: "market-expire", Interval: time.Minute, Fn: workers.Expire},
